@@ -3,12 +3,12 @@ import gzip
 import json
 import sqlite3
 from collections import defaultdict
-
+import sys
 from google.protobuf import json_format
 
 import data_pb2
 
-
+sys.stdout.reconfigure(encoding='utf-8')
 def open_db(path: str) -> sqlite3.Cursor:
     connection = sqlite3.connect(path)
     return connection.cursor()
@@ -198,7 +198,8 @@ def main():
     with open('../public/data/umdb.binarypb.gz', 'wb') as f:
         f.write(gzip.compress(pb.SerializeToString(), mtime=0))
 
-    with open('../public/data/umdb.json', 'w') as f:
+    # Force UTF-8 when writing JSON (so ☆ and other characters are preserved)
+    with open('../public/data/umdb.json', 'w', encoding='utf-8') as f:
         json.dump(json_format.MessageToDict(pb), f, ensure_ascii=False, indent=2)
 
 

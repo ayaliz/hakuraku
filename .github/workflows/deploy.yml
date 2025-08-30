@@ -23,7 +23,7 @@ jobs:
           node-version: '20'
           cache: 'yarn'
       - run: yarn --frozen-lockfile
-      - run: PUBLIC_URL="https://<user>.github.io/<repo>" yarn build
+      - run: PUBLIC_URL="https://ayaliz.github.io/hakuraku" yarn build
       - run: yarn build
       - uses: actions/upload-pages-artifact@v3
         with:

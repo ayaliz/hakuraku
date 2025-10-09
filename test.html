@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sourcebin Create + Retrieve (No Auth, CORS Proxy)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 1rem; }
+    textarea { width: 100%; height: 180px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+    input[type="text"] { width: 100%; padding: .5rem; font-family: monospace; }
+    .row { display: grid; gap: .75rem; margin: 1rem 0; }
+    .cols { display: grid; gap: .75rem; grid-template-columns: 1fr auto; align-items: start; }
+    button { padding: .6rem 1rem; cursor: pointer; }
+    #status { margin-top: .75rem; word-break: break-all; }
+    code { background: #f5f5f5; padding: .1rem .3rem; border-radius: .25rem; }
+  </style>
+</head>
+<body>
+  <h1>Sourcebin — Create & Retrieve (No Auth, CORS Proxy)</h1>
+
+  <h2>Create</h2>
+  <div class="row">
+    <textarea id="createText" placeholder="Type or paste text here…"></textarea>
+    <div class="cols">
+      <button id="createBtn">Upload to Sourcebin</button>
+      <div id="createOut"></div>
+    </div>
+  </div>
+
+  <hr/>
+
+  <h2>Retrieve</h2>
+  <p>Paste a Sourcebin URL or key (e.g. <code>https://sourceb.in/abc123</code> or <code>abc123</code>), then click <strong>Load</strong>.</p>
+  <div class="row">
+    <input id="keyInput" type="text" placeholder="Sourcebin URL or key"/>
+    <div class="cols">
+      <button id="loadBtn">Load content</button>
+      <div id="loadOut"></div>
+    </div>
+    <textarea id="loadedText" placeholder="Loaded content will appear here…" readonly></textarea>
+  </div>
+
+  <div id="status"></div>
+
+  <script>
+    // Extract key from either a URL or plain key input
+    function toKey(value) {
+      if (!value) return "";
+      try {
+        if (value.startsWith("http")) {
+          const u = new URL(value);
+          const parts = u.pathname.split("/").filter(Boolean);
+          return parts[0] || "";
+        }
+      } catch {}
+      return value.trim();
+    }
+
+    // --- CREATE ---
+    const createBtn = document.getElementById('createBtn');
+    const createOut = document.getElementById('createOut');
+
+    createBtn.onclick = async () => {
+      const text = document.getElementById('createText').value.trim();
+      if (!text) return alert('Please enter some text first.');
+
+      createOut.textContent = 'Uploading…';
+      try {
+        const res = await fetch('https://sourceb.in/api/bins', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ files: [{ content: text }] }) // no "language"
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+
+        const url = `https://sourceb.in/${data.key}`;
+        createOut.innerHTML = `✅ Created: <a href="${url}" target="_blank" rel="noopener">${url}</a>`;
+        document.getElementById('keyInput').value = url; // auto-fill for testing
+      } catch (err) {
+        console.error(err);
+        createOut.textContent = `❌ Upload failed: ${err.message}`;
+      }
+    };
+
+    // --- RETRIEVE using corsproxy.io ---
+    const loadBtn = document.getElementById('loadBtn');
+    const loadOut = document.getElementById('loadOut');
+    const loadedText = document.getElementById('loadedText');
+
+    loadBtn.onclick = async () => {
+      const keyRaw = document.getElementById('keyInput').value;
+      const key = toKey(keyRaw);
+      if (!key) return alert('Please enter a Sourcebin key or URL.');
+
+      loadOut.textContent = 'Fetching via corsproxy.io…';
+      loadedText.value = '';
+
+      try {
+        const target = `https://cdn.sourceb.in/bins/${key}/0`;
+        const proxied = `https://corsproxy.io/?${encodeURIComponent(target)}`;
+        const res = await fetch(proxied);
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+
+        loadedText.value = text;
+        loadOut.textContent = '✅ Loaded.';
+      } catch (err) {
+        console.error(err);
+        loadOut.textContent = `❌ Load failed: ${err.message}`;
+      }
+    };
+  </script>
+</body>
+</html>

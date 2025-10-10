@@ -45,6 +45,7 @@ import CardNamePresenter from "./CardNamePresenter";
 import CharaProperLabels from "./CharaProperLabels";
 import CopyButton from "./CopyButton";
 import FoldCard from "./FoldCard";
+import RaceReplay from "./RaceReplay";
 
 
 
@@ -245,8 +246,6 @@ type RaceDataPresenterState = {
     showBlocks: boolean,
     showTemptationMode: boolean,
     showOtherRaceEvents: boolean,
-
-    diffGraphUseDistanceAsXAxis: boolean,
 };
 
 class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, RaceDataPresenterState> {
@@ -261,8 +260,6 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
             showBlocks: true,
             showTemptationMode: true,
             showOtherRaceEvents: true,
-
-            diffGraphUseDistanceAsXAxis: true,
         };
     }
 
@@ -616,73 +613,6 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
         </FoldCard>;
     }
 
-
-    renderGlobalRaceDistanceDiffGraph() {
-        const displayNames = this.displayNames(this.props.raceHorseInfo, this.props.raceData);
-
-        const sortedHorses = Object.entries(displayNames).map(([frameOrder, name]) => ({
-            frameOrder: parseInt(frameOrder),
-            name: name,
-            finishOrder: this.props.raceData.horseResult[parseInt(frameOrder)].finishOrder!,
-        })).sort((a, b) => a.finishOrder - b.finishOrder);
-
-        const series: Record<number, LineSeriesOption> = {};
-        sortedHorses.forEach(horse => {
-            series[horse.frameOrder] = {
-                name: horse.name,
-                data: [],
-                type: 'line',
-                smooth: true,
-            };
-        });
-
-        this.props.raceData.frame.forEach(frame => {
-            const time = frame.time!;
-
-            const minDistance = _.min(frame.horseFrame.map(horseFrame => horseFrame.distance!))!;
-            const maxDistance = _.max(frame.horseFrame.map(horseFrame => horseFrame.distance!))!;
-            const baseDistance = (minDistance + maxDistance) / 2;
-
-            frame.horseFrame.forEach((horseFrame, frameOrder) => {
-                if (series[frameOrder]) {
-                    (series[frameOrder].data as any[]).push([
-                        this.state.diffGraphUseDistanceAsXAxis ? baseDistance : time,
-                        horseFrame.distance! - baseDistance,
-                    ]);
-                }
-            });
-        });
-
-        const options: ECOption = {
-            xAxis: {
-                name: this.state.diffGraphUseDistanceAsXAxis ? "Base Distance" : "Time",
-                nameLocation: "middle",
-                type: "value",
-                min: "dataMin",
-                max: "dataMax",
-            },
-            yAxis: {type: "value"},
-            legend: {show: true},
-            series: sortedHorses.map(horse => series[horse.frameOrder]),
-            tooltip: {
-                trigger: 'axis',
-            },
-            dataZoom: {
-                type: 'slider',
-            },
-        };
-
-        return <FoldCard header="Distance Diff Graph">
-            <Form.Switch
-                checked={this.state.diffGraphUseDistanceAsXAxis}
-                onChange={(e) => this.setState({diffGraphUseDistanceAsXAxis: e.target.checked})}
-                id="diff-graph-use-distance-as-x-axis"
-                label="Use Base Distance as X Axis"/>
-            <EChartsReactCore echarts={echarts} option={options} style={{height: '400px'}}/>
-        </FoldCard>;
-    }
-
-
     render() {
         return <div>
             {(this.props.raceData.header!.version! > supportedRaceDataVersion) &&
@@ -691,7 +621,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                     version {supportedRaceDataVersion}, use at your own risk!
                 </Alert>}
             {this.renderCharaList()}
-            {this.renderGlobalRaceDistanceDiffGraph()}
+            <RaceReplay raceData={this.props.raceData} raceHorseInfo={this.props.raceHorseInfo} displayNames={this.displayNames(this.props.raceHorseInfo, this.props.raceData)} />
             {this.renderOtherRaceEventsList()}
             <Form>
                 <Form.Group>

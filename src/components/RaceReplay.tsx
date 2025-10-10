@@ -16,6 +16,10 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { Button, Form } from "react-bootstrap";
 import { RaceSimulateData } from "../data/race_data_pb";
 
+// Register ECharts components
+// Note: Tooltip & Grid are needed for proper label positioning & layout
+// CanvasRenderer suffices here; switch to SVGRenderer if you need crisp text at small sizes
+// (import { SVGRenderer } from 'echarts/renderers')
 echarts.use([ScatterChart, TooltipComponent, GridComponent, LegendComponent, CanvasRenderer]);
 
 type ECOption = ComposeOption<
@@ -29,6 +33,7 @@ type RaceReplayProps = {
   raceData: RaceSimulateData;
   raceHorseInfo: any[];
   displayNames: Record<number, string>;
+  skillActivations: Record<number, { time: number; name: string }[]>;
 };
 
 // helpers
@@ -54,7 +59,7 @@ function findFrameIndex(frames: RaceSimulateData["frame"], t: number): number {
   return Math.max(0, Math.min(frames.length - 1, lo));
 }
 
-const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displayNames }) => {
+const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displayNames, skillActivations }) => {
   const frames = raceData.frame;
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -183,16 +188,61 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
       const icon = charaId ? require(`../data/umamusume_icons/chr_icon_${charaId}.png`) : null;
 
       return {
-        id: `horse-${idx}`, // stable id
+        id: `horse-${idx}`,
         name,
         type: "scatter" as const,
         symbol: icon ? `image://${icon}` : 'circle',
         symbolSize: 64,
         data: [point],
         animation: false,
+        z: 5, // draw horses beneath labels overlay
       };
     });
   }, [interpolatedFrame, displayNames, raceHorseInfo]);
+
+  const yMaxWithHeadroom = maxLanePosition + 3;
+
+  const skillLabelData = useMemo(() => {
+    const items: any[] = [];
+    const skillDisplayDuration = 5;
+
+    Object.entries(skillActivations).forEach(([idxStr, skills]) => {
+      const idx = parseInt(idxStr, 10);
+      const horse = interpolatedFrame.horseFrame[idx];
+      if (!horse) return;
+
+      // Active skills for this horse at current renderTime
+      // Active skills (filtered) for this horse at current renderTime
+      const excludeRe = /(standard\s*distance|-handed|savvy|days|conditions| runner| racecourse|target in sight|focus|concentration)/i;
+      const active = skills.filter(s =>
+        renderTime >= s.time &&
+        renderTime < s.time + skillDisplayDuration &&
+        !excludeRe.test(s.name)
+      );
+
+      // Stack multiple concurrent skills for the same horse
+      active.forEach((s, i) => {
+        const y = Math.min((horse.lanePosition ?? 0) + 2 + i * 1.2, yMaxWithHeadroom);
+        items.push({
+          value: [horse.distance ?? 0, y],
+          label: {
+            show: true,
+            formatter: s.name,
+            position: 'top',
+            padding: [4, 6],
+            backgroundColor: '#fff',
+            borderColor: '#000',
+            borderWidth: 1,
+            borderRadius: 5,
+            color: '#000',
+            fontSize: 12,
+          },
+        });
+      });
+    });
+
+    return items;
+  }, [interpolatedFrame, skillActivations, renderTime, yMaxWithHeadroom]);
 
   const options: ECOption = {
     xAxis: {
@@ -204,7 +254,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
     yAxis: {
       type: "value",
       min: 0,
-      max: maxLanePosition,
+      max: yMaxWithHeadroom,
       name: "Lane Position",
     },
     legend: {
@@ -213,12 +263,26 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
     },
     tooltip: {
       trigger: "item",
+      confine: true,
       formatter: (params: any) => {
         const { name, value } = params;
-        return `${name}<br/>Distance: ${value[0].toFixed(2)}m<br/>Lane: ${Math.round(value[1])}`;
+        const hasName = typeof name === 'string' && name.length > 0;
+        return `${hasName ? name + '<br/>' : ''}Distance: ${value[0].toFixed(2)}m<br/>Lane: ${Math.round(value[1])}`;
       },
     },
-    series: seriesData,
+    grid: { top: 20, right: 16, bottom: 40, left: 50, containLabel: false },
+    series: [
+      ...seriesData,
+      {
+        id: 'skills-overlay',
+        type: 'scatter',
+        data: skillLabelData,
+        symbolSize: 0, // reliable item labels without a visible marker
+        z: 10,         // ensure labels draw above horse icons
+        animation: false,
+        silent: true,  // labels shouldn’t affect hover/tooltip on horses
+      },
+    ],
     animation: false, // we drive motion with RAF + interpolation
   };
 
@@ -243,6 +307,9 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
         option={options}
         style={{ height: "500px" }}
         notMerge={false}
+        // Prefer replaceMerge if your echarts-for-react version supports it; otherwise notMerge={true}
+        // @ts-ignore
+        replaceMerge={["series"]}
         lazyUpdate={false}
       />
       <div className="d-flex justify-content-center align-items-center">

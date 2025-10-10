@@ -613,6 +613,19 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
         </FoldCard>;
     }
 
+    skillActivations = memoize((raceData: RaceSimulateData) => {
+        const allSkillActivations: Record<number, { time: number; name: string }[]> = {};
+        for (let i = 0; i < raceData.horseResult.length; i++) {
+            const frameOrder = i;
+            const skills = filterCharaSkills(raceData, frameOrder).map(event => ({
+                time: event.frameTime!,
+                name: UMDatabaseWrapper.skillName(event.param[1]),
+            }));
+            allSkillActivations[frameOrder] = skills;
+        }
+        return allSkillActivations;
+    });
+
     render() {
         return <div>
             {(this.props.raceData.header!.version! > supportedRaceDataVersion) &&
@@ -621,7 +634,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                     version {supportedRaceDataVersion}, use at your own risk!
                 </Alert>}
             {this.renderCharaList()}
-            <RaceReplay raceData={this.props.raceData} raceHorseInfo={this.props.raceHorseInfo} displayNames={this.displayNames(this.props.raceHorseInfo, this.props.raceData)} />
+            <RaceReplay raceData={this.props.raceData} raceHorseInfo={this.props.raceHorseInfo} displayNames={this.displayNames(this.props.raceHorseInfo, this.props.raceData)} skillActivations={this.skillActivations(this.props.raceData)} />
             {this.renderOtherRaceEventsList()}
             <Form>
                 <Form.Group>

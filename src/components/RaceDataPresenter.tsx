@@ -635,7 +635,9 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                     version {supportedRaceDataVersion}, use at your own risk!
                 </Alert>}
             {this.renderCharaList()}
-            <RaceReplay raceData={this.props.raceData} raceHorseInfo={this.props.raceHorseInfo} displayNames={this.displayNames(this.props.raceHorseInfo, this.props.raceData)} skillActivations={this.skillActivations(this.props.raceData)} />
+                        <FoldCard header="Replay">
+                <RaceReplay raceData={this.props.raceData} raceHorseInfo={this.props.raceHorseInfo} displayNames={this.displayNames(this.props.raceHorseInfo, this.props.raceData)} skillActivations={this.skillActivations(this.props.raceData)} />
+            </FoldCard>
             {this.renderOtherRaceEventsList()}
             <Form>
                 <Form.Group>

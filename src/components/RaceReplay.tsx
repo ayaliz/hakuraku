@@ -7,22 +7,28 @@ import {
   LegendComponentOption,
   TooltipComponent,
   TooltipComponentOption,
+  MarkLineComponent,
+  MarkLineComponentOption,
 } from "echarts/components";
 import * as echarts from "echarts/core";
 import { ComposeOption } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
+import type { MarkLine1DDataItemOption } from "echarts/types/src/component/marker/MarkLineModel";
 import _ from "lodash";
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Button, Form } from "react-bootstrap";
 import { RaceSimulateData } from "../data/race_data_pb";
 
-echarts.use([ScatterChart, TooltipComponent, GridComponent, LegendComponent, CanvasRenderer]);
+const BLOCKED_ICON = require("../data/umamusume_icons/blocked.png");
+
+echarts.use([ScatterChart, TooltipComponent, GridComponent, LegendComponent, MarkLineComponent, CanvasRenderer]);
 
 type ECOption = ComposeOption<
   | ScatterSeriesOption
   | TooltipComponentOption
   | GridComponentOption
   | LegendComponentOption
+  | MarkLineComponentOption
 >;
 
 type RaceReplayProps = {
@@ -62,6 +68,7 @@ const BG_SIZE = 52;
 const BG_OFFSET_X_PX = 0;
 const BG_OFFSET_Y_PX = 3;
 const DOT_SIZE = 52;
+const BLOCKED_ICON_SIZE = 24;
 
 const DEFAULT_TEAM_PALETTE = [
   "#2563EB",
@@ -191,6 +198,18 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
   const frontRunnerDistance =
     _.max(interpolatedFrame.horseFrame.map((hf) => hf.distance ?? 0)) || 0;
 
+  // ==== NEW: compute the FINAL max distance across the whole replay ====
+  const finalMaxDistance = useMemo(() => {
+    let max = 0;
+    for (const f of frames) {
+      for (const h of f.horseFrame) {
+        const d = h.distance ?? 0;
+        if (d > max) max = d;
+      }
+    }
+    return max;
+  }, [frames]);
+
   const cameraWindow = 50;
   const cameraLead = 8;
 
@@ -203,89 +222,147 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
   const getTrainerId = (info: any) =>
     info?.trainer_id ?? info?.trainerId ?? info?.owner_id ?? info?.team_id ?? null;
 
-	const seriesData = useMemo(() => {
-	  const arr: any[] = [];
-	  Object.entries(displayNames).forEach(([idxStr, name]) => {
-		const idx = parseInt(idxStr, 10);
-		const horse = interpolatedFrame.horseFrame[idx];
-		const point: [number, number] = [horse?.distance ?? 0, horse?.lanePosition ?? 0];
+  const seriesData = useMemo(() => {
+    const arr: any[] = [];
+    Object.entries(displayNames).forEach(([idxStr, name]) => {
+      const idx = parseInt(idxStr, 10);
+      const horse = interpolatedFrame.horseFrame[idx];
+      const point: [number, number] = [horse?.distance ?? 0, horse?.lanePosition ?? 0];
 
-		const horseInfo = raceHorseInfo.find((h) => h.frame_order - 1 === idx) ?? {};
-		const charaId = horseInfo?.chara_id;
+      const horseInfo = raceHorseInfo.find((h) => h.frame_order - 1 === idx) ?? {};
+      const charaId = horseInfo?.chara_id;
 
-		const trainerId = getTrainerId(horseInfo);
-		const paletteIndex =
-		  (typeof trainerId === "number" ? Math.abs(trainerId) : idx) % DEFAULT_TEAM_PALETTE.length;
-		const teamColor =
-		  (trainerColors && trainerId != null && trainerColors[trainerId]) ||
-		  DEFAULT_TEAM_PALETTE[paletteIndex];
+      const trainerId = getTrainerId(horseInfo);
+      const paletteIndex =
+        (typeof trainerId === "number" ? Math.abs(trainerId) : idx) % DEFAULT_TEAM_PALETTE.length;
+      const teamColor =
+        (trainerColors && trainerId != null && trainerColors[trainerId]) ||
+        DEFAULT_TEAM_PALETTE[paletteIndex];
 
-		let icon: string | null = null;
-		if (charaId != null) {
-		  try {
-			// eslint-disable-next-line @typescript-eslint/no-var-requires
-			icon = require(`../data/umamusume_icons/chr_icon_${charaId}.png`);
-		  } catch {
-			icon = null;
-		  }
-		}
+      let icon: string | null = null;
+      if (charaId != null) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          icon = require(`../data/umamusume_icons/chr_icon_${charaId}.png`);
+        } catch {
+          icon = null;
+        }
+      }
 
-		if (icon) {
-		  arr.push({
-			id: `horse-bg-${idx}`,
-			name,
-			type: "scatter" as const,
-			symbol: "circle",
-			symbolSize: BG_SIZE,
-			symbolOffset: [BG_OFFSET_X_PX, BG_OFFSET_Y_PX],
-			data: [point],
-			itemStyle: { color: teamColor },
-			animation: false,
-			z: 4,
-			silent: true,
-			tooltip: { show: false },
-		  });
+      if (icon) {
+        arr.push({
+          id: `horse-bg-${idx}`,
+          name,
+          type: "scatter" as const,
+          symbol: "circle",
+          symbolSize: BG_SIZE,
+          symbolOffset: [BG_OFFSET_X_PX, BG_OFFSET_Y_PX],
+          data: [point],
+          itemStyle: { color: teamColor },
+          animation: false,
+          z: 4,
+          silent: true,
+          tooltip: { show: false },
+        });
 
-		  arr.push({
-			id: `horse-${idx}`,
-			name,
-			type: "scatter" as const,
-			symbol: `image://${icon}`,
-			symbolSize: ICON_SIZE,
-			data: [point],
-			animation: false,
-			z: 5,
-		  });
-		} else {
-		  // Fallback: a single, smaller colored dot
-		  arr.push({
-			id: `horse-dot-${idx}`,
-			name,
-			type: "scatter" as const,
-			symbol: "circle",
-			symbolSize: DOT_SIZE,
-			data: [point],
-			itemStyle: { color: teamColor, borderColor: "#000", borderWidth: 1 },
-			animation: false,
-			z: 5,
-		  });
-		}
-	  });
-	  return arr;
-	}, [interpolatedFrame, displayNames, raceHorseInfo, trainerColors]);
+        arr.push({
+          id: `horse-${idx}`,
+          name,
+          type: "scatter" as const,
+          symbol: `image://${icon}`,
+          symbolSize: ICON_SIZE,
+          data: [point],
+          animation: false,
+          z: 5,
+        });
+      } else {
+        arr.push({
+          id: `horse-dot-${idx}`,
+          name,
+          type: "scatter" as const,
+          symbol: "circle",
+          symbolSize: DOT_SIZE,
+          data: [point],
+          itemStyle: { color: teamColor, borderColor: "#000", borderWidth: 1 },
+          animation: false,
+        });
+      }
 
+      const isBlocked =
+        horse != null &&
+        horse.blockFrontHorseIndex != null &&
+        horse.blockFrontHorseIndex !== -1;
+
+      arr.push({
+        id: `horse-blocked-${idx}`,
+        name: `${name} (Blocked)`,
+        type: "scatter" as const,
+        symbol: `image://${BLOCKED_ICON}`,
+        symbolSize: BLOCKED_ICON_SIZE,
+        symbolOffset: [ICON_SIZE / 2 - BLOCKED_ICON_SIZE / 2, ICON_SIZE / 2 - BLOCKED_ICON_SIZE / 2],
+        data: isBlocked ? [point] : [],
+        animation: false,
+        z: 6,
+        zlevel: 1,
+        silent: true,
+        tooltip: { show: false },
+        clip: true,
+      });
+    });
+    return arr;
+  }, [interpolatedFrame, displayNames, raceHorseInfo, trainerColors]);
 
   const yMaxWithHeadroom = maxLanePosition + 3;
 
+  // ===== UPDATED: unify skill labels + temptation label stacking =====
   const skillLabelData = useMemo(() => {
     const items: any[] = [];
-    Object.entries(skillActivations).forEach(([idxStr, skills]) => {
-      const idx = parseInt(idxStr, 10);
-      const horse = interpolatedFrame.horseFrame[idx];
-      if (!horse) return;
+    const temptationText: Record<number, string> = {
+      1: "Rushed (Late)",
+      2: "Rushed (Pace)",
+      3: "Rushed (Front)",
+      4: "Rushed (Speed up)", // assuming 4 = Speed up
+    };
 
-      const excludeRe =
-        /(standard\s*distance|-handed|savvy|days|conditions| runner| racecourse|target in sight|focus|concentration)/i;
+    const excludeRe =
+      /(standard\s*distance|-handed|savvy|days|conditions| runner| racecourse|target in sight|focus|concentration)/i;
+
+    // Iterate all horses so temptation can show even if no skillActivations entry exists
+    const horseCount = interpolatedFrame.horseFrame.length;
+
+    for (let idx = 0; idx < horseCount; idx++) {
+      const horse = interpolatedFrame.horseFrame[idx];
+      if (!horse) continue;
+
+      const basePoint: [number, number] = [horse.distance ?? 0, horse.lanePosition ?? 0];
+
+      // Temptation label first (closest to the horse), if active
+      let stackOffset = 0;
+      const mode = horse.temptationMode ?? 0;
+      if (mode && mode !== 0) {
+        const label = temptationText[mode] ?? "Rushed";
+        items.push({
+          value: basePoint,
+          id: `temptation-${idx}-${mode}`,
+          label: {
+            show: true,
+            formatter: label,
+            position: "top",
+            offset: [0, -STACK_BASE_PX],
+            padding: [4, 6],
+            backgroundColor: "#fff",
+            borderColor: "#000",
+            borderWidth: 1,
+            borderRadius: 5,
+            color: "#000",
+            fontSize: 12,
+          },
+        });
+        stackOffset = 1;
+      }
+
+      // Active skill labels (stack above temptation if present)
+      const skills = skillActivations[idx] ?? [];
       const active = skills.filter((s) => {
         const skillDurationParam = s.param[2];
         const skillDisplayDuration = skillDurationParam === -1 ? 2 : skillDurationParam / 10000;
@@ -300,9 +377,8 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         .slice()
         .sort((a, b) => a.time - b.time || a.name.localeCompare(b.name));
 
-      const basePoint: [number, number] = [horse.distance ?? 0, horse.lanePosition ?? 0];
-
-      activeSorted.forEach((s, stackIndex) => {
+      activeSorted.forEach((s, i) => {
+        const stackIndex = stackOffset + i;
         items.push({
           value: basePoint,
           id: `skill-${idx}-${s.time}-${s.name}`,
@@ -321,10 +397,42 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
           },
         });
       });
-    });
+    }
 
     return items;
   }, [interpolatedFrame, skillActivations, renderTime]);
+
+  const raceMarkers = useMemo(() => {
+    const markers: MarkLine1DDataItemOption[] = [];
+
+    const goalInX = Math.floor(finalMaxDistance / 100) * 100;
+    if (goalInX > 0) {
+      markers.push({
+        xAxis: goalInX,
+        name: "Goal In",
+        lineStyle: {
+          color: "#666",
+          type: [8, 3, 1, 3],
+        },
+      });
+    }
+
+    raceData.horseResult.forEach((horseResult, index) => {
+      if (horseResult.lastSpurtStartDistance != null && horseResult.lastSpurtStartDistance > 0) {
+        const horseDisplayName = displayNames[index] || `Horse ${index + 1}`;
+        markers.push({
+          xAxis: horseResult.lastSpurtStartDistance,
+          name: `Last Spurt (${horseDisplayName})`,
+          lineStyle: {
+            color: "#666",
+            type: [8, 3],
+          },
+        });
+      }
+    });
+
+    return markers;
+  }, [finalMaxDistance, raceData, displayNames]);
 
   const options: ECOption = {
     xAxis: {
@@ -357,19 +465,25 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         )}m<br/>Lane: ${Math.round(value[1])}`;
       },
     },
-    grid: { top: 40, right: 16, bottom: 40, left: 50, containLabel: false },
+    grid: { top: 80, right: 16, bottom: 40, left: 50, containLabel: false },
     series: [
       ...seriesData,
       {
         id: "skills-overlay",
         type: "scatter",
-        data: skillLabelData,
+        data: skillLabelData, // now includes temptation labels too
         symbolSize: 0,
         z: 10,
         zlevel: 1,
         animation: false,
         silent: true,
         tooltip: { show: false },
+        markLine: {
+          symbol: "none",
+          label: { position: "end", formatter: "{b}" },
+          lineStyle: { type: "solid" },
+          data: raceMarkers,
+        },
       },
     ],
     animation: false,

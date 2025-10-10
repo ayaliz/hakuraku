@@ -198,18 +198,6 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
   const frontRunnerDistance =
     _.max(interpolatedFrame.horseFrame.map((hf) => hf.distance ?? 0)) || 0;
 
-  // ==== NEW: compute the FINAL max distance across the whole replay ====
-  const finalMaxDistance = useMemo(() => {
-    let max = 0;
-    for (const f of frames) {
-      for (const h of f.horseFrame) {
-        const d = h.distance ?? 0;
-        if (d > max) max = d;
-      }
-    }
-    return max;
-  }, [frames]);
-
   const cameraWindow = 50;
   const cameraLead = 8;
 
@@ -314,7 +302,6 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
 
   const yMaxWithHeadroom = maxLanePosition + 3;
 
-  // ===== UPDATED: unify skill labels + temptation label stacking =====
   const skillLabelData = useMemo(() => {
     const items: any[] = [];
     const temptationText: Record<number, string> = {
@@ -402,37 +389,61 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     return items;
   }, [interpolatedFrame, skillActivations, renderTime]);
 
-  const raceMarkers = useMemo(() => {
-    const markers: MarkLine1DDataItemOption[] = [];
+	const raceMarkers = useMemo(() => {
+	  const markers: MarkLine1DDataItemOption[] = [];
 
-    const goalInX = Math.floor(finalMaxDistance / 100) * 100;
-    if (goalInX > 0) {
-      markers.push({
-        xAxis: goalInX,
-        name: "Goal In",
-        lineStyle: {
-          color: "#666",
-          type: [8, 3, 1, 3],
-        },
-      });
-    }
+	  let winnerIndex = -1;
+	  let winnerFinishTime = Number.POSITIVE_INFINITY;
+	  (raceData.horseResult ?? []).forEach((hr, idx) => {
+		const t = hr?.finishTimeRaw;
+		if (typeof t === "number" && t > 0 && t < winnerFinishTime) {
+		  winnerFinishTime = t;
+		  winnerIndex = idx;
+		}
+	  });
 
-    raceData.horseResult.forEach((horseResult, index) => {
-      if (horseResult.lastSpurtStartDistance != null && horseResult.lastSpurtStartDistance > 0) {
-        const horseDisplayName = displayNames[index] || `Horse ${index + 1}`;
-        markers.push({
-          xAxis: horseResult.lastSpurtStartDistance,
-          name: `Last Spurt (${horseDisplayName})`,
-          lineStyle: {
-            color: "#666",
-            type: [8, 3],
-          },
-        });
-      }
-    });
+	  let goalInX = 0;
+	  if (winnerIndex >= 0 && frames.length > 0 && isFinite(winnerFinishTime)) {
+		const i = findFrameIndex(frames, winnerFinishTime);
+		const d0 = frames[i]?.horseFrame?.[winnerIndex]?.distance ?? 0;
+		goalInX = Math.round(d0 / 100) * 100;
+	  }
 
-    return markers;
-  }, [finalMaxDistance, raceData, displayNames]);
+	  if (goalInX > 0) {
+		markers.push({
+		  xAxis: goalInX,
+		  name: "Goal In",
+		  lineStyle: { color: "#666", type: [8, 3, 1, 3] },
+		});
+
+		// Position Keep ends at 10/24 of Goal In
+		markers.push({
+		  xAxis: (10 / 24) * goalInX,
+		  name: "Position Keep ends",
+		  lineStyle: { color: "#777", type: "dashed" },
+		});
+
+		// Mid race at 4/24 of Goal In
+		markers.push({
+		  xAxis: (4 / 24) * goalInX,
+		  name: "Mid race",
+		  lineStyle: { color: "#999", type: "dashed" },
+		});
+	  }
+
+	  raceData.horseResult.forEach((horseResult, index) => {
+		if (horseResult.lastSpurtStartDistance != null && horseResult.lastSpurtStartDistance > 0) {
+		  const horseDisplayName = displayNames[index] || `Horse ${index + 1}`;
+		  markers.push({
+			xAxis: horseResult.lastSpurtStartDistance,
+			name: `Last Spurt (${horseDisplayName})`,
+			lineStyle: { color: "#666", type: [8, 3] },
+		  });
+		}
+	  });
+
+	  return markers;
+	}, [frames, raceData, displayNames]);
 
   const options: ECOption = {
     xAxis: {

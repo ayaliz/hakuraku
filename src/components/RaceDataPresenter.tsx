@@ -614,12 +614,13 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
     }
 
     skillActivations = memoize((raceData: RaceSimulateData) => {
-        const allSkillActivations: Record<number, { time: number; name: string }[]> = {};
+        const allSkillActivations: Record<number, { time: number; name: string; param: number[] }[]> = {};
         for (let i = 0; i < raceData.horseResult.length; i++) {
             const frameOrder = i;
             const skills = filterCharaSkills(raceData, frameOrder).map(event => ({
                 time: event.frameTime!,
                 name: UMDatabaseWrapper.skillName(event.param[1]),
+                param: event.param,
             }));
             allSkillActivations[frameOrder] = skills;
         }

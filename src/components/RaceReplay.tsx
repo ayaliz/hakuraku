@@ -12,14 +12,10 @@ import * as echarts from "echarts/core";
 import { ComposeOption } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import _ from "lodash";
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Button, Form } from "react-bootstrap";
 import { RaceSimulateData } from "../data/race_data_pb";
 
-// Register ECharts components
-// Note: Tooltip & Grid are needed for proper label positioning & layout
-// CanvasRenderer suffices here; switch to SVGRenderer if you need crisp text at small sizes
-// (import { SVGRenderer } from 'echarts/renderers')
 echarts.use([ScatterChart, TooltipComponent, GridComponent, LegendComponent, CanvasRenderer]);
 
 type ECOption = ComposeOption<
@@ -33,17 +29,17 @@ type RaceReplayProps = {
   raceData: RaceSimulateData;
   raceHorseInfo: any[];
   displayNames: Record<number, string>;
-  skillActivations: Record<number, { time: number; name: string }[]>;
+  skillActivations: Record<number, { time: number; name: string; param: number[] }[]>;
+  trainerColors?: Record<number, string>;
 };
 
-// helpers
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
 
-/** Find i such that frames[i].time <= t < frames[i+1].time. Returns last index if t >= last. */
 function findFrameIndex(frames: RaceSimulateData["frame"], t: number): number {
   let lo = 0,
     hi = frames.length - 1;
+  if (frames.length === 0) return 0;
   if (t <= frames[0].time!) return 0;
   if (t >= frames[hi].time!) return hi;
   while (lo <= hi) {
@@ -59,21 +55,42 @@ function findFrameIndex(frames: RaceSimulateData["frame"], t: number): number {
   return Math.max(0, Math.min(frames.length - 1, lo));
 }
 
-const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displayNames, skillActivations }) => {
-  const frames = raceData.frame;
-  const [isPlaying, setIsPlaying] = useState(false);
+const STACK_BASE_PX = 24;
+const STACK_GAP_PX = 22;
+const ICON_SIZE = 64;
+const BG_SIZE = 52;
+const BG_OFFSET_X_PX = 0;
+const BG_OFFSET_Y_PX = 3;
+const DOT_SIZE = 52;
 
-  // renderTime = the *continuous* replay clock (seconds)
+const DEFAULT_TEAM_PALETTE = [
+  "#2563EB",
+  "#16A34A",
+  "#DC2626",
+  "#9333EA",
+  "#EA580C",
+  "#0891B2",
+  "#DB2777",
+  "#4F46E5",
+  "#059669",
+  "#B45309",
+  "#0EA5E9",
+  "#C026D3",
+];
+
+const RaceReplay: React.FC<RaceReplayProps> = ({
+  raceData,
+  raceHorseInfo,
+  displayNames,
+  skillActivations,
+  trainerColors,
+}) => {
+  const frames = useMemo(() => raceData.frame ?? [], [raceData]);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [renderTime, setRenderTime] = useState(frames[0]?.time ?? 0);
 
-  // Kept only for any UI that still needs the discrete index; it auto-syncs from renderTime
-  const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
-
-  // camera smoothing state
-  const cameraXRef = useRef<number>(0);
-  const xMinRef = useRef<number>(0);
-  const xMaxRef = useRef<number>(50);
-  const prevTimeRef = useRef<number>(performance.now());
+  const startTime = frames[0]?.time ?? 0;
+  const endTime = frames[frames.length - 1]?.time ?? 0;
 
   const maxLanePosition = useMemo(() => {
     let max = 0;
@@ -87,42 +104,62 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
   }, [frames]);
 
   const animationFrameRef = useRef<number>();
-  const lastUpdateTimeRef = useRef<number>();
+  const lastUpdateTimeRef = useRef<number | undefined>(undefined);
   const raceTimeRef = useRef(frames[0]?.time ?? 0);
 
-  // RAF loop: always running; only advances clock while playing
-  const loop = useCallback(() => {
-    const now = performance.now();
-    if (!lastUpdateTimeRef.current) lastUpdateTimeRef.current = now;
-    const elapsedSec = (now - lastUpdateTimeRef.current) / 1000;
-    lastUpdateTimeRef.current = now;
-
-    if (isPlaying) {
-      // Advance the replay clock in *real time* while playing
-      raceTimeRef.current += elapsedSec;
-      setRenderTime(raceTimeRef.current);
-    }
-
-    animationFrameRef.current = requestAnimationFrame(loop);
+  const isPlayingRef = useRef(isPlaying);
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
   }, [isPlaying]);
 
+  const endTimeRef = useRef(endTime);
   useEffect(() => {
-    // (Re)start or stop the RAF loop whenever the loop function identity changes
-    lastUpdateTimeRef.current = undefined;
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    animationFrameRef.current = requestAnimationFrame(loop);
+    endTimeRef.current = endTime;
+  }, [endTime]);
+
+  const startTimeRef = useRef(startTime);
+  useEffect(() => {
+    startTimeRef.current = startTime;
+  }, [startTime]);
+
+  useEffect(() => {
+    const tick = (now: number) => {
+      if (lastUpdateTimeRef.current == null) {
+        lastUpdateTimeRef.current = now;
+      }
+
+      if (isPlayingRef.current) {
+        const dt = (now - lastUpdateTimeRef.current) / 1000;
+        lastUpdateTimeRef.current = now;
+
+        const e = endTimeRef.current;
+        const next = Math.min(raceTimeRef.current + dt, e);
+
+        if (next !== raceTimeRef.current) {
+          raceTimeRef.current = next;
+          setRenderTime(next);
+        }
+
+        if (next >= e) {
+          isPlayingRef.current = false;
+          setIsPlaying(false);
+        }
+      } else {
+        lastUpdateTimeRef.current = now;
+      }
+
+      animationFrameRef.current = requestAnimationFrame(tick);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(tick);
     return () => {
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     };
-  }, [loop]);
+  }, []);
 
-  // Keep the discrete index synced to the true source of truth (renderTime)
-  useEffect(() => {
-    setCurrentFrameIndex(findFrameIndex(frames, renderTime));
-  }, [frames, renderTime]);
-
-  // Build an interpolated frame directly from renderTime
   const interpolatedFrame = useMemo(() => {
+    if (frames.length === 0) return { time: 0, horseFrame: [] as any[] };
+
     const i = findFrameIndex(frames, renderTime);
     const f0 = frames[i];
     const f1 = frames[i + 1] ?? f0;
@@ -151,90 +188,135 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
     return { time: lerp(t0, t1, alpha), horseFrame };
   }, [frames, renderTime]);
 
-  // Front runner (interpolated)
-  const frontRunnerDistance = _.max(interpolatedFrame.horseFrame.map((hf) => hf.distance ?? 0)) || 0;
+  const frontRunnerDistance =
+    _.max(interpolatedFrame.horseFrame.map((hf) => hf.distance ?? 0)) || 0;
 
-  // --- Camera & x-axis: always keep the leader in view ---
-  const cameraWindow = 50; // width of the visible distance window (meters)
-  const cameraLead = 8; // how much space to show *ahead* of the leader
-  const kFollow = 10; // follow speed (1/s), higher = snappier
+  const cameraWindow = 50;
+  const cameraLead = 8;
 
   const xAxis = useMemo(() => {
-    const now = performance.now();
-    const dt = Math.max(0, (now - prevTimeRef.current) / 1000);
-    prevTimeRef.current = now;
-
-    // Desired window ends a bit ahead of the leader
     const desiredMax = Math.max(cameraWindow, frontRunnerDistance + cameraLead);
     const desiredMin = Math.max(0, desiredMax - cameraWindow);
+    return { min: desiredMin, max: desiredMax };
+  }, [frontRunnerDistance, cameraWindow, cameraLead]);
 
-    // Critically-damped-like smoothing toward desired window
-    const a = 1 - Math.exp(-kFollow * dt);
-    xMaxRef.current += (desiredMax - xMaxRef.current) * a;
-    xMinRef.current += (desiredMin - xMinRef.current) * a;
+  const getTrainerId = (info: any) =>
+    info?.trainer_id ?? info?.trainerId ?? info?.owner_id ?? info?.team_id ?? null;
 
-    return { min: xMinRef.current, max: xMaxRef.current };
-  }, [frontRunnerDistance]);
+	const seriesData = useMemo(() => {
+	  const arr: any[] = [];
+	  Object.entries(displayNames).forEach(([idxStr, name]) => {
+		const idx = parseInt(idxStr, 10);
+		const horse = interpolatedFrame.horseFrame[idx];
+		const point: [number, number] = [horse?.distance ?? 0, horse?.lanePosition ?? 0];
 
-  // One series per horse, with stable ids (helps ECharts reuse & update smoothly)
-  const seriesData = useMemo(() => {
-    return Object.entries(displayNames).map(([idxStr, name]) => {
-      const idx = parseInt(idxStr, 10);
-      const horse = interpolatedFrame.horseFrame[idx];
-      const point: [number, number] = [horse?.distance ?? 0, horse?.lanePosition ?? 0];
+		const horseInfo = raceHorseInfo.find((h) => h.frame_order - 1 === idx) ?? {};
+		const charaId = horseInfo?.chara_id;
 
-      const horseInfo = raceHorseInfo.find(h => h.frame_order - 1 === idx);
-      const charaId = horseInfo?.chara_id;
-      const icon = charaId ? require(`../data/umamusume_icons/chr_icon_${charaId}.png`) : null;
+		const trainerId = getTrainerId(horseInfo);
+		const paletteIndex =
+		  (typeof trainerId === "number" ? Math.abs(trainerId) : idx) % DEFAULT_TEAM_PALETTE.length;
+		const teamColor =
+		  (trainerColors && trainerId != null && trainerColors[trainerId]) ||
+		  DEFAULT_TEAM_PALETTE[paletteIndex];
 
-      return {
-        id: `horse-${idx}`,
-        name,
-        type: "scatter" as const,
-        symbol: icon ? `image://${icon}` : 'circle',
-        symbolSize: 64,
-        data: [point],
-        animation: false,
-        z: 5, // draw horses beneath labels overlay
-      };
-    });
-  }, [interpolatedFrame, displayNames, raceHorseInfo]);
+		let icon: string | null = null;
+		if (charaId != null) {
+		  try {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			icon = require(`../data/umamusume_icons/chr_icon_${charaId}.png`);
+		  } catch {
+			icon = null;
+		  }
+		}
+
+		if (icon) {
+		  arr.push({
+			id: `horse-bg-${idx}`,
+			name,
+			type: "scatter" as const,
+			symbol: "circle",
+			symbolSize: BG_SIZE,
+			symbolOffset: [BG_OFFSET_X_PX, BG_OFFSET_Y_PX],
+			data: [point],
+			itemStyle: { color: teamColor },
+			animation: false,
+			z: 4,
+			silent: true,
+			tooltip: { show: false },
+		  });
+
+		  arr.push({
+			id: `horse-${idx}`,
+			name,
+			type: "scatter" as const,
+			symbol: `image://${icon}`,
+			symbolSize: ICON_SIZE,
+			data: [point],
+			animation: false,
+			z: 5,
+		  });
+		} else {
+		  // Fallback: a single, smaller colored dot
+		  arr.push({
+			id: `horse-dot-${idx}`,
+			name,
+			type: "scatter" as const,
+			symbol: "circle",
+			symbolSize: DOT_SIZE,
+			data: [point],
+			itemStyle: { color: teamColor, borderColor: "#000", borderWidth: 1 },
+			animation: false,
+			z: 5,
+		  });
+		}
+	  });
+	  return arr;
+	}, [interpolatedFrame, displayNames, raceHorseInfo, trainerColors]);
+
 
   const yMaxWithHeadroom = maxLanePosition + 3;
 
   const skillLabelData = useMemo(() => {
     const items: any[] = [];
-    const skillDisplayDuration = 5;
-
     Object.entries(skillActivations).forEach(([idxStr, skills]) => {
       const idx = parseInt(idxStr, 10);
       const horse = interpolatedFrame.horseFrame[idx];
       if (!horse) return;
 
-      // Active skills for this horse at current renderTime
-      // Active skills (filtered) for this horse at current renderTime
-      const excludeRe = /(standard\s*distance|-handed|savvy|days|conditions| runner| racecourse|target in sight|focus|concentration)/i;
-      const active = skills.filter(s =>
-        renderTime >= s.time &&
-        renderTime < s.time + skillDisplayDuration &&
-        !excludeRe.test(s.name)
-      );
+      const excludeRe =
+        /(standard\s*distance|-handed|savvy|days|conditions| runner| racecourse|target in sight|focus|concentration)/i;
+      const active = skills.filter((s) => {
+        const skillDurationParam = s.param[2];
+        const skillDisplayDuration = skillDurationParam === -1 ? 2 : skillDurationParam / 10000;
+        return (
+          renderTime >= s.time &&
+          renderTime < s.time + skillDisplayDuration &&
+          !excludeRe.test(s.name)
+        );
+      });
 
-      // Stack multiple concurrent skills for the same horse
-      active.forEach((s, i) => {
-        const y = Math.min((horse.lanePosition ?? 0) + 2 + i * 1.2, yMaxWithHeadroom);
+      const activeSorted = active
+        .slice()
+        .sort((a, b) => a.time - b.time || a.name.localeCompare(b.name));
+
+      const basePoint: [number, number] = [horse.distance ?? 0, horse.lanePosition ?? 0];
+
+      activeSorted.forEach((s, stackIndex) => {
         items.push({
-          value: [horse.distance ?? 0, y],
+          value: basePoint,
+          id: `skill-${idx}-${s.time}-${s.name}`,
           label: {
             show: true,
             formatter: s.name,
-            position: 'top',
+            position: "top",
+            offset: [0, -(STACK_BASE_PX + stackIndex * STACK_GAP_PX)],
             padding: [4, 6],
-            backgroundColor: '#fff',
-            borderColor: '#000',
+            backgroundColor: "#fff",
+            borderColor: "#000",
             borderWidth: 1,
             borderRadius: 5,
-            color: '#000',
+            color: "#000",
             fontSize: 12,
           },
         });
@@ -242,7 +324,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
     });
 
     return items;
-  }, [interpolatedFrame, skillActivations, renderTime, yMaxWithHeadroom]);
+  }, [interpolatedFrame, skillActivations, renderTime]);
 
   const options: ECOption = {
     xAxis: {
@@ -250,6 +332,9 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
       min: xAxis.min,
       max: xAxis.max,
       name: "Distance",
+      axisLabel: { show: true, showMinLabel: false, showMaxLabel: false },
+      axisTick: { show: false },
+      splitLine: { show: true },
     },
     yAxis: {
       type: "value",
@@ -266,39 +351,31 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
       confine: true,
       formatter: (params: any) => {
         const { name, value } = params;
-        const hasName = typeof name === 'string' && name.length > 0;
-        return `${hasName ? name + '<br/>' : ''}Distance: ${value[0].toFixed(2)}m<br/>Lane: ${Math.round(value[1])}`;
+        const hasName = typeof name === "string" && name.length > 0;
+        return `${hasName ? name + "<br/>" : ""}Distance: ${value[0].toFixed(
+          2
+        )}m<br/>Lane: ${Math.round(value[1])}`;
       },
     },
-    grid: { top: 20, right: 16, bottom: 40, left: 50, containLabel: false },
+    grid: { top: 40, right: 16, bottom: 40, left: 50, containLabel: false },
     series: [
       ...seriesData,
       {
-        id: 'skills-overlay',
-        type: 'scatter',
+        id: "skills-overlay",
+        type: "scatter",
         data: skillLabelData,
-        symbolSize: 0, // reliable item labels without a visible marker
-        z: 10,         // ensure labels draw above horse icons
+        symbolSize: 0,
+        z: 10,
+        zlevel: 1,
         animation: false,
-        silent: true,  // labels shouldn’t affect hover/tooltip on horses
+        silent: true,
+        tooltip: { show: false },
       },
     ],
-    animation: false, // we drive motion with RAF + interpolation
+    animation: false,
   };
 
-  // End-of-race handling (stop when clock passes final time)
-  useEffect(() => {
-    const end = frames[frames.length - 1]?.time ?? 0;
-    if (renderTime >= end && isPlaying) {
-      setIsPlaying(false);
-      setRenderTime(end);
-      raceTimeRef.current = end;
-    }
-  }, [renderTime, frames, isPlaying]);
-
-  // Slider time bounds
-  const startTime = frames[0]?.time ?? 0;
-  const endTime = frames[frames.length - 1]?.time ?? 0;
+  const clampedRenderTime = Math.min(Math.max(renderTime, startTime), endTime);
 
   return (
     <div>
@@ -307,7 +384,6 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
         option={options}
         style={{ height: "500px" }}
         notMerge={false}
-        // Prefer replaceMerge if your echarts-for-react version supports it; otherwise notMerge={true}
         // @ts-ignore
         replaceMerge={["series"]}
         lazyUpdate={false}
@@ -315,7 +391,11 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
       <div className="d-flex justify-content-center align-items-center">
         <Button
           onClick={() => {
-            // Toggle play/pause without touching the clock
+            if (!isPlaying && raceTimeRef.current >= endTimeRef.current - 1e-6) {
+              raceTimeRef.current = startTimeRef.current;
+              setRenderTime(startTimeRef.current);
+              lastUpdateTimeRef.current = undefined;
+            }
             setIsPlaying((p) => !p);
           }}
           className="me-3"
@@ -327,20 +407,19 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
           type="range"
           min={startTime}
           max={endTime}
-          step={0.001} // 1 ms resolution; adjust as you like
-          value={Math.min(Math.max(renderTime, startTime), endTime)} // clamp just in case
+          step={0.001}
+          value={clampedRenderTime}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            const t = parseFloat(e.target.value);
-            // seek by time (NOT by index)
+            const t = Math.min(Math.max(parseFloat(e.target.value), startTime), endTime);
             raceTimeRef.current = t;
             setRenderTime(t);
-            // index auto-syncs via the effect watching renderTime
+            lastUpdateTimeRef.current = undefined;
           }}
           style={{ flexGrow: 1 }}
         />
 
         <span className="ms-3">
-          {renderTime!.toFixed(2)}s / {endTime.toFixed(2)}s
+          {clampedRenderTime.toFixed(2)}s / {endTime.toFixed(2)}s
         </span>
       </div>
     </div>

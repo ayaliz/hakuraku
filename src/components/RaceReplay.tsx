@@ -80,6 +80,15 @@ const BG_OFFSET_Y_PX = 3;
 const DOT_SIZE = 52;
 const BLOCKED_ICON_SIZE = 24;
 
+const SPEED_BOX_WIDTH = 44;
+const SPEED_BOX_HEIGHT = 20;
+const SPEED_BOX_BG = "rgba(255,255,255,0.4)";
+const SPEED_BOX_BORDER = "rgba(0,0,0,1)";
+const SPEED_BOX_TEXT = "#000";
+const SPEED_BOX_FONT_SIZE = 12;
+const OVERLAY_INSET = 9;
+const ACCEL_BOX_GAP_Y = 1;
+
 const DEFAULT_TEAM_PALETTE = [
   "#2563EB","#16A34A","#DC2626","#9333EA","#EA580C","#0891B2",
   "#DB2777","#4F46E5","#059669","#B45309","#0EA5E9","#C026D3",
@@ -104,7 +113,6 @@ const LEGEND_ITEM_GAP_X = 12;
 const LEGEND_ITEM_GAP_Y = 6;
 const LEGEND_SWATCH_GAP = 6;
 
-// icon cache
 const ICON_CACHE = new Map<number, string | null>();
 const getCharaIcon = (charaId?: number | null) => {
   if (charaId == null) return null;
@@ -154,9 +162,11 @@ function useRafPlayer(start: number, end: number) {
   return { time, setTime, isPlaying, setIsPlaying, playPause };
 }
 
-function useInterpolatedFrame(frames: RaceSimulateData["frame"], renderTime: number) {
-  return useMemo(() => {
-    if (!frames.length) return { time: 0, horseFrame: [] as any[] };
+type InterpolatedFrame = { time: number; horseFrame: any[]; frameIndex: number };
+
+function useInterpolatedFrame(frames: RaceSimulateData["frame"], renderTime: number): InterpolatedFrame {
+  return useMemo<InterpolatedFrame>(() => {
+    if (!frames.length) return { time: 0, horseFrame: [] as any[], frameIndex: 0 };
     const i = bisectFrameIndex(frames, renderTime), f0 = frames[i], f1 = frames[i + 1] ?? f0;
     const t0 = f0.time ?? 0, t1 = f1.time ?? 0, a = i < frames.length - 1 ? clamp01((renderTime - t0) / Math.max(1e-9, t1 - t0)) : 0;
     const cnt = Math.min(f0.horseFrame.length, f1.horseFrame.length);
@@ -171,8 +181,33 @@ function useInterpolatedFrame(frames: RaceSimulateData["frame"], renderTime: num
         blockFrontHorseIndex: (take1 ? h1 : h0).blockFrontHorseIndex,
       };
     });
-    return { time: lerp(t0, t1, a), horseFrame };
+    return { time: lerp(t0, t1, a), horseFrame, frameIndex: i };
   }, [frames, renderTime]);
+}
+
+function useCurrentAcceleration(frames: RaceSimulateData["frame"], frameIndex: number) {
+  return useMemo(() => {
+    if (!frames.length) return {} as Record<number, number>;
+    const i = Math.min(frameIndex, frames.length - 1);
+    const f0 = frames[i];
+    const f1 = frames[i + 1];
+    if (!f0 || !f1) {
+      const acc: Record<number, number> = {};
+      (f0?.horseFrame ?? []).forEach((_, idx) => (acc[idx] = 0));
+      return acc;
+    }
+    const t0 = f0.time ?? 0;
+    const t1 = f1.time ?? 0;
+    const dt = Math.max(1e-9, t1 - t0);
+    const cnt = Math.min(f0.horseFrame.length, f1.horseFrame.length);
+    const acc: Record<number, number> = {};
+    for (let idx = 0; idx < cnt; idx++) {
+      const s0 = f0.horseFrame[idx]?.speed ?? 0;
+      const s1 = f1.horseFrame[idx]?.speed ?? 0;
+      acc[idx] = (s1 - s0) / dt;
+    }
+    return acc;
+  }, [frames, frameIndex]);
 }
 
 function useAvailableTracks(goalInX: number) {
@@ -273,31 +308,147 @@ function buildLegendShadowSeries(displayNames: Record<number, string>, horseInfo
   return out;
 }
 
-function buildHorsesCustomSeries(interpolated: any, displayNames: Record<number, string>, horseInfoByIdx: Record<number, any>, trainerColors: Record<number, string> | undefined, legendSelection: Record<string, boolean>) {
-  const data: Array<{ name: string; value: [number, number, string, string, string, number] }> = [];
+function formatSigned(x: number) {
+  const v = x / 100;
+  const s = v.toFixed(2);
+  return (v > 0 ? "+" : "") + s;
+}
+
+function buildHorsesCustomSeries(
+  interpolated: InterpolatedFrame,
+  displayNames: Record<number, string>,
+  horseInfoByIdx: Record<number, any>,
+  trainerColors: Record<number, string> | undefined,
+  legendSelection: Record<string, boolean>,
+  showSpeedBox: boolean,
+  showAccelBox: boolean,
+  accByIdx: Record<number, number>,
+  showBlockedIcon: boolean
+) {
+  const data: Array<{ name: string; value: [number, number, string, string, string, number, number, number] }> = [];
   Object.entries(displayNames).forEach(([iStr, name]) => {
     if (legendSelection && legendSelection[name] === false) return;
     const i = +iStr, h = interpolated.horseFrame[i];
     if (!h) return;
-    const info = horseInfoByIdx[i] ?? {}, teamColor = teamColorFor(i, info, trainerColors), iconUrl = getCharaIcon(info?.chara_id) ?? "", isBlocked = h.blockFrontHorseIndex != null && h.blockFrontHorseIndex !== -1 ? 1 : 0;
-    data.push({ name, value: [h.distance ?? 0, h.lanePosition ?? 0, name, teamColor, iconUrl, isBlocked] });
+    const info = horseInfoByIdx[i] ?? {}, teamColor = teamColorFor(i, info, trainerColors), iconUrl = getCharaIcon(info?.chara_id) ?? "";
+    const isBlocked = showBlockedIcon && h.blockFrontHorseIndex != null && h.blockFrontHorseIndex !== -1 ? 1 : 0;
+    const speed = h.speed ?? 0;
+    const accel = accByIdx[i] ?? 0;
+    data.push({ name, value: [h.distance ?? 0, h.lanePosition ?? 0, name, teamColor, iconUrl, isBlocked, speed, accel] });
   });
 
   const renderItem = (params: any, api: any) => {
     const vX = api.value(0) as number, vY = api.value(1) as number; const [cx, cy] = api.coord([vX, vY]);
     const teamColor = (api.value(3) as string) || "#000", iconUrl = (api.value(4) as string) || "", isBlocked = !!api.value(5);
+    const speedRaw = (api.value(6) as number) || 0;
+    const accelRaw = (api.value(7) as number) || 0;
+    const speedText = (speedRaw / 100).toFixed(2);
+    const accelText = formatSigned(accelRaw);
+
     const children: any[] = [];
+
     if (iconUrl) {
       children.push({ type: "circle", shape: { cx: cx + BG_OFFSET_X_PX, cy: cy + BG_OFFSET_Y_PX, r: BG_SIZE / 2 }, style: { fill: teamColor }, silent: true, z: 0 });
       children.push({ type: "image", style: { image: iconUrl, x: cx - ICON_SIZE / 2, y: cy - ICON_SIZE / 2, width: ICON_SIZE, height: ICON_SIZE }, z: 1 });
     } else {
       children.push({ type: "circle", shape: { cx, cy, r: DOT_SIZE / 2 }, style: { fill: teamColor, stroke: "#000", lineWidth: 1 }, z: 0 });
     }
-    if (isBlocked) children.push({ type: "image", style: { image: BLOCKED_ICON, x: cx + ICON_SIZE / 2 - BLOCKED_ICON_SIZE, y: cy + ICON_SIZE / 2 - BLOCKED_ICON_SIZE, width: BLOCKED_ICON_SIZE, height: BLOCKED_ICON_SIZE }, silent: true, z: 2 });
+
+    if (isBlocked) {
+      children.push({
+        type: "image",
+        style: {
+          image: BLOCKED_ICON,
+          x: cx + (iconUrl ? ICON_SIZE : DOT_SIZE) / 2 - BLOCKED_ICON_SIZE,
+          y: cy + (iconUrl ? ICON_SIZE : DOT_SIZE) / 2 - BLOCKED_ICON_SIZE,
+          width: BLOCKED_ICON_SIZE,
+          height: BLOCKED_ICON_SIZE,
+        },
+        silent: true,
+        z: 3,
+      });
+    }
+
+    const baseSize = iconUrl ? ICON_SIZE : DOT_SIZE;
+
+    const speedRectX = cx - baseSize / 2 + OVERLAY_INSET;
+    const speedRectY = cy + baseSize / 2 - SPEED_BOX_HEIGHT - OVERLAY_INSET;
+
+    const accelRectX = speedRectX;
+    const accelRectY = speedRectY - SPEED_BOX_HEIGHT - ACCEL_BOX_GAP_Y;
+
+    if (showSpeedBox) {
+      children.push(
+        {
+          type: "rect",
+          shape: { x: speedRectX, y: speedRectY, width: SPEED_BOX_WIDTH, height: SPEED_BOX_HEIGHT, r: 6 },
+          style: { fill: SPEED_BOX_BG, stroke: SPEED_BOX_BORDER, lineWidth: 1 },
+          z: 4,
+          silent: true,
+        },
+        {
+          type: "text",
+          style: {
+            x: speedRectX + SPEED_BOX_WIDTH / 2,
+            y: speedRectY + SPEED_BOX_HEIGHT / 2,
+            text: speedText,
+            textAlign: "center",
+            textVerticalAlign: "middle",
+            fontSize: SPEED_BOX_FONT_SIZE,
+            fill: SPEED_BOX_TEXT,
+            opacity: 0.95,
+            fontWeight: 700,
+          },
+          z: 5,
+          silent: true,
+        }
+      );
+    }
+
+    if (showAccelBox) {
+      children.push(
+        {
+          type: "rect",
+          shape: { x: accelRectX, y: accelRectY, width: SPEED_BOX_WIDTH, height: SPEED_BOX_HEIGHT, r: 6 },
+          style: { fill: SPEED_BOX_BG, stroke: SPEED_BOX_BORDER, lineWidth: 1 },
+          z: 4,
+          silent: true,
+        },
+        {
+          type: "text",
+          style: {
+            x: accelRectX + SPEED_BOX_WIDTH / 2,
+            y: accelRectY + SPEED_BOX_HEIGHT / 2,
+            text: accelText,
+            textAlign: "center",
+            textVerticalAlign: "middle",
+            fontSize: SPEED_BOX_FONT_SIZE,
+            fill: SPEED_BOX_TEXT,
+            opacity: 0.95,
+            fontWeight: 700,
+          },
+          z: 5,
+          silent: true,
+        }
+      );
+    }
+
     return { type: "group", children };
   };
 
-  const series: CustomSeriesOption = { id: "horses-custom", name: "Horses", type: "custom", coordinateSystem: "cartesian2d", renderItem: renderItem as any, data, animation: false, z: 5, tooltip: { trigger: "item" }, encode: { x: 0, y: 1, itemName: 2 }, silent: false };
+  const series: CustomSeriesOption = {
+    id: "horses-custom",
+    name: "Horses",
+    type: "custom",
+    coordinateSystem: "cartesian2d",
+    renderItem: renderItem as any,
+    data,
+    animation: false,
+    z: 5,
+    tooltip: { trigger: "item" },
+    encode: { x: 0, y: 1, itemName: 2 },
+    silent: false,
+  };
   return series;
 }
 
@@ -323,10 +474,21 @@ function buildCourseLabelItems(markers: MarkLine1DDataItemOption[], yTop: number
 
 function buildMarkLines(goalInX: number, raceData: RaceSimulateData, displayNames: Record<number, string>, segmentMarkers: MarkLine1DDataItemOption[], trackData?: any) {
   const lines: MarkLine1DDataItemOption[] = [];
-  if (goalInX > 0) lines.push({ xAxis: goalInX, name: "Goal In", lineStyle: { color: "#666", type: [8, 3, 1, 3] } }, { xAxis: (10 / 24) * goalInX, name: "Position Keep ends", lineStyle: { color: "#777", type: "dashed" } }, { xAxis: (4 / 24) * goalInX, name: "Mid race", lineStyle: { color: "#999", type: "dashed" } });
-  (raceData.horseResult ?? []).forEach((hr, i) => { if (hr?.lastSpurtStartDistance != null && hr.lastSpurtStartDistance > 0) lines.push({ xAxis: hr.lastSpurtStartDistance, name: `Last Spurt (${displayNames[i] || `Horse ${i + 1}`})`, lineStyle: { color: "#666", type: [8, 3] } }); });
+  if (goalInX > 0) lines.push(
+    { xAxis: goalInX, name: "Goal In", lineStyle: { color: "#666", type: [8, 3, 1, 3] } },
+    { xAxis: (10 / 24) * goalInX, name: "Position Keep ends", lineStyle: { color: "#777", type: "dashed" } },
+    { xAxis: (4 / 24) * goalInX, name: "Mid race", lineStyle: { color: "#999", type: "dashed" } }
+  );
+  (raceData.horseResult ?? []).forEach((hr, i) => {
+    if (hr?.lastSpurtStartDistance != null && hr.lastSpurtStartDistance > 0)
+      lines.push({ xAxis: hr.lastSpurtStartDistance, name: `Last Spurt (${displayNames[i] || `Horse ${i + 1}`})`, lineStyle: { color: "#666", type: [8, 3] } });
+  });
   lines.push(...segmentMarkers);
-  (trackData?.slopes ?? []).forEach((s: any) => { const pct = Math.abs((s.slope ?? 0) / 10000).toFixed(2) + "%"; const dir = s.slope > 0 ? "Uphill" : s.slope < 0 ? "Downhill" : "Flat"; lines.push({ xAxis: s.start, name: `${dir} ${pct}`, lineStyle: { color: s.slope > 0 ? "#ffcccc" : s.slope < 0 ? "#ccccff" : "#dddddd", type: "solid" } }); });
+  (trackData?.slopes ?? []).forEach((s: any) => {
+    const pct = Math.abs((s.slope ?? 0) / 10000).toFixed(2) + "%";
+    const dir = s.slope > 0 ? "Uphill" : s.slope < 0 ? "Downhill" : "Flat";
+    lines.push({ xAxis: s.start, name: `${dir} ${pct}`, lineStyle: { color: s.slope > 0 ? "#ffcccc" : s.slope < 0 ? "#ccccff" : "#dddddd", type: "solid" } });
+  });
   return lines;
 }
 
@@ -338,7 +500,13 @@ function slopeRenderItemFactory(yMaxWithHeadroom: number) {
     const yTopVal = yMaxWithHeadroom * SLOPE_HALF_RATIO;
     const pBL = api.coord([start, 0]), pBR = api.coord([end, 0]), pTLh = api.coord([start, yTopVal]), pTRh = api.coord([end, yTopVal]);
     const isUp = dir === 1, triangle = isUp ? [pBL, pBR, pTRh] : [pBL, pTLh, pBR], diagStart = isUp ? pBL : pTLh, diagEnd = isUp ? pTRh : pBR, fill = isUp ? SLOPE_UP_FILL : SLOPE_DOWN_FILL;
-    return { type: "group", children: [ { type: "polygon", shape: { points: triangle }, style: api.style({ fill, stroke: null }), silent: true }, { type: "line", shape: { x1: diagStart[0], y1: diagStart[1], x2: diagEnd[0], y2: diagEnd[1] }, style: { stroke: SLOPE_DIAG_LINE, lineWidth: 2, opacity: 0.9 }, silent: true } ] };
+    return {
+      type: "group",
+      children: [
+        { type: "polygon", shape: { points: triangle }, style: api.style({ fill, stroke: null }), silent: true },
+        { type: "line", shape: { x1: diagStart[0], y1: diagStart[1], x2: diagEnd[0], y2: diagEnd[1] }, style: { stroke: SLOPE_DIAG_LINE, lineWidth: 2, opacity: 0.9 }, silent: true }
+      ]
+    };
   };
 }
 
@@ -360,6 +528,8 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
   const maxLanePosition = useMemo(() => frames.reduce((m, f) => Math.max(m, (f.horseFrame ?? []).reduce((mm: number, h: any) => Math.max(mm, h?.lanePosition ?? 0), 0)), 0), [frames]);
   const interpolatedFrame = useInterpolatedFrame(frames, renderTime);
 
+  const accByIdx = useCurrentAcceleration(frames, interpolatedFrame.frameIndex);
+
   const frontRunnerDistance = interpolatedFrame.horseFrame.reduce((m: number, h: any) => Math.max(m, h?.distance ?? 0), 0);
   const cameraWindow = 50, cameraLead = 8;
   const xAxis = useMemo(() => ({ min: Math.max(0, Math.max(cameraWindow, frontRunnerDistance + cameraLead) - cameraWindow), max: Math.max(cameraWindow, frontRunnerDistance + cameraLead) }), [frontRunnerDistance]);
@@ -371,8 +541,29 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
   useEffect(() => { setLegendSelection(prev => { const next: Record<string, boolean> = {}; legendNames.forEach(n => { next[n] = prev[n] ?? true; }); return next; }); }, [legendNames]);
   const onEvents = useMemo(() => ({ legendselectchanged: (e: any) => { if (e && e.selected) setLegendSelection(e.selected); } }), []);
 
+  const [showSpeed, setShowSpeed] = useState(false);
+  const [showAccel, setShowAccel] = useState(false);
+  const [showSkills, setShowSkills] = useState(true);
+  const [showSlopes, setShowSlopes] = useState(true);
+  const [showBlocked, setShowBlocked] = useState(true);
+  const [showCourseEvents, setShowCourseEvents] = useState(true);
+
   const legendShadowSeries = useMemo(() => buildLegendShadowSeries(displayNames, horseInfoByIdx, trainerColors), [displayNames, horseInfoByIdx, trainerColors]);
-  const horsesSeries = useMemo(() => buildHorsesCustomSeries(interpolatedFrame, displayNames, horseInfoByIdx, trainerColors, legendSelection), [interpolatedFrame, displayNames, horseInfoByIdx, trainerColors, legendSelection]);
+  const horsesSeries = useMemo(
+    () =>
+      buildHorsesCustomSeries(
+        interpolatedFrame,
+        displayNames,
+        horseInfoByIdx,
+        trainerColors,
+        legendSelection,
+        showSpeed,
+        showAccel,
+        accByIdx,
+        showBlocked
+      ),
+    [interpolatedFrame, displayNames, horseInfoByIdx, trainerColors, legendSelection, showSpeed, showAccel, accByIdx, showBlocked]
+  );
 
   const yMaxWithHeadroom = maxLanePosition + 3;
   const skillLabelData = useMemo(() => buildSkillLabels(interpolatedFrame, skillActivations, renderTime), [interpolatedFrame, skillActivations, renderTime]);
@@ -390,41 +581,206 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
 
   const slopeRenderItem = useMemo(() => slopeRenderItemFactory(yMaxWithHeadroom), [yMaxWithHeadroom]);
 
-  const markerSeries = useMemo(() => ({ id: "race-markers", type: "scatter" as const, data: [], silent: true, z: 1, tooltip: { show: false }, markLine: { animation: false, symbol: "none", label: { show: false }, lineStyle: { type: "solid" }, data: raceMarkers } }), [raceMarkers]);
+  const markerSeries = useMemo(() => ({
+    id: "race-markers",
+    type: "scatter" as const,
+    data: [],
+    silent: true,
+    z: 1,
+    tooltip: { show: false },
+    markLine: {
+      animation: false,
+      symbol: "none",
+      label: { show: false },
+      lineStyle: { type: "solid" },
+      data: raceMarkers
+    }
+  }), [raceMarkers]);
 
-  const options: ECOption = {
+  const seriesList = useMemo(() => {
+    const list: any[] = [
+      ...bgSeries,
+      showSlopes ? {
+        id: "slope-diagonals",
+        type: "custom",
+        renderItem: slopeRenderItem as any,
+        data: slopeTriangles,
+        coordinateSystem: "cartesian2d",
+        silent: true,
+        clip: true,
+        z: 2,
+        zlevel: 0,
+        tooltip: { show: false }
+      } : null,
+      showCourseEvents ? markerSeries : null,
+      ...legendShadowSeries,
+      horsesSeries as any,
+      showCourseEvents ? {
+        id: "course-labels",
+        type: "scatter",
+        data: courseLabelData,
+        symbolSize: 0,
+        z: 9,
+        zlevel: 1,
+        animation: false,
+        silent: true,
+        tooltip: { show: false },
+        clip: false,
+        labelLayout: { moveOverlap: "shiftY" as const }
+      } : null,
+      showSkills ? {
+        id: "skills-overlay",
+        type: "scatter",
+        data: skillLabelData,
+        symbolSize: 0,
+        z: 10,
+        zlevel: 1,
+        animation: false,
+        silent: true,
+        tooltip: { show: false }
+      } : null,
+    ];
+    return list.filter(Boolean);
+  }, [bgSeries, showSlopes, slopeRenderItem, slopeTriangles, showCourseEvents, markerSeries, legendShadowSeries, horsesSeries, courseLabelData, showSkills, skillLabelData]);
+
+  const options: ECOption = useMemo(() => ({
     xAxis: { type: "value", min: xAxis.min, max: xAxis.max, name: "Distance", axisLabel: { show: false }, axisTick: { show: false }, splitLine: { show: false } },
     yAxis: { type: "value", min: 0, max: yMaxWithHeadroom, name: "Lane Position", splitLine: { show: false } },
     legend: { show: true, type: "scroll", top: 8, left: 8, right: 8, data: legendNames, selected: legendSelection },
-    tooltip: { trigger: "item", confine: true, formatter: (p: any) => { const { name, value } = p; const has = typeof name === "string" && name.length > 0; return `${has ? name + "<br/>" : ""}Distance: ${value[0].toFixed(2)}m<br/>Lane: ${Math.round(value[1])}`; } },
+    tooltip: {
+      trigger: "item",
+      confine: true,
+      formatter: (p: any) => {
+        const { name, value } = p;
+        const has = typeof name === "string" && name.length > 0;
+        const speed = (value?.[6] ?? 0) / 100;
+        const accel = (value?.[7] ?? 0) / 100;
+        const accelStr = (accel > 0 ? "+" : "") + accel.toFixed(2);
+        return `${has ? name + "<br/>" : ""}Distance: ${value[0].toFixed(2)}m<br/>Lane: ${Math.round(value[1])}<br/>Speed: ${speed.toFixed(2)} m/s<br/>Accel: ${accelStr} m/s²`;
+      }
+    },
     grid: { top: 80, right: 16, bottom: 40, left: 50, containLabel: false },
-    graphic: { elements: [ { id: "distance-readout", type: "text", right: 8, bottom: 8, z: 100, silent: true, style: { text: `${Math.round(xAxis.max)} m`, fontSize: 14, fontWeight: 700, fill: "#000", backgroundColor: "#fff", borderColor: "#000", borderWidth: 1, borderRadius: 6, padding: [4, 8] } } ] },
-    series: [
-      ...bgSeries,
-      { id: "slope-diagonals", type: "custom", renderItem: slopeRenderItem as any, data: slopeTriangles, coordinateSystem: "cartesian2d", silent: true, clip: true, z: 2, zlevel: 0, tooltip: { show: false } },
-      markerSeries,
-      ...legendShadowSeries,
-      horsesSeries as any,
-      { id: "course-labels", type: "scatter", data: courseLabelData, symbolSize: 0, z: 9, zlevel: 1, animation: false, silent: true, tooltip: { show: false }, clip: false, labelLayout: { moveOverlap: "shiftY" as const } },
-      { id: "skills-overlay", type: "scatter", data: skillLabelData, symbolSize: 0, z: 10, zlevel: 1, animation: false, silent: true, tooltip: { show: false } },
-    ],
+    graphic: {
+      elements: [
+        {
+          id: "distance-readout",
+          type: "text",
+          right: 8,
+          bottom: 8,
+          z: 100,
+          silent: true,
+          style: {
+            text: `${Math.round(xAxis.max)} m`,
+            fontSize: 14,
+            fontWeight: 700,
+            fill: "#000",
+            backgroundColor: "#fff",
+            borderColor: "#000",
+            borderWidth: 1,
+            borderRadius: 6,
+            padding: [4, 8]
+          }
+        }
+      ]
+    },
+    series: seriesList as any,
     animation: false,
-  };
+  }), [xAxis.min, xAxis.max, yMaxWithHeadroom, legendNames, legendSelection, seriesList]);
 
   const clampedRenderTime = clamp(renderTime, startTime, endTime);
 
   return (
     <div>
       {goalInX > 0 && availableTracks.length > 0 && (
-        <div className="d-flex align-items-center" style={{ flexWrap: "wrap", marginBottom: TOOLBAR_GAP }}>
-          <div className="d-flex align-items-center" style={{ marginRight: TOOLBAR_GAP, marginBottom: TOOLBAR_GAP }}>
-            <Form.Label className="mb-0" style={{ marginRight: TOOLBAR_INLINE_GAP }}>Track:</Form.Label>
-            <Form.Control as="select" value={selectedTrackId ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedTrackId(e.target.value)} style={{ width: "auto", maxWidth: 300 }}>
-              {availableTracks.map((t) => (<option key={t.id} value={t.id}>{t.name}</option>))}
-            </Form.Control>
+        <div className="d-flex align-items-start" style={{ flexWrap: "wrap", marginBottom: TOOLBAR_GAP }}>
+          <div className="d-flex flex-column" style={{ marginRight: TOOLBAR_GAP, marginBottom: TOOLBAR_GAP, minWidth: 260 }}>
+            <div className="d-flex align-items-center">
+              <Form.Label className="mb-0 me-2">Track:</Form.Label>
+              <Form.Control
+                as="select"
+                value={selectedTrackId ?? ""}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedTrackId(e.target.value)}
+                style={{ width: "auto", maxWidth: 320 }}
+              >
+                {availableTracks.map((t) => (<option key={t.id} value={t.id}>{t.name}</option>))}
+              </Form.Control>
+            </div>
+            <div className="mt-2" style={{ minHeight: 20 }}>
+              {guessStatus === "guessed" && (
+                <span style={{ color: "green" }}>
+                  Guessed track based on CM schedule
+                </span>
+              )}
+              {guessStatus === "fallback" && (
+                <span style={{ color: "darkorange" }}>
+                  Select track
+                </span>
+              )}
+            </div>
           </div>
-          {guessStatus === "guessed" && (<span style={{ color: "green", marginRight: TOOLBAR_GAP, marginBottom: TOOLBAR_GAP }}>Guessed track based on CM schedule</span>)}
-          {guessStatus === "fallback" && (<span style={{ color: "darkorange", marginRight: TOOLBAR_GAP, marginBottom: TOOLBAR_GAP }}>Select track</span>)}
+
+          <div className="d-flex align-items-start" style={{ marginRight: TOOLBAR_GAP, marginBottom: TOOLBAR_GAP, gap: TOOLBAR_INLINE_GAP }}>
+            <Form.Label className="mb-0 me-2 mt-1">Display:</Form.Label>
+            <div
+              className="d-grid"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, minmax(160px, auto))",
+                columnGap: TOOLBAR_INLINE_GAP,
+                rowGap: 4,
+              }}
+            >
+              <Form.Check
+                type="checkbox"
+                id="toggle-skills"
+                label="Skill labels"
+                checked={showSkills}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowSkills(e.target.checked)}
+                className="mb-1"
+              />
+              <Form.Check
+                type="checkbox"
+                id="toggle-blocked"
+                label="Block indicator"
+                checked={showBlocked}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowBlocked(e.target.checked)}
+                className="mb-1"
+              />
+              <Form.Check
+                type="checkbox"
+                id="toggle-slopes"
+                label="Slopes"
+                checked={showSlopes}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowSlopes(e.target.checked)}
+                className="mb-1"
+              />
+              <Form.Check
+                type="checkbox"
+                id="toggle-speed-box"
+                label="Speed [m/s]"
+                checked={showSpeed}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowSpeed(e.target.checked)}
+                className="mb-1"
+              />
+              <Form.Check
+                type="checkbox"
+                id="toggle-accel-box"
+                label="Acceleration [m/s^2]"
+                checked={showAccel}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowAccel(e.target.checked)}
+                className="mb-1"
+              />
+              <Form.Check
+                type="checkbox"
+                id="toggle-course-events"
+                label="Course events"
+                checked={showCourseEvents}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowCourseEvents(e.target.checked)}
+                className="mb-1"
+              />
+            </div>
+          </div>
+
           <div className="d-flex align-items-center" style={{ marginLeft: "auto", flexWrap: "wrap", marginBottom: TOOLBAR_GAP }}>
             <LegendItem color={STRAIGHT_FILL} label="Straight" />
             <LegendItem color={STRAIGHT_FINAL_FILL} label="Final straight" />
@@ -434,7 +790,15 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
         </div>
       )}
 
-      <EChartsReactCore echarts={echarts} option={options} style={{ height: "500px" }} notMerge={false} lazyUpdate={true} theme="dark" onEvents={onEvents} />
+      <EChartsReactCore
+        echarts={echarts}
+        option={options}
+        style={{ height: "500px" }}
+        notMerge={true}
+        lazyUpdate={true}
+        theme="dark"
+        onEvents={onEvents}
+      />
 
       <div className="d-flex justify-content-center align-items-center">
         <Button onClick={playPause} className="me-3">{isPlaying ? "Pause" : "Play"}</Button>

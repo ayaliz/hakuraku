@@ -35,6 +35,11 @@ body {
     box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
+.form-control[readonly] {
+    background-color: #343a40;
+    color: #f8f9fa;
+}
+
 .list-group-item {
     background-color: #343a40;
     border-color: #454d55;

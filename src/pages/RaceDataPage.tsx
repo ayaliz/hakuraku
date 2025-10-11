@@ -3,7 +3,7 @@ import {Button, Col, Form} from "react-bootstrap";
 import RaceDataPresenter from "../components/RaceDataPresenter";
 import {RaceSimulateData} from "../data/race_data_pb";
 import {deserializeFromBase64} from "../data/RaceDataParser";
-import CopyButton from "../components/CopyButton";
+import ShareLinkBox from "../components/ShareLinkBox";
 
 type RaceDataPageState = {
     raceHorseInfoInput: string,
@@ -15,7 +15,6 @@ type RaceDataPageState = {
     shareStatus: '' | 'sharing' | 'shared',
     shareError: string,
     shareKey: string,
-    anonymous: boolean,
 };
 
 export default class RaceDataPage extends React.Component<{}, RaceDataPageState> {
@@ -32,7 +31,6 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             shareStatus: '',
             shareError: '',
             shareKey: '',
-            anonymous: false,
         };
     }
 
@@ -68,8 +66,8 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
         }
     }
 
-    share() {
-        let {raceHorseInfoInput, raceScenarioInput, anonymous} = this.state;
+    share(anonymous: boolean) {
+        let {raceHorseInfoInput, raceScenarioInput} = this.state;
         if (!raceScenarioInput) {
             alert('race_scenario is required.');
             return;
@@ -153,14 +151,14 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
                 </Button>
                 {' '}
 
-                <Button variant="secondary" onClick={() => this.share()} disabled={shareStatus === 'sharing'}>
+                <Button variant="secondary" onClick={() => this.share(false)} disabled={shareStatus === 'sharing'}>
                     {shareStatus === 'sharing' ? 'Sharing...' : 'Share'}
                 </Button>
                 {' '}
-                <Button variant="secondary" onClick={() => this.setState({anonymous: true}, () => this.share())} disabled={shareStatus === 'sharing'}>
+                <Button variant="secondary" onClick={() => this.share(true)} disabled={shareStatus === 'sharing'}>
                     Share Anonymously
                 </Button>
-                {shareStatus === 'shared' && <CopyButton content={shareUrl}/>}
+                {shareStatus === 'shared' && <ShareLinkBox shareUrl={shareUrl}/>}
                 {shareError && <span className="ml-2 text-danger">{shareError}</span>}
             </Form>
 

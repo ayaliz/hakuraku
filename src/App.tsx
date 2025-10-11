@@ -4,6 +4,7 @@ import 'react-bootstrap-table-next/dist/react-bootstrap-table2.css';
 import 'react-bootstrap-typeahead/css/Typeahead.css';
 import {HashRouter, Link, Route, Switch} from "react-router-dom";
 import './App.css';
+import './dark-mode.css';
 import UMDatabaseWrapper from './data/UMDatabaseWrapper';
 import CarrotJuicerPage from "./pages/CarrotJuicerPage";
 import RaceDataPage from "./pages/RaceDataPage";
@@ -25,7 +26,7 @@ export default function App() {
     }
 
     return <HashRouter>
-        <Navbar bg="light" expand="lg">
+        <Navbar bg="dark" variant="dark" expand="lg">
             <Container>
                 <Navbar.Brand as={Link} to="/">Hakuraku</Navbar.Brand>
                 <Navbar.Toggle aria-controls="basic-navbar-nav"/>

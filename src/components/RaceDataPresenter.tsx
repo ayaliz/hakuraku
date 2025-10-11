@@ -543,7 +543,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
         };
 
         return <div>
-            <EChartsReactCore echarts={echarts} option={options} style={{height: '700px'}}/>
+            <EChartsReactCore echarts={echarts} option={options} style={{height: '700px'}} theme="dark"/>
         </div>;
     }
 
@@ -680,7 +680,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
             </Form>
             {this.state.selectedCharaFrameOrder !== undefined && this.renderGraphs()}
             <hr/>
-            <JsonViewer value={this.props.raceData.toJson()} defaultInspectDepth={1}/>
+            <JsonViewer value={this.props.raceData.toJson()} defaultInspectDepth={1} theme="dark"/>
         </div>;
     }
 }

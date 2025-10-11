@@ -1,0 +1,41 @@
+/* src/dark-mode.css */
+body {
+  background-color: #212529;
+  color: #f8f9fa;
+}
+
+.card {
+  background-color: #343a40;
+  border-color: #454d55;
+}
+
+.table {
+  color: #f8f9fa;
+}
+
+.table-bordered, .table-bordered td, .table-bordered th {
+  border-color: #454d55;
+}
+
+.table-hover tbody tr:hover {
+  color: #f8f9fa;
+  background-color: rgba(255, 255, 255, 0.075);
+}
+
+.form-control {
+    background-color: #343a40;
+    color: #f8f9fa;
+    border-color: #454d55;
+}
+
+.form-control:focus {
+    background-color: #343a40;
+    color: #f8f9fa;
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.list-group-item {
+    background-color: #343a40;
+    border-color: #454d55;
+}

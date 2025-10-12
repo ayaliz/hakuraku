@@ -1,14 +1,13 @@
-import _ from "lodash";
 import React from "react";
-import {Table} from "react-bootstrap";
-import {TrainedCharaData} from "../data/TrainedCharaData";
+import { Table } from "react-bootstrap";
+import { TrainedCharaData } from "../data/TrainedCharaData";
 import * as UMDatabaseUtils from "../data/UMDatabaseUtils";
 
 type CharaProperLabelsProps = {
   chara: TrainedCharaData,
 };
 
-export default function CharaProperLabels(props: CharaProperLabelsProps) {
+export default function CharaProperLabels({ chara }: CharaProperLabelsProps) {
   const distanceEntries = Object
     .entries(UMDatabaseUtils.distanceLabels as Record<number, string>)
     .sort((a, b) => Number(a[0]) - Number(b[0]));
@@ -19,13 +18,13 @@ export default function CharaProperLabels(props: CharaProperLabelsProps) {
     .sort((a, b) => Number(a[0]) - Number(b[0]));
 
   return (
-    <Table size="small" className="w-auto m-2">
+    <Table size="sm" className="w-auto m-2">
       <tbody>
         <tr>
           <td>Turf</td>
-          <td>{UMDatabaseUtils.charaProperLabels[props.chara.properGroundTurf]}</td>
+          <td>{UMDatabaseUtils.charaProperLabels[chara.properGroundTurf]}</td>
           <td>Dirt</td>
-          <td>{UMDatabaseUtils.charaProperLabels[props.chara.properGroundDirt]}</td>
+          <td>{UMDatabaseUtils.charaProperLabels[chara.properGroundDirt]}</td>
         </tr>
 
         <tr>
@@ -34,7 +33,7 @@ export default function CharaProperLabels(props: CharaProperLabelsProps) {
             return (
               <React.Fragment key={`dist-${idx}`}>
                 <td>{name}</td>
-                <td>{UMDatabaseUtils.charaProperLabels[props.chara.properDistances[idx]]}</td>
+                <td>{UMDatabaseUtils.charaProperLabels[chara.properDistances[idx]]}</td>
               </React.Fragment>
             );
           })}
@@ -46,7 +45,7 @@ export default function CharaProperLabels(props: CharaProperLabelsProps) {
             return (
               <React.Fragment key={`rs-${idx}`}>
                 <td>{name}</td>
-                <td>{UMDatabaseUtils.charaProperLabels[props.chara.properRunningStyles[idx]]}</td>
+                <td>{UMDatabaseUtils.charaProperLabels[chara.properRunningStyles[idx]]}</td>
               </React.Fragment>
             );
           })}

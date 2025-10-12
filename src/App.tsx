@@ -52,12 +52,6 @@ export default function App() {
                             </NavDropdown.Item>
                         </NavDropdown>
                     </Nav>
-                    <Nav>
-                        <Nav.Item className="navbar-text">
-                            DB ver. {UMDatabaseWrapper.umdb.version}
-                        </Nav.Item>
-                        <Nav.Link href="https://github.com/SSHZ-ORG/hakuraku">Source Code</Nav.Link>
-                    </Nav>
                 </Navbar.Collapse>
             </Container>
         </Navbar>

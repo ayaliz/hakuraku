@@ -18,6 +18,8 @@ type RaceDataPageState = {
 };
 
 export default class RaceDataPage extends React.Component<{}, RaceDataPageState> {
+    private fileInputRef: React.RefObject<HTMLInputElement>; // NEW
+
     constructor(props: {}) {
         super(props);
 
@@ -32,6 +34,8 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             shareError: '',
             shareKey: '',
         };
+
+        this.fileInputRef = React.createRef(); // NEW
     }
 
     componentDidMount() {
@@ -65,6 +69,50 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             this.setState({parsedHorseInfo: undefined});
         }
     }
+
+    // NEW — open file picker
+    handleUploadClick = () => {
+        this.fileInputRef.current?.click();
+    };
+
+    // NEW — read file and auto-fill + parse
+    handleFileChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!/\.txt$/i.test(file.name)) {
+            alert('Please choose a .txt file.');
+            e.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onerror = () => {
+            alert('Failed to read the file.');
+            e.target.value = '';
+        };
+        reader.onload = () => {
+            const text = String(reader.result ?? '');
+            // Normalize newlines and split
+            const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+            // Strip possible BOM on the first line
+            const firstLine = (lines[0] || '').replace(/^\uFEFF/, '');
+            const secondLine = lines[1] || '';
+
+            this.setState(
+                {
+                    raceHorseInfoInput: firstLine,
+                    raceScenarioInput: secondLine
+                },
+                () => this.parse() // auto-parse after upload
+            );
+
+            // Allow selecting the same file again later
+            e.target.value = '';
+        };
+
+        reader.readAsText(file);
+    };
 
     share(anonymous: boolean) {
         let {raceHorseInfoInput, raceScenarioInput} = this.state;
@@ -125,6 +173,14 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
         const shareUrl = `${window.location.origin}${window.location.pathname}#/racedata?bin=${shareKey}`;
 
         return <>
+            <input
+                ref={this.fileInputRef}
+                type="file"
+                accept=".txt,text/plain"
+                style={{display: 'none'}}
+                onChange={this.handleFileChange}
+            />
+
             <Form>
                 <Form.Row>
                     <Form.Group as={Col}>
@@ -146,8 +202,13 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
                                       onChange={e => this.setState({raceScenarioInput: e.target.value})}/>
                     </Form.Group>
                 </Form.Row>
+
                 <Button variant="primary" onClick={() => this.parse()}>
                     Parse
+                </Button>
+                {' '}
+                <Button variant="info" onClick={this.handleUploadClick}>
+                    Upload race
                 </Button>
                 {' '}
 
@@ -170,5 +231,4 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
                     raceData={this.state.parsedRaceData}/>}
         </>;
     }
-
 }

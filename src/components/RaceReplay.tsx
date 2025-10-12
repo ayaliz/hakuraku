@@ -23,8 +23,8 @@ import * as echarts from "echarts/core";
 import { ComposeOption } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import type { MarkLine1DDataItemOption } from "echarts/types/src/component/marker/MarkLineModel";
-import React, { useState, useEffect, useMemo, useRef } from "react";
-import { Button, Form } from "react-bootstrap";
+import React, { useState, useEffect, useMemo, useRef, useReducer } from "react";
+import { Button, Form, OverlayTrigger, Popover } from "react-bootstrap";
 import { RaceSimulateData } from "../data/race_data_pb";
 import cups from "../data/tracks/cups.json";
 import courseData from "../data/tracks/course_data.json";
@@ -61,13 +61,28 @@ type RaceReplayProps = {
   displayNames: Record<number, string>;
   skillActivations: Record<number, { time: number; name: string; param: number[] }[]>;
   trainerColors?: Record<number, string>;
+  /** Optional title shown at the top of the Info popover */
+  infoTitle?: string;
+  /** Optional rich content for the Info popover. Pass JSX or a string. */
+  infoContent?: React.ReactNode;
 };
 
 const clamp = (x: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, x));
 const clamp01 = (x: number) => clamp(x, 0, 1);
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clampRange = (goal: number, s: number, e: number) => [clamp(s, 0, goal), clamp(e, 0, goal)] as const;
-const labelStyle = (offsetY: number) => ({ show: true, position: "top" as const, offset: [0, -offsetY], padding: [4, 6], backgroundColor: "#fff", borderColor: "#000", borderWidth: 1, borderRadius: 5, color: "#000", fontSize: 12 });
+const labelStyle = (offsetY: number) => ({
+  show: true,
+  position: "top" as const,
+  offset: [0, -offsetY],
+  padding: [4, 6],
+  backgroundColor: "#fff",
+  borderColor: "#000",
+  borderWidth: 1,
+  borderRadius: 5,
+  color: "#000",
+  fontSize: 12,
+});
 
 const SURFACE_MAP: Record<number, string> = { 1: "Turf", 2: "Dirt" };
 
@@ -122,6 +137,52 @@ const getCharaIcon = (charaId?: number | null) => {
   ICON_CACHE.set(charaId, url);
   return url;
 };
+
+function formatSigned(x: number) { const v = x / 100; const s = v.toFixed(2); return (v > 0 ? "+" : "") + s; }
+
+const overlayBox = (x: number, y: number, text: string) => ([
+  {
+    type: "rect",
+    shape: { x, y, width: SPEED_BOX_WIDTH, height: SPEED_BOX_HEIGHT, r: 6 },
+    style: { fill: SPEED_BOX_BG, stroke: SPEED_BOX_BORDER, lineWidth: 1 },
+    z: 4,
+    silent: true,
+  },
+  {
+    type: "text",
+    style: {
+      x: x + SPEED_BOX_WIDTH / 2,
+      y: y + SPEED_BOX_HEIGHT / 2,
+      text,
+      textAlign: "center",
+      textVerticalAlign: "middle",
+      fontSize: SPEED_BOX_FONT_SIZE,
+      fill: SPEED_BOX_TEXT,
+      opacity: 0.95,
+      fontWeight: 700,
+    },
+    z: 5,
+    silent: true,
+  },
+]);
+
+function stackLabels(baseOffset = STACK_BASE_PX, gap = STACK_GAP_PX) {
+  let n = 0;
+  return (text: string) => ({ ...labelStyle(baseOffset + n++ * gap), formatter: text });
+}
+
+type Toggles = { speed: boolean; accel: boolean; skills: boolean; slopes: boolean; blocked: boolean; course: boolean };
+function useToggles(initial?: Partial<Toggles>) {
+  const [t, set] = useReducer(
+    (s: Toggles, a: Partial<Toggles>) => ({ ...s, ...a }),
+    { speed: false, accel: false, skills: true, slopes: true, blocked: true, course: true, ...(initial || {}) }
+  );
+  const bind = (k: keyof Toggles) => ({
+    checked: t[k],
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => set({ [k]: e.target.checked } as Partial<Toggles>),
+  });
+  return { t, bind };
+}
 
 function bisectFrameIndex(frames: RaceSimulateData["frame"], t: number) {
   if (!frames.length) return 0;
@@ -252,8 +313,8 @@ function useGuessTrack(goalInX: number, availableTracks: { id: string; raceTrack
   return { selectedTrackId, setSelectedTrackId, guessStatus };
 }
 
+type AreaPair = [{ xAxis: number; yAxis: number }, { xAxis: number; yAxis: number }];
 function useCourseLayers(selectedTrackId: string | null, goalInX: number, yMaxWithHeadroom: number) {
-  type AreaPair = [{ xAxis: number; yAxis: number }, { xAxis: number; yAxis: number }];
   return useMemo(() => {
     const straights: AreaPair[] = [], corners: AreaPair[] = [], straightsFinal: AreaPair[] = [], cornersFinal: AreaPair[] = [];
     const segMarkers: MarkLine1DDataItemOption[] = [];
@@ -306,12 +367,6 @@ function buildLegendShadowSeries(displayNames: Record<number, string>, horseInfo
     out.push({ id: `legend-shadow-${i}`, name, type: "scatter", data: [], symbolSize: 0, silent: true, tooltip: { show: false }, itemStyle: { color } });
   });
   return out;
-}
-
-function formatSigned(x: number) {
-  const v = x / 100;
-  const s = v.toFixed(2);
-  return (v > 0 ? "+" : "") + s;
 }
 
 function buildHorsesCustomSeries(
@@ -377,61 +432,8 @@ function buildHorsesCustomSeries(
     const accelRectX = speedRectX;
     const accelRectY = speedRectY - SPEED_BOX_HEIGHT - ACCEL_BOX_GAP_Y;
 
-    if (showSpeedBox) {
-      children.push(
-        {
-          type: "rect",
-          shape: { x: speedRectX, y: speedRectY, width: SPEED_BOX_WIDTH, height: SPEED_BOX_HEIGHT, r: 6 },
-          style: { fill: SPEED_BOX_BG, stroke: SPEED_BOX_BORDER, lineWidth: 1 },
-          z: 4,
-          silent: true,
-        },
-        {
-          type: "text",
-          style: {
-            x: speedRectX + SPEED_BOX_WIDTH / 2,
-            y: speedRectY + SPEED_BOX_HEIGHT / 2,
-            text: speedText,
-            textAlign: "center",
-            textVerticalAlign: "middle",
-            fontSize: SPEED_BOX_FONT_SIZE,
-            fill: SPEED_BOX_TEXT,
-            opacity: 0.95,
-            fontWeight: 700,
-          },
-          z: 5,
-          silent: true,
-        }
-      );
-    }
-
-    if (showAccelBox) {
-      children.push(
-        {
-          type: "rect",
-          shape: { x: accelRectX, y: accelRectY, width: SPEED_BOX_WIDTH, height: SPEED_BOX_HEIGHT, r: 6 },
-          style: { fill: SPEED_BOX_BG, stroke: SPEED_BOX_BORDER, lineWidth: 1 },
-          z: 4,
-          silent: true,
-        },
-        {
-          type: "text",
-          style: {
-            x: accelRectX + SPEED_BOX_WIDTH / 2,
-            y: accelRectY + SPEED_BOX_HEIGHT / 2,
-            text: accelText,
-            textAlign: "center",
-            textVerticalAlign: "middle",
-            fontSize: SPEED_BOX_FONT_SIZE,
-            fill: SPEED_BOX_TEXT,
-            opacity: 0.95,
-            fontWeight: 700,
-          },
-          z: 5,
-          silent: true,
-        }
-      );
-    }
+    if (showSpeedBox) children.push(...overlayBox(speedRectX, speedRectY, speedText));
+    if (showAccelBox) children.push(...overlayBox(accelRectX, accelRectY, accelText));
 
     return { type: "group", children };
   };
@@ -456,12 +458,13 @@ function buildSkillLabels(frame: any, skillActivations: RaceReplayProps["skillAc
   const items: any[] = [];
   frame.horseFrame.forEach((h: any, i: number) => {
     if (!h) return; const base: [number, number] = [h.distance ?? 0, h.lanePosition ?? 0];
-    let stack = 0; const mode = h.temptationMode ?? 0;
-    if (mode) { items.push({ value: base, id: `temptation-${i}-${mode}`, label: { ...labelStyle(STACK_BASE_PX), formatter: TEMPTATION_TEXT[mode] ?? "Rushed" } }); stack = 1; }
+    const next = stackLabels();
+    const mode = h.temptationMode ?? 0;
+    if (mode) { items.push({ value: base, id: `temptation-${i}-${mode}`, label: next(TEMPTATION_TEXT[mode] ?? "Rushed") }); }
     (skillActivations[i] ?? [])
       .filter(s => { const dur = s.param?.[2]; const secs = dur === -1 ? 2 : (dur ?? 0) / 10000; return time >= s.time && time < s.time + secs && !EXCLUDE_SKILL_RE.test(s.name); })
       .sort((a, b) => a.time - b.time || a.name.localeCompare(b.name))
-      .forEach((s, k) => items.push({ value: base, id: `skill-${i}-${s.time}-${s.name}`, label: { ...labelStyle(STACK_BASE_PX + (stack + k) * STACK_GAP_PX), formatter: s.name } }));
+      .forEach((s) => items.push({ value: base, id: `skill-${i}-${s.time}-${s.name}`, label: next(s.name) }));
   });
   return items;
 }
@@ -510,7 +513,135 @@ function slopeRenderItemFactory(yMaxWithHeadroom: number) {
   };
 }
 
-const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displayNames, skillActivations, trainerColors }) => {
+function createOptions(args: {
+  xMin: number; xMax: number; yMax: number;
+  series: ECOption["series"];
+  legendNames: string[]; legendSelection: Record<string, boolean>;
+}): ECOption {
+  const { xMin, xMax, yMax, series, legendNames, legendSelection } = args;
+  return {
+    xAxis: { type: "value", min: xMin, max: xMax, name: "Distance", axisLabel: { show: false }, axisTick: { show: false }, splitLine: { show: false } },
+    yAxis: { type: "value", min: 0, max: yMax, name: "Lane Position", splitLine: { show: false } },
+    legend: { show: true, type: "scroll", top: 8, left: 8, right: 8, data: legendNames, selected: legendSelection },
+    tooltip: {
+      trigger: "item",
+      confine: true,
+      formatter: (p: any) => {
+        const { name, value } = p;
+        const has = typeof name === "string" && name.length > 0;
+        const speed = (value?.[6] ?? 0) / 100;
+        const accel = (value?.[7] ?? 0) / 100;
+        const accelStr = (accel > 0 ? "+" : "") + accel.toFixed(2);
+        return `${has ? name + "<br/>" : ""}Distance: ${value[0].toFixed(2)}m<br/>Lane: ${Math.round(value[1])}<br/>Speed: ${speed.toFixed(2)} m/s<br/>Accel: ${accelStr} m/s²`;
+      }
+    },
+    grid: { top: 80, right: 16, bottom: 40, left: 50, containLabel: false },
+    graphic: {
+      elements: [
+        {
+          id: "distance-readout",
+          type: "text",
+          right: 8,
+          bottom: 8,
+          z: 100,
+          silent: true,
+          style: {
+            text: `${Math.round(xMax)} m`,
+            fontSize: 14,
+            fontWeight: 700,
+            fill: "#000",
+            backgroundColor: "#fff",
+            borderColor: "#000",
+            borderWidth: 1,
+            borderRadius: 6,
+            padding: [4, 8]
+          }
+        }
+      ]
+    },
+    series,
+    animation: false,
+  };
+}
+
+const InfoHover: React.FC<{ title?: string; content?: React.ReactNode }> = ({
+  title = "Replay info",
+  content = (
+    <div>
+      <ul className="mb-0 ps-3">
+        <li>The visualization for the slopes only represents the slope duration.</li>
+        <li>Skill labels are shown for the real skill duration, or for 2 seconds if no duration (e.g. Swinging Maestro).</li>
+        <li>For skills triggering on frame 0 (e.g. Groundwork), the game does not report a duration so the replays defaults to 2 seconds.</li>
+        <li>I can't tell what track we're on directly from packet data. I currently attempt to guess it from the distance of the race and the CM schedule, but you may need to manually select the track outside of that.</li>
+        <li>Track selection only matters for displaying straight/corner sections and slopes correctly.</li>
+		<li>The replay always looks at a 50m (20L) slice of the race relative to the position of the frontmost Uma.</li>
+		<li>Packet data doesn't tell us directly whether an Uma is in pace down/speed up mode/overtake mode/etc., but I may be able to implement heuristics for that down the line. </li>
+      </ul>
+    </div>
+  ),
+}) => {
+  const overlay = (
+    <Popover id="race-replay-info"
+	style={{ maxWidth: "48ch" }}>
+      <div className="popover-header py-2">
+        <h3 className="h6 m-0" style={{ color: "#DC2626" }}>{title}</h3>
+      </div>
+      <div className="popover-body">{content}</div>
+    </Popover>
+  );
+
+  return (
+    <OverlayTrigger placement="top" delay={{ show: 150, hide: 80 }} overlay={overlay} trigger={["hover", "focus"]}>
+      <span
+        role="button"
+        tabIndex={0}
+        aria-label="Replay information"
+        className="d-inline-flex align-items-center"
+        style={{
+          padding: "6px 10px",
+          borderRadius: 999,
+          border: "1px solid rgba(0,0,0,0.25)",
+          background: "rgba(255,255,255,0.6)",
+          backdropFilter: "blur(2px)",
+          fontSize: 13,
+          fontWeight: 600,
+          cursor: "help",
+          userSelect: "none",
+          whiteSpace: "nowrap",
+        }}
+      >
+        <span
+          aria-hidden
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 18,
+            height: 18,
+            borderRadius: "50%",
+            border: "1px solid #444",
+            marginRight: 6,
+            fontSize: 12,
+            lineHeight: 1,
+          }}
+        >
+          i
+        </span>
+        Info
+      </span>
+    </OverlayTrigger>
+  );
+};
+
+const RaceReplay: React.FC<RaceReplayProps> = ({
+  raceData,
+  raceHorseInfo,
+  displayNames,
+  skillActivations,
+  trainerColors,
+  infoTitle,
+  infoContent,
+}) => {
   const frames = useMemo(() => raceData.frame ?? [], [raceData]);
   const startTime = frames[0]?.time ?? 0, endTime = frames[frames.length - 1]?.time ?? 0;
   const { time: renderTime, setTime: setRenderTime, isPlaying, playPause } = useRafPlayer(startTime, endTime);
@@ -541,12 +672,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
   useEffect(() => { setLegendSelection(prev => { const next: Record<string, boolean> = {}; legendNames.forEach(n => { next[n] = prev[n] ?? true; }); return next; }); }, [legendNames]);
   const onEvents = useMemo(() => ({ legendselectchanged: (e: any) => { if (e && e.selected) setLegendSelection(e.selected); } }), []);
 
-  const [showSpeed, setShowSpeed] = useState(false);
-  const [showAccel, setShowAccel] = useState(false);
-  const [showSkills, setShowSkills] = useState(true);
-  const [showSlopes, setShowSlopes] = useState(true);
-  const [showBlocked, setShowBlocked] = useState(true);
-  const [showCourseEvents, setShowCourseEvents] = useState(true);
+  const { t: toggles, bind } = useToggles();
 
   const legendShadowSeries = useMemo(() => buildLegendShadowSeries(displayNames, horseInfoByIdx, trainerColors), [displayNames, horseInfoByIdx, trainerColors]);
   const horsesSeries = useMemo(
@@ -557,12 +683,12 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
         horseInfoByIdx,
         trainerColors,
         legendSelection,
-        showSpeed,
-        showAccel,
+        toggles.speed,
+        toggles.accel,
         accByIdx,
-        showBlocked
+        toggles.blocked
       ),
-    [interpolatedFrame, displayNames, horseInfoByIdx, trainerColors, legendSelection, showSpeed, showAccel, accByIdx, showBlocked]
+    [interpolatedFrame, displayNames, horseInfoByIdx, trainerColors, legendSelection, toggles.speed, toggles.accel, accByIdx, toggles.blocked]
   );
 
   const yMaxWithHeadroom = maxLanePosition + 3;
@@ -588,19 +714,13 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
     silent: true,
     z: 1,
     tooltip: { show: false },
-    markLine: {
-      animation: false,
-      symbol: "none",
-      label: { show: false },
-      lineStyle: { type: "solid" },
-      data: raceMarkers
-    }
+    markLine: { animation: false, symbol: "none", label: { show: false }, lineStyle: { type: "solid" }, data: raceMarkers }
   }), [raceMarkers]);
 
   const seriesList = useMemo(() => {
     const list: any[] = [
       ...bgSeries,
-      showSlopes ? {
+      toggles.slopes ? {
         id: "slope-diagonals",
         type: "custom",
         renderItem: slopeRenderItem as any,
@@ -612,10 +732,10 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
         zlevel: 0,
         tooltip: { show: false }
       } : null,
-      showCourseEvents ? markerSeries : null,
+      toggles.course ? markerSeries : null,
       ...legendShadowSeries,
       horsesSeries as any,
-      showCourseEvents ? {
+      toggles.course ? {
         id: "course-labels",
         type: "scatter",
         data: courseLabelData,
@@ -628,7 +748,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
         clip: false,
         labelLayout: { moveOverlap: "shiftY" as const }
       } : null,
-      showSkills ? {
+      toggles.skills ? {
         id: "skills-overlay",
         type: "scatter",
         data: skillLabelData,
@@ -641,58 +761,33 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
       } : null,
     ];
     return list.filter(Boolean);
-  }, [bgSeries, showSlopes, slopeRenderItem, slopeTriangles, showCourseEvents, markerSeries, legendShadowSeries, horsesSeries, courseLabelData, showSkills, skillLabelData]);
+  }, [bgSeries, toggles.slopes, slopeRenderItem, slopeTriangles, toggles.course, markerSeries, legendShadowSeries, horsesSeries, courseLabelData, toggles.skills, skillLabelData]);
 
-  const options: ECOption = useMemo(() => ({
-    xAxis: { type: "value", min: xAxis.min, max: xAxis.max, name: "Distance", axisLabel: { show: false }, axisTick: { show: false }, splitLine: { show: false } },
-    yAxis: { type: "value", min: 0, max: yMaxWithHeadroom, name: "Lane Position", splitLine: { show: false } },
-    legend: { show: true, type: "scroll", top: 8, left: 8, right: 8, data: legendNames, selected: legendSelection },
-    tooltip: {
-      trigger: "item",
-      confine: true,
-      formatter: (p: any) => {
-        const { name, value } = p;
-        const has = typeof name === "string" && name.length > 0;
-        const speed = (value?.[6] ?? 0) / 100;
-        const accel = (value?.[7] ?? 0) / 100;
-        const accelStr = (accel > 0 ? "+" : "") + accel.toFixed(2);
-        return `${has ? name + "<br/>" : ""}Distance: ${value[0].toFixed(2)}m<br/>Lane: ${Math.round(value[1])}<br/>Speed: ${speed.toFixed(2)} m/s<br/>Accel: ${accelStr} m/s²`;
-      }
-    },
-    grid: { top: 80, right: 16, bottom: 40, left: 50, containLabel: false },
-    graphic: {
-      elements: [
-        {
-          id: "distance-readout",
-          type: "text",
-          right: 8,
-          bottom: 8,
-          z: 100,
-          silent: true,
-          style: {
-            text: `${Math.round(xAxis.max)} m`,
-            fontSize: 14,
-            fontWeight: 700,
-            fill: "#000",
-            backgroundColor: "#fff",
-            borderColor: "#000",
-            borderWidth: 1,
-            borderRadius: 6,
-            padding: [4, 8]
-          }
-        }
-      ]
-    },
-    series: seriesList as any,
-    animation: false,
-  }), [xAxis.min, xAxis.max, yMaxWithHeadroom, legendNames, legendSelection, seriesList]);
+  const options: ECOption = useMemo(() => createOptions({
+    xMin: xAxis.min,
+    xMax: xAxis.max,
+    yMax: yMaxWithHeadroom,
+    series: seriesList as ECOption["series"],
+    legendNames,
+    legendSelection,
+  }), [xAxis.min, xAxis.max, yMaxWithHeadroom, seriesList, legendNames, legendSelection]);
 
   const clampedRenderTime = clamp(renderTime, startTime, endTime);
+
+  const toggleDefs = [
+    { id: "skills" as const, label: "Skill labels" },
+    { id: "blocked" as const, label: "Block indicator" },
+    { id: "slopes" as const, label: "Slopes" },
+    { id: "speed" as const, label: "Speed [m/s]" },
+    { id: "accel" as const, label: "Acceleration [m/s^2]" },
+    { id: "course" as const, label: "Course events" },
+  ];
 
   return (
     <div>
       {goalInX > 0 && availableTracks.length > 0 && (
         <div className="d-flex align-items-start" style={{ flexWrap: "wrap", marginBottom: TOOLBAR_GAP }}>
+          {/* Track selector */}
           <div className="d-flex flex-column" style={{ marginRight: TOOLBAR_GAP, marginBottom: TOOLBAR_GAP, minWidth: 260 }}>
             <div className="d-flex align-items-center">
               <Form.Label className="mb-0 me-2">Track:</Form.Label>
@@ -719,6 +814,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
             </div>
           </div>
 
+          {/* Display toggles */}
           <div className="d-flex align-items-start" style={{ marginRight: TOOLBAR_GAP, marginBottom: TOOLBAR_GAP, gap: TOOLBAR_INLINE_GAP }}>
             <Form.Label className="mb-0 me-2 mt-1">Display:</Form.Label>
             <div
@@ -730,57 +826,20 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
                 rowGap: 4,
               }}
             >
-              <Form.Check
-                type="checkbox"
-                id="toggle-skills"
-                label="Skill labels"
-                checked={showSkills}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowSkills(e.target.checked)}
-                className="mb-1"
-              />
-              <Form.Check
-                type="checkbox"
-                id="toggle-blocked"
-                label="Block indicator"
-                checked={showBlocked}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowBlocked(e.target.checked)}
-                className="mb-1"
-              />
-              <Form.Check
-                type="checkbox"
-                id="toggle-slopes"
-                label="Slopes"
-                checked={showSlopes}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowSlopes(e.target.checked)}
-                className="mb-1"
-              />
-              <Form.Check
-                type="checkbox"
-                id="toggle-speed-box"
-                label="Speed [m/s]"
-                checked={showSpeed}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowSpeed(e.target.checked)}
-                className="mb-1"
-              />
-              <Form.Check
-                type="checkbox"
-                id="toggle-accel-box"
-                label="Acceleration [m/s^2]"
-                checked={showAccel}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowAccel(e.target.checked)}
-                className="mb-1"
-              />
-              <Form.Check
-                type="checkbox"
-                id="toggle-course-events"
-                label="Course events"
-                checked={showCourseEvents}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowCourseEvents(e.target.checked)}
-                className="mb-1"
-              />
+              {toggleDefs.map(({ id, label }) => (
+                <Form.Check
+                  key={id}
+                  type="checkbox"
+                  id={`toggle-${id}`}
+                  label={label}
+                  {...bind(id)}
+                  className="mb-1"
+                />
+              ))}
             </div>
           </div>
 
+          {/* Color legend on the right */}
           <div className="d-flex align-items-center" style={{ marginLeft: "auto", flexWrap: "wrap", marginBottom: TOOLBAR_GAP }}>
             <LegendItem color={STRAIGHT_FILL} label="Straight" />
             <LegendItem color={STRAIGHT_FINAL_FILL} label="Final straight" />
@@ -800,10 +859,24 @@ const RaceReplay: React.FC<RaceReplayProps> = ({ raceData, raceHorseInfo, displa
         onEvents={onEvents}
       />
 
-      <div className="d-flex justify-content-center align-items-center">
-        <Button onClick={playPause} className="me-3">{isPlaying ? "Pause" : "Play"}</Button>
-        <Form.Control type="range" min={startTime} max={endTime} step={0.001} value={clampedRenderTime} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRenderTime(clamp(parseFloat(e.target.value), startTime, endTime))} style={{ flexGrow: 1 }} />
-        <span className="ms-3">{clampedRenderTime.toFixed(2)}s / {endTime.toFixed(2)}s</span>
+      {/* Replay bar row with Info pill on the right */}
+      <div className="d-flex align-items-center justify-content-between mt-2">
+        <div className="d-flex align-items-center flex-grow-1">
+          <Button onClick={playPause} className="me-3">{isPlaying ? "Pause" : "Play"}</Button>
+          <Form.Control
+            type="range"
+            min={startTime}
+            max={endTime}
+            step={0.001}
+            value={clampedRenderTime}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRenderTime(clamp(parseFloat(e.target.value), startTime, endTime))}
+            className="flex-grow-1"
+          />
+          <span className="ms-3">{clampedRenderTime.toFixed(2)}s / {endTime.toFixed(2)}s</span>
+        </div>
+        <div className="ms-3">
+          <InfoHover title={infoTitle} content={infoContent} />
+        </div>
       </div>
     </div>
   );

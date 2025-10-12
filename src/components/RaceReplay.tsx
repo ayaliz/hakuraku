@@ -61,9 +61,7 @@ type RaceReplayProps = {
   displayNames: Record<number, string>;
   skillActivations: Record<number, { time: number; name: string; param: number[] }[]>;
   trainerColors?: Record<number, string>;
-  /** Optional title shown at the top of the Info popover */
   infoTitle?: string;
-  /** Optional rich content for the Info popover. Pass JSX or a string. */
   infoContent?: React.ReactNode;
 };
 
@@ -571,11 +569,12 @@ const InfoHover: React.FC<{ title?: string; content?: React.ReactNode }> = ({
       <ul className="mb-0 ps-3">
         <li>The visualization for the slopes only represents the slope duration.</li>
         <li>Skill labels are shown for the real skill duration, or for 2 seconds if no duration (e.g. Swinging Maestro).</li>
-        <li>For skills triggering on frame 0 (e.g. Groundwork), the game does not report a duration so the replays defaults to 2 seconds.</li>
+        <li>For skills triggering on frame 0 (e.g. Groundwork), the game does not report a duration so the replay defaults to 2 seconds.</li>
         <li>I can't tell what track we're on directly from packet data. I currently attempt to guess it from the distance of the race and the CM schedule, but you may need to manually select the track outside of that.</li>
         <li>Track selection only matters for displaying straight/corner sections and slopes correctly.</li>
 		<li>The replay always looks at a 50m (20L) slice of the race relative to the position of the frontmost Uma.</li>
-		<li>Packet data doesn't tell us directly whether an Uma is in pace down/speed up mode/overtake mode/etc., but I may be able to implement heuristics for that down the line. </li>
+		<li>Umas with 0 acceleration on frame 0 of the race have a late start.</li>
+		<li>Around 2/3 of the way into the race, you'll typically see a lot of course events labeled "Last Spurt". There'll be one of those per Uma, and it's most relevant when an Uma's last spurt event happens significantly later than 2/3 of the distance, indicating they were too low on HP to attempt a full last spurt. </li>
       </ul>
     </div>
   ),
@@ -787,7 +786,6 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     <div>
       {goalInX > 0 && availableTracks.length > 0 && (
         <div className="d-flex align-items-start" style={{ flexWrap: "wrap", marginBottom: TOOLBAR_GAP }}>
-          {/* Track selector */}
           <div className="d-flex flex-column" style={{ marginRight: TOOLBAR_GAP, marginBottom: TOOLBAR_GAP, minWidth: 260 }}>
             <div className="d-flex align-items-center">
               <Form.Label className="mb-0 me-2">Track:</Form.Label>
@@ -814,7 +812,6 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
             </div>
           </div>
 
-          {/* Display toggles */}
           <div className="d-flex align-items-start" style={{ marginRight: TOOLBAR_GAP, marginBottom: TOOLBAR_GAP, gap: TOOLBAR_INLINE_GAP }}>
             <Form.Label className="mb-0 me-2 mt-1">Display:</Form.Label>
             <div
@@ -839,7 +836,6 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
             </div>
           </div>
 
-          {/* Color legend on the right */}
           <div className="d-flex align-items-center" style={{ marginLeft: "auto", flexWrap: "wrap", marginBottom: TOOLBAR_GAP }}>
             <LegendItem color={STRAIGHT_FILL} label="Straight" />
             <LegendItem color={STRAIGHT_FINAL_FILL} label="Final straight" />
@@ -859,7 +855,6 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         onEvents={onEvents}
       />
 
-      {/* Replay bar row with Info pill on the right */}
       <div className="d-flex align-items-center justify-content-between mt-2">
         <div className="d-flex align-items-center flex-grow-1">
           <Button onClick={playPause} className="me-3">{isPlaying ? "Pause" : "Play"}</Button>

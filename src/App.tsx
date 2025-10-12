@@ -13,6 +13,8 @@ import StoriesPage from "./pages/StoriesPage";
 import SuccessionPage from './pages/SuccessionPage';
 import SuccessionRelationsPage from "./pages/SuccessionRelationsPage";
 import TeamAnalyzerPage from "./pages/TeamAnalyzerPage";
+import SetupGuidePage from './pages/SetupGuidePage';
+
 
 export default function App() {
     const [umdbLoaded, setUmdbLoaded] = useState(false);
@@ -52,6 +54,9 @@ export default function App() {
                             </NavDropdown.Item>
                         </NavDropdown>
                     </Nav>
+                    <Nav className="ml-auto">
+                        <Nav.Link as={Link} to="/setup">How to get my race data</Nav.Link>
+                    </Nav>
                 </Navbar.Collapse>
             </Container>
         </Navbar>
@@ -78,6 +83,9 @@ export default function App() {
                 </Route>
                 <Route path="/roomraceanalyzer">
                     <RoomRaceAnalyzerPage/>
+                </Route>
+                <Route path="/setup">
+                    <SetupGuidePage/>
                 </Route>
                 <Route path="/">
                     <Home/>

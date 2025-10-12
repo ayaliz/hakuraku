@@ -5,6 +5,8 @@ import {RaceSimulateData} from "../data/race_data_pb";
 import {deserializeFromBase64} from "../data/RaceDataParser";
 import ShareLinkBox from "../components/ShareLinkBox";
 
+type ShareCache = Record<string, string>;
+
 type RaceDataPageState = {
     raceHorseInfoInput: string,
     raceScenarioInput: string,
@@ -15,10 +17,12 @@ type RaceDataPageState = {
     shareStatus: '' | 'sharing' | 'shared',
     shareError: string,
     shareKey: string,
+
+    shareCache: ShareCache,
 };
 
 export default class RaceDataPage extends React.Component<{}, RaceDataPageState> {
-    private fileInputRef: React.RefObject<HTMLInputElement>; // NEW
+    private fileInputRef: React.RefObject<HTMLInputElement>;
 
     constructor(props: {}) {
         super(props);
@@ -33,9 +37,11 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             shareStatus: '',
             shareError: '',
             shareKey: '',
+
+            shareCache: {},
         };
 
-        this.fileInputRef = React.createRef(); // NEW
+        this.fileInputRef = React.createRef();
     }
 
     componentDidMount() {
@@ -70,12 +76,70 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
         }
     }
 
-    // NEW — open file picker
+    private tryCanonicalizeJson = (text: string): string => {
+        try {
+            return JSON.stringify(JSON.parse(text));
+        } catch {
+            return text.trim();
+        }
+    };
+
+    private buildContentNonAnon = (horseInfoRaw: string, scenarioRaw: string): string => {
+        const raceHorseInfo = this.tryCanonicalizeJson(horseInfoRaw);
+        const raceScenario = scenarioRaw.trim();
+        return JSON.stringify({ raceHorseInfo, raceScenario });
+    };
+
+    private buildContentAnon = (horseInfoRaw: string, scenarioRaw: string): string | null => {
+        try {
+            const parsed = JSON.parse(horseInfoRaw);
+            const nameMap = new Map<string, string>();
+            let anonCounter = 1;
+
+            const list = Array.isArray(parsed) ? parsed : [parsed];
+            list.forEach((horse: any) => {
+                if (horse && typeof horse === 'object') {
+                    horse.viewer_id = 0;
+                    if (horse.trainer_name) {
+                        if (!nameMap.has(horse.trainer_name)) {
+                            nameMap.set(horse.trainer_name, `Anon${anonCounter++}`);
+                        }
+                        horse.trainer_name = nameMap.get(horse.trainer_name);
+                    }
+                }
+            });
+
+            const anonHorseInfo = Array.isArray(parsed) ? list : list[0];
+            const raceHorseInfo = JSON.stringify(anonHorseInfo);
+            const raceScenario = scenarioRaw.trim();
+            return JSON.stringify({ raceHorseInfo, raceScenario });
+        } catch {
+            return null;
+        }
+    };
+
+    private bufferToHex = (buf: ArrayBuffer): string =>
+        Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+    private hashPayload = async (payload: string): Promise<string> => {
+        try {
+            const enc = new TextEncoder();
+            const digest = await crypto.subtle.digest('SHA-256', enc.encode(payload));
+            return this.bufferToHex(digest);
+        } catch {
+            let h = 2166136261;
+            for (let i = 0; i < payload.length; i++) {
+                h ^= payload.charCodeAt(i);
+                h = Math.imul(h, 16777619);
+            }
+            return (h >>> 0).toString(16);
+        }
+    };
+
     handleUploadClick = () => {
         this.fileInputRef.current?.click();
     };
 
-    // NEW — read file and auto-fill + parse
     handleFileChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -93,9 +157,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
         };
         reader.onload = () => {
             const text = String(reader.result ?? '');
-            // Normalize newlines and split
             const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
-            // Strip possible BOM on the first line
             const firstLine = (lines[0] || '').replace(/^\uFEFF/, '');
             const secondLine = lines[1] || '';
 
@@ -104,69 +166,63 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
                     raceHorseInfoInput: firstLine,
                     raceScenarioInput: secondLine
                 },
-                () => this.parse() // auto-parse after upload
+                () => this.parse()
             );
 
-            // Allow selecting the same file again later
             e.target.value = '';
         };
 
         reader.readAsText(file);
     };
 
-    share(anonymous: boolean) {
-        let {raceHorseInfoInput, raceScenarioInput} = this.state;
-        if (!raceScenarioInput) {
+    share = async (anonymous: boolean) => {
+        let { raceHorseInfoInput, raceScenarioInput, shareCache } = this.state;
+
+        if (!raceScenarioInput.trim()) {
             alert('race_scenario is required.');
             return;
         }
 
+        let content: string | null;
         if (anonymous) {
-            try {
-                const horseInfo = JSON.parse(raceHorseInfoInput);
-                const nameMap = new Map<string, string>();
-                let anonCounter = 1;
-                horseInfo.forEach((horse: any) => {
-                    horse.viewer_id = 0;
-                    if (horse.trainer_name) {
-                        if (!nameMap.has(horse.trainer_name)) {
-                            nameMap.set(horse.trainer_name, `Anon${anonCounter++}`);
-                        }
-                        horse.trainer_name = nameMap.get(horse.trainer_name);
-                    }
-                });
-                raceHorseInfoInput = JSON.stringify(horseInfo);
-            } catch (e) {
+            content = this.buildContentAnon(raceHorseInfoInput, raceScenarioInput);
+            if (content === null) {
                 alert('Failed to anonymize horse data. Is it valid JSON?');
                 return;
             }
+        } else {
+            content = this.buildContentNonAnon(raceHorseInfoInput, raceScenarioInput);
         }
 
-        this.setState({shareStatus: 'sharing', shareError: ''});
+        const hash = await this.hashPayload(content);
+
+        const cachedKey = shareCache[hash];
+        if (cachedKey) {
+            this.setState({ shareStatus: 'shared', shareError: '', shareKey: cachedKey });
+            return;
+        }
+
+        this.setState({ shareStatus: 'sharing', shareError: '' });
         fetch('https://sourceb.in/api/bins', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-                files: [{
-                    content: JSON.stringify({
-                        raceHorseInfo: raceHorseInfoInput,
-                        raceScenario: raceScenarioInput
-                    })
-                }]
+                files: [{ content }]
             })
         })
             .then(res => res.json())
             .then(data => {
                 if (data.key) {
-                    this.setState({shareStatus: 'shared', shareKey: data.key});
+                    const nextCache: ShareCache = { ...this.state.shareCache, [hash]: data.key };
+                    this.setState({ shareStatus: 'shared', shareKey: data.key, shareCache: nextCache });
                 } else {
                     throw new Error(data.message || 'Unknown error');
                 }
             })
             .catch(err => {
-                this.setState({shareStatus: '', shareError: err.message});
+                this.setState({ shareStatus: '', shareError: err.message });
             });
-    }
+    };
 
     render() {
         const {shareStatus, shareKey, shareError} = this.state;

@@ -460,7 +460,7 @@ function buildSkillLabels(frame: any, skillActivations: RaceReplayProps["skillAc
     const mode = h.temptationMode ?? 0;
     if (mode) { items.push({ value: base, id: `temptation-${i}-${mode}`, label: next(TEMPTATION_TEXT[mode] ?? "Rushed") }); }
     (skillActivations[i] ?? [])
-      .filter(s => { const dur = s.param?.[2]; const secs = dur === -1 ? 2 : (dur ?? 0) / 10000; return time >= s.time && time < s.time + secs && !EXCLUDE_SKILL_RE.test(s.name); })
+      .filter(s => { const dur = s.param?.[2]; const secs = dur > 0 ? dur / 10000 : 2; return time >= s.time && time < s.time + secs && !EXCLUDE_SKILL_RE.test(s.name); })
       .sort((a, b) => a.time - b.time || a.name.localeCompare(b.name))
       .forEach((s) => items.push({ value: base, id: `skill-${i}-${s.time}-${s.name}`, label: next(s.name) }));
   });

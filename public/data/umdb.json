@@ -1,5 +1,5 @@
 {
-  "version": "09102025",
+  "version": "test",
   "chara": [
     {
       "id": 1001,
@@ -468,6 +468,10 @@
           "charaId": 1015
         },
         {
+          "id": 22,
+          "charaId": 1058
+        },
+        {
           "id": 23,
           "charaId": 1060
         },
@@ -726,6 +730,10 @@
           "charaId": 1056
         },
         {
+          "id": 118,
+          "charaId": 1058
+        },
+        {
           "id": 119,
           "charaId": 1060
         },
@@ -923,7 +931,13 @@
     },
     {
       "relationType": 317,
-      "relationPoint": 2
+      "relationPoint": 2,
+      "member": [
+        {
+          "id": 156,
+          "charaId": 1058
+        }
+      ]
     },
     {
       "relationType": 318,
@@ -1812,6 +1826,10 @@
         {
           "id": 656,
           "charaId": 1027
+        },
+        {
+          "id": 661,
+          "charaId": 1058
         }
       ]
     },
@@ -2232,6 +2250,10 @@
           "charaId": 1056
         },
         {
+          "id": 286,
+          "charaId": 1058
+        },
+        {
           "id": 287,
           "charaId": 1060
         },
@@ -2636,6 +2658,10 @@
         {
           "id": 404,
           "charaId": 1052
+        },
+        {
+          "id": 405,
+          "charaId": 1058
         }
       ]
     },
@@ -2774,6 +2800,10 @@
         {
           "id": 442,
           "charaId": 1045
+        },
+        {
+          "id": 447,
+          "charaId": 1058
         }
       ]
     },
@@ -3048,6 +3078,10 @@
         {
           "id": 550,
           "charaId": 1050
+        },
+        {
+          "id": 553,
+          "charaId": 1058
         }
       ]
     },
@@ -3244,6 +3278,10 @@
         {
           "id": 620,
           "charaId": 1050
+        },
+        {
+          "id": 626,
+          "charaId": 1058
         }
       ]
     },
@@ -3964,6 +4002,10 @@
         {
           "id": 861,
           "charaId": 1001
+        },
+        {
+          "id": 862,
+          "charaId": 1058
         }
       ]
     },
@@ -4168,6 +4210,10 @@
         {
           "id": 893,
           "charaId": 1002
+        },
+        {
+          "id": 894,
+          "charaId": 1058
         }
       ]
     },
@@ -4614,6 +4660,10 @@
         {
           "id": 963,
           "charaId": 1005
+        },
+        {
+          "id": 964,
+          "charaId": 1058
         }
       ]
     },
@@ -4990,6 +5040,10 @@
         {
           "id": 1023,
           "charaId": 1010
+        },
+        {
+          "id": 1024,
+          "charaId": 1058
         }
       ]
     },
@@ -5450,6 +5504,10 @@
         {
           "id": 1095,
           "charaId": 1016
+        },
+        {
+          "id": 1096,
+          "charaId": 1058
         }
       ]
     },
@@ -5768,6 +5826,10 @@
         {
           "id": 1151,
           "charaId": 1020
+        },
+        {
+          "id": 1152,
+          "charaId": 1058
         }
       ]
     },
@@ -5909,7 +5971,13 @@
     },
     {
       "relationType": 8175,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1184,
+          "charaId": 1058
+        }
+      ]
     },
     {
       "relationType": 8176,
@@ -6119,7 +6187,13 @@
     },
     {
       "relationType": 8200,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1234,
+          "charaId": 1058
+        }
+      ]
     },
     {
       "relationType": 8201,
@@ -6312,6 +6386,10 @@
         {
           "id": 1265,
           "charaId": 1030
+        },
+        {
+          "id": 1266,
+          "charaId": 1058
         }
       ]
     },
@@ -6516,6 +6594,10 @@
         {
           "id": 1297,
           "charaId": 1032
+        },
+        {
+          "id": 1298,
+          "charaId": 1058
         }
       ]
     },
@@ -6657,7 +6739,13 @@
     },
     {
       "relationType": 8248,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1330,
+          "charaId": 1058
+        }
+      ]
     },
     {
       "relationType": 8249,
@@ -6787,7 +6875,13 @@
     },
     {
       "relationType": 8264,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1362,
+          "charaId": 1058
+        }
+      ]
     },
     {
       "relationType": 8265,
@@ -7158,6 +7252,10 @@
         {
           "id": 1431,
           "charaId": 1041
+        },
+        {
+          "id": 1432,
+          "charaId": 1058
         }
       ]
     },
@@ -7619,7 +7717,13 @@
     },
     {
       "relationType": 8347,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1528,
+          "charaId": 1058
+        }
+      ]
     },
     {
       "relationType": 8348,
@@ -7789,7 +7893,13 @@
     },
     {
       "relationType": 8368,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1570,
+          "charaId": 1058
+        }
+      ]
     },
     {
       "relationType": 8369,
@@ -8037,7 +8147,13 @@
     },
     {
       "relationType": 8393,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1620,
+          "charaId": 1058
+        }
+      ]
     },
     {
       "relationType": 8394,
@@ -8185,7 +8301,13 @@
     },
     {
       "relationType": 8410,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1654,
+          "charaId": 1058
+        }
+      ]
     },
     {
       "relationType": 8411,
@@ -8206,6 +8328,10 @@
       "relationPoint": 1,
       "member": [
         {
+          "id": 1659,
+          "charaId": 1058
+        },
+        {
           "id": 1660,
           "charaId": 1006
         }
@@ -8215,6 +8341,10 @@
       "relationType": 8414,
       "relationPoint": 1,
       "member": [
+        {
+          "id": 1661,
+          "charaId": 1058
+        },
         {
           "id": 1662,
           "charaId": 1050
@@ -10741,6 +10871,24 @@
       "id": 593503,
       "name": "Japanese Derby (Hard)",
       "distance": 2400,
+      "groundType": "TURF"
+    },
+    {
+      "id": 594001,
+      "name": "Takarazuka Kinen (Hard)",
+      "distance": 2200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 594002,
+      "name": "Takarazuka Kinen (Hard)",
+      "distance": 2200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 594003,
+      "name": "Takarazuka Kinen (Hard)",
+      "distance": 2200,
       "groundType": "TURF"
     },
     {
@@ -16334,6 +16482,15 @@
       ]
     },
     {
+      "id": 100581,
+      "name": "I Never Goof Up!",
+      "gradeValue": 340,
+      "tagId": [
+        "401",
+        "403"
+      ]
+    },
+    {
       "id": 100601,
       "name": "Just a Little Farther!",
       "gradeValue": 340,
@@ -16350,8 +16507,24 @@
       ]
     },
     {
+      "id": 110011,
+      "name": "Dazzl'n ♪ Diver",
+      "gradeValue": 340,
+      "tagId": [
+        "402"
+      ]
+    },
+    {
       "id": 110031,
       "name": "Certain Victory",
+      "gradeValue": 340,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
+      "id": 110041,
+      "name": "A Kiss for Courage",
       "gradeValue": 340,
       "tagId": [
         "401"
@@ -19576,6 +19749,15 @@
       ]
     },
     {
+      "id": 900581,
+      "name": "I Never Goof Up!",
+      "gradeValue": 180,
+      "tagId": [
+        "401",
+        "403"
+      ]
+    },
+    {
       "id": 900601,
       "name": "Just a Little Farther!",
       "gradeValue": 180,
@@ -19592,8 +19774,24 @@
       ]
     },
     {
+      "id": 910011,
+      "name": "Dazzl'n ♪ Diver",
+      "gradeValue": 180,
+      "tagId": [
+        "402"
+      ]
+    },
+    {
       "id": 910031,
       "name": "Certain Victory",
+      "gradeValue": 180,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
+      "id": 910041,
+      "name": "A Kiss for Courage",
       "gradeValue": 180,
       "tagId": [
         "401"
@@ -42547,6 +42745,21 @@
       "id": 30044,
       "name": "[Two Pieces] Narita Brian",
       "charaId": 1016
+    },
+    {
+      "id": 30045,
+      "name": "[It's All Mine!] Sweep Tosho",
+      "charaId": 1044
+    },
+    {
+      "id": 30046,
+      "name": "[Full-Blown Tantrum] Winning Ticket",
+      "charaId": 1035
+    },
+    {
+      "id": 30047,
+      "name": "[Mini☆Vacation] Daiwa Scarlet",
+      "charaId": 1009
     },
     {
       "id": 30048,

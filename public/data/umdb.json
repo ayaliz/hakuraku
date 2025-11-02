@@ -363,7 +363,7 @@
     },
     {
       "id": 2002,
-      "name": "Bitter Glace",
+      "name": "Bitter Glasse",
       "castName": "Aino Shimada"
     },
     {
@@ -556,6 +556,10 @@
           "charaId": 1035
         },
         {
+          "id": 50,
+          "charaId": 1037
+        },
+        {
           "id": 51,
           "charaId": 1046
         },
@@ -704,6 +708,10 @@
         {
           "id": 101,
           "charaId": 1035
+        },
+        {
+          "id": 103,
+          "charaId": 1037
         },
         {
           "id": 104,
@@ -943,6 +951,10 @@
       "relationType": 318,
       "relationPoint": 2,
       "member": [
+        {
+          "id": 157,
+          "charaId": 1037
+        },
         {
           "id": 158,
           "charaId": 1046
@@ -1768,6 +1780,10 @@
           "charaId": 1035
         },
         {
+          "id": 670,
+          "charaId": 1037
+        },
+        {
           "id": 671,
           "charaId": 1017
         }
@@ -1926,6 +1942,10 @@
         {
           "id": 689,
           "charaId": 1018
+        },
+        {
+          "id": 692,
+          "charaId": 1037
         },
         {
           "id": 693,
@@ -2226,6 +2246,10 @@
           "charaId": 1035
         },
         {
+          "id": 271,
+          "charaId": 1037
+        },
+        {
           "id": 272,
           "charaId": 1040
         },
@@ -2412,6 +2436,10 @@
         {
           "id": 352,
           "charaId": 1006
+        },
+        {
+          "id": 353,
+          "charaId": 1037
         }
       ]
     },
@@ -2702,6 +2730,10 @@
       "relationPoint": 1,
       "member": [
         {
+          "id": 414,
+          "charaId": 1037
+        },
+        {
           "id": 415,
           "charaId": 1038
         }
@@ -2842,6 +2874,10 @@
         {
           "id": 457,
           "charaId": 1035
+        },
+        {
+          "id": 458,
+          "charaId": 1037
         },
         {
           "id": 464,
@@ -3072,6 +3108,10 @@
           "charaId": 1026
         },
         {
+          "id": 543,
+          "charaId": 1037
+        },
+        {
           "id": 546,
           "charaId": 1046
         },
@@ -3272,6 +3312,10 @@
           "charaId": 1026
         },
         {
+          "id": 612,
+          "charaId": 1037
+        },
+        {
           "id": 613,
           "charaId": 1038
         },
@@ -3374,6 +3418,10 @@
         {
           "id": 807,
           "charaId": 1035
+        },
+        {
+          "id": 808,
+          "charaId": 1037
         }
       ]
     },
@@ -6902,6 +6950,10 @@
       "relationPoint": 1,
       "member": [
         {
+          "id": 1367,
+          "charaId": 1037
+        },
+        {
           "id": 1368,
           "charaId": 1004
         }
@@ -6911,6 +6963,10 @@
       "relationType": 8268,
       "relationPoint": 1,
       "member": [
+        {
+          "id": 1369,
+          "charaId": 1037
+        },
         {
           "id": 1370,
           "charaId": 1007
@@ -6922,6 +6978,10 @@
       "relationPoint": 1,
       "member": [
         {
+          "id": 1371,
+          "charaId": 1037
+        },
+        {
           "id": 1372,
           "charaId": 1009
         }
@@ -6929,12 +6989,22 @@
     },
     {
       "relationType": 8270,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1373,
+          "charaId": 1037
+        }
+      ]
     },
     {
       "relationType": 8271,
       "relationPoint": 1,
       "member": [
+        {
+          "id": 1375,
+          "charaId": 1037
+        },
         {
           "id": 1376,
           "charaId": 1045
@@ -6953,11 +7023,23 @@
     },
     {
       "relationType": 8273,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1379,
+          "charaId": 1037
+        }
+      ]
     },
     {
       "relationType": 8274,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1381,
+          "charaId": 1037
+        }
+      ]
     },
     {
       "relationType": 8275,
@@ -10934,6 +11016,12 @@
       "groundType": "TURF"
     },
     {
+      "id": 600008,
+      "name": "Leo Cup",
+      "distance": 2200,
+      "groundType": "TURF"
+    },
+    {
       "id": 600017,
       "name": "Taurus Cup Finals",
       "distance": 2400,
@@ -10949,6 +11037,12 @@
       "id": 600019,
       "name": "Cancer Cup Finals",
       "distance": 1600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 600020,
+      "name": "Leo Cup Finals",
+      "distance": 2200,
       "groundType": "TURF"
     },
     {
@@ -14318,6 +14412,966 @@
       "groundType": "TURF"
     },
     {
+      "id": 620000,
+      "name": "Showdown: Sprint (G)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620001,
+      "name": "Showdown: Sprint (G)",
+      "distance": 1000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620002,
+      "name": "Showdown: Sprint (G)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620003,
+      "name": "Showdown: Sprint (G)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620004,
+      "name": "Showdown: Sprint (G)",
+      "distance": 1400,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620005,
+      "name": "Showdown: Sprint (G)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620006,
+      "name": "Showdown: Sprint (G)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620007,
+      "name": "Showdown: Sprint (G)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620008,
+      "name": "Showdown: Sprint (G)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620009,
+      "name": "Showdown: Sprint (G)",
+      "distance": 1000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620010,
+      "name": "Showdown: Mile (G)",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620011,
+      "name": "Showdown: Mile (G)",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620012,
+      "name": "Showdown: Mile (G)",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620013,
+      "name": "Showdown: Mile (G)",
+      "distance": 1600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620014,
+      "name": "Showdown: Mile (G)",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620015,
+      "name": "Showdown: Mile (G)",
+      "distance": 1600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620016,
+      "name": "Showdown: Mile (G)",
+      "distance": 1600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620017,
+      "name": "Showdown: Mile (G)",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620018,
+      "name": "Showdown: Mile (G)",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620019,
+      "name": "Showdown: Mile (G)",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620020,
+      "name": "Showdown: Medium (G)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620021,
+      "name": "Showdown: Medium (G)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620022,
+      "name": "Showdown: Medium (G)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620023,
+      "name": "Showdown: Medium (G)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620024,
+      "name": "Showdown: Medium (G)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620025,
+      "name": "Showdown: Medium (G)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620026,
+      "name": "Showdown: Medium (G)",
+      "distance": 2200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620027,
+      "name": "Showdown: Medium (G)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620028,
+      "name": "Showdown: Medium (G)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620029,
+      "name": "Showdown: Medium (G)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620030,
+      "name": "Showdown: Long (G)",
+      "distance": 2600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620031,
+      "name": "Showdown: Long (G)",
+      "distance": 2600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620032,
+      "name": "Showdown: Long (G)",
+      "distance": 2600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620033,
+      "name": "Showdown: Long (G)",
+      "distance": 3600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620034,
+      "name": "Showdown: Long (G)",
+      "distance": 3400,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620035,
+      "name": "Showdown: Long (G)",
+      "distance": 3000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620036,
+      "name": "Showdown: Long (G)",
+      "distance": 2600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620037,
+      "name": "Showdown: Long (G)",
+      "distance": 2600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620038,
+      "name": "Showdown: Long (G)",
+      "distance": 2600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620039,
+      "name": "Showdown: Long (G)",
+      "distance": 2600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620040,
+      "name": "Showdown: Dirt (G)",
+      "distance": 1700,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620041,
+      "name": "Showdown: Dirt (G)",
+      "distance": 1700,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620042,
+      "name": "Showdown: Dirt (G)",
+      "distance": 1700,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620043,
+      "name": "Showdown: Dirt (G)",
+      "distance": 1800,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620044,
+      "name": "Showdown: Dirt (G)",
+      "distance": 1600,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620045,
+      "name": "Showdown: Dirt (G)",
+      "distance": 1800,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620046,
+      "name": "Showdown: Dirt (G)",
+      "distance": 1800,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620047,
+      "name": "Showdown: Dirt (G)",
+      "distance": 1700,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620048,
+      "name": "Showdown: Dirt (G)",
+      "distance": 1700,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620049,
+      "name": "Showdown: Dirt (G)",
+      "distance": 1700,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620050,
+      "name": "Showdown: Sprint (F)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620051,
+      "name": "Showdown: Sprint (F)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620052,
+      "name": "Showdown: Sprint (F)",
+      "distance": 1400,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620053,
+      "name": "Showdown: Mile (F)",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620054,
+      "name": "Showdown: Mile (F)",
+      "distance": 1600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620055,
+      "name": "Showdown: Mile (F)",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620056,
+      "name": "Showdown: Medium (F)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620057,
+      "name": "Showdown: Medium (F)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620058,
+      "name": "Showdown: Medium (F)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620059,
+      "name": "Showdown: Long (F)",
+      "distance": 2600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620060,
+      "name": "Showdown: Long (F)",
+      "distance": 3600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620061,
+      "name": "Showdown: Long (F)",
+      "distance": 3400,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620062,
+      "name": "Showdown: Dirt (F)",
+      "distance": 1700,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620063,
+      "name": "Showdown: Dirt (F)",
+      "distance": 1800,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620064,
+      "name": "Showdown: Dirt (F)",
+      "distance": 1600,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620065,
+      "name": "Showdown: Sprint (E)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620066,
+      "name": "Showdown: Sprint (E)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620067,
+      "name": "Showdown: Sprint (E)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620068,
+      "name": "Showdown: Mile (E)",
+      "distance": 1600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620069,
+      "name": "Showdown: Mile (E)",
+      "distance": 1600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620070,
+      "name": "Showdown: Mile (E)",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620071,
+      "name": "Showdown: Medium (E)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620072,
+      "name": "Showdown: Medium (E)",
+      "distance": 2200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620073,
+      "name": "Showdown: Medium (E)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620074,
+      "name": "Showdown: Long (E)",
+      "distance": 3000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620075,
+      "name": "Showdown: Long (E)",
+      "distance": 2600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620076,
+      "name": "Showdown: Long (E)",
+      "distance": 2600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620077,
+      "name": "Showdown: Dirt (E)",
+      "distance": 1800,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620078,
+      "name": "Showdown: Dirt (E)",
+      "distance": 1800,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620079,
+      "name": "Showdown: Dirt (E)",
+      "distance": 1700,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620080,
+      "name": "Showdown: Sprint (D)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620081,
+      "name": "Showdown: Sprint (D)",
+      "distance": 1000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620082,
+      "name": "Showdown: Sprint (D)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620083,
+      "name": "Showdown: Mile (D)",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620084,
+      "name": "Showdown: Mile (D)",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620085,
+      "name": "Showdown: Mile (D)",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620086,
+      "name": "Showdown: Medium (D)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620087,
+      "name": "Showdown: Medium (D)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620088,
+      "name": "Showdown: Medium (D)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620089,
+      "name": "Showdown: Long (D)",
+      "distance": 2600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620090,
+      "name": "Showdown: Long (D)",
+      "distance": 2600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620091,
+      "name": "Showdown: Long (D)",
+      "distance": 2600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620092,
+      "name": "Showdown: Dirt (D)",
+      "distance": 1700,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620093,
+      "name": "Showdown: Dirt (D)",
+      "distance": 1700,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620094,
+      "name": "Showdown: Dirt (D)",
+      "distance": 1700,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620095,
+      "name": "Showdown: Sprint (C)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620096,
+      "name": "Showdown: Sprint (C)",
+      "distance": 1400,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620097,
+      "name": "Showdown: Sprint (C)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620098,
+      "name": "Showdown: Mile (C)",
+      "distance": 1600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620099,
+      "name": "Showdown: Mile (C)",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620100,
+      "name": "Showdown: Mile (C)",
+      "distance": 1600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620101,
+      "name": "Showdown: Medium (C)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620102,
+      "name": "Showdown: Medium (C)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620103,
+      "name": "Showdown: Medium (C)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620104,
+      "name": "Showdown: Long (C)",
+      "distance": 3600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620105,
+      "name": "Showdown: Long (C)",
+      "distance": 3400,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620106,
+      "name": "Showdown: Long (C)",
+      "distance": 3000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620107,
+      "name": "Showdown: Dirt (C)",
+      "distance": 1800,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620108,
+      "name": "Showdown: Dirt (C)",
+      "distance": 1600,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620109,
+      "name": "Showdown: Dirt (C)",
+      "distance": 1800,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620110,
+      "name": "Showdown: Sprint (B)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620111,
+      "name": "Showdown: Sprint (B)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620112,
+      "name": "Showdown: Sprint (B)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620113,
+      "name": "Showdown: Mile (B)",
+      "distance": 1600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620114,
+      "name": "Showdown: Mile (B)",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620115,
+      "name": "Showdown: Mile (B)",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620116,
+      "name": "Showdown: Medium (B)",
+      "distance": 2200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620117,
+      "name": "Showdown: Medium (B)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620118,
+      "name": "Showdown: Medium (B)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620119,
+      "name": "Showdown: Long (B)",
+      "distance": 2600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620120,
+      "name": "Showdown: Long (B)",
+      "distance": 2600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620121,
+      "name": "Showdown: Long (B)",
+      "distance": 2600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620122,
+      "name": "Showdown: Dirt (B)",
+      "distance": 1800,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620123,
+      "name": "Showdown: Dirt (B)",
+      "distance": 1700,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620124,
+      "name": "Showdown: Dirt (B)",
+      "distance": 1700,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620125,
+      "name": "Showdown: Sprint (A)",
+      "distance": 1000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620126,
+      "name": "Showdown: Sprint (A)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620127,
+      "name": "Showdown: Sprint (A)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620128,
+      "name": "Showdown: Mile (A)",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620129,
+      "name": "Showdown: Mile (A)",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620130,
+      "name": "Showdown: Mile (A)",
+      "distance": 1600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620131,
+      "name": "Showdown: Medium (A)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620132,
+      "name": "Showdown: Medium (A)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620133,
+      "name": "Showdown: Medium (A)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620134,
+      "name": "Showdown: Long (A)",
+      "distance": 2600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620135,
+      "name": "Showdown: Long (A)",
+      "distance": 2600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620136,
+      "name": "Showdown: Long (A)",
+      "distance": 3600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620137,
+      "name": "Showdown: Dirt (A)",
+      "distance": 1700,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620138,
+      "name": "Showdown: Dirt (A)",
+      "distance": 1700,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620139,
+      "name": "Showdown: Dirt (A)",
+      "distance": 1800,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620140,
+      "name": "Showdown: Sprint (S)",
+      "distance": 1400,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620141,
+      "name": "Showdown: Sprint (S)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620142,
+      "name": "Showdown: Sprint (S)",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620143,
+      "name": "Showdown: Mile (S)",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620144,
+      "name": "Showdown: Mile (S)",
+      "distance": 1600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620145,
+      "name": "Showdown: Mile (S)",
+      "distance": 1600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620146,
+      "name": "Showdown: Medium (S)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620147,
+      "name": "Showdown: Medium (S)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620148,
+      "name": "Showdown: Medium (S)",
+      "distance": 2200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620149,
+      "name": "Showdown: Long (S)",
+      "distance": 3400,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620150,
+      "name": "Showdown: Long (S)",
+      "distance": 3000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620151,
+      "name": "Showdown: Long (S)",
+      "distance": 2600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620152,
+      "name": "Showdown: Dirt (S)",
+      "distance": 1600,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620153,
+      "name": "Showdown: Dirt (S)",
+      "distance": 1800,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620154,
+      "name": "Showdown: Dirt (S)",
+      "distance": 1800,
+      "groundType": "DIRT"
+    },
+    {
+      "id": 620155,
+      "name": "Team Zenith Showdown: Sprint",
+      "distance": 1400,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620156,
+      "name": "Team Zenith Showdown: Mile",
+      "distance": 1600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620157,
+      "name": "Team Zenith Showdown: Medium",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620158,
+      "name": "Team Zenith Showdown: Long",
+      "distance": 2500,
+      "groundType": "TURF"
+    },
+    {
+      "id": 620159,
+      "name": "Team Zenith Showdown: Dirt",
+      "distance": 1600,
+      "groundType": "DIRT"
+    },
+    {
       "id": 800001,
       "name": "February S.",
       "distance": 1600,
@@ -16416,6 +17470,14 @@
       ]
     },
     {
+      "id": 100371,
+      "name": "Schwarzes Schwert",
+      "gradeValue": 340,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
       "id": 100381,
       "name": "#LookatCurren",
       "gradeValue": 340,
@@ -16569,6 +17631,14 @@
       "tagId": [
         "401",
         "403"
+      ]
+    },
+    {
+      "id": 110561,
+      "name": "Bountiful Harvest",
+      "gradeValue": 340,
+      "tagId": [
+        "401"
       ]
     },
     {
@@ -19456,6 +20526,100 @@
       ]
     },
     {
+      "id": 210011,
+      "name": "Burning Spirit SPD",
+      "gradeValue": 633,
+      "tagId": [
+        "302",
+        "401"
+      ]
+    },
+    {
+      "id": 210012,
+      "name": "Ignited Spirit SPD",
+      "gradeValue": 263,
+      "tagId": [
+        "302",
+        "401"
+      ]
+    },
+    {
+      "id": 210021,
+      "name": "Burning Spirit STA",
+      "gradeValue": 633,
+      "tagId": [
+        "302",
+        "402"
+      ]
+    },
+    {
+      "id": 210022,
+      "name": "Ignited Spirit STA",
+      "gradeValue": 263,
+      "tagId": [
+        "302",
+        "402"
+      ]
+    },
+    {
+      "id": 210031,
+      "name": "Burning Spirit PWR",
+      "gradeValue": 633,
+      "tagId": [
+        "303",
+        "403"
+      ]
+    },
+    {
+      "id": 210032,
+      "name": "Ignited Spirit PWR",
+      "gradeValue": 263,
+      "tagId": [
+        "303",
+        "403"
+      ]
+    },
+    {
+      "id": 210041,
+      "name": "Burning Spirit GUTS",
+      "gradeValue": 633,
+      "tagId": [
+        "303",
+        "401",
+        "403"
+      ]
+    },
+    {
+      "id": 210042,
+      "name": "Ignited Spirit GUTS",
+      "gradeValue": 263,
+      "tagId": [
+        "303",
+        "401",
+        "403"
+      ]
+    },
+    {
+      "id": 210051,
+      "name": "Burning Spirit WIT",
+      "gradeValue": 633,
+      "tagId": [
+        "301",
+        "403",
+        "405"
+      ]
+    },
+    {
+      "id": 210052,
+      "name": "Ignited Spirit WIT",
+      "gradeValue": 263,
+      "tagId": [
+        "301",
+        "403",
+        "405"
+      ]
+    },
+    {
       "id": 300011,
       "name": "Unquenched Thirst",
       "gradeValue": 0,
@@ -19683,6 +20847,14 @@
       ]
     },
     {
+      "id": 900371,
+      "name": "Schwarzes Schwert",
+      "gradeValue": 180,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
       "id": 900381,
       "name": "#LookatCurren",
       "gradeValue": 180,
@@ -19836,6 +21008,14 @@
       "tagId": [
         "401",
         "403"
+      ]
+    },
+    {
+      "id": 910561,
+      "name": "Bountiful Harvest",
+      "gradeValue": 180,
+      "tagId": [
+        "401"
       ]
     }
   ],
@@ -20044,7 +21224,7 @@
     },
     {
       "id": 105602,
-      "name": "[Fortune in the Fall Air]"
+      "name": "[Lucky Tidings]"
     },
     {
       "id": 105801,
@@ -20809,6 +21989,10 @@
       "name": "A Whole New World"
     },
     {
+      "id": 400002430,
+      "name": "Before the Fifth Round of Unity Cup"
+    },
+    {
       "id": 400002431,
       "name": "Unity Cup Round Five: Grasping Victory"
     },
@@ -20862,6 +22046,10 @@
     },
     {
       "id": 400002444,
+      "name": "A Team at Last"
+    },
+    {
+      "id": 400002445,
       "name": "A Team at Last"
     },
     {
@@ -27298,7 +28486,7 @@
     },
     {
       "id": 501013801,
-      "name": "My Family Make a Difficult Decision"
+      "name": "My Family Makes a Difficult Decision"
     },
     {
       "id": 501013802,
@@ -30190,11 +31378,11 @@
     },
     {
       "id": 501020314,
-      "name": "After the Takarazuka Kinen: So\\nPlayedOut"
+      "name": "After the Takarazuka Kinen:\\nSo Played Out"
     },
     {
       "id": 501020315,
-      "name": "After the Takarazuka Kinen: So\\nPlayedOut"
+      "name": "After the Takarazuka Kinen:\\nSo Played Out"
     },
     {
       "id": 501020316,
@@ -30334,11 +31522,11 @@
     },
     {
       "id": 501020432,
-      "name": "After the Takarazuka Kinen: So\\nPlayedOut"
+      "name": "After the Takarazuka Kinen:\\nSo Played Out"
     },
     {
       "id": 501020433,
-      "name": "After the Takarazuka Kinen: So\\nPlayedOut"
+      "name": "After the Takarazuka Kinen:\\nSo Played Out"
     },
     {
       "id": 501020434,
@@ -42362,6 +43550,11 @@
       "charaId": 1047
     },
     {
+      "id": 10060,
+      "name": "[Tracen Academy] Riko Kashimoto",
+      "charaId": 9006
+    },
+    {
       "id": 10061,
       "name": "[Tracen Academy] Seeking the Pearl",
       "charaId": 1042
@@ -42395,6 +43588,11 @@
       "id": 10069,
       "name": "[Tracen Academy] Mejiro Ardan",
       "charaId": 1071
+    },
+    {
+      "id": 10070,
+      "name": "[Tracen Academy] Tosen Jordan",
+      "charaId": 1048
     },
     {
       "id": 10072,
@@ -42550,6 +43748,11 @@
       "id": 20034,
       "name": "[My Heart Will Go On] Mejiro Ardan",
       "charaId": 1071
+    },
+    {
+      "id": 20035,
+      "name": "[Turf as Nails] Tosen Jordan",
+      "charaId": 1048
     },
     {
       "id": 30001,
@@ -42717,6 +43920,16 @@
       "charaId": 1035
     },
     {
+      "id": 30034,
+      "name": "[Happiness Just around the Bend] Rice Shower",
+      "charaId": 1030
+    },
+    {
+      "id": 30036,
+      "name": "[Planned Perfection] Riko Kashimoto",
+      "charaId": 9006
+    },
+    {
       "id": 30038,
       "name": "[Peak Sakura Season] Sakura Chiyono O",
       "charaId": 1069
@@ -42767,6 +43980,11 @@
       "charaId": 1027
     },
     {
+      "id": 30054,
+      "name": "[Daring to Dream] Nice Nature",
+      "charaId": 1060
+    },
+    {
       "id": 30055,
       "name": "[Paint the Sky Red] Seiun Sky",
       "charaId": 1020
@@ -42780,6 +43998,11 @@
       "id": 30057,
       "name": "[That Time I Became the Strongest] Gold Ship",
       "charaId": 1007
+    },
+    {
+      "id": 30062,
+      "name": "[Winning Dream] Silence Suzuka",
+      "charaId": 1002
     }
   ]
 }

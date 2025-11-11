@@ -8,9 +8,8 @@ const SetupGuidePage = () => {
                 <strong>November 11, 2025 update:</strong> Added new horseACT version supporting the new Practice Rooms, and added new hachimi information.
             </div>
             
-            <h4>Step 1: Compile Hachimi-Unity2020</h4>
-            <p>Data capture is done via a plugin for hachimi, a mod for the game. I am unaware of any public repo that'd compile into a hachimi dll that works after the november 11th global patch, so as a stopgap, I'll provide one here: <a href="data/winhttp.dll" download><strong>winhttp.dll</strong></a></p>
-            <p>Place winhttp.dll in the root of your game folder and you are now running hachimi.</p>
+            <h4>Step 1: Install hachimi</h4>
+            <p>Data capture is done via a plugin for hachimi, a mod for the game. Run the installer from <a href="https://github.com/kairusds/Hachimi-Edge/releases/latest" target="_blank" rel="noopener noreferrer">https://github.com/kairusds/Hachimi-Edge/releases/latest</a> to install it.</p>
 
 			<h4>Step 2: Download horseACT.dll</h4>
 			<p>Download <a href="data/horseACT.dll" download><strong>horseACT.dll</strong></a> and place it in the root of your game folder. This is the hachimi plugin to capture race data.</p>

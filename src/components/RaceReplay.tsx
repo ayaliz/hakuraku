@@ -60,6 +60,7 @@ type RaceReplayProps = {
   raceHorseInfo: any[];
   displayNames: Record<number, string>;
   skillActivations: Record<number, { time: number; name: string; param: number[] }[]>;
+  otherEvents: Record<number, { time: number; duration: number; name: string }[]>;
   trainerColors?: Record<number, string>;
   infoTitle?: string;
   infoContent?: React.ReactNode;
@@ -452,7 +453,7 @@ function buildHorsesCustomSeries(
   return series;
 }
 
-function buildSkillLabels(frame: any, skillActivations: RaceReplayProps["skillActivations"], time: number) {
+function buildSkillLabels(frame: any, skillActivations: RaceReplayProps["skillActivations"], otherEvents: RaceReplayProps["otherEvents"], time: number) {
   const items: any[] = [];
   frame.horseFrame.forEach((h: any, i: number) => {
     if (!h) return; const base: [number, number] = [h.distance ?? 0, h.lanePosition ?? 0];
@@ -463,6 +464,10 @@ function buildSkillLabels(frame: any, skillActivations: RaceReplayProps["skillAc
       .filter(s => { const dur = s.param?.[2]; const secs = dur > 0 ? dur / 10000 : 2; return time >= s.time && time < s.time + secs && !EXCLUDE_SKILL_RE.test(s.name); })
       .sort((a, b) => a.time - b.time || a.name.localeCompare(b.name))
       .forEach((s) => items.push({ value: base, id: `skill-${i}-${s.time}-${s.name}`, label: next(s.name) }));
+    (otherEvents[i] ?? [])
+      .filter(e => time >= e.time && time < e.time + e.duration)
+      .sort((a, b) => a.time - b.time || a.name.localeCompare(b.name))
+      .forEach((e) => items.push({ value: base, id: `other-${i}-${e.time}-${e.name}`, label: next(e.name) }));
   });
   return items;
 }
@@ -637,6 +642,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
   raceHorseInfo,
   displayNames,
   skillActivations,
+  otherEvents,
   trainerColors,
   infoTitle,
   infoContent,
@@ -691,7 +697,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
   );
 
   const yMaxWithHeadroom = maxLanePosition + 3;
-  const skillLabelData = useMemo(() => buildSkillLabels(interpolatedFrame, skillActivations, renderTime), [interpolatedFrame, skillActivations, renderTime]);
+  const skillLabelData = useMemo(() => buildSkillLabels(interpolatedFrame, skillActivations, otherEvents, renderTime), [interpolatedFrame, skillActivations, otherEvents, renderTime]);
   const { straights, corners, straightsFinal, cornersFinal, segMarkers, slopeTriangles } = useCourseLayers(selectedTrackId, goalInX, yMaxWithHeadroom);
 
   const raceMarkers = useMemo(() => { const td = selectedTrackId ? (courseData as Record<string, any>)[selectedTrackId] : undefined; return buildMarkLines(goalInX, raceData, displayNames, segMarkers, td); }, [goalInX, raceData, displayNames, segMarkers, selectedTrackId]);

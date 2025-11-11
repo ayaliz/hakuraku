@@ -248,6 +248,20 @@ type RaceDataPresenterState = {
     showOtherRaceEvents: boolean,
 };
 
+function bisectFrameIndex(frames: RaceSimulateData["frame"], t: number) {
+    if (!frames.length) return 0;
+    const last = frames.length - 1;
+    if (t <= (frames[0].time ?? 0)) return 0;
+    if (t >= (frames[last].time ?? 0)) return last;
+    let lo = 0, hi = last;
+    while (lo <= hi) {
+        const mid = (lo + hi) >> 1, tm = frames[mid].time ?? 0;
+        if (tm <= t) { if (t < (frames[mid + 1].time ?? tm)) return mid; lo = mid + 1; }
+        else hi = mid - 1;
+    }
+    return lo;
+}
+
 class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, RaceDataPresenterState> {
     constructor(props: RaceDataPresenterProps) {
         super(props);
@@ -566,7 +580,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
             };
         });
 
-        return <FoldCard header="Other Race Events [JP Only]">
+        return <FoldCard header="Other Race Events">
             <BootstrapTable bootstrap4 condensed hover
                             classes="responsive-bootstrap-table"
                             wrapperClasses="table-responsive"
@@ -627,6 +641,85 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
         return allSkillActivations;
     });
 
+    otherEvents = memoize((raceData: RaceSimulateData, raceHorseInfo: any[]) => {
+        const allOtherEvents: Record<number, { time: number; duration: number; name: string }[]> = {};
+        if (!raceData.frame || raceData.frame.length === 0) {
+            return allOtherEvents;
+        }
+
+        const charaData = new Map<number, TrainedCharaData>();
+        if (raceHorseInfo) {
+            raceHorseInfo.forEach(data => {
+                const frameOrder = data['frame_order'] - 1;
+                charaData.set(frameOrder, fromRaceHorseData(data));
+            });
+        }
+
+        const frames = raceData.frame ?? [];
+        const goalInX = (() => {
+            let winnerIndex = -1, winnerFinish = Number.POSITIVE_INFINITY;
+            (raceData.horseResult ?? []).forEach((hr, idx) => { const t = hr?.finishTimeRaw; if (typeof t === "number" && t > 0 && t < winnerFinish) { winnerFinish = t; winnerIndex = idx; } });
+            if (winnerIndex >= 0 && frames.length && isFinite(winnerFinish)) { const i = bisectFrameIndex(frames, winnerFinish); const d0 = frames[i]?.horseFrame?.[winnerIndex]?.distance ?? 0; return d0; }
+            return 0;
+        })();
+
+        for (const event of raceData.event) {
+            const e = event.event!;
+            const frameOrder = e.param[0];
+            const startTime = e.frameTime!;
+
+            if (e.type === RaceSimulateEventData_SimulateEventType.COMPETE_FIGHT) {
+                const startHp = raceData.frame[0].horseFrame[frameOrder].hp!;
+                const hpThreshold = startHp * 0.05;
+                let endTime = raceData.frame[raceData.frame.length - 1].time!;
+
+                for (let i = 0; i < raceData.frame.length; i++) {
+                    const frame = raceData.frame[i];
+                    if (frame.time! < startTime) continue;
+                    if (frame.horseFrame[frameOrder].hp! < hpThreshold) {
+                        endTime = frame.time!;
+                        break;
+                    }
+                }
+                if (!allOtherEvents[frameOrder]) {
+                    allOtherEvents[frameOrder] = [];
+                }
+                allOtherEvents[frameOrder].push({ time: startTime, duration: endTime - startTime, name: "Dueling" });
+            }
+
+            if (e.type === RaceSimulateEventData_SimulateEventType.COMPETE_TOP) {
+                const guts = charaData.get(frameOrder)?.guts ?? 0;
+                const gutsDuration = Math.pow(700 * guts, 0.5) * 0.012;
+
+                const raceDistance = goalInX;
+                const distanceThreshold = (9 / 24) * raceDistance;
+                
+                let distanceThresholdTime = -1;
+                for (let i = 0; i < raceData.frame.length; i++) {
+                    const frame = raceData.frame[i];
+                    if (frame.horseFrame[frameOrder].distance! >= distanceThreshold) {
+                        distanceThresholdTime = frame.time!;
+                        break;
+                    }
+                }
+
+                if (distanceThresholdTime === -1) { // Should not happen
+                    distanceThresholdTime = raceData.frame[raceData.frame.length - 1].time!;
+                }
+
+                if (startTime < distanceThresholdTime) {
+                    const duration = Math.min(gutsDuration, distanceThresholdTime - startTime);
+                    if (!allOtherEvents[frameOrder]) {
+                        allOtherEvents[frameOrder] = [];
+                    }
+                    allOtherEvents[frameOrder].push({ time: startTime, duration: duration, name: "Spot Struggle" });
+                }
+            }
+        }
+
+        return allOtherEvents;
+    });
+
     render() {
         return <div>
             {(this.props.raceData.header!.version! > supportedRaceDataVersion) &&
@@ -636,7 +729,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 </Alert>}
             {this.renderCharaList()}
                         <FoldCard header="Replay">
-                <RaceReplay raceData={this.props.raceData} raceHorseInfo={this.props.raceHorseInfo} displayNames={this.displayNames(this.props.raceHorseInfo, this.props.raceData)} skillActivations={this.skillActivations(this.props.raceData)} />
+                <RaceReplay raceData={this.props.raceData} raceHorseInfo={this.props.raceHorseInfo} displayNames={this.displayNames(this.props.raceHorseInfo, this.props.raceData)} skillActivations={this.skillActivations(this.props.raceData)} otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo)} />
             </FoldCard>
             {this.renderOtherRaceEventsList()}
             <Form>
@@ -675,7 +768,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                         checked={this.state.showOtherRaceEvents}
                         onChange={(e) => this.setState({showOtherRaceEvents: e.target.checked})}
                         id="show-competes"
-                        label={`Show Other Race Events [JP Only] (${Array.from(otherRaceEventLabels.values()).join(', ')})`}/>
+                        label={`Show Other Race Events (${Array.from(otherRaceEventLabels.values()).join(', ')})`}/>
                 </Form.Group>
             </Form>
             {this.state.selectedCharaFrameOrder !== undefined && this.renderGraphs()}

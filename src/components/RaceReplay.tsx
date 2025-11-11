@@ -661,7 +661,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
   const accByIdx = useCurrentAcceleration(frames, interpolatedFrame.frameIndex);
 
   const frontRunnerDistance = interpolatedFrame.horseFrame.reduce((m: number, h: any) => Math.max(m, h?.distance ?? 0), 0);
-  const cameraWindow = 50, cameraLead = 8;
+  const cameraWindow = 80, cameraLead = 8;
   const xAxis = useMemo(() => ({ min: Math.max(0, Math.max(cameraWindow, frontRunnerDistance + cameraLead) - cameraWindow), max: Math.max(cameraWindow, frontRunnerDistance + cameraLead) }), [frontRunnerDistance]);
 
   const horseInfoByIdx = useMemo(() => { const map: Record<number, any> = {}; (raceHorseInfo ?? []).forEach((h: any) => { const idx = (h.frame_order ?? h.frameOrder) - 1; if (idx >= 0) map[idx] = h; }); return map; }, [raceHorseInfo]);

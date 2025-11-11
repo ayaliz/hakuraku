@@ -55,7 +55,7 @@ export default function App() {
                         </NavDropdown>
                     </Nav>
                     <Nav className="ml-auto">
-                        <Nav.Link as={Link} to="/setup">How to get my race data</Nav.Link>
+                        <Nav.Link as={Link} to="/setup">How to get my race data <small style={{color: 'red'}}>(Nov 11 update!)</small></Nav.Link>
                     </Nav>
                 </Navbar.Collapse>
             </Container>

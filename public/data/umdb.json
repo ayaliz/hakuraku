@@ -464,6 +464,10 @@
           "charaId": 1013
         },
         {
+          "id": 11,
+          "charaId": 1019
+        },
+        {
           "id": 12,
           "charaId": 1038
         }
@@ -724,6 +728,10 @@
           "charaId": 1018
         },
         {
+          "id": 92,
+          "charaId": 1019
+        },
+        {
           "id": 95,
           "charaId": 1023
         },
@@ -958,6 +966,10 @@
         {
           "id": 149,
           "charaId": 1032
+        },
+        {
+          "id": 150,
+          "charaId": 1019
         }
       ]
     },
@@ -1651,7 +1663,13 @@
     },
     {
       "relationType": 2501,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 750,
+          "charaId": 1019
+        }
+      ]
     },
     {
       "relationType": 2502,
@@ -1848,6 +1866,10 @@
         {
           "id": 744,
           "charaId": 1010
+        },
+        {
+          "id": 745,
+          "charaId": 1019
         }
       ]
     },
@@ -1992,6 +2014,10 @@
           "charaId": 1018
         },
         {
+          "id": 690,
+          "charaId": 1019
+        },
+        {
           "id": 692,
           "charaId": 1037
         },
@@ -2026,6 +2052,10 @@
         {
           "id": 748,
           "charaId": 1010
+        },
+        {
+          "id": 749,
+          "charaId": 1019
         }
       ]
     },
@@ -2260,6 +2290,10 @@
         {
           "id": 254,
           "charaId": 1017
+        },
+        {
+          "id": 255,
+          "charaId": 1019
         },
         {
           "id": 256,
@@ -2751,7 +2785,13 @@
     },
     {
       "relationType": 2813,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 406,
+          "charaId": 1019
+        }
+      ]
     },
     {
       "relationType": 2814,
@@ -2864,6 +2904,10 @@
         {
           "id": 431,
           "charaId": 1018
+        },
+        {
+          "id": 432,
+          "charaId": 1019
         },
         {
           "id": 434,
@@ -3054,6 +3098,10 @@
           "charaId": 1040
         },
         {
+          "id": 498,
+          "charaId": 1019
+        },
+        {
           "id": 499,
           "charaId": 1026
         },
@@ -3162,6 +3210,10 @@
         {
           "id": 532,
           "charaId": 1016
+        },
+        {
+          "id": 533,
+          "charaId": 1019
         },
         {
           "id": 536,
@@ -3368,6 +3420,10 @@
           "charaId": 1016
         },
         {
+          "id": 600,
+          "charaId": 1019
+        },
+        {
           "id": 603,
           "charaId": 1023
         },
@@ -3404,6 +3460,10 @@
         {
           "id": 628,
           "charaId": 1052
+        },
+        {
+          "id": 629,
+          "charaId": 1019
         },
         {
           "id": 632,
@@ -3610,6 +3670,10 @@
         {
           "id": 829,
           "charaId": 1016
+        },
+        {
+          "id": 830,
+          "charaId": 1019
         },
         {
           "id": 832,
@@ -5816,6 +5880,10 @@
       "relationPoint": 1,
       "member": [
         {
+          "id": 1121,
+          "charaId": 1019
+        },
+        {
           "id": 1122,
           "charaId": 1004
         }
@@ -5825,6 +5893,10 @@
       "relationType": 8145,
       "relationPoint": 1,
       "member": [
+        {
+          "id": 1123,
+          "charaId": 1019
+        },
         {
           "id": 1124,
           "charaId": 1007
@@ -5836,6 +5908,10 @@
       "relationPoint": 1,
       "member": [
         {
+          "id": 1125,
+          "charaId": 1019
+        },
+        {
           "id": 1126,
           "charaId": 1009
         }
@@ -5843,12 +5919,22 @@
     },
     {
       "relationType": 8147,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1127,
+          "charaId": 1019
+        }
+      ]
     },
     {
       "relationType": 8148,
       "relationPoint": 1,
       "member": [
+        {
+          "id": 1129,
+          "charaId": 1019
+        },
         {
           "id": 1130,
           "charaId": 1045
@@ -5860,6 +5946,10 @@
       "relationPoint": 1,
       "member": [
         {
+          "id": 1131,
+          "charaId": 1019
+        },
+        {
           "id": 1132,
           "charaId": 1046
         }
@@ -5867,11 +5957,23 @@
     },
     {
       "relationType": 8150,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1133,
+          "charaId": 1019
+        }
+      ]
     },
     {
       "relationType": 8151,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1135,
+          "charaId": 1019
+        }
+      ]
     },
     {
       "relationType": 8152,
@@ -18320,6 +18422,15 @@
       ]
     },
     {
+      "id": 100191,
+      "name": "OMG! (ﾟ∀ﾟ)  The Final Sprint! ☆",
+      "gradeValue": 340,
+      "tagId": [
+        "401",
+        "403"
+      ]
+    },
+    {
       "id": 100201,
       "name": "Angling and Scheming",
       "gradeValue": 340,
@@ -18561,6 +18672,23 @@
     {
       "id": 110241,
       "name": "Flowery☆Maneuver",
+      "gradeValue": 340,
+      "tagId": [
+        "401",
+        "403"
+      ]
+    },
+    {
+      "id": 110301,
+      "name": "Every Rose Has Its Fangs",
+      "gradeValue": 340,
+      "tagId": [
+        "402"
+      ]
+    },
+    {
+      "id": 110451,
+      "name": "Give Mummy a Hug ♡",
       "gradeValue": 340,
       "tagId": [
         "401",
@@ -20077,6 +20205,15 @@
       ]
     },
     {
+      "id": 200772,
+      "name": "Tantalizing Trick",
+      "gradeValue": 508,
+      "tagId": [
+        "302",
+        "406"
+      ]
+    },
+    {
       "id": 200781,
       "name": "Trick (Rear)",
       "gradeValue": 217,
@@ -21400,6 +21537,14 @@
       ]
     },
     {
+      "id": 201592,
+      "name": "Superstan",
+      "gradeValue": 508,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
       "id": 201601,
       "name": "Groundwork",
       "gradeValue": 217,
@@ -21479,6 +21624,36 @@
       ]
     },
     {
+      "id": 201681,
+      "name": "Lead the Charge!",
+      "gradeValue": 394,
+      "tagId": [
+        "303",
+        "403",
+        "502"
+      ]
+    },
+    {
+      "id": 201682,
+      "name": "Forward, March!",
+      "gradeValue": 174,
+      "tagId": [
+        "303",
+        "403",
+        "502"
+      ]
+    },
+    {
+      "id": 201691,
+      "name": "Lie in Wait",
+      "gradeValue": 508,
+      "tagId": [
+        "103",
+        "301",
+        "402"
+      ]
+    },
+    {
       "id": 201692,
       "name": "Be Still",
       "gradeValue": 217,
@@ -21525,6 +21700,14 @@
       "tagId": [
         "104",
         "302",
+        "401"
+      ]
+    },
+    {
+      "id": 202032,
+      "name": "Risky Business",
+      "gradeValue": 129,
+      "tagId": [
         "401"
       ]
     },
@@ -21804,6 +21987,15 @@
       ]
     },
     {
+      "id": 900191,
+      "name": "OMG! (ﾟ∀ﾟ)  The Final Sprint! ☆",
+      "gradeValue": 180,
+      "tagId": [
+        "401",
+        "403"
+      ]
+    },
+    {
       "id": 900201,
       "name": "Angling and Scheming",
       "gradeValue": 180,
@@ -22037,6 +22229,23 @@
     {
       "id": 910241,
       "name": "Flowery☆Maneuver",
+      "gradeValue": 180,
+      "tagId": [
+        "401",
+        "403"
+      ]
+    },
+    {
+      "id": 910301,
+      "name": "Every Rose Has Its Fangs",
+      "gradeValue": 180,
+      "tagId": [
+        "402"
+      ]
+    },
+    {
+      "id": 910451,
+      "name": "Give Mummy a Hug ♡",
       "gradeValue": 180,
       "tagId": [
         "401",
@@ -33975,7 +34184,7 @@
     },
     {
       "id": 501020307,
-      "name": "After the Japanese Derby: After My\\nDream"
+      "name": "After the Japanese Derby:\\nAfter My Dream"
     },
     {
       "id": 501020308,
@@ -33999,23 +34208,23 @@
     },
     {
       "id": 501020313,
-      "name": "After the Tenno Sho (Spring): Those\\nAren’t Storm Clouds"
+      "name": "After the Tenno Sho (Spring):\\nThose Aren’t Storm Clouds"
     },
     {
       "id": 501020314,
-      "name": "After the Takarazuka Kinen: So\\nPlayed Out"
+      "name": "After the Takarazuka Kinen:\\nSo Played Out"
     },
     {
       "id": 501020315,
-      "name": "After the Takarazuka Kinen: So\\nPlayed Out"
+      "name": "After the Takarazuka Kinen:\\nSo Played Out"
     },
     {
       "id": 501020316,
-      "name": "After the Tenno Sho (Autumn): More\\nand More"
+      "name": "After the Tenno Sho (Autumn):\\nMore and More"
     },
     {
       "id": 501020317,
-      "name": "After the Arima Kinen: She Fled, She\\nRan, She Flew"
+      "name": "After the Arima Kinen: She Fled,\\nShe Ran, She Flew"
     },
     {
       "id": 501020400,
@@ -34119,7 +34328,7 @@
     },
     {
       "id": 501020425,
-      "name": "After the Japanese Derby: After My\\nDream"
+      "name": "After the Japanese Derby:\\nAfter My Dream"
     },
     {
       "id": 501020426,
@@ -34143,23 +34352,23 @@
     },
     {
       "id": 501020431,
-      "name": "After the Tenno Sho (Spring): Those\\nAren’t Storm Clouds"
+      "name": "After the Tenno Sho (Spring):\\nThose Aren’t Storm Clouds"
     },
     {
       "id": 501020432,
-      "name": "After the Takarazuka Kinen: So\\nPlayed Out"
+      "name": "After the Takarazuka Kinen:\\nSo Played Out"
     },
     {
       "id": 501020433,
-      "name": "After the Takarazuka Kinen: So\\nPlayed Out"
+      "name": "After the Takarazuka Kinen:\\nSo Played Out"
     },
     {
       "id": 501020434,
-      "name": "After the Tenno Sho (Autumn): More\\nand More"
+      "name": "After the Tenno Sho (Autumn):\\nMore and More"
     },
     {
       "id": 501020435,
-      "name": "After the Arima Kinen: She Fled, She\\nRan, She Flew"
+      "name": "After the Arima Kinen: She Fled,\\nShe Ran, She Flew"
     },
     {
       "id": 501020500,
@@ -34967,7 +35176,7 @@
     },
     {
       "id": 501022111,
-      "name": "Rain or Shine\\[COMMA] I'm Fine!"
+      "name": "Rain or Shine, I'm Fine!"
     },
     {
       "id": 501022112,
@@ -43427,7 +43636,7 @@
     },
     {
       "id": 501038800,
-      "name": "Where are you\\[COMMA] Curren？"
+      "name": "Where are you, Curren？"
     },
     {
       "id": 501038801,
@@ -59240,6 +59449,11 @@
       "charaId": 1048
     },
     {
+      "id": 20037,
+      "name": "[Grma, Ramen ♪] Fine Motion",
+      "charaId": 1022
+    },
+    {
       "id": 30001,
       "name": "[The Brightest Star in Japan!] Special Week",
       "charaId": 1001
@@ -59508,6 +59722,26 @@
       "id": 30062,
       "name": "[Winning Dream] Silence Suzuka",
       "charaId": 1002
+    },
+    {
+      "id": 30063,
+      "name": "[Warm Heart, Soft Steps] Ikuno Dictus",
+      "charaId": 1063
+    },
+    {
+      "id": 30064,
+      "name": "[Beware! Halloween Night!] Tamamo Cross",
+      "charaId": 1021
+    },
+    {
+      "id": 30065,
+      "name": "[Magical Heroine] Zenno Rob Roy",
+      "charaId": 1047
+    },
+    {
+      "id": 30066,
+      "name": "[The Ghost Finds Halloween Magic] Mihono Bourbon",
+      "charaId": 1026
     }
   ]
 }

@@ -1,6 +1,6 @@
-import {JsonViewer} from "@textea/json-viewer";
+import { JsonViewer } from "@textea/json-viewer";
 import EChartsReactCore from "echarts-for-react/lib/core";
-import {LineChart, LineSeriesOption} from "echarts/charts";
+import { LineChart, LineSeriesOption } from "echarts/charts";
 import {
     DataZoomComponentOption,
     DataZoomSliderComponent,
@@ -16,16 +16,16 @@ import {
     TooltipComponentOption,
 } from "echarts/components";
 import * as echarts from "echarts/core";
-import {ComposeOption} from "echarts/core";
-import {SVGRenderer} from "echarts/renderers";
-import type {MarkArea2DDataItemOption} from "echarts/types/src/component/marker/MarkAreaModel";
-import type {MarkLine1DDataItemOption} from "echarts/types/src/component/marker/MarkLineModel";
+import { ComposeOption } from "echarts/core";
+import { SVGRenderer } from "echarts/renderers";
+import type { MarkArea2DDataItemOption } from "echarts/types/src/component/marker/MarkAreaModel";
+import type { MarkLine1DDataItemOption } from "echarts/types/src/component/marker/MarkLineModel";
 import _ from "lodash";
 import memoize from "memoize-one";
 import React from "react";
-import {Alert, Form, Table} from "react-bootstrap";
-import BootstrapTable, {ColumnDescription, ExpandRowProps} from "react-bootstrap-table-next";
-import {Chara} from "../data/data_pb";
+import { Alert, Form, Table } from "react-bootstrap";
+import BootstrapTable, { ColumnDescription, ExpandRowProps } from "react-bootstrap-table-next";
+import { Chara } from "../data/data_pb";
 import {
     RaceSimulateData,
     RaceSimulateEventData_SimulateEventType,
@@ -38,14 +38,14 @@ import {
     filterRaceEvents,
     getCharaActivatedSkillIds,
 } from "../data/RaceDataUtils";
-import {fromRaceHorseData, TrainedCharaData} from "../data/TrainedCharaData";
+import { fromRaceHorseData, TrainedCharaData } from "../data/TrainedCharaData";
 import * as UMDatabaseUtils from "../data/UMDatabaseUtils";
 import UMDatabaseWrapper from "../data/UMDatabaseWrapper";
 import CardNamePresenter from "./CardNamePresenter";
 import CharaProperLabels from "./CharaProperLabels";
 import CopyButton from "./CopyButton";
 import FoldCard from "./FoldCard";
-import RaceReplay from "./RaceReplay";
+import RaceReplay from "./RaceReplay/index";
 
 
 
@@ -73,7 +73,7 @@ echarts.use([
     LineChart, TooltipComponent, GridComponent, MarkLineComponent, MarkAreaComponent, LegendComponent, SVGRenderer, DataZoomSliderComponent,
 ]);
 
-const competeTableColumns: ColumnDescription<CompeteTableData> [] = [
+const competeTableColumns: ColumnDescription<CompeteTableData>[] = [
     {
         dataField: 'time',
         text: 'Time',
@@ -86,7 +86,7 @@ const competeTableColumns: ColumnDescription<CompeteTableData> [] = [
         dataField: 'charas',
         text: '',
         formatter: (_, row) => <>
-            {row.charas.map(c => <>{c.displayName}<br/></>)}
+            {row.charas.map(c => <>{c.displayName}<br /></>)}
         </>,
     },
 ];
@@ -129,7 +129,7 @@ const charaTableColumns: ColumnDescription<CharaTableData>[] = [
         dataField: 'copy',
         isDummyField: true,
         text: '',
-        formatter: (cell, row) => <CopyButton content={JSON.stringify(row.trainedChara.rawData)}/>,
+        formatter: (cell, row) => <CopyButton content={JSON.stringify(row.trainedChara.rawData)} />,
     },
 
     {
@@ -142,12 +142,11 @@ const charaTableColumns: ColumnDescription<CharaTableData>[] = [
         text: 'No.',
         sort: true,
     },
-
     {
         dataField: 'chara',
         text: '',
         formatter: (chara: Chara | undefined, row) => chara ? <>
-            {chara.name} {row.trainedChara.viewerName ? `[${row.trainedChara.viewerName}]` : ''} <CardNamePresenter cardId={row.trainedChara.cardId}/>
+            {chara.name} {row.trainedChara.viewerName ? `[${row.trainedChara.viewerName}]` : ''} <CardNamePresenter cardId={row.trainedChara.cardId} />
         </> : unknownCharaTag,
     },
     {
@@ -156,7 +155,7 @@ const charaTableColumns: ColumnDescription<CharaTableData>[] = [
         text: 'Time',
         formatter: (cell, row) => <>
             {UMDatabaseUtils.formatTime(row.horseResultData.finishTime!)}
-            <br/>{UMDatabaseUtils.formatTime(row.horseResultData.finishTimeRaw!)}
+            <br />{UMDatabaseUtils.formatTime(row.horseResultData.finishTimeRaw!)}
         </>,
     },
     {
@@ -165,7 +164,7 @@ const charaTableColumns: ColumnDescription<CharaTableData>[] = [
         text: '',
         formatter: (cell, row) => <>
             {runningStyleLabel(row.horseResultData, row.activatedSkills)}
-            <br/>{UMDatabaseUtils.motivationLabels[row.motivation]}
+            <br />{UMDatabaseUtils.motivationLabels[row.motivation]}
         </>,
     },
     {
@@ -173,10 +172,18 @@ const charaTableColumns: ColumnDescription<CharaTableData>[] = [
         text: 'Popularity',
         sort: true,
         formatter: (cell, row) => <>
-            {cell}<br/>{row.popularityMarks.map(UMDatabaseUtils.getPopularityMark).join(', ')}
+            {cell}<br />{row.popularityMarks.map(UMDatabaseUtils.getPopularityMark).join(', ')}
         </>,
     },
-
+    {
+        dataField: 'lastSpurt',
+        isDummyField: true,
+        text: 'Last Spurt',
+        formatter: (cell, row) => {
+            const dist = row.horseResultData.lastSpurtStartDistance;
+            return dist ? `${dist.toFixed(2)}m` : '-';
+        },
+    },
     {
         dataField: 'rankScore',
         isDummyField: true,
@@ -219,16 +226,16 @@ const charaTableExpandRow: ExpandRowProps<CharaTableData> = {
     renderer: row => <div className="d-flex flex-row align-items-start">
         <Table size="small" className="w-auto m-2">
             <tbody>
-            {row.trainedChara.skills.map(cs =>
-                <tr>
-                    <td>{UMDatabaseWrapper.skillNameWithId(cs.skillId)}</td>
-                    <td>Lv {cs.level}</td>
-                    <td>{row.activatedSkills.has(cs.skillId) ? 'Used' : ''}</td>
-                </tr>,
-            )}
+                {row.trainedChara.skills.map(cs =>
+                    <tr>
+                        <td>{UMDatabaseWrapper.skillNameWithId(cs.skillId)}</td>
+                        <td>Lv {cs.level}</td>
+                        <td>{row.activatedSkills.has(cs.skillId) ? 'Used' : ''}</td>
+                    </tr>,
+                )}
             </tbody>
         </Table>
-        <CharaProperLabels chara={row.trainedChara}/>
+        <CharaProperLabels chara={row.trainedChara} />
     </div>,
     showExpandColumn: true,
 };
@@ -311,8 +318,8 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 return {
                     xAxis: event.frameTime,
                     name: UMDatabaseWrapper.skillName(event.param[1]),
-                    label: {show: true, position: 'insideStartBottom'},
-                    lineStyle: {color: '#666'},
+                    label: { show: true, position: 'insideStartBottom' },
+                    lineStyle: { color: '#666' },
                 } as MarkLine1DDataItemOption;
             });
 
@@ -321,8 +328,8 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 return {
                     xAxis: event.frameTime,
                     name: `${UMDatabaseWrapper.skillName(event.param[1])} by ${displayNames[event.param[0]]}`,
-                    label: {show: true, position: 'insideStartBottom'},
-                    lineStyle: {color: 'rgba(255, 0, 0, 0.6)'},
+                    label: { show: true, position: 'insideStartBottom' },
+                    lineStyle: { color: 'rgba(255, 0, 0, 0.6)' },
                 } as MarkLine1DDataItemOption;
             });
 
@@ -331,8 +338,8 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 return {
                     xAxis: event.frameTime,
                     name: name,
-                    label: {show: true, position: 'insideStartBottom'},
-                    lineStyle: {color: 'rgba(0, 255, 0, 0.6)'},
+                    label: { show: true, position: 'insideStartBottom' },
+                    lineStyle: { color: 'rgba(0, 255, 0, 0.6)' },
                 } as MarkLine1DDataItemOption;
             }));
 
@@ -344,7 +351,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 {
                     name: `Blocked by ${displayNames[blockedByIndex]}`,
                     xAxis: from,
-                    itemStyle: {color: 'rgba(255, 0, 0, 0.1)'},
+                    itemStyle: { color: 'rgba(255, 0, 0, 0.1)' },
                 },
                 {
                     xAxis: to,
@@ -357,7 +364,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 {
                     name: `Temptation ${RaceSimulateHorseFrameData_TemptationMode[mode] ?? mode}`,
                     xAxis: from,
-                    itemStyle: {color: 'rgba(255, 255, 0, 0.1)'},
+                    itemStyle: { color: 'rgba(255, 255, 0, 0.1)' },
                 },
                 {
                     xAxis: to,
@@ -479,10 +486,10 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 },
             ],
             yAxis: [
-                {type: "value"},
-                {gridIndex: 1, type: "value"},
+                { type: "value" },
+                { gridIndex: 1, type: "value" },
             ],
-            legend: {show: true},
+            legend: { show: true },
             series: [
                 {
                     name: "Speed",
@@ -498,7 +505,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                             position: "end",
                             formatter: "{b}",
                         },
-                        lineStyle: {type: "solid"},
+                        lineStyle: { type: "solid" },
                         data: [
                             ...(this.state.showSkills ? skillPlotLines : []),
                             ...(this.state.showTargetedSkills ? skillTargetedSkillPlotLines : []),
@@ -557,13 +564,13 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
         };
 
         return <div>
-            <EChartsReactCore echarts={echarts} option={options} style={{height: '700px'}} theme="dark"/>
+            <EChartsReactCore echarts={echarts} option={options} style={{ height: '700px' }} theme="dark" />
         </div>;
     }
 
     renderOtherRaceEventsList() {
         const groupedEvents = _.groupBy(this.props.raceData.event.map(e => e.event!)
-                .filter(e => otherRaceEventLabels.has(e.type!)),
+            .filter(e => otherRaceEventLabels.has(e.type!)),
             e => e.frameTime!);
 
         const d: CompeteTableData[] = _.values(groupedEvents).map(events => {
@@ -582,11 +589,11 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
 
         return <FoldCard header="Other Race Events">
             <BootstrapTable bootstrap4 condensed hover
-                            classes="responsive-bootstrap-table"
-                            wrapperClasses="table-responsive"
-                            data={d}
-                            columns={competeTableColumns}
-                            keyField="time"/>
+                classes="responsive-bootstrap-table"
+                wrapperClasses="table-responsive"
+                data={d}
+                columns={competeTableColumns}
+                keyField="time" />
         </FoldCard>;
     }
 
@@ -620,10 +627,10 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
 
         return <FoldCard header="Umas">
             <BootstrapTable bootstrap4 condensed hover
-                            classes="responsive-bootstrap-table"
-                            wrapperClasses="table-responsive"
-                            expandRow={charaTableExpandRow}
-                            data={_.sortBy(l, d => d.finishOrder)} columns={charaTableColumns} keyField="frameOrder"/>
+                classes="responsive-bootstrap-table"
+                wrapperClasses="table-responsive"
+                expandRow={charaTableExpandRow}
+                data={_.sortBy(l, d => d.finishOrder)} columns={charaTableColumns} keyField="frameOrder" />
         </FoldCard>;
     }
 
@@ -693,7 +700,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
 
                 const raceDistance = goalInX;
                 const distanceThreshold = (9 / 24) * raceDistance;
-                
+
                 let distanceThresholdTime = -1;
                 for (let i = 0; i < raceData.frame.length; i++) {
                     const frame = raceData.frame[i];
@@ -728,7 +735,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                     version {supportedRaceDataVersion}, use at your own risk!
                 </Alert>}
             {this.renderCharaList()}
-                        <FoldCard header="Replay">
+            <FoldCard header="Replay">
                 <RaceReplay raceData={this.props.raceData} raceHorseInfo={this.props.raceHorseInfo} displayNames={this.displayNames(this.props.raceHorseInfo, this.props.raceData)} skillActivations={this.skillActivations(this.props.raceData)} otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo)} />
             </FoldCard>
             {this.renderOtherRaceEventsList()}
@@ -736,7 +743,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 <Form.Group>
                     <Form.Label>Chara</Form.Label>
                     <Form.Control as="select" custom
-                                  onChange={(e) => this.setState({selectedCharaFrameOrder: e.target.value ? parseInt(e.target.value) : undefined})}>
+                        onChange={(e) => this.setState({ selectedCharaFrameOrder: e.target.value ? parseInt(e.target.value) : undefined })}>
                         <option value="">-</option>
                         {Object.entries(this.displayNames(this.props.raceHorseInfo, this.props.raceData))
                             .sort(([, a], [, b]) => a.localeCompare(b))
@@ -746,34 +753,34 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                     </Form.Control>
                     <Form.Switch
                         checked={this.state.showSkills}
-                        onChange={(e) => this.setState({showSkills: e.target.checked})}
+                        onChange={(e) => this.setState({ showSkills: e.target.checked })}
                         id="show-skills"
-                        label="Show Skills"/>
+                        label="Show Skills" />
                     <Form.Switch
                         checked={this.state.showTargetedSkills}
-                        onChange={(e) => this.setState({showTargetedSkills: e.target.checked})}
+                        onChange={(e) => this.setState({ showTargetedSkills: e.target.checked })}
                         id="show-targeted-skills"
-                        label="Show Targeted Skills"/>
+                        label="Show Targeted Skills" />
                     <Form.Switch
                         checked={this.state.showBlocks}
-                        onChange={(e) => this.setState({showBlocks: e.target.checked})}
+                        onChange={(e) => this.setState({ showBlocks: e.target.checked })}
                         id="show-blocks"
-                        label="Show Blocks"/>
+                        label="Show Blocks" />
                     <Form.Switch
                         checked={this.state.showTemptationMode}
-                        onChange={(e) => this.setState({showTemptationMode: e.target.checked})}
+                        onChange={(e) => this.setState({ showTemptationMode: e.target.checked })}
                         id="show-temptation-mode"
-                        label="Show Temptation Mode"/>
+                        label="Show Temptation Mode" />
                     <Form.Switch
                         checked={this.state.showOtherRaceEvents}
-                        onChange={(e) => this.setState({showOtherRaceEvents: e.target.checked})}
+                        onChange={(e) => this.setState({ showOtherRaceEvents: e.target.checked })}
                         id="show-competes"
-                        label={`Show Other Race Events (${Array.from(otherRaceEventLabels.values()).join(', ')})`}/>
+                        label={`Show Other Race Events (${Array.from(otherRaceEventLabels.values()).join(', ')})`} />
                 </Form.Group>
             </Form>
             {this.state.selectedCharaFrameOrder !== undefined && this.renderGraphs()}
-            <hr/>
-            <JsonViewer value={this.props.raceData.toJson()} defaultInspectDepth={1} theme="dark"/>
+            <hr />
+            <JsonViewer value={this.props.raceData.toJson()} defaultInspectDepth={1} theme="dark" />
         </div>;
     }
 }

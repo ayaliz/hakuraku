@@ -1,0 +1,309 @@
+import React, { useMemo, useState, useEffect } from "react";
+import EChartsReactCore from "echarts-for-react/lib/core";
+import {
+    ScatterChart,
+    CustomChart,
+} from "echarts/charts";
+import {
+    GridComponent,
+    LegendComponent,
+    TooltipComponent,
+    MarkLineComponent,
+    MarkAreaComponent,
+    GraphicComponent,
+} from "echarts/components";
+import * as echarts from "echarts/core";
+import { CanvasRenderer } from "echarts/renderers";
+import { Button, Form } from "react-bootstrap";
+import type { MarkLine1DDataItemOption } from "echarts/types/src/component/marker/MarkLineModel";
+
+import { RaceReplayProps } from "./RaceReplay.types";
+import {
+    STRAIGHT_FILL,
+    CORNER_FILL,
+    STRAIGHT_FINAL_FILL,
+    CORNER_FINAL_FILL,
+    TOOLBAR_GAP,
+    TOOLBAR_INLINE_GAP,
+} from "./RaceReplay.constants";
+import { clamp } from "./RaceReplay.utils";
+import { useRafPlayer } from "./hooks/useRafPlayer";
+import { useInterpolatedFrame } from "./hooks/useInterpolatedFrame";
+import { useCurrentAcceleration } from "./hooks/useCurrentAcceleration";
+import { useAvailableTracks } from "./hooks/useAvailableTracks";
+import { useGuessTrack } from "./hooks/useGuessTrack";
+import { useCourseLayers, slopeRenderItemFactory } from "./hooks/useCourseLayers";
+import { useToggles } from "./hooks/useToggles";
+import InfoHover from "./components/InfoHover";
+import LegendItem from "./components/LegendItem";
+import {
+    createOptions,
+    buildLegendShadowSeries,
+    buildHorsesCustomSeries,
+    buildSkillLabels,
+    buildCourseLabelItems,
+    buildMarkLines,
+    noTooltipScatter,
+    ECOption,
+} from "./utils/chartBuilders";
+import courseData from "../../data/tracks/course_data.json";
+
+echarts.use([
+    ScatterChart,
+    TooltipComponent,
+    GridComponent,
+    LegendComponent,
+    MarkLineComponent,
+    MarkAreaComponent,
+    CanvasRenderer,
+    CustomChart,
+    GraphicComponent,
+]);
+
+const RaceReplay: React.FC<RaceReplayProps> = ({
+    raceData,
+    raceHorseInfo,
+    displayNames,
+    skillActivations,
+    otherEvents,
+    trainerColors,
+    infoTitle,
+    infoContent,
+}) => {
+    const frames = useMemo(() => raceData.frame ?? [], [raceData]);
+    const startTime = frames[0]?.time ?? 0, endTime = frames[frames.length - 1]?.time ?? 0;
+    const { time: renderTime, setTime: setRenderTime, isPlaying, playPause } = useRafPlayer(startTime, endTime);
+
+    const goalInX = useMemo(() => {
+        let winnerIndex = -1, winnerFinish = Number.POSITIVE_INFINITY;
+        (raceData.horseResult ?? []).forEach((hr, idx) => { const t = hr?.finishTimeRaw; if (typeof t === "number" && t > 0 && t < winnerFinish) { winnerFinish = t; winnerIndex = idx; } });
+        if (winnerIndex >= 0 && frames.length && isFinite(winnerFinish)) { const i = (frames as any).findIndex((f: any) => f.time >= winnerFinish); const d0 = frames[i]?.horseFrame?.[winnerIndex]?.distance ?? 0; return Math.round(d0 / 100) * 100; }
+        return 0;
+    }, [frames, raceData.horseResult]);
+
+    const availableTracks = useAvailableTracks(goalInX);
+    const { selectedTrackId, setSelectedTrackId, guessStatus } = useGuessTrack(goalInX, availableTracks);
+
+    const maxLanePosition = useMemo(() => frames.reduce((m, f) => Math.max(m, (f.horseFrame ?? []).reduce((mm: number, h: any) => Math.max(mm, h?.lanePosition ?? 0), 0)), 0), [frames]);
+    const interpolatedFrame = useInterpolatedFrame(frames, renderTime);
+
+    const accByIdx = useCurrentAcceleration(frames, interpolatedFrame.frameIndex);
+
+    const frontRunnerDistance = interpolatedFrame.horseFrame.reduce((m: number, h: any) => Math.max(m, h?.distance ?? 0), 0);
+    const cameraWindow = 80, cameraLead = 8;
+    const xAxis = useMemo(() => ({ min: Math.max(0, Math.max(cameraWindow, frontRunnerDistance + cameraLead) - cameraWindow), max: Math.max(cameraWindow, frontRunnerDistance + cameraLead) }), [frontRunnerDistance]);
+
+    const horseInfoByIdx = useMemo(() => { const map: Record<number, any> = {}; (raceHorseInfo ?? []).forEach((h: any) => { const idx = (h.frame_order ?? h.frameOrder) - 1; if (idx >= 0) map[idx] = h; }); return map; }, [raceHorseInfo]);
+
+    const legendNames = useMemo(() => Object.values(displayNames), [displayNames]);
+    const [legendSelection, setLegendSelection] = useState<Record<string, boolean>>({});
+    useEffect(() => { setLegendSelection(prev => { const next: Record<string, boolean> = {}; legendNames.forEach(n => { next[n] = prev[n] ?? true; }); return next; }); }, [legendNames]);
+    const onEvents = useMemo(() => ({ legendselectchanged: (e: any) => { if (e && e.selected) setLegendSelection(e.selected); } }), []);
+
+    const { t: toggles, bind } = useToggles();
+
+    const legendShadowSeries = useMemo(() => buildLegendShadowSeries(displayNames, horseInfoByIdx, trainerColors), [displayNames, horseInfoByIdx, trainerColors]);
+    const horsesSeries = useMemo(
+        () =>
+            buildHorsesCustomSeries(
+                interpolatedFrame,
+                displayNames,
+                horseInfoByIdx,
+                trainerColors,
+                legendSelection,
+                toggles.speed,
+                toggles.accel,
+                accByIdx,
+                toggles.blocked
+            ),
+        [interpolatedFrame, displayNames, horseInfoByIdx, trainerColors, legendSelection, toggles.speed, toggles.accel, accByIdx, toggles.blocked]
+    );
+
+    const yMaxWithHeadroom = maxLanePosition + 3;
+    const skillLabelData = useMemo(() => buildSkillLabels(interpolatedFrame, skillActivations, otherEvents, renderTime), [interpolatedFrame, skillActivations, otherEvents, renderTime]);
+    const { straights, corners, straightsFinal, cornersFinal, segMarkers, slopeTriangles } = useCourseLayers(selectedTrackId, goalInX, yMaxWithHeadroom);
+
+    const raceMarkers = useMemo(() => { const td = selectedTrackId ? (courseData as Record<string, any>)[selectedTrackId] : undefined; return buildMarkLines(goalInX, raceData, displayNames, segMarkers, td); }, [goalInX, raceData, displayNames, segMarkers, selectedTrackId]);
+    const courseLabelData = useMemo(() => buildCourseLabelItems(raceMarkers as MarkLine1DDataItemOption[], yMaxWithHeadroom), [raceMarkers, yMaxWithHeadroom]);
+
+    const bgSeries = useMemo(() => [
+        { id: "bg-straights", fill: STRAIGHT_FILL, data: straights },
+        { id: "bg-corners", fill: CORNER_FILL, data: corners },
+        { id: "bg-straights-final", fill: STRAIGHT_FINAL_FILL, data: straightsFinal },
+        { id: "bg-corners-final", fill: CORNER_FINAL_FILL, data: cornersFinal },
+    ].map(({ id, fill, data }) => noTooltipScatter(id, { silent: true, itemStyle: { color: fill }, label: { show: false }, data })), [straights, corners, straightsFinal, cornersFinal]);
+
+    const slopeRenderItem = useMemo(() => slopeRenderItemFactory(yMaxWithHeadroom), [yMaxWithHeadroom]);
+
+    const markerSeries = useMemo(() => ({
+        id: "race-markers",
+        type: "scatter" as const,
+        data: [],
+        silent: true,
+        z: 1,
+        tooltip: { show: false },
+        markLine: { animation: false, symbol: "none", label: { show: false }, lineStyle: { type: "solid" }, data: raceMarkers }
+    }), [raceMarkers]);
+
+    const seriesList = useMemo(() => {
+        const list: any[] = [
+            ...bgSeries,
+            toggles.slopes ? {
+                id: "slope-diagonals",
+                type: "custom",
+                renderItem: slopeRenderItem as any,
+                data: slopeTriangles,
+                coordinateSystem: "cartesian2d",
+                silent: true,
+                clip: true,
+                z: 2,
+                zlevel: 0,
+                tooltip: { show: false }
+            } : null,
+            toggles.course ? markerSeries : null,
+            ...legendShadowSeries,
+            horsesSeries as any,
+            toggles.course ? {
+                id: "course-labels",
+                type: "scatter",
+                data: courseLabelData,
+                symbolSize: 0,
+                z: 9,
+                zlevel: 1,
+                animation: false,
+                silent: true,
+                tooltip: { show: false },
+                clip: false,
+                labelLayout: { moveOverlap: "shiftY" as const }
+            } : null,
+            toggles.skills ? {
+                id: "skills-overlay",
+                type: "scatter",
+                data: skillLabelData,
+                symbolSize: 0,
+                z: 10,
+                zlevel: 1,
+                animation: false,
+                silent: true,
+                tooltip: { show: false }
+            } : null,
+        ];
+        return list.filter(Boolean);
+    }, [bgSeries, toggles.slopes, slopeRenderItem, slopeTriangles, toggles.course, markerSeries, legendShadowSeries, horsesSeries, courseLabelData, toggles.skills, skillLabelData]);
+
+    const options: ECOption = useMemo(() => createOptions({
+        xMin: xAxis.min,
+        xMax: xAxis.max,
+        yMax: yMaxWithHeadroom,
+        series: seriesList as ECOption["series"],
+        legendNames,
+        legendSelection,
+    }), [xAxis.min, xAxis.max, yMaxWithHeadroom, seriesList, legendNames, legendSelection]);
+
+    const clampedRenderTime = clamp(renderTime, startTime, endTime);
+
+    const toggleDefs = [
+        { id: "skills" as const, label: "Skill labels" },
+        { id: "blocked" as const, label: "Block indicator" },
+        { id: "slopes" as const, label: "Slopes" },
+        { id: "speed" as const, label: "Speed [m/s]" },
+        { id: "accel" as const, label: "Acceleration [m/s^2]" },
+        { id: "course" as const, label: "Course events" },
+    ];
+
+    return (
+        <div>
+            {goalInX > 0 && availableTracks.length > 0 && (
+                <div className="d-flex align-items-start" style={{ flexWrap: "wrap", marginBottom: TOOLBAR_GAP }}>
+                    <div className="d-flex flex-column" style={{ marginRight: TOOLBAR_GAP, marginBottom: TOOLBAR_GAP, minWidth: 260 }}>
+                        <div className="d-flex align-items-center">
+                            <Form.Label className="mb-0 me-2">Track:</Form.Label>
+                            <Form.Control
+                                as="select"
+                                value={selectedTrackId ?? ""}
+                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedTrackId(e.target.value)}
+                                style={{ width: "auto", maxWidth: 320 }}
+                            >
+                                {availableTracks.map((t) => (<option key={t.id} value={t.id}>{t.name}</option>))}
+                            </Form.Control>
+                        </div>
+                        <div className="mt-2" style={{ minHeight: 20 }}>
+                            {guessStatus === "guessed" && (
+                                <span style={{ color: "green" }}>
+                                    Guessed track based on CM schedule
+                                </span>
+                            )}
+                            {guessStatus === "fallback" && (
+                                <span style={{ color: "darkorange" }}>
+                                    Select track
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="d-flex align-items-start" style={{ marginRight: TOOLBAR_GAP, marginBottom: TOOLBAR_GAP, gap: TOOLBAR_INLINE_GAP }}>
+                        <Form.Label className="mb-0 me-2 mt-1">Display:</Form.Label>
+                        <div
+                            className="d-grid"
+                            style={{
+                                display: "grid",
+                                gridTemplateColumns: "repeat(3, minmax(160px, auto))",
+                                columnGap: TOOLBAR_INLINE_GAP,
+                                rowGap: 4,
+                            }}
+                        >
+                            {toggleDefs.map(({ id, label }) => (
+                                <Form.Check
+                                    key={id}
+                                    type="checkbox"
+                                    id={`toggle-${id}`}
+                                    label={label}
+                                    {...bind(id)}
+                                    className="mb-1"
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="d-flex align-items-center" style={{ marginLeft: "auto", flexWrap: "wrap", marginBottom: TOOLBAR_GAP }}>
+                        <LegendItem color={STRAIGHT_FILL} label="Straight" />
+                        <LegendItem color={STRAIGHT_FINAL_FILL} label="Final straight" />
+                        <LegendItem color={CORNER_FILL} label="Corner" />
+                        <LegendItem color={CORNER_FINAL_FILL} label="Final corner" />
+                    </div>
+                </div>
+            )}
+
+            <EChartsReactCore
+                echarts={echarts}
+                option={options}
+                style={{ height: "500px" }}
+                notMerge={true}
+                lazyUpdate={true}
+                theme="dark"
+                onEvents={onEvents}
+            />
+
+            <div className="d-flex align-items-center justify-content-between mt-2">
+                <div className="d-flex align-items-center flex-grow-1">
+                    <Button onClick={playPause} className="me-3">{isPlaying ? "Pause" : "Play"}</Button>
+                    <Form.Control
+                        type="range"
+                        min={startTime}
+                        max={endTime}
+                        step={0.001}
+                        value={clampedRenderTime}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRenderTime(clamp(parseFloat(e.target.value), startTime, endTime))}
+                        className="flex-grow-1"
+                    />
+                    <span className="ms-3">{clampedRenderTime.toFixed(2)}s / {endTime.toFixed(2)}s</span>
+                </div>
+                <div className="ms-3">
+                    <InfoHover title={infoTitle} content={infoContent} />
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default RaceReplay;

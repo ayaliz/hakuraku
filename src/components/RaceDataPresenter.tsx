@@ -23,7 +23,7 @@ import type { MarkLine1DDataItemOption } from "echarts/types/src/component/marke
 import _ from "lodash";
 import memoize from "memoize-one";
 import React from "react";
-import { Alert, Form, Table } from "react-bootstrap";
+import { Alert, Form, OverlayTrigger, Table, Tooltip } from "react-bootstrap";
 import BootstrapTable, { ColumnDescription, ExpandRowProps } from "react-bootstrap-table-next";
 import { Chara } from "../data/data_pb";
 import {
@@ -105,6 +105,8 @@ type CharaTableData = {
     motivation: number,
 
     activatedSkills: Set<number>,
+
+    raceDistance: number,
 };
 
 const runningStyleLabel = (horseResultData: RaceSimulateHorseResultData, activatedSkills: Set<number>) => {
@@ -123,6 +125,32 @@ const otherRaceEventLabels = new Map([
     [RaceSimulateEventData_SimulateEventType.STAMINA_KEEP, 'STAMINA_KEEP'],
     [RaceSimulateEventData_SimulateEventType.SECURE_LEAD, 'SECURE_LEAD'],
 ]);
+
+function getColorForSpurtDelay(delay: number): string {
+    if (delay < 4) return '#28a745'; // Green
+    if (delay > 20) return '#dc3545'; // Red
+
+    // Gradient from Green (4) to Yellow (12) to Red (20)
+    if (delay <= 12) {
+        // Green to Yellow
+        const t = (delay - 4) / 8;
+        // Green: 40, 167, 69
+        // Yellow: 255, 193, 7
+        const r = 40 + t * (255 - 40);
+        const g = 167 + t * (193 - 167);
+        const b = 69 + t * (7 - 69);
+        return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+    } else {
+        // Yellow to Red
+        const t = (delay - 12) / 8;
+        // Yellow: 255, 193, 7
+        // Red: 220, 53, 69
+        const r = 255 + t * (220 - 255);
+        const g = 193 + t * (53 - 193);
+        const b = 7 + t * (69 - 7);
+        return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+    }
+}
 
 const charaTableColumns: ColumnDescription<CharaTableData>[] = [
     {
@@ -164,7 +192,7 @@ const charaTableColumns: ColumnDescription<CharaTableData>[] = [
         text: '',
         formatter: (cell, row) => <>
             {runningStyleLabel(row.horseResultData, row.activatedSkills)}
-            <br />{UMDatabaseUtils.motivationLabels[row.motivation]}
+            <br />Mood: {UMDatabaseUtils.motivationLabels[row.motivation]}
         </>,
     },
     {
@@ -178,10 +206,33 @@ const charaTableColumns: ColumnDescription<CharaTableData>[] = [
     {
         dataField: 'lastSpurt',
         isDummyField: true,
-        text: 'Last Spurt',
+        text: 'Spurt delay',
+        headerFormatter: (column, colIndex) => {
+            return (
+                <span>
+                    Spurt delay{' '}
+                    <OverlayTrigger
+                        placement="top"
+                        overlay={
+                            <Tooltip id={`tooltip-spurt-delay`}>
+                                High values indicate a lack of HP when entering late-race. Values below roughly 4m aren't indicative of any problems with HP.
+                            </Tooltip>
+                        }
+                    >
+                        <span style={{ cursor: 'help', borderBottom: '1px dotted #fff' }}>ⓘ</span>
+                    </OverlayTrigger>
+                </span>
+            );
+        },
         formatter: (cell, row) => {
             const dist = row.horseResultData.lastSpurtStartDistance;
-            return dist ? `${dist.toFixed(2)}m` : '-';
+            if (!dist) return '-';
+
+            const phase3Start = row.raceDistance * 2 / 3;
+            const delay = dist - phase3Start;
+            const color = getColorForSpurtDelay(delay);
+
+            return <span style={{ color, fontWeight: 'bold' }}>{delay.toFixed(2)}m</span>;
         },
     },
     {
@@ -267,6 +318,14 @@ function bisectFrameIndex(frames: RaceSimulateData["frame"], t: number) {
         else hi = mid - 1;
     }
     return lo;
+}
+
+function calculateRaceDistance(raceData: RaceSimulateData) {
+    const frames = raceData.frame ?? [];
+    let winnerIndex = -1, winnerFinish = Number.POSITIVE_INFINITY;
+    (raceData.horseResult ?? []).forEach((hr, idx) => { const t = hr?.finishTimeRaw; if (typeof t === "number" && t > 0 && t < winnerFinish) { winnerFinish = t; winnerIndex = idx; } });
+    if (winnerIndex >= 0 && frames.length && isFinite(winnerFinish)) { const i = bisectFrameIndex(frames, winnerFinish); const d0 = frames[i]?.horseFrame?.[winnerIndex]?.distance ?? 0; return d0; }
+    return 0;
 }
 
 class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, RaceDataPresenterState> {
@@ -602,6 +661,8 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
             return undefined;
         }
 
+        const raceDistance = calculateRaceDistance(this.props.raceData);
+
         const l: CharaTableData[] = this.props.raceHorseInfo.map(data => {
             const frameOrder = data['frame_order'] - 1;
 
@@ -622,6 +683,8 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 motivation: data['motivation'],
 
                 activatedSkills: getCharaActivatedSkillIds(this.props.raceData, frameOrder),
+
+                raceDistance: raceDistance,
             };
         });
 
@@ -662,13 +725,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
             });
         }
 
-        const frames = raceData.frame ?? [];
-        const goalInX = (() => {
-            let winnerIndex = -1, winnerFinish = Number.POSITIVE_INFINITY;
-            (raceData.horseResult ?? []).forEach((hr, idx) => { const t = hr?.finishTimeRaw; if (typeof t === "number" && t > 0 && t < winnerFinish) { winnerFinish = t; winnerIndex = idx; } });
-            if (winnerIndex >= 0 && frames.length && isFinite(winnerFinish)) { const i = bisectFrameIndex(frames, winnerFinish); const d0 = frames[i]?.horseFrame?.[winnerIndex]?.distance ?? 0; return d0; }
-            return 0;
-        })();
+        const goalInX = calculateRaceDistance(raceData);
 
         for (const event of raceData.event) {
             const e = event.event!;

@@ -32,7 +32,7 @@ import {
     EXCLUDE_SKILL_RE,
     TEMPTATION_TEXT,
 } from "../RaceReplay.constants";
-import { getCharaIcon, formatSigned, stackLabels, labelStyle } from "../RaceReplay.utils";
+import { getCharaIcon, formatSigned, stackLabels, labelStyle, mixWithWhite } from "../RaceReplay.utils";
 import { InterpolatedFrame } from "../RaceReplay.types";
 
 const BLOCKED_ICON = require("../../../data/umamusume_icons/blocked.png");
@@ -174,11 +174,18 @@ export function buildHorsesCustomSeries(
     return series;
 }
 
-export function buildSkillLabels(frame: any, skillActivations: Record<number, { time: number; name: string; param: number[] }[]>, otherEvents: Record<number, { time: number; duration: number; name: string }[]>, time: number) {
+export function buildSkillLabels(frame: any, skillActivations: Record<number, { time: number; name: string; param: number[] }[]>, otherEvents: Record<number, { time: number; duration: number; name: string }[]>, time: number, horseInfoByIdx: Record<number, any>, trainerColors: Record<number, string> | undefined, displayNames: Record<number, string>, legendSelection: Record<string, boolean>) {
     const items: any[] = [];
     frame.horseFrame.forEach((h: any, i: number) => {
-        if (!h) return; const base: [number, number] = [h.distance ?? 0, h.lanePosition ?? 0];
-        const next = stackLabels();
+        if (!h) return;
+        const name = displayNames[i];
+        if (legendSelection && legendSelection[name] === false) return;
+
+        const base: [number, number] = [h.distance ?? 0, h.lanePosition ?? 0];
+        const info = horseInfoByIdx[i] ?? {};
+        const teamColor = teamColorFor(i, info, trainerColors);
+        const bgColor = mixWithWhite(teamColor, 0.9);
+        const next = stackLabels(undefined, undefined, bgColor);
         const mode = h.temptationMode ?? 0;
         if (mode) { items.push({ value: base, id: `temptation-${i}-${mode}`, label: next(TEMPTATION_TEXT[mode] ?? "Rushed") }); }
         (skillActivations[i] ?? [])

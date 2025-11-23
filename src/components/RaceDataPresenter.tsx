@@ -159,7 +159,6 @@ const charaTableColumns: ColumnDescription<CharaTableData>[] = [
         text: '',
         formatter: (cell, row) => <CopyButton content={JSON.stringify(row.trainedChara.rawData)} />,
     },
-
     {
         dataField: 'finishOrder',
         text: 'Finish',
@@ -196,14 +195,6 @@ const charaTableColumns: ColumnDescription<CharaTableData>[] = [
         </>,
     },
     {
-        dataField: 'popularity',
-        text: 'Popularity',
-        sort: true,
-        formatter: (cell, row) => <>
-            {cell}<br />{row.popularityMarks.map(UMDatabaseUtils.getPopularityMark).join(', ')}
-        </>,
-    },
-    {
         dataField: 'lastSpurt',
         isDummyField: true,
         text: 'Spurt delay',
@@ -232,7 +223,9 @@ const charaTableColumns: ColumnDescription<CharaTableData>[] = [
             const delay = dist - phase3Start;
             const color = getColorForSpurtDelay(delay);
 
-            return <span style={{ color, fontWeight: 'bold' }}>{delay.toFixed(2)}m</span>;
+            return (
+                <span style={{ color, fontWeight: 'bold' }}>{delay.toFixed(2)}m</span>
+            );
         },
     },
     {
@@ -284,10 +277,10 @@ const charaTableExpandRow: ExpandRowProps<CharaTableData> = {
                         <td>{row.activatedSkills.has(cs.skillId) ? 'Used' : ''}</td>
                     </tr>,
                 )}
-            </tbody>
-        </Table>
+            </tbody >
+        </Table >
         <CharaProperLabels chara={row.trainedChara} />
-    </div>,
+    </div >,
     showExpandColumn: true,
 };
 
@@ -324,7 +317,11 @@ function calculateRaceDistance(raceData: RaceSimulateData) {
     const frames = raceData.frame ?? [];
     let winnerIndex = -1, winnerFinish = Number.POSITIVE_INFINITY;
     (raceData.horseResult ?? []).forEach((hr, idx) => { const t = hr?.finishTimeRaw; if (typeof t === "number" && t > 0 && t < winnerFinish) { winnerFinish = t; winnerIndex = idx; } });
-    if (winnerIndex >= 0 && frames.length && isFinite(winnerFinish)) { const i = bisectFrameIndex(frames, winnerFinish); const d0 = frames[i]?.horseFrame?.[winnerIndex]?.distance ?? 0; return d0; }
+    if (winnerIndex >= 0 && frames.length && isFinite(winnerFinish)) {
+        const i = bisectFrameIndex(frames, winnerFinish);
+        const d0 = frames[i]?.horseFrame?.[winnerIndex]?.distance ?? 0;
+        return Math.round(d0 / 100) * 100;
+    }
     return 0;
 }
 

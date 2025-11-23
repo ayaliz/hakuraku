@@ -120,7 +120,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     );
 
     const yMaxWithHeadroom = maxLanePosition + 3;
-    const skillLabelData = useMemo(() => buildSkillLabels(interpolatedFrame, skillActivations, otherEvents, renderTime), [interpolatedFrame, skillActivations, otherEvents, renderTime]);
+    const skillLabelData = useMemo(() => buildSkillLabels(interpolatedFrame, skillActivations, otherEvents, renderTime, horseInfoByIdx, trainerColors, displayNames, legendSelection), [interpolatedFrame, skillActivations, otherEvents, renderTime, horseInfoByIdx, trainerColors, displayNames, legendSelection]);
     const { straights, corners, straightsFinal, cornersFinal, segMarkers, slopeTriangles } = useCourseLayers(selectedTrackId, goalInX, yMaxWithHeadroom);
 
     const raceMarkers = useMemo(() => { const td = selectedTrackId ? (courseData as Record<string, any>)[selectedTrackId] : undefined; return buildMarkLines(goalInX, raceData, displayNames, segMarkers, td); }, [goalInX, raceData, displayNames, segMarkers, selectedTrackId]);
@@ -211,6 +211,19 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         { id: "course" as const, label: "Course events" },
     ];
 
+    const [isEditingFrame, setIsEditingFrame] = useState(false);
+    const [tempFrameInput, setTempFrameInput] = useState("");
+
+    const handleFrameJump = () => {
+        const frameIdx = parseInt(tempFrameInput, 10);
+        if (!isNaN(frameIdx) && frameIdx >= 0 && frameIdx < frames.length) {
+            const t = frames[frameIdx].time ?? 0;
+            setRenderTime(t);
+            if (isPlaying) playPause();
+        }
+        setIsEditingFrame(false);
+    };
+
     return (
         <div>
             {goalInX > 0 && availableTracks.length > 0 && (
@@ -265,11 +278,48 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                         </div>
                     </div>
 
-                    <div className="d-flex align-items-center" style={{ marginLeft: "auto", flexWrap: "wrap", marginBottom: TOOLBAR_GAP }}>
-                        <LegendItem color={STRAIGHT_FILL} label="Straight" />
-                        <LegendItem color={STRAIGHT_FINAL_FILL} label="Final straight" />
-                        <LegendItem color={CORNER_FILL} label="Corner" />
-                        <LegendItem color={CORNER_FINAL_FILL} label="Final corner" />
+                    <div className="d-flex flex-column align-items-end" style={{ marginLeft: "auto", marginBottom: TOOLBAR_GAP }}>
+                        <div className="d-flex align-items-center" style={{ flexWrap: "wrap" }}>
+                            <LegendItem color={STRAIGHT_FILL} label="Straight" />
+                            <LegendItem color={STRAIGHT_FINAL_FILL} label="Final straight" />
+                            <LegendItem color={CORNER_FILL} label="Corner" />
+                            <LegendItem color={CORNER_FINAL_FILL} label="Final corner" />
+                        </div>
+                        <span className="mt-1" style={{ fontSize: "0.9em", color: "#aaa", whiteSpace: "nowrap" }}>
+                            Frame: {isEditingFrame ? (
+                                <input
+                                    autoFocus
+                                    type="number"
+                                    value={tempFrameInput}
+                                    onChange={(e) => setTempFrameInput(e.target.value)}
+                                    onBlur={() => setIsEditingFrame(false)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") handleFrameJump();
+                                        if (e.key === "Escape") setIsEditingFrame(false);
+                                    }}
+                                    style={{
+                                        width: "60px",
+                                        backgroundColor: "#333",
+                                        color: "#fff",
+                                        border: "1px solid #555",
+                                        borderRadius: "4px",
+                                        padding: "0 4px",
+                                        fontSize: "inherit",
+                                    }}
+                                />
+                            ) : (
+                                <span
+                                    onClick={() => {
+                                        setTempFrameInput(interpolatedFrame.frameIndex.toString());
+                                        setIsEditingFrame(true);
+                                    }}
+                                    style={{ cursor: "pointer", textDecoration: "underline", textDecorationStyle: "dotted" }}
+                                    title="Click to jump to frame"
+                                >
+                                    {interpolatedFrame.frameIndex}
+                                </span>
+                            )} / {frames.length}
+                        </span>
                     </div>
                 </div>
             )}

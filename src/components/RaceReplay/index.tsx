@@ -72,7 +72,9 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
 }) => {
     const frames = useMemo(() => raceData.frame ?? [], [raceData]);
     const startTime = frames[0]?.time ?? 0, endTime = frames[frames.length - 1]?.time ?? 0;
-    const { time: renderTime, setTime: setRenderTime, isPlaying, playPause } = useRafPlayer(startTime, endTime);
+    const { time: renderTime, setTime: setRenderTime, isPlaying, setIsPlaying, playPause, setPlaybackRate } = useRafPlayer(startTime, endTime);
+
+
 
     const goalInX = useMemo(() => {
         let winnerIndex = -1, winnerFinish = Number.POSITIVE_INFINITY;
@@ -213,6 +215,49 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
 
     const [isEditingFrame, setIsEditingFrame] = useState(false);
     const [tempFrameInput, setTempFrameInput] = useState("");
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (isEditingFrame) return;
+            if (e.key === "ArrowUp") {
+                e.preventDefault();
+                const currentIdx = interpolatedFrame.frameIndex;
+                if (currentIdx < frames.length - 1) {
+                    setRenderTime(frames[currentIdx + 1].time ?? 0);
+                }
+            } else if (e.key === "ArrowDown") {
+                e.preventDefault();
+                const currentIdx = interpolatedFrame.frameIndex;
+                if (currentIdx > 0) {
+                    setRenderTime(frames[currentIdx - 1].time ?? 0);
+                }
+            } else if (e.key === "ArrowRight") {
+                e.preventDefault();
+                setPlaybackRate(0.5);
+                setIsPlaying(true);
+            } else if (e.key === "ArrowLeft") {
+                e.preventDefault();
+                setPlaybackRate(-0.5);
+                setIsPlaying(true);
+            }
+        };
+
+        const handleKeyUp = (e: KeyboardEvent) => {
+            if (isEditingFrame) return;
+            if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+                e.preventDefault();
+                setIsPlaying(false);
+                setPlaybackRate(1);
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        window.addEventListener("keyup", handleKeyUp);
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+            window.removeEventListener("keyup", handleKeyUp);
+        };
+    }, [frames, interpolatedFrame.frameIndex, isEditingFrame, setIsPlaying, setPlaybackRate, setRenderTime]);
 
     const handleFrameJump = () => {
         const frameIdx = parseInt(tempFrameInput, 10);

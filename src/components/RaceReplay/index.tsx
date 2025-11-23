@@ -14,7 +14,7 @@ import {
 } from "echarts/components";
 import * as echarts from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
-import { Button, Form } from "react-bootstrap";
+import { Button, Form, OverlayTrigger, Tooltip } from "react-bootstrap";
 import type { MarkLine1DDataItemOption } from "echarts/types/src/component/marker/MarkLineModel";
 
 import { RaceReplayProps } from "./RaceReplay.types";
@@ -319,6 +319,16 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                                     {interpolatedFrame.frameIndex}
                                 </span>
                             )} / {frames.length}
+                            <OverlayTrigger
+                                placement="top"
+                                overlay={
+                                    <Tooltip id="frame-interpolation-tooltip">
+                                        For most of the race, we only receive new race frames from the server every second, and both this replay (and the game client) interpolate between them to display the race.
+                                    </Tooltip>
+                                }
+                            >
+                                <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                            </OverlayTrigger>
                         </span>
                     </div>
                 </div>

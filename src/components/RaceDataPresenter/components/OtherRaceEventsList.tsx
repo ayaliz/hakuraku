@@ -1,9 +1,9 @@
 import React from "react";
 import BootstrapTable, { ColumnDescription } from "react-bootstrap-table-next";
 import _ from "lodash";
-import { RaceSimulateData } from "../data/race_data_pb";
-import FoldCard from "./FoldCard";
-import { otherRaceEventLabels } from "./RacePresenterUtils";
+import { RaceSimulateData } from "../../../data/race_data_pb";
+import FoldCard from "../../FoldCard";
+import { otherRaceEventLabels } from "../utils/RacePresenterUtils";
 
 type CompeteTableData = {
     time: number,

@@ -2,27 +2,27 @@ import React from "react";
 import { OverlayTrigger, Table, Tooltip } from "react-bootstrap";
 import BootstrapTable, { ColumnDescription, ExpandRowProps } from "react-bootstrap-table-next";
 import _ from "lodash";
-import { Chara } from "../data/data_pb";
+import { Chara } from "../../../data/data_pb";
 import {
     RaceSimulateData,
     RaceSimulateHorseResultData,
-} from "../data/race_data_pb";
+} from "../../../data/race_data_pb";
 import {
     getCharaActivatedSkillIds,
-} from "../data/RaceDataUtils";
-import { fromRaceHorseData, TrainedCharaData } from "../data/TrainedCharaData";
-import * as UMDatabaseUtils from "../data/UMDatabaseUtils";
-import UMDatabaseWrapper from "../data/UMDatabaseWrapper";
-import CardNamePresenter from "./CardNamePresenter";
-import CharaProperLabels from "./CharaProperLabels";
-import CopyButton from "./CopyButton";
-import FoldCard from "./FoldCard";
+} from "../../../data/RaceDataUtils";
+import { fromRaceHorseData, TrainedCharaData } from "../../../data/TrainedCharaData";
+import * as UMDatabaseUtils from "../../../data/UMDatabaseUtils";
+import UMDatabaseWrapper from "../../../data/UMDatabaseWrapper";
+import CardNamePresenter from "../../CardNamePresenter";
+import CharaProperLabels from "../../CharaProperLabels";
+import CopyButton from "../../CopyButton";
+import FoldCard from "../../FoldCard";
 import {
     calculateRaceDistance,
     getColorForSpurtDelay,
     runningStyleLabel,
     unknownCharaTag,
-} from "./RacePresenterUtils";
+} from "../utils/RacePresenterUtils";
 
 type CharaTableData = {
     trainedChara: TrainedCharaData,

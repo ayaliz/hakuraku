@@ -6,22 +6,22 @@ import { Alert, Form } from "react-bootstrap";
 import {
     RaceSimulateData,
     RaceSimulateEventData_SimulateEventType,
-} from "../data/race_data_pb";
+} from "../../data/race_data_pb";
 import {
     filterCharaSkills,
-} from "../data/RaceDataUtils";
-import { fromRaceHorseData, TrainedCharaData } from "../data/TrainedCharaData";
-import UMDatabaseWrapper from "../data/UMDatabaseWrapper";
-import CharaList from "./CharaList";
-import FoldCard from "./FoldCard";
-import OtherRaceEventsList from "./OtherRaceEventsList";
-import RaceGraph from "./RaceGraph";
+} from "../../data/RaceDataUtils";
+import { fromRaceHorseData, TrainedCharaData } from "../../data/TrainedCharaData";
+import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
+import CharaList from "./components/CharaList";
+import FoldCard from "../FoldCard";
+import OtherRaceEventsList from "./components/OtherRaceEventsList";
+import RaceGraph from "./components/RaceGraph";
 import {
     calculateRaceDistance,
     otherRaceEventLabels,
     unknownCharaTag,
-} from "./RacePresenterUtils";
-import RaceReplay from "./RaceReplay/index";
+} from "./utils/RacePresenterUtils";
+import RaceReplay from "../RaceReplay/index";
 
 const supportedRaceDataVersion = 100000002;
 

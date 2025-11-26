@@ -1,5 +1,5 @@
-import { RaceSimulateData, RaceSimulateEventData_SimulateEventType, RaceSimulateHorseResultData } from "../data/race_data_pb";
-import * as UMDatabaseUtils from "../data/UMDatabaseUtils";
+import { RaceSimulateData, RaceSimulateEventData_SimulateEventType, RaceSimulateHorseResultData } from "../../../data/race_data_pb";
+import * as UMDatabaseUtils from "../../../data/UMDatabaseUtils";
 
 export const unknownCharaTag = 'Unknown Chara / Mob';
 

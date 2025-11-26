@@ -24,14 +24,14 @@ import _ from "lodash";
 import {
     RaceSimulateData,
     RaceSimulateHorseFrameData_TemptationMode,
-} from "../data/race_data_pb";
+} from "../../../data/race_data_pb";
 import {
     filterCharaSkills,
     filterCharaTargetedSkills,
     filterRaceEvents,
-} from "../data/RaceDataUtils";
-import UMDatabaseWrapper from "../data/UMDatabaseWrapper";
-import { otherRaceEventLabels } from "./RacePresenterUtils";
+} from "../../../data/RaceDataUtils";
+import UMDatabaseWrapper from "../../../data/UMDatabaseWrapper";
+import { otherRaceEventLabels } from "../utils/RacePresenterUtils";
 
 echarts.use([
     LineChart, TooltipComponent, GridComponent, MarkLineComponent, MarkAreaComponent, LegendComponent, SVGRenderer, DataZoomSliderComponent,

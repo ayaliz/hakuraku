@@ -44,6 +44,7 @@ import {
     buildCourseLabelItems,
     buildMarkLines,
     noTooltipScatter,
+    buildPositionKeepSeries,
     ECOption,
 } from "./utils/chartBuilders";
 import courseData from "../../data/tracks/course_data.json";
@@ -128,6 +129,12 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     const raceMarkers = useMemo(() => { const td = selectedTrackId ? (courseData as Record<string, any>)[selectedTrackId] : undefined; return buildMarkLines(goalInX, raceData, displayNames, segMarkers, td); }, [goalInX, raceData, displayNames, segMarkers, selectedTrackId]);
     const courseLabelData = useMemo(() => buildCourseLabelItems(raceMarkers as MarkLine1DDataItemOption[], yMaxWithHeadroom), [raceMarkers, yMaxWithHeadroom]);
 
+    const positionKeepSeries = useMemo(() => {
+        if (!toggles.positionKeep || !goalInX) return null;
+        if (frontRunnerDistance >= (10 / 24) * goalInX) return null;
+        return buildPositionKeepSeries(frontRunnerDistance, goalInX, yMaxWithHeadroom);
+    }, [toggles.positionKeep, goalInX, frontRunnerDistance, yMaxWithHeadroom]);
+
     const bgSeries = useMemo(() => [
         { id: "bg-straights", fill: STRAIGHT_FILL, data: straights },
         { id: "bg-corners", fill: CORNER_FILL, data: corners },
@@ -163,6 +170,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                 tooltip: { show: false }
             } : null,
             toggles.course ? markerSeries : null,
+            positionKeepSeries,
             ...legendShadowSeries,
             horsesSeries as any,
             toggles.course ? {
@@ -211,6 +219,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         { id: "speed" as const, label: "Speed [m/s]" },
         { id: "accel" as const, label: "Acceleration [m/s^2]" },
         { id: "course" as const, label: "Course events" },
+        { id: "positionKeep" as const, label: "Position Keep" },
     ];
 
     const [isEditingFrame, setIsEditingFrame] = useState(false);

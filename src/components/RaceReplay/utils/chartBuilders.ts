@@ -206,6 +206,33 @@ export function buildCourseLabelItems(markers: MarkLine1DDataItemOption[], yTop:
         .map((m, idx) => ({ id: `course-label-${idx}`, value: [(m as any).xAxis as number, yTop], label: { ...labelStyle(10), position: "top", formatter: (m as any).name } }));
 }
 
+export function buildPositionKeepSeries(frontRunnerDistance: number, courseLength: number, yMax: number) {
+    const courseFactor = 0.0008 * (courseLength - 1000) + 1.0;
+
+    // Zones relative to front runner (distance behind)
+    const zones = [
+        { name: "Pace", min: 3.0, max: 5.0 * courseFactor, color: "rgba(128, 0, 128, 0.2)" },
+        { name: "Late", min: 6.5 * courseFactor, max: 7.0 * courseFactor, color: "rgba(0, 0, 255, 0.2)" },
+        { name: "End", min: 7.5 * courseFactor, max: 8.0 * courseFactor, color: "rgba(0, 128, 0, 0.2)" },
+    ];
+
+    const data = zones.map(z => [
+        { xAxis: frontRunnerDistance - z.max, yAxis: 0, itemStyle: { color: z.color }, label: { show: true, position: "insideTop", formatter: z.name, color: "#fff" } },
+        { xAxis: frontRunnerDistance - z.min, yAxis: yMax }
+    ]);
+
+    return {
+        id: "position-keep-areas",
+        type: "scatter",
+        silent: true,
+        data: [],
+        markArea: {
+            silent: true,
+            data: data
+        }
+    };
+}
+
 export function buildMarkLines(goalInX: number, raceData: RaceSimulateData, displayNames: Record<number, string>, segmentMarkers: MarkLine1DDataItemOption[], trackData?: any) {
     const lines: MarkLine1DDataItemOption[] = [];
     if (goalInX > 0) lines.push(

@@ -1,5 +1,4 @@
 import { JsonViewer } from "@textea/json-viewer";
-import _ from "lodash";
 import memoize from "memoize-one";
 import React from "react";
 import { Alert, Form } from "react-bootstrap";

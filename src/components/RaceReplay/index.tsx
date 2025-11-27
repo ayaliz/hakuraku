@@ -199,7 +199,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
             } : null,
         ];
         return list.filter(Boolean);
-    }, [bgSeries, toggles.slopes, slopeRenderItem, slopeTriangles, toggles.course, markerSeries, legendShadowSeries, horsesSeries, courseLabelData, toggles.skills, skillLabelData]);
+    }, [bgSeries, toggles.slopes, slopeRenderItem, slopeTriangles, toggles.course, markerSeries, positionKeepSeries, legendShadowSeries, horsesSeries, courseLabelData, toggles.skills, skillLabelData]);
 
     const options: ECOption = useMemo(() => createOptions({
         xMin: xAxis.min,

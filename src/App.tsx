@@ -1,8 +1,8 @@
-import React, {useEffect, useState} from 'react';
-import {Alert, Container, Nav, Navbar, NavDropdown, Spinner} from "react-bootstrap";
+import React, { useEffect, useState } from 'react';
+import { Alert, Container, Nav, Navbar, NavDropdown, Spinner } from "react-bootstrap";
 import 'react-bootstrap-table-next/dist/react-bootstrap-table2.css';
 import 'react-bootstrap-typeahead/css/Typeahead.css';
-import {HashRouter, Link, Route, Switch} from "react-router-dom";
+import { HashRouter, Link, Route, Switch } from "react-router-dom";
 import './App.css';
 import './dark-mode.css';
 import UMDatabaseWrapper from './data/UMDatabaseWrapper';
@@ -14,6 +14,7 @@ import SuccessionPage from './pages/SuccessionPage';
 import SuccessionRelationsPage from "./pages/SuccessionRelationsPage";
 import TeamAnalyzerPage from "./pages/TeamAnalyzerPage";
 import SetupGuidePage from './pages/SetupGuidePage';
+import CharacterSorter from "./pages/CharacterSorter";
 
 
 export default function App() {
@@ -24,14 +25,14 @@ export default function App() {
     }, []);
 
     if (!umdbLoaded) {
-        return <div><Spinner animation="border"/> Loading UMDatabase...</div>;
+        return <div><Spinner animation="border" /> Loading UMDatabase...</div>;
     }
 
     return <HashRouter>
         <Navbar bg="dark" variant="dark" expand="lg">
             <Container>
                 <Navbar.Brand as={Link} to="/">Hakuraku</Navbar.Brand>
-                <Navbar.Toggle aria-controls="basic-navbar-nav"/>
+                <Navbar.Toggle aria-controls="basic-navbar-nav" />
 
                 <Navbar.Collapse id="basic-navbar-nav">
                     <Nav className="mr-auto">
@@ -55,7 +56,8 @@ export default function App() {
                         </NavDropdown>
                     </Nav>
                     <Nav className="ml-auto">
-                        <Nav.Link as={Link} to="/setup">How to get my race data <small style={{color: 'red'}}>(Nov 11 update!)</small></Nav.Link>
+                        <Nav.Link as={Link} to="/setup">How to get my race data <small style={{ color: 'red' }}>(Nov 11 update!)</small></Nav.Link>
+
                     </Nav>
                 </Navbar.Collapse>
             </Container>
@@ -64,31 +66,34 @@ export default function App() {
         <Container>
             <Switch>
                 <Route path="/succession">
-                    <SuccessionPage/>
+                    <SuccessionPage />
                 </Route>
                 <Route path="/successionrelations">
-                    <SuccessionRelationsPage/>
+                    <SuccessionRelationsPage />
                 </Route>
                 <Route path="/stories">
-                    <StoriesPage/>
+                    <StoriesPage />
                 </Route>
                 <Route path="/carrotjuicer">
-                    <CarrotJuicerPage/>
+                    <CarrotJuicerPage />
                 </Route>
                 <Route path="/racedata">
-                    <RaceDataPage/>
+                    <RaceDataPage />
                 </Route>
                 <Route path="/teamraceanalyzer">
-                    <TeamAnalyzerPage/>
+                    <TeamAnalyzerPage />
                 </Route>
                 <Route path="/roomraceanalyzer">
-                    <RoomRaceAnalyzerPage/>
+                    <RoomRaceAnalyzerPage />
                 </Route>
                 <Route path="/setup">
-                    <SetupGuidePage/>
+                    <SetupGuidePage />
+                </Route>
+                <Route path="/sorter">
+                    <CharacterSorter />
                 </Route>
                 <Route path="/">
-                    <Home/>
+                    <Home />
                 </Route>
             </Switch>
         </Container>

@@ -108,6 +108,9 @@ const charaTableColumns: ColumnDescription<CharaTableData>[] = [
         formatter: (cell, row) => {
             const dist = row.horseResultData.lastSpurtStartDistance;
             if (!dist) return '-';
+            if (dist === -1) {
+                return <span style={{ color: '#dc3545', fontWeight: 'bold' }}>No spurt</span>;
+            }
 
             const phase3Start = row.raceDistance * 2 / 3;
             const delay = dist - phase3Start;

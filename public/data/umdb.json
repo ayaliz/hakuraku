@@ -532,6 +532,10 @@
           "charaId": 1010
         },
         {
+          "id": 26,
+          "charaId": 1025
+        },
+        {
           "id": 27,
           "charaId": 1030
         },
@@ -554,6 +558,10 @@
         {
           "id": 36,
           "charaId": 1040
+        },
+        {
+          "id": 37,
+          "charaId": 1048
         },
         {
           "id": 38,
@@ -664,6 +672,10 @@
         {
           "id": 67,
           "charaId": 1020
+        },
+        {
+          "id": 68,
+          "charaId": 1025
         },
         {
           "id": 69,
@@ -782,6 +794,10 @@
         {
           "id": 110,
           "charaId": 1046
+        },
+        {
+          "id": 111,
+          "charaId": 1048
         },
         {
           "id": 112,
@@ -925,7 +941,13 @@
     },
     {
       "relationType": 309,
-      "relationPoint": 2
+      "relationPoint": 2,
+      "member": [
+        {
+          "id": 139,
+          "charaId": 1025
+        }
+      ]
     },
     {
       "relationType": 310,
@@ -998,6 +1020,10 @@
         {
           "id": 153,
           "charaId": 1035
+        },
+        {
+          "id": 154,
+          "charaId": 1048
         }
       ]
     },
@@ -1342,6 +1368,10 @@
         {
           "id": 209,
           "charaId": 1005
+        },
+        {
+          "id": 210,
+          "charaId": 1025
         },
         {
           "id": 212,
@@ -1784,6 +1814,10 @@
           "charaId": 1024
         },
         {
+          "id": 681,
+          "charaId": 1025
+        },
+        {
           "id": 682,
           "charaId": 1030
         },
@@ -1998,6 +2032,10 @@
           "charaId": 1024
         },
         {
+          "id": 735,
+          "charaId": 1025
+        },
+        {
           "id": 736,
           "charaId": 1030
         },
@@ -2046,6 +2084,10 @@
         {
           "id": 693,
           "charaId": 1045
+        },
+        {
+          "id": 695,
+          "charaId": 1048
         }
       ]
     },
@@ -2192,6 +2234,10 @@
           "charaId": 1024
         },
         {
+          "id": 641,
+          "charaId": 1025
+        },
+        {
           "id": 644,
           "charaId": 1017
         }
@@ -2330,6 +2376,10 @@
           "charaId": 1024
         },
         {
+          "id": 260,
+          "charaId": 1025
+        },
+        {
           "id": 261,
           "charaId": 1026
         },
@@ -2372,6 +2422,10 @@
         {
           "id": 276,
           "charaId": 1046
+        },
+        {
+          "id": 278,
+          "charaId": 1048
         },
         {
           "id": 280,
@@ -2583,6 +2637,10 @@
       "relationType": 2704,
       "relationPoint": 1,
       "member": [
+        {
+          "id": 358,
+          "charaId": 1025
+        },
         {
           "id": 359,
           "charaId": 1030
@@ -2824,6 +2882,10 @@
       "relationPoint": 1,
       "member": [
         {
+          "id": 408,
+          "charaId": 1025
+        },
+        {
           "id": 409,
           "charaId": 1032
         }
@@ -2845,7 +2907,13 @@
     },
     {
       "relationType": 2816,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 412,
+          "charaId": 1048
+        }
+      ]
     },
     {
       "relationType": 2817,
@@ -2964,6 +3032,10 @@
           "charaId": 1045
         },
         {
+          "id": 444,
+          "charaId": 1048
+        },
+        {
           "id": 447,
           "charaId": 1058
         }
@@ -2992,6 +3064,10 @@
         {
           "id": 452,
           "charaId": 1016
+        },
+        {
+          "id": 453,
+          "charaId": 1025
         },
         {
           "id": 454,
@@ -3270,6 +3346,10 @@
           "charaId": 1046
         },
         {
+          "id": 548,
+          "charaId": 1048
+        },
+        {
           "id": 550,
           "charaId": 1050
         },
@@ -3330,6 +3410,10 @@
         {
           "id": 567,
           "charaId": 1023
+        },
+        {
+          "id": 568,
+          "charaId": 1025
         }
       ]
     },
@@ -3466,6 +3550,10 @@
           "charaId": 1023
         },
         {
+          "id": 604,
+          "charaId": 1025
+        },
+        {
           "id": 605,
           "charaId": 1026
         },
@@ -3484,6 +3572,10 @@
         {
           "id": 614,
           "charaId": 1039
+        },
+        {
+          "id": 618,
+          "charaId": 1048
         },
         {
           "id": 620,
@@ -3612,6 +3704,10 @@
         {
           "id": 803,
           "charaId": 1024
+        },
+        {
+          "id": 804,
+          "charaId": 1025
         },
         {
           "id": 806,
@@ -4596,6 +4692,10 @@
         {
           "id": 913,
           "charaId": 1003
+        },
+        {
+          "id": 914,
+          "charaId": 1048
         }
       ]
     },
@@ -4724,6 +4824,10 @@
         {
           "id": 933,
           "charaId": 1004
+        },
+        {
+          "id": 934,
+          "charaId": 1048
         }
       ]
     },
@@ -5052,6 +5156,10 @@
         {
           "id": 985,
           "charaId": 1007
+        },
+        {
+          "id": 986,
+          "charaId": 1048
         }
       ]
     },
@@ -5114,6 +5222,10 @@
         {
           "id": 995,
           "charaId": 1009
+        },
+        {
+          "id": 996,
+          "charaId": 1048
         }
       ]
     },
@@ -5426,6 +5538,10 @@
         {
           "id": 1043,
           "charaId": 1013
+        },
+        {
+          "id": 1044,
+          "charaId": 1048
         }
       ]
     },
@@ -5890,6 +6006,10 @@
         {
           "id": 1115,
           "charaId": 1017
+        },
+        {
+          "id": 1116,
+          "charaId": 1048
         }
       ]
     },
@@ -6154,6 +6274,10 @@
       "relationPoint": 1,
       "member": [
         {
+          "id": 1157,
+          "charaId": 1025
+        },
+        {
           "id": 1158,
           "charaId": 1003
         }
@@ -6163,6 +6287,10 @@
       "relationType": 8163,
       "relationPoint": 1,
       "member": [
+        {
+          "id": 1159,
+          "charaId": 1025
+        },
         {
           "id": 1160,
           "charaId": 1004
@@ -6174,6 +6302,10 @@
       "relationPoint": 1,
       "member": [
         {
+          "id": 1161,
+          "charaId": 1025
+        },
+        {
           "id": 1162,
           "charaId": 1013
         }
@@ -6183,6 +6315,10 @@
       "relationType": 8165,
       "relationPoint": 1,
       "member": [
+        {
+          "id": 1163,
+          "charaId": 1025
+        },
         {
           "id": 1164,
           "charaId": 1015
@@ -6194,6 +6330,10 @@
       "relationPoint": 1,
       "member": [
         {
+          "id": 1165,
+          "charaId": 1025
+        },
+        {
           "id": 1166,
           "charaId": 1017
         }
@@ -6201,12 +6341,22 @@
     },
     {
       "relationType": 8167,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1167,
+          "charaId": 1025
+        }
+      ]
     },
     {
       "relationType": 8168,
       "relationPoint": 1,
       "member": [
+        {
+          "id": 1169,
+          "charaId": 1025
+        },
         {
           "id": 1170,
           "charaId": 1027
@@ -6218,6 +6368,10 @@
       "relationPoint": 1,
       "member": [
         {
+          "id": 1171,
+          "charaId": 1025
+        },
+        {
           "id": 1172,
           "charaId": 1038
         }
@@ -6228,6 +6382,10 @@
       "relationPoint": 1,
       "member": [
         {
+          "id": 1173,
+          "charaId": 1025
+        },
+        {
           "id": 1174,
           "charaId": 1040
         }
@@ -6235,12 +6393,22 @@
     },
     {
       "relationType": 8171,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1175,
+          "charaId": 1025
+        }
+      ]
     },
     {
       "relationType": 8172,
       "relationPoint": 1,
       "member": [
+        {
+          "id": 1177,
+          "charaId": 1025
+        },
         {
           "id": 1178,
           "charaId": 1045
@@ -6249,12 +6417,22 @@
     },
     {
       "relationType": 8173,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1179,
+          "charaId": 1025
+        }
+      ]
     },
     {
       "relationType": 8174,
       "relationPoint": 1,
       "member": [
+        {
+          "id": 1181,
+          "charaId": 1025
+        },
         {
           "id": 1182,
           "charaId": 1056
@@ -6266,6 +6444,10 @@
       "relationPoint": 1,
       "member": [
         {
+          "id": 1183,
+          "charaId": 1025
+        },
+        {
           "id": 1184,
           "charaId": 1058
         }
@@ -6273,12 +6455,22 @@
     },
     {
       "relationType": 8176,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1185,
+          "charaId": 1025
+        }
+      ]
     },
     {
       "relationType": 8177,
       "relationPoint": 1,
       "member": [
+        {
+          "id": 1187,
+          "charaId": 1025
+        },
         {
           "id": 1188,
           "charaId": 1060
@@ -6513,7 +6705,13 @@
     },
     {
       "relationType": 8199,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1232,
+          "charaId": 1048
+        }
+      ]
     },
     {
       "relationType": 8200,
@@ -7640,6 +7838,10 @@
         {
           "id": 1429,
           "charaId": 1041
+        },
+        {
+          "id": 1430,
+          "charaId": 1048
         }
       ]
     },
@@ -7926,6 +8128,10 @@
         {
           "id": 1487,
           "charaId": 1045
+        },
+        {
+          "id": 1488,
+          "charaId": 1048
         }
       ]
     },
@@ -7998,6 +8204,10 @@
         {
           "id": 1499,
           "charaId": 1046
+        },
+        {
+          "id": 1500,
+          "charaId": 1048
         }
       ]
     },
@@ -8173,7 +8383,13 @@
     },
     {
       "relationType": 8354,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1542,
+          "charaId": 1048
+        }
+      ]
     },
     {
       "relationType": 8355,
@@ -8701,7 +8917,13 @@
     },
     {
       "relationType": 8409,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1652,
+          "charaId": 1048
+        }
+      ]
     },
     {
       "relationType": 8410,
@@ -12091,6 +12313,24 @@
       "id": 596003,
       "name": "Asahi Hai F.S. (Hard)",
       "distance": 1600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 596501,
+      "name": "Tenno Sho (Autumn) (Hard)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 596502,
+      "name": "Tenno Sho (Autumn) (Hard)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 596503,
+      "name": "Tenno Sho (Autumn) (Hard)",
+      "distance": 2000,
       "groundType": "TURF"
     },
     {
@@ -18568,6 +18808,14 @@
       ]
     },
     {
+      "id": 100251,
+      "name": "Chasing After You",
+      "gradeValue": 340,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
       "id": 100261,
       "name": "G00 1st. F∞;",
       "gradeValue": 340,
@@ -18676,6 +18924,14 @@
       ]
     },
     {
+      "id": 100481,
+      "name": "Pop & Polish",
+      "gradeValue": 340,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
       "id": 100501,
       "name": "Nemesis",
       "gradeValue": 340,
@@ -18774,6 +19030,14 @@
       ]
     },
     {
+      "id": 110171,
+      "name": "Arrows Whistle, Shadows Disperse",
+      "gradeValue": 340,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
       "id": 110181,
       "name": "Eternal Moments",
       "gradeValue": 340,
@@ -18796,6 +19060,15 @@
       "gradeValue": 340,
       "tagId": [
         "402"
+      ]
+    },
+    {
+      "id": 110401,
+      "name": "Dancing in the Leaves",
+      "gradeValue": 340,
+      "tagId": [
+        "401",
+        "403"
       ]
     },
     {
@@ -19269,6 +19542,15 @@
       "gradeValue": -129,
       "tagId": [
         "401"
+      ]
+    },
+    {
+      "id": 200194,
+      "name": "Fall Frenzy",
+      "gradeValue": 461,
+      "tagId": [
+        "401",
+        "403"
       ]
     },
     {
@@ -21796,6 +22078,14 @@
       ]
     },
     {
+      "id": 201801,
+      "name": "♡ 3D Nail Art",
+      "gradeValue": -129,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
       "id": 201902,
       "name": "Head-On",
       "gradeValue": 217,
@@ -22133,6 +22423,14 @@
       ]
     },
     {
+      "id": 900251,
+      "name": "Chasing After You",
+      "gradeValue": 180,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
       "id": 900261,
       "name": "G00 1st. F∞;",
       "gradeValue": 180,
@@ -22241,6 +22539,14 @@
       ]
     },
     {
+      "id": 900481,
+      "name": "Pop & Polish",
+      "gradeValue": 180,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
       "id": 900501,
       "name": "Nemesis",
       "gradeValue": 180,
@@ -22339,6 +22645,14 @@
       ]
     },
     {
+      "id": 910171,
+      "name": "Arrows Whistle, Shadows Disperse",
+      "gradeValue": 180,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
       "id": 910181,
       "name": "Eternal Moments",
       "gradeValue": 180,
@@ -22361,6 +22675,15 @@
       "gradeValue": 180,
       "tagId": [
         "402"
+      ]
+    },
+    {
+      "id": 910401,
+      "name": "Dancing in the Leaves",
+      "gradeValue": 180,
+      "tagId": [
+        "401",
+        "403"
       ]
     },
     {
@@ -22784,6 +23107,10 @@
     },
     {
       "id": 80000002,
+      "name": "Prologue"
+    },
+    {
+      "id": 80000004,
       "name": "Prologue"
     },
     {
@@ -56791,12 +57118,20 @@
       "name": "Lonesome Cepheus"
     },
     {
+      "id": 801033003,
+      "name": "A Hint for Growth"
+    },
+    {
       "id": 801034001,
       "name": "Let's Tussle! Booyah!"
     },
     {
       "id": 801034002,
       "name": "Mikoshi, Heave Ho!"
+    },
+    {
+      "id": 801034003,
+      "name": "A Hint for Growth"
     },
     {
       "id": 801035001,
@@ -56841,6 +57176,10 @@
     {
       "id": 801038002,
       "name": "#Cuteness4U ☆"
+    },
+    {
+      "id": 801038003,
+      "name": "A Hint for Growth"
     },
     {
       "id": 801039001,
@@ -56971,6 +57310,10 @@
       "name": "Sundown Solo Supper"
     },
     {
+      "id": 801049003,
+      "name": "A Hint for Growth"
+    },
+    {
       "id": 801050001,
       "name": "Just Leave Me Alone"
     },
@@ -57061,6 +57404,10 @@
     {
       "id": 801057002,
       "name": "Even if I Ruffle Feathers"
+    },
+    {
+      "id": 801057003,
+      "name": "A Hint for Growth"
     },
     {
       "id": 801058001,
@@ -57215,6 +57562,10 @@
       "name": "Want Me to Help You?"
     },
     {
+      "id": 801070003,
+      "name": "A Hint for Growth"
+    },
+    {
       "id": 801071001,
       "name": "The Glass Girl Wants to Study"
     },
@@ -57247,6 +57598,10 @@
       "name": "Helping Out to the MAX!"
     },
     {
+      "id": 801073003,
+      "name": "A Hint for Growth"
+    },
+    {
       "id": 801074001,
       "name": "Slow and Leisurely"
     },
@@ -57255,12 +57610,20 @@
       "name": "Sure and Steady"
     },
     {
+      "id": 801074003,
+      "name": "A Hint for Growth"
+    },
+    {
       "id": 801077001,
       "name": "A Thorough Inspection"
     },
     {
       "id": 801077002,
       "name": "A Diligent Effort"
+    },
+    {
+      "id": 801077003,
+      "name": "A Hint for Growth"
     },
     {
       "id": 809001001,
@@ -59399,6 +59762,11 @@
       "charaId": 1043
     },
     {
+      "id": 10067,
+      "name": "[Tracen Academy] Nakayama Festa",
+      "charaId": 1049
+    },
+    {
       "id": 10069,
       "name": "[Tracen Academy] Mejiro Ardan",
       "charaId": 1071
@@ -59409,9 +59777,19 @@
       "charaId": 1048
     },
     {
+      "id": 10071,
+      "name": "[Tracen Academy] Sirius Symboli",
+      "charaId": 1070
+    },
+    {
       "id": 10072,
       "name": "[Tracen Academy] Narita Brian",
       "charaId": 1016
+    },
+    {
+      "id": 10073,
+      "name": "[Tracen Academy] Curren Chan",
+      "charaId": 1038
     },
     {
       "id": 20001,
@@ -59572,6 +59950,11 @@
       "id": 20037,
       "name": "[Grma, Ramen ♪] Fine Motion",
       "charaId": 1022
+    },
+    {
+      "id": 20038,
+      "name": "[The Brightest Star Shines On] Sirius Symboli",
+      "charaId": 1070
     },
     {
       "id": 30001,
@@ -59774,6 +60157,11 @@
       "charaId": 1053
     },
     {
+      "id": 30043,
+      "name": "[43, 8, 1] Nakayama Festa",
+      "charaId": 1049
+    },
+    {
       "id": 30044,
       "name": "[Two Pieces] Narita Brian",
       "charaId": 1016
@@ -59862,6 +60250,21 @@
       "id": 30066,
       "name": "[The Ghost Finds Halloween Magic] Mihono Bourbon",
       "charaId": 1026
+    },
+    {
+      "id": 30068,
+      "name": "[Cutie Pie with Shining Eyes] Curren Chan",
+      "charaId": 1038
+    },
+    {
+      "id": 30069,
+      "name": "[The Whistling Arrow's Taunt] Narita Brian",
+      "charaId": 1016
+    },
+    {
+      "id": 30070,
+      "name": "[Dancing Light into the Night] Yukino Bijin",
+      "charaId": 1029
     }
   ]
 }

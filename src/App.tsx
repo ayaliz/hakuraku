@@ -14,7 +14,6 @@ import SuccessionPage from './pages/SuccessionPage';
 import SuccessionRelationsPage from "./pages/SuccessionRelationsPage";
 import TeamAnalyzerPage from "./pages/TeamAnalyzerPage";
 import SetupGuidePage from './pages/SetupGuidePage';
-import CharacterSorter from "./pages/CharacterSorter";
 
 
 export default function App() {
@@ -37,9 +36,6 @@ export default function App() {
                 <Navbar.Collapse id="basic-navbar-nav">
                     <Nav className="mr-auto">
                         <Nav.Link as={Link} to="/">Home</Nav.Link>
-                        <Nav.Link as={Link} to="/succession">Succession</Nav.Link>
-                        <Nav.Link as={Link} to="/successionrelations">SuccessionRelations</Nav.Link>
-                        <Nav.Link as={Link} to="/stories">Stories</Nav.Link>
                         <NavDropdown title="CarrotJuicer Tools" id="carrotjuicer-nav-dropdown">
                             <NavDropdown.Item as={Link} to="/carrotjuicer">
                                 Packet / Race Inspector
@@ -88,9 +84,6 @@ export default function App() {
                 </Route>
                 <Route path="/setup">
                     <SetupGuidePage />
-                </Route>
-                <Route path="/sorter">
-                    <CharacterSorter />
                 </Route>
                 <Route path="/">
                     <Home />

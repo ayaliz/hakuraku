@@ -544,6 +544,10 @@
           "charaId": 1041
         },
         {
+          "id": 30,
+          "charaId": 1059
+        },
+        {
           "id": 31,
           "charaId": 1002
         },
@@ -688,6 +692,10 @@
         {
           "id": 74,
           "charaId": 1041
+        },
+        {
+          "id": 79,
+          "charaId": 1059
         }
       ]
     },
@@ -884,6 +892,10 @@
         {
           "id": 129,
           "charaId": 1010
+        },
+        {
+          "id": 130,
+          "charaId": 1059
         }
       ]
     },
@@ -1248,6 +1260,10 @@
         {
           "id": 193,
           "charaId": 1027
+        },
+        {
+          "id": 194,
+          "charaId": 1059
         }
       ]
     },
@@ -1862,6 +1878,10 @@
         {
           "id": 646,
           "charaId": 1039
+        },
+        {
+          "id": 647,
+          "charaId": 1059
         }
       ]
     },
@@ -2000,6 +2020,10 @@
         {
           "id": 707,
           "charaId": 1039
+        },
+        {
+          "id": 709,
+          "charaId": 1059
         }
       ]
     },
@@ -2102,6 +2126,10 @@
         {
           "id": 766,
           "charaId": 1012
+        },
+        {
+          "id": 769,
+          "charaId": 1059
         }
       ]
     },
@@ -2168,6 +2196,10 @@
         {
           "id": 724,
           "charaId": 1012
+        },
+        {
+          "id": 726,
+          "charaId": 1059
         }
       ]
     },
@@ -2480,6 +2512,10 @@
         {
           "id": 300,
           "charaId": 1052
+        },
+        {
+          "id": 301,
+          "charaId": 1059
         }
       ]
     },
@@ -2820,6 +2856,10 @@
         {
           "id": 395,
           "charaId": 1056
+        },
+        {
+          "id": 396,
+          "charaId": 1059
         }
       ]
     },
@@ -3094,6 +3134,10 @@
           "charaId": 1056
         },
         {
+          "id": 465,
+          "charaId": 1059
+        },
+        {
           "id": 466,
           "charaId": 1060
         },
@@ -3218,6 +3262,10 @@
         {
           "id": 505,
           "charaId": 1046
+        },
+        {
+          "id": 508,
+          "charaId": 1059
         }
       ]
     },
@@ -3356,6 +3404,10 @@
         {
           "id": 553,
           "charaId": 1058
+        },
+        {
+          "id": 554,
+          "charaId": 1059
         }
       ]
     },
@@ -3584,6 +3636,10 @@
         {
           "id": 626,
           "charaId": 1058
+        },
+        {
+          "id": 627,
+          "charaId": 1059
         }
       ]
     },
@@ -4366,6 +4422,10 @@
         {
           "id": 863,
           "charaId": 1001
+        },
+        {
+          "id": 864,
+          "charaId": 1059
         }
       ]
     },
@@ -4574,6 +4634,10 @@
         {
           "id": 895,
           "charaId": 1002
+        },
+        {
+          "id": 896,
+          "charaId": 1059
         }
       ]
     },
@@ -5032,6 +5096,10 @@
         {
           "id": 965,
           "charaId": 1005
+        },
+        {
+          "id": 966,
+          "charaId": 1059
         }
       ]
     },
@@ -5420,6 +5488,10 @@
         {
           "id": 1025,
           "charaId": 1010
+        },
+        {
+          "id": 1026,
+          "charaId": 1059
         }
       ]
     },
@@ -5888,6 +5960,10 @@
         {
           "id": 1097,
           "charaId": 1016
+        },
+        {
+          "id": 1098,
+          "charaId": 1059
         }
       ]
     },
@@ -6252,6 +6328,10 @@
         {
           "id": 1153,
           "charaId": 1020
+        },
+        {
+          "id": 1154,
+          "charaId": 1059
         }
       ]
     },
@@ -6460,6 +6540,10 @@
         {
           "id": 1185,
           "charaId": 1025
+        },
+        {
+          "id": 1186,
+          "charaId": 1059
         }
       ]
     },
@@ -6725,7 +6809,13 @@
     },
     {
       "relationType": 8201,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1236,
+          "charaId": 1059
+        }
+      ]
     },
     {
       "relationType": 8202,
@@ -6928,6 +7018,10 @@
         {
           "id": 1267,
           "charaId": 1030
+        },
+        {
+          "id": 1268,
+          "charaId": 1059
         }
       ]
     },
@@ -7136,6 +7230,10 @@
         {
           "id": 1299,
           "charaId": 1032
+        },
+        {
+          "id": 1300,
+          "charaId": 1059
         }
       ]
     },
@@ -7277,7 +7375,13 @@
     },
     {
       "relationType": 8249,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1332,
+          "charaId": 1059
+        }
+      ]
     },
     {
       "relationType": 8250,
@@ -7413,7 +7517,13 @@
     },
     {
       "relationType": 8265,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1364,
+          "charaId": 1059
+        }
+      ]
     },
     {
       "relationType": 8266,
@@ -7866,6 +7976,10 @@
         {
           "id": 1433,
           "charaId": 1041
+        },
+        {
+          "id": 1434,
+          "charaId": 1059
         }
       ]
     },
@@ -8335,7 +8449,13 @@
     },
     {
       "relationType": 8348,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1530,
+          "charaId": 1059
+        }
+      ]
     },
     {
       "relationType": 8349,
@@ -8523,7 +8643,13 @@
     },
     {
       "relationType": 8369,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1572,
+          "charaId": 1059
+        }
+      ]
     },
     {
       "relationType": 8370,
@@ -8777,7 +8903,13 @@
     },
     {
       "relationType": 8394,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1622,
+          "charaId": 1059
+        }
+      ]
     },
     {
       "relationType": 8395,
@@ -8937,7 +9069,13 @@
     },
     {
       "relationType": 8411,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1656,
+          "charaId": 1059
+        }
+      ]
     },
     {
       "relationType": 8412,
@@ -8982,6 +9120,10 @@
       "relationPoint": 1,
       "member": [
         {
+          "id": 1663,
+          "charaId": 1059
+        },
+        {
           "id": 1664,
           "charaId": 1006
         }
@@ -8991,6 +9133,10 @@
       "relationType": 8416,
       "relationPoint": 1,
       "member": [
+        {
+          "id": 1665,
+          "charaId": 1059
+        },
         {
           "id": 1666,
           "charaId": 1050
@@ -12370,6 +12516,12 @@
       "groundType": "TURF"
     },
     {
+      "id": 600011,
+      "name": "Scorpio Cup",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
       "id": 600017,
       "name": "Taurus Cup Finals",
       "distance": 2400,
@@ -12403,6 +12555,12 @@
       "id": 600022,
       "name": "Libra Cup Finals",
       "distance": 3000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 600023,
+      "name": "Scorpio Cup Finals",
+      "distance": 2000,
       "groundType": "TURF"
     },
     {
@@ -18966,6 +19124,14 @@
       ]
     },
     {
+      "id": 100591,
+      "name": "Moving Past, and Beyond",
+      "gradeValue": 340,
+      "tagId": [
+        "403"
+      ]
+    },
+    {
       "id": 100601,
       "name": "Just a Little Farther!",
       "gradeValue": 340,
@@ -19230,6 +19396,15 @@
       "gradeValue": -129,
       "tagId": [
         "402"
+      ]
+    },
+    {
+      "id": 200064,
+      "name": "Yodo Invicta",
+      "gradeValue": 461,
+      "tagId": [
+        "402",
+        "405"
       ]
     },
     {
@@ -22577,6 +22752,14 @@
       "gradeValue": 180,
       "tagId": [
         "401",
+        "403"
+      ]
+    },
+    {
+      "id": 900591,
+      "name": "Moving Past, and Beyond",
+      "gradeValue": 180,
+      "tagId": [
         "403"
       ]
     },
@@ -50863,7 +51046,7 @@
     },
     {
       "id": 501059520,
-      "name": "Rot Pot Derby?!"
+      "name": "Hot Pot Derby?!"
     },
     {
       "id": 501059521,
@@ -59957,6 +60140,11 @@
       "charaId": 1070
     },
     {
+      "id": 20039,
+      "name": "[An Annoying Supervisor] Vodka",
+      "charaId": 1008
+    },
+    {
       "id": 30001,
       "name": "[The Brightest Star in Japan!] Special Week",
       "charaId": 1001
@@ -60265,6 +60453,11 @@
       "id": 30070,
       "name": "[Dancing Light into the Night] Yukino Bijin",
       "charaId": 1029
+    },
+    {
+      "id": 30071,
+      "name": "[Make! Some! NOISE!] Daitaku Helios",
+      "charaId": 1065
     }
   ]
 }

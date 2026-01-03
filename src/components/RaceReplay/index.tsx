@@ -151,14 +151,63 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         return events;
     }, [frames]);
 
+    const spurtDelayEvents = useMemo(() => {
+        const events: Record<number, { time: number; duration: number; name: string }[]> = {};
+        if (!frames || frames.length < 2 || !goalInX) return events;
+
+        const phase3Start = (goalInX * 2) / 3;
+        const numHorses = frames[0]?.horseFrame?.length ?? 0;
+
+        for (let h = 0; h < numHorses; h++) {
+            const result = raceData.horseResult?.[h];
+            if (!result) continue;
+
+            const dist = result.lastSpurtStartDistance; // Can be undefined, -1, or number
+            if (dist == null) continue;
+
+            let eventName: string | null = null;
+            if (dist === -1) {
+                eventName = "No spurt";
+            } else {
+                const delay = dist - phase3Start;
+                if (delay > 4) {
+                    eventName = `${delay.toFixed(2)}m spurt delay`;
+                }
+            }
+
+            if (eventName) {
+                // Find time when horse crosses phase3Start
+                // We scan frames to find the first frame where distance >= phase3Start
+                let foundTime = -1;
+                // Optimization: Binary search could be better but linear scan is fine for typical race lengths/FPS
+                for (let i = 0; i < frames.length; i++) {
+                    const d = frames[i]?.horseFrame?.[h]?.distance ?? 0;
+                    if (d >= phase3Start) {
+                        foundTime = frames[i].time ?? 0;
+                        break;
+                    }
+                }
+
+                if (foundTime !== -1) {
+                    events[h] = [{ time: foundTime, duration: 2, name: eventName }];
+                }
+            }
+        }
+        return events;
+    }, [frames, raceData.horseResult, goalInX]);
+
     const combinedOtherEvents = useMemo(() => {
         const combined = { ...otherEvents };
-        Object.entries(hpZeroEvents).forEach(([hStr, events]) => {
-            const h = +hStr;
-            combined[h] = [...(combined[h] ?? []), ...events];
-        });
+        const merge = (source: Record<number, any[]>) => {
+            Object.entries(source).forEach(([hStr, evts]) => {
+                const h = +hStr;
+                combined[h] = [...(combined[h] ?? []), ...evts];
+            });
+        };
+        merge(hpZeroEvents);
+        merge(spurtDelayEvents);
         return combined;
-    }, [otherEvents, hpZeroEvents]);
+    }, [otherEvents, hpZeroEvents, spurtDelayEvents]);
 
 
     const { t: toggles, bind } = useToggles();

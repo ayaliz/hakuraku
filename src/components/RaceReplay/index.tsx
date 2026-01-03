@@ -103,6 +103,64 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     useEffect(() => { setLegendSelection(prev => { const next: Record<string, boolean> = {}; legendNames.forEach(n => { next[n] = prev[n] ?? true; }); return next; }); }, [legendNames]);
     const onEvents = useMemo(() => ({ legendselectchanged: (e: any) => { if (e && e.selected) setLegendSelection(e.selected); } }), []);
 
+    const hpZeroEvents = useMemo(() => {
+        const events: Record<number, { time: number; duration: number; name: string }[]> = {};
+        if (!frames || frames.length < 2) return events;
+
+        const numHorses = frames[0]?.horseFrame?.length ?? 0;
+        for (let h = 0; h < numHorses; h++) {
+            const horseEvents: { time: number; duration: number; name: string }[] = [];
+            let currentStart = -1;
+            let currentEnd = -1;
+
+            for (let i = 0; i < frames.length - 1; i++) {
+                const nextFrameHorse = frames[i + 1]?.horseFrame?.[h];
+                // Check if the next frame exists and has 0 HP
+                if (nextFrameHorse && nextFrameHorse.hp === 0) {
+                    const t = frames[i].time ?? 0;
+                    const nextT = frames[i + 1].time ?? 0;
+
+                    if (currentStart === -1) {
+                        currentStart = t;
+                        currentEnd = nextT;
+                    } else if (Math.abs(t - currentEnd) < 0.001) {
+                        // Contiguous
+                        currentEnd = nextT;
+                    } else {
+                        // Gap found, push previous event
+                        horseEvents.push({ time: currentStart, duration: currentEnd - currentStart, name: "Out of HP" });
+                        currentStart = t;
+                        currentEnd = nextT;
+                    }
+                } else {
+                    if (currentStart !== -1) {
+                        horseEvents.push({ time: currentStart, duration: currentEnd - currentStart, name: "Out of HP" });
+                        currentStart = -1;
+                        currentEnd = -1;
+                    }
+                }
+            }
+            if (currentStart !== -1) {
+                horseEvents.push({ time: currentStart, duration: currentEnd - currentStart, name: "Out of HP" });
+            }
+
+            if (horseEvents.length > 0) {
+                events[h] = horseEvents;
+            }
+        }
+        return events;
+    }, [frames]);
+
+    const combinedOtherEvents = useMemo(() => {
+        const combined = { ...otherEvents };
+        Object.entries(hpZeroEvents).forEach(([hStr, events]) => {
+            const h = +hStr;
+            combined[h] = [...(combined[h] ?? []), ...events];
+        });
+        return combined;
+    }, [otherEvents, hpZeroEvents]);
+
+
     const { t: toggles, bind } = useToggles();
 
     const legendShadowSeries = useMemo(() => buildLegendShadowSeries(displayNames, horseInfoByIdx, trainerColors), [displayNames, horseInfoByIdx, trainerColors]);
@@ -123,7 +181,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     );
 
     const yMaxWithHeadroom = maxLanePosition + 3;
-    const skillLabelData = useMemo(() => buildSkillLabels(interpolatedFrame, skillActivations, otherEvents, renderTime, horseInfoByIdx, trainerColors, displayNames, legendSelection), [interpolatedFrame, skillActivations, otherEvents, renderTime, horseInfoByIdx, trainerColors, displayNames, legendSelection]);
+    const skillLabelData = useMemo(() => buildSkillLabels(interpolatedFrame, skillActivations, combinedOtherEvents, renderTime, horseInfoByIdx, trainerColors, displayNames, legendSelection), [interpolatedFrame, skillActivations, combinedOtherEvents, renderTime, horseInfoByIdx, trainerColors, displayNames, legendSelection]);
     const { straights, corners, straightsFinal, cornersFinal, segMarkers, slopeTriangles } = useCourseLayers(selectedTrackId, goalInX, yMaxWithHeadroom);
 
     const raceMarkers = useMemo(() => { const td = selectedTrackId ? (courseData as Record<string, any>)[selectedTrackId] : undefined; return buildMarkLines(goalInX, raceData, displayNames, segMarkers, td); }, [goalInX, raceData, displayNames, segMarkers, selectedTrackId]);

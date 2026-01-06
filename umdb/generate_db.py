@@ -5,6 +5,7 @@ import sqlite3
 from collections import defaultdict
 import sys
 from google.protobuf import json_format
+import os
 
 import data_pb2
 
@@ -172,7 +173,16 @@ def populate_stories(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--db_path", default="master.mdb")
+    default_db_path = os.path.join(
+    os.environ.get("LOCALAPPDATA", ""),
+    "..",
+    "LocalLow",
+    "Cygames",
+    "Umamusume",
+    "master",
+    "master.mdb",
+    )
+    parser.add_argument("--db_path", default=default_db_path)
     parser.add_argument("--version", default="test")
     args = parser.parse_args()
 

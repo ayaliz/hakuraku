@@ -19172,6 +19172,16 @@
       ]
     },
     {
+      "id": 110061,
+      "name": "Festive Miracle",
+      "gradeValue": 340,
+      "tagId": [
+        "401",
+        "402",
+        "403"
+      ]
+    },
+    {
       "id": 110111,
       "name": "Superior Heal",
       "gradeValue": 340,
@@ -19206,6 +19216,14 @@
     {
       "id": 110181,
       "name": "Eternal Moments",
+      "gradeValue": 340,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
+      "id": 110231,
+      "name": "Presents from X",
       "gradeValue": 340,
       "tagId": [
         "401"
@@ -21416,6 +21434,15 @@
       ]
     },
     {
+      "id": 201201,
+      "name": "VIP Pass",
+      "gradeValue": 508,
+      "tagId": [
+        "204",
+        "402"
+      ]
+    },
+    {
       "id": 201202,
       "name": "Passing Pro",
       "gradeValue": 217,
@@ -22804,6 +22831,16 @@
       ]
     },
     {
+      "id": 910061,
+      "name": "Festive Miracle",
+      "gradeValue": 180,
+      "tagId": [
+        "401",
+        "402",
+        "403"
+      ]
+    },
+    {
       "id": 910111,
       "name": "Superior Heal",
       "gradeValue": 180,
@@ -22838,6 +22875,14 @@
     {
       "id": 910181,
       "name": "Eternal Moments",
+      "gradeValue": 180,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
+      "id": 910231,
+      "name": "Presents from X",
       "gradeValue": 180,
       "tagId": [
         "401"
@@ -60458,6 +60503,21 @@
       "id": 30071,
       "name": "[Make! Some! NOISE!] Daitaku Helios",
       "charaId": 1065
+    },
+    {
+      "id": 30072,
+      "name": "[Party Formation] Mayano Top Gun",
+      "charaId": 1024
+    },
+    {
+      "id": 30073,
+      "name": "[Strict Shopper] Narita Taishin",
+      "charaId": 1050
+    },
+    {
+      "id": 30074,
+      "name": "[Dazzling Day in the Snow] Marvelous Sunday",
+      "charaId": 1055
     }
   ]
 }

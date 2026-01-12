@@ -65,6 +65,11 @@ export class UMDatabase extends Message<UMDatabase> {
    */
   story: Story[] = [];
 
+  /**
+   * @generated from field: repeated hakuraku.TextData text_data = 12;
+   */
+  textData: TextData[] = [];
+
   constructor(data?: PartialMessage<UMDatabase>) {
     super();
     proto2.util.initPartial(data, this);
@@ -84,6 +89,7 @@ export class UMDatabase extends Message<UMDatabase> {
     { no: 7, name: "skill", kind: "message", T: Skill, repeated: true },
     { no: 8, name: "team_stadium_score_bonus", kind: "message", T: TeamStadiumScoreBonus, repeated: true },
     { no: 10, name: "story", kind: "message", T: Story, repeated: true },
+    { no: 12, name: "text_data", kind: "message", T: TextData, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UMDatabase {
@@ -804,6 +810,61 @@ export class Story extends Message<Story> {
 
   static equals(a: Story | PlainMessage<Story> | undefined, b: Story | PlainMessage<Story> | undefined): boolean {
     return proto2.util.equals(Story, a, b);
+  }
+}
+
+/**
+ * @generated from message hakuraku.TextData
+ */
+export class TextData extends Message<TextData> {
+  /**
+   * @generated from field: optional int32 id = 1;
+   */
+  id?: number;
+
+  /**
+   * @generated from field: optional int32 category = 2;
+   */
+  category?: number;
+
+  /**
+   * @generated from field: optional int32 index = 3;
+   */
+  index?: number;
+
+  /**
+   * @generated from field: optional string text = 4;
+   */
+  text?: string;
+
+  constructor(data?: PartialMessage<TextData>) {
+    super();
+    proto2.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto2 = proto2;
+  static readonly typeName = "hakuraku.TextData";
+  static readonly fields: FieldList = proto2.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 2, name: "category", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 3, name: "index", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 4, name: "text", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TextData {
+    return new TextData().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TextData {
+    return new TextData().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TextData {
+    return new TextData().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TextData | PlainMessage<TextData> | undefined, b: TextData | PlainMessage<TextData> | undefined): boolean {
+    return proto2.util.equals(TextData, a, b);
   }
 }
 

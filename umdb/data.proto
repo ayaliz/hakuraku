@@ -19,6 +19,8 @@ message UMDatabase {
     repeated TeamStadiumScoreBonus team_stadium_score_bonus = 8;
 
     repeated Story story = 10;
+
+    repeated TextData text_data = 12;
 }
 
 message Chara {
@@ -142,4 +144,11 @@ message TeamStadiumScoreBonus {
 message Story {
     optional int32 id = 1;
     optional string name = 2;
+}
+
+message TextData {
+    optional int32 id = 1;
+    optional int32 category = 2;
+    optional int32 index = 3;
+    optional string text = 4;
 }

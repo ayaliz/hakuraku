@@ -2,14 +2,15 @@ from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Mapping, Optional as _Optional, Union as _Union
+from collections.abc import Iterable as _Iterable, Mapping as _Mapping
+from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class RaceSimulateData(_message.Message):
-    __slots__ = ["header", "distance_diff_max", "horse_num", "horse_frame_size", "horse_result_size", "__padding_size_1", "frame_count", "frame_size", "frame", "__padding_size_2", "horse_result", "__padding_size_3", "event_count", "event"]
+    __slots__ = ("header", "distance_diff_max", "horse_num", "horse_frame_size", "horse_result_size", "__padding_size_1", "frame_count", "frame_size", "frame", "__padding_size_2", "horse_result", "__padding_size_3", "event_count", "event")
     class EventDataWrapper(_message.Message):
-        __slots__ = ["event_size", "event"]
+        __slots__ = ("event_size", "event")
         EVENT_SIZE_FIELD_NUMBER: _ClassVar[int]
         EVENT_FIELD_NUMBER: _ClassVar[int]
         event_size: int
@@ -46,7 +47,7 @@ class RaceSimulateData(_message.Message):
     def __init__(self, header: _Optional[_Union[RaceSimulateHeaderData, _Mapping]] = ..., distance_diff_max: _Optional[float] = ..., horse_num: _Optional[int] = ..., horse_frame_size: _Optional[int] = ..., horse_result_size: _Optional[int] = ..., __padding_size_1: _Optional[int] = ..., frame_count: _Optional[int] = ..., frame_size: _Optional[int] = ..., frame: _Optional[_Iterable[_Union[RaceSimulateFrameData, _Mapping]]] = ..., __padding_size_2: _Optional[int] = ..., horse_result: _Optional[_Iterable[_Union[RaceSimulateHorseResultData, _Mapping]]] = ..., __padding_size_3: _Optional[int] = ..., event_count: _Optional[int] = ..., event: _Optional[_Iterable[_Union[RaceSimulateData.EventDataWrapper, _Mapping]]] = ...) -> None: ...
 
 class RaceSimulateHeaderData(_message.Message):
-    __slots__ = ["max_length", "version"]
+    __slots__ = ("max_length", "version")
     MAX_LENGTH_FIELD_NUMBER: _ClassVar[int]
     VERSION_FIELD_NUMBER: _ClassVar[int]
     max_length: int
@@ -54,7 +55,7 @@ class RaceSimulateHeaderData(_message.Message):
     def __init__(self, max_length: _Optional[int] = ..., version: _Optional[int] = ...) -> None: ...
 
 class RaceSimulateFrameData(_message.Message):
-    __slots__ = ["time", "horse_frame"]
+    __slots__ = ("time", "horse_frame")
     TIME_FIELD_NUMBER: _ClassVar[int]
     HORSE_FRAME_FIELD_NUMBER: _ClassVar[int]
     time: float
@@ -62,9 +63,9 @@ class RaceSimulateFrameData(_message.Message):
     def __init__(self, time: _Optional[float] = ..., horse_frame: _Optional[_Iterable[_Union[RaceSimulateHorseFrameData, _Mapping]]] = ...) -> None: ...
 
 class RaceSimulateHorseFrameData(_message.Message):
-    __slots__ = ["distance", "lane_position", "speed", "hp", "temptation_mode", "block_front_horse_index"]
+    __slots__ = ("distance", "lane_position", "speed", "hp", "temptation_mode", "block_front_horse_index")
     class TemptationMode(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
-        __slots__ = []
+        __slots__ = ()
         NULL: _ClassVar[RaceSimulateHorseFrameData.TemptationMode]
         POSITION_SASHI: _ClassVar[RaceSimulateHorseFrameData.TemptationMode]
         POSITION_SENKO: _ClassVar[RaceSimulateHorseFrameData.TemptationMode]
@@ -90,9 +91,9 @@ class RaceSimulateHorseFrameData(_message.Message):
     def __init__(self, distance: _Optional[float] = ..., lane_position: _Optional[int] = ..., speed: _Optional[int] = ..., hp: _Optional[int] = ..., temptation_mode: _Optional[_Union[RaceSimulateHorseFrameData.TemptationMode, str]] = ..., block_front_horse_index: _Optional[int] = ...) -> None: ...
 
 class RaceSimulateHorseResultData(_message.Message):
-    __slots__ = ["finish_order", "finish_time", "finish_diff_time", "start_delay_time", "guts_order", "wiz_order", "last_spurt_start_distance", "running_style", "defeat", "finish_time_raw"]
+    __slots__ = ("finish_order", "finish_time", "finish_diff_time", "start_delay_time", "guts_order", "wiz_order", "last_spurt_start_distance", "running_style", "defeat", "finish_time_raw")
     class RunningStyle(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
-        __slots__ = []
+        __slots__ = ()
         NONE: _ClassVar[RaceSimulateHorseResultData.RunningStyle]
         NIGE: _ClassVar[RaceSimulateHorseResultData.RunningStyle]
         SENKO: _ClassVar[RaceSimulateHorseResultData.RunningStyle]
@@ -126,9 +127,9 @@ class RaceSimulateHorseResultData(_message.Message):
     def __init__(self, finish_order: _Optional[int] = ..., finish_time: _Optional[float] = ..., finish_diff_time: _Optional[float] = ..., start_delay_time: _Optional[float] = ..., guts_order: _Optional[int] = ..., wiz_order: _Optional[int] = ..., last_spurt_start_distance: _Optional[float] = ..., running_style: _Optional[_Union[RaceSimulateHorseResultData.RunningStyle, str]] = ..., defeat: _Optional[int] = ..., finish_time_raw: _Optional[float] = ...) -> None: ...
 
 class RaceSimulateEventData(_message.Message):
-    __slots__ = ["frame_time", "type", "param_count", "param"]
+    __slots__ = ("frame_time", "type", "param_count", "param")
     class SimulateEventType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
-        __slots__ = []
+        __slots__ = ()
         SCORE: _ClassVar[RaceSimulateEventData.SimulateEventType]
         CHALLENGE_MATCH_POINT: _ClassVar[RaceSimulateEventData.SimulateEventType]
         NOUSE_2: _ClassVar[RaceSimulateEventData.SimulateEventType]

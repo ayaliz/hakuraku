@@ -171,6 +171,18 @@ def populate_stories(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
         pb.story.append(r)
 
 
+def populate_text_data(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
+    cursor.execute("SELECT id, category, `index`, text FROM text_data;")
+    rows = cursor.fetchall()
+    for row in rows:
+        t = data_pb2.TextData()
+        t.id = row[0]
+        t.category = row[1]
+        t.index = row[2]
+        t.text = row[3]
+        pb.text_data.append(t)
+
+
 def main():
     parser = argparse.ArgumentParser()
     default_db_path = os.path.join(
@@ -200,7 +212,8 @@ def main():
               populate_special_case_race,
               populate_skills,
               populate_team_stadium_score_bonus,
-              populate_stories):
+              populate_stories,
+              populate_text_data):
         p(pb, cursor)
 
     print(pb)

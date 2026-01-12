@@ -1,6 +1,6 @@
 import _ from "lodash";
 import pako from "pako";
-import {Card, Chara, RaceInstance, Skill, SupportCard, UMDatabase} from './data_pb';
+import {Card, Chara, RaceInstance, Skill, SupportCard, TextData, UMDatabase} from './data_pb';
 import {Story} from "./UMDatabaseUtils";
 
 class _UMDatabaseWrapper {
@@ -13,6 +13,7 @@ class _UMDatabaseWrapper {
     skills: Record<number, Skill> = {};
     successionRelationMemberCharaIds: Record<number, Set<number>> = {};
     stories: Story[] = [];
+    textData: Record<number, Record<number, TextData>> = {};
 
     initialize() {
         return fetch(process.env.PUBLIC_URL + '/data/umdb.binarypb.gz', {cache: 'no-cache'})
@@ -30,6 +31,13 @@ class _UMDatabaseWrapper {
                 this.umdb.raceInstance.forEach((race) => this.raceInstances[race.id!] = race);
 
                 this.umdb.skill.forEach((skill) => this.skills[skill.id!] = skill);
+
+                this.umdb.textData.forEach((text) => {
+                    if (!this.textData[text.category!]) {
+                        this.textData[text.category!] = {};
+                    }
+                    this.textData[text.category!][text.index!] = text;
+                });
 
                 this.interestingRaceInstances = _.sortedUniq(this.umdb.winsSaddle.flatMap(ws => ws.raceInstanceId))
                     .map(id => this.raceInstances[id]);
@@ -59,6 +67,9 @@ class _UMDatabaseWrapper {
 
     skillNameWithId = (skillId: number) =>
         `[${skillId}] ${this.skills[skillId]?.name ?? 'Unknown Skill'}`;
+
+    getTextData = (category: number, index: number): TextData | undefined =>
+        this.textData[category]?.[index];
 }
 
 const UMDatabaseWrapper = new _UMDatabaseWrapper();

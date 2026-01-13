@@ -6,13 +6,11 @@ import { HashRouter, Link, Route, Switch } from "react-router-dom";
 import './App.css';
 import './dark-mode.css';
 import UMDatabaseWrapper from './data/UMDatabaseWrapper';
-import CarrotJuicerPage from "./pages/CarrotJuicerPage";
 import RaceDataPage from "./pages/RaceDataPage";
-import RoomRaceAnalyzerPage from "./pages/RoomRaceAnalyzerPage";
+import RaceDataPageOld from "./pages/RaceDataPage_old";
 import StoriesPage from "./pages/StoriesPage";
 import SuccessionPage from './pages/SuccessionPage';
 import SuccessionRelationsPage from "./pages/SuccessionRelationsPage";
-import TeamAnalyzerPage from "./pages/TeamAnalyzerPage";
 import SetupGuidePage from './pages/SetupGuidePage';
 import VeteransPage from './pages/VeteransPage';
 
@@ -38,23 +36,17 @@ export default function App() {
                     <Nav className="mr-auto">
                         <Nav.Link as={Link} to="/">Home</Nav.Link>
                         <Nav.Link as={Link} to="/veterans">Veterans</Nav.Link>
-                        <NavDropdown title="CarrotJuicer Tools" id="carrotjuicer-nav-dropdown">
-                            <NavDropdown.Item as={Link} to="/carrotjuicer">
-                                Packet / Race Inspector
-                            </NavDropdown.Item>
+                        <NavDropdown title="Race Analysis" id="race-analysis-nav-dropdown">
                             <NavDropdown.Item as={Link} to="/racedata">
-                                Race Scenario Parser
+                                Parse races
                             </NavDropdown.Item>
-                            <NavDropdown.Item as={Link} to="/teamraceanalyzer">
-                                Team Race Analyzer
-                            </NavDropdown.Item>
-                            <NavDropdown.Item as={Link} to="/roomraceanalyzer">
-                                Room Race Analyzer
+                            <NavDropdown.Item as={Link} to="/racedata_old">
+                                Parse races [old]
                             </NavDropdown.Item>
                         </NavDropdown>
                     </Nav>
                     <Nav className="ml-auto">
-                        <Nav.Link as={Link} to="/setup">How to get my race data <small style={{ color: 'red' }}>(Nov 11 update!)</small></Nav.Link>
+                        <Nav.Link as={Link} to="/setup">How to get my race data <small style={{ color: 'red' }}>(Jan 13 update!)</small></Nav.Link>
 
                     </Nav>
                 </Navbar.Collapse>
@@ -75,17 +67,11 @@ export default function App() {
                 <Route path="/stories">
                     <StoriesPage />
                 </Route>
-                <Route path="/carrotjuicer">
-                    <CarrotJuicerPage />
-                </Route>
                 <Route path="/racedata">
                     <RaceDataPage />
                 </Route>
-                <Route path="/teamraceanalyzer">
-                    <TeamAnalyzerPage />
-                </Route>
-                <Route path="/roomraceanalyzer">
-                    <RoomRaceAnalyzerPage />
+                <Route path="/racedata_old">
+                    <RaceDataPageOld />
                 </Route>
                 <Route path="/setup">
                     <SetupGuidePage />

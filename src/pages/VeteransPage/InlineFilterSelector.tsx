@@ -1,11 +1,11 @@
 import React from 'react';
-import { FilterType, Filter } from './types';
+import { FilterType, BaseFilter } from './types';
 
 export type SelectorType = 'blues' | 'aptitude' | 'uniques' | 'races' | 'skills';
 
 type InlineFilterSelectorProps = {
     show: boolean;
-    onAddFilter: (filter: Filter) => void;
+    onAddFilter: (filter: BaseFilter) => void;
     onClose: () => void;
     availableStats: string[];
     title: string;

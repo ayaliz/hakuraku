@@ -71,7 +71,7 @@ export const teamRaceDistanceLabels: Record<number, string> = {
 };
 
 export const distanceLabels: Record<number, string> = {
-    1: 'Spring',
+    1: 'Sprint',
     2: 'Mile',
     3: 'Medium',
     4: 'Long'

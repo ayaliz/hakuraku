@@ -67,7 +67,7 @@ export function calculateRaceDistance(raceData: RaceSimulateData) {
 
 export const runningStyleLabel = (horseResultData: RaceSimulateHorseResultData, activatedSkills: Set<number>) => {
     if (activatedSkills.has(202051)) {
-        return 'Runaway';
+        return '大逃げ';
     }
     return UMDatabaseUtils.runningStyleLabels[horseResultData.runningStyle!];
 };

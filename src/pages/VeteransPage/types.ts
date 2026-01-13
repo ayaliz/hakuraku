@@ -1,28 +1,11 @@
 export type Veteran = {
-    viewer_id: number;
     trained_chara_id: number;
-    owner_viewer_id: number;
     use_type: number;
     card_id: number;
     name: string | null;
-    stamina: number;
-    speed: number;
-    power: number;
-    guts: number;
-    wiz: number;
     fans: number;
     rank_score: number;
     rank: number;
-    proper_distance_short: number;
-    proper_distance_mile: number;
-    proper_distance_middle: number;
-    proper_distance_long: number;
-    proper_running_style_nige: number;
-    proper_running_style_senko: number;
-    proper_running_style_sashi: number;
-    proper_running_style_oikomi: number;
-    proper_ground_turf: number;
-    proper_ground_dirt: number;
     succession_num: number;
     is_locked: number;
     rarity: number;
@@ -79,20 +62,18 @@ export type Veteran = {
 
 export type FilterType = 'Legacy' | 'Total';
 
-export type Filter = {
+export type BaseFilter = {
     id: string;
     type: FilterType;
     stat: string;
     stars: number;
 };
 
-export type BluesFilterType = FilterType;
-export type BluesFilter = Filter;
-export type AptitudeFilterType = FilterType;
-export type AptitudeFilter = Filter;
-export type UniquesFilterType = FilterType;
-export type UniquesFilter = Filter;
-export type RacesFilterType = FilterType;
-export type RacesFilter = Filter;
-export type SkillsFilterType = FilterType;
-export type SkillsFilter = Filter;
+export type BluesFilter = BaseFilter;
+export type AptitudeFilter = BaseFilter;
+export type UniquesFilter = BaseFilter;
+export type RacesFilter = BaseFilter;
+export type SkillsFilter = BaseFilter;
+
+export type SortOption = 'none' | 'blues' | 'total_common' | 'total_skills' | 'legacy_common' | 'legacy_skills';
+export type SortDirection = 'asc' | 'desc';

@@ -1,32 +1,32 @@
 import React from "react";
-import { Alert, Badge, Button, Card, Container } from "react-bootstrap";
-import UMDatabaseWrapper from "../data/UMDatabaseWrapper";
-import { Veteran, BluesFilter, AptitudeFilter, UniquesFilter, RacesFilter, SkillsFilter } from "./VeteransPage/types";
-import InlineFilterSelector, { SelectorType } from "./VeteransPage/InlineFilterSelector";
-import { aggregateFactors, getFactorCategory } from "../data/VeteransHelper"; 
-import VeteransSorter, { SortOption } from "./VeteransPage/VeteransSorter";
+import { Alert, Button, Container } from "react-bootstrap";
+import { Veteran, BaseFilter, BluesFilter, AptitudeFilter, UniquesFilter, RacesFilter, SkillsFilter } from "./VeteransPage/types";
+import { SelectorType } from "./VeteransPage/InlineFilterSelector";
+import VeteransSorter, { SortOption, SortDirection } from "./VeteransPage/VeteransSorter";
 
-interface BaseFilter {
-    id: string;
-    stat: string;
-    type: string;
-    stars: number;
-}
+import VeteranCard from "./VeteransPage/VeteranCard";
+import FilterToolbar from "./VeteransPage/FilterToolbar";
+import ActiveFiltersList from "./VeteransPage/ActiveFiltersList";
+import { applyFiltersAndSort, getAvailableStats } from "./VeteransPage/VeteransLogic";
 
 type VeteransPageState = {
     veterans: Veteran[];
     error: string;
+    
     bluesFilters: BluesFilter[];
     aptitudeFilters: AptitudeFilter[];
     uniquesFilters: UniquesFilter[];
     racesFilters: RacesFilter[]; 
     skillsFilters: SkillsFilter[]; 
+    
     showBluesSelector: boolean;
     showAptitudeSelector: boolean;
     showUniquesSelector: boolean;
     showRacesSelector: boolean; 
     showSkillsSelector: boolean;
+    
     activeSort: SortOption;
+    sortDirection: SortDirection;
 };
 
 const FILTER_CONFIG = {
@@ -42,47 +42,32 @@ export default class VeteransPage extends React.Component<{}, VeteransPageState>
 
     constructor(props: {}) {
         super(props);
-
         this.state = {
-            veterans: [],
-            error: '',
-            bluesFilters: [],
-            aptitudeFilters: [],
-            uniquesFilters: [],
-            racesFilters: [],
-            skillsFilters: [],
-            showBluesSelector: false,
-            showAptitudeSelector: false,
-            showUniquesSelector: false,
-            showRacesSelector: false,
-            showSkillsSelector: false,
-            activeSort: 'none',
+            veterans: [], error: '',
+            bluesFilters: [], aptitudeFilters: [], uniquesFilters: [], racesFilters: [], skillsFilters: [],
+            showBluesSelector: false, showAptitudeSelector: false, showUniquesSelector: false, showRacesSelector: false, showSkillsSelector: false,
+            activeSort: 'none', sortDirection: 'desc',
         };
-
         this.fileInputRef = React.createRef();
     }
 
-    handleUploadClick = () => {
-        this.fileInputRef.current?.click();
-    };
+    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+        console.error("VeteransPage crashed:", error, errorInfo);
+        this.setState({ error: `Display Error: ${error.message}.` });
+    }
+
+    handleUploadClick = () => this.fileInputRef.current?.click();
 
     handleFileChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        if (!/\.json$/i.test(file.name)) {
-            this.setState({ error: 'Please choose a .json file.' });
-            e.target.value = '';
-            return;
-        }
+        if (!/\.json$/i.test(file.name)) return this.setState({ error: 'Please choose a .json file.' });
+
         const reader = new FileReader();
         reader.onload = () => {
-            const text = String(reader.result ?? '');
             try {
-                const parsed = JSON.parse(text);
-                if (!Array.isArray(parsed)) {
-                    this.setState({ error: 'Invalid file format: expected an array of veterans.' });
-                    return;
-                }
+                const parsed = JSON.parse(String(reader.result ?? ''));
+                if (!Array.isArray(parsed)) throw new Error("Not an array");
                 this.setState({ veterans: parsed, error: '' });
             } catch (err) {
                 this.setState({ error: `Failed to parse JSON: ${err}` });
@@ -92,194 +77,68 @@ export default class VeteransPage extends React.Component<{}, VeteransPageState>
         e.target.value = '';
     };
 
-    getCharaImageUrl = (cardId: number): string => {
-        const cardIdStr = String(cardId);
-        const first4Digits = cardIdStr.substring(0, 4);
-        return `https://gametora.com/images/umamusume/characters/thumb/chara_stand_${first4Digits}_${cardId}.png`;
-    };
-
-    getCardName = (cardId: number): string => {
-        const textData = UMDatabaseWrapper.getTextData(4, cardId);
-        if (textData?.text && textData.category === 4) {
-            return textData.text;
-        }
-        return `Card ${cardId}`;
-    };
-
-    formatCardName = (cardName: string): string => {
-        const match = cardName.match(/^\[.*?\]\s*(.*)$/);
-        return match ? match[1] : cardName;
-    };
-
-    renderStars = (level: number, isGolden: boolean = false): JSX.Element => {
-        const stars = '★'.repeat(level);
-        return (
-            <span style={{ color: isGolden ? '#FFD700' : 'inherit' }}>
-                {stars}
-            </span>
-        );
-    };
-
-    getFactorColor = (factorId: number): string => {
-        const category = getFactorCategory(factorId);
-        switch (category) {
-            case 1: return FILTER_CONFIG.blues.color;
-            case 2: return FILTER_CONFIG.aptitude.color;
-            case 3: return FILTER_CONFIG.uniques.color;
-            case 4: return FILTER_CONFIG.races.color;
-            case 5: return 'white'; 
-            default: return 'inherit';
-        }
-    };
-
-    handleAddFilter = <T extends BaseFilter>(stateKey: keyof VeteransPageState, filter: T) => {
+    handleAddFilter = (stateKey: string, filter: BaseFilter) => {
         this.setState(prevState => {
-            const currentFilters = prevState[stateKey] as T[];
-            const exists = currentFilters.some(f => 
-                f.stat === filter.stat && 
-                f.type === filter.type && 
-                f.stars === filter.stars
-            );
-            if (exists) return null; 
-            return {
-                ...prevState,
-                [stateKey]: [...currentFilters, filter],
-            };
+            // @ts-ignore - Dynamic key access
+            const current = prevState[stateKey] as BaseFilter[];
+            if (current.some(f => f.stat === filter.stat && f.type === filter.type && f.stars === filter.stars)) return null;
+            return { [stateKey]: [...current, filter] } as any;
         });
     };
 
-    handleRemoveFilter = (stateKey: keyof VeteransPageState, filterId: string) => {
+    handleRemoveFilter = (stateKey: string, filterId: string) => {
         this.setState(prevState => ({
-            ...prevState,
-            [stateKey]: (prevState[stateKey] as BaseFilter[]).filter(f => f.id !== filterId),
-        }));
+             // @ts-ignore
+            [stateKey]: (prevState[stateKey] as BaseFilter[]).filter(f => f.id !== filterId)
+        } as any));
     };
 
     handleClearAllFilters = () => {
         this.setState({
-            bluesFilters: [],
-            aptitudeFilters: [],
-            uniquesFilters: [],
-            racesFilters: [],
-            skillsFilters: [],
-            activeSort: 'none',
+            bluesFilters: [], aptitudeFilters: [], uniquesFilters: [], racesFilters: [], skillsFilters: [],
+            activeSort: 'none', sortDirection: 'desc',
         });
     };
 
-    getAvailableStats = (categoryId: number): string[] => {
-        const statToMinFactorId = new Map<string, number>();
-
-        this.state.veterans.forEach(veteran => {
-            const aggregated = aggregateFactors(veteran);
-            aggregated
-                .filter(f => getFactorCategory(f.factorId) === categoryId)
-                .forEach(f => {
-                    const currentMin = statToMinFactorId.get(f.name);
-                    if (currentMin === undefined || f.factorId < currentMin) {
-                        statToMinFactorId.set(f.name, f.factorId);
-                    }
-                });
-        });
-
-        const stats = Array.from(statToMinFactorId.keys());
-        if (categoryId === 1 || categoryId === 2) {
-            return stats.sort((a, b) => {
-                const idA = statToMinFactorId.get(a)!;
-                const idB = statToMinFactorId.get(b)!;
-                return idA - idB;
-            });
-        } else {
-            return stats.sort();
-        }
-    };
-
-    matchesFilter = (veteran: Veteran, filter: BaseFilter, categoryId: number): boolean => {
-        const aggregated = aggregateFactors(veteran);
-        const relevantFactors = aggregated.filter(f => getFactorCategory(f.factorId) === categoryId);
-        const matchingFactors = relevantFactors.filter(f => f.name === filter.stat);
-
-        if (filter.type === 'Legacy') {
-            const goldStars = matchingFactors.filter(f => f.isGold).reduce((sum, f) => sum + f.level, 0);
-            return goldStars >= filter.stars;
-        } else {
-            const totalStars = matchingFactors.reduce((sum, f) => sum + f.level, 0);
-            return totalStars >= filter.stars;
-        }
-    };
-
-    calculateSortScore = (veteran: Veteran, sortMode: SortOption): number => {
-        const aggregated = aggregateFactors(veteran);
-        
-        const sumStars = (condition: (f: typeof aggregated[0]) => boolean) => {
-            return aggregated.filter(condition).reduce((acc, curr) => acc + curr.level, 0);
-        };
-
-        switch (sortMode) {
-            case 'blues':
-                return sumStars(f => f.category === 1);
-            case 'total_common':
-                return sumStars(f => f.category === 4 || f.category === 5);
-            case 'total_skills':
-                return sumStars(f => f.category === 5);
-            case 'legacy_common':
-                 return sumStars(f => (f.category === 4 || f.category === 5) && f.isGold);
-            case 'legacy_skills':
-                return sumStars(f => f.category === 5 && f.isGold);
-            case 'none':
-            default:
-                return 0;
-        }
-    };
-
-    getFilteredVeterans = (): Veteran[] => {
-        const { bluesFilters, aptitudeFilters, uniquesFilters, racesFilters, skillsFilters, veterans, activeSort } = this.state;
-
-        let result = veterans;
-
-        if (bluesFilters.length > 0 || aptitudeFilters.length > 0 || uniquesFilters.length > 0 || racesFilters.length > 0 || skillsFilters.length > 0) {
-            result = veterans.filter(veteran =>
-                bluesFilters.every(filter => this.matchesFilter(veteran, filter, FILTER_CONFIG.blues.categoryId)) &&
-                aptitudeFilters.every(filter => this.matchesFilter(veteran, filter, FILTER_CONFIG.aptitude.categoryId)) &&
-                uniquesFilters.every(filter => this.matchesFilter(veteran, filter, FILTER_CONFIG.uniques.categoryId)) &&
-                racesFilters.every(filter => this.matchesFilter(veteran, filter, FILTER_CONFIG.races.categoryId)) &&
-                skillsFilters.every(filter => this.matchesFilter(veteran, filter, FILTER_CONFIG.skills.categoryId))
-            );
-        }
-
-        if (activeSort !== 'none') {
-            result.sort((a, b) => {
-                const scoreA = this.calculateSortScore(a, activeSort);
-                const scoreB = this.calculateSortScore(b, activeSort);
-                
-                if (scoreB !== scoreA) {
-                    return scoreB - scoreA;
-                }
-                return b.card_id - a.card_id;
-            });
-        }
-
-        return result;
-    };
-
-    closeAllSelectors = (except: string | null = null) => {
+    toggleSelector = (key: string | null) => {
         this.setState({
-            showBluesSelector: except === 'blues',
-            showAptitudeSelector: except === 'aptitude',
-            showUniquesSelector: except === 'uniques',
-            showRacesSelector: except === 'races',
-            showSkillsSelector: except === 'skills',
+            showBluesSelector: key === 'blues',
+            showAptitudeSelector: key === 'aptitude',
+            showUniquesSelector: key === 'uniques',
+            showRacesSelector: key === 'races',
+            showSkillsSelector: key === 'skills',
         });
-    }
+    };
 
     render() {
-        const hasActiveFilters = 
-            this.state.bluesFilters.length > 0 || 
-            this.state.aptitudeFilters.length > 0 || 
-            this.state.uniquesFilters.length > 0 ||
-            this.state.racesFilters.length > 0 ||
-            this.state.skillsFilters.length > 0;
+        const { veterans, activeSort, sortDirection, error } = this.state;
         
-        const displayVeterans = this.getFilteredVeterans();
+        let displayVeterans: Veteran[] = [];
+        let renderError = null;
+
+        if (veterans.length > 0) {
+            try {
+                 const filters = {
+                    blues: this.state.bluesFilters,
+                    aptitude: this.state.aptitudeFilters,
+                    uniques: this.state.uniquesFilters,
+                    races: this.state.racesFilters,
+                    skills: this.state.skillsFilters
+                };
+                displayVeterans = applyFiltersAndSort(veterans, filters, FILTER_CONFIG, activeSort, sortDirection);
+            } catch (e: any) {
+                console.error("Filter/Sort Logic Crashed", e);
+                renderError = "Error processing veteran data. Please clear filters or reload.";
+            }
+        }
+
+        const visibilityState = {
+            blues: this.state.showBluesSelector,
+            aptitude: this.state.showAptitudeSelector,
+            uniques: this.state.showUniquesSelector,
+            races: this.state.showRacesSelector,
+            skills: this.state.showSkillsSelector
+        };
 
         return (
             <Container>
@@ -287,255 +146,57 @@ export default class VeteransPage extends React.Component<{}, VeteransPageState>
 
                 <div className="mb-5" style={{ position: 'relative' }}>
                     <Button variant="primary" onClick={this.handleUploadClick} style={{ marginRight: '1rem' }}>
-                        Upload Veterans JSON File
+                        Upload JSON
                     </Button>
-                    
-                    <span style={{ position: 'relative', display: 'inline-block', marginRight: '1rem' }}>
-                        <Button
-                            onClick={() => this.closeAllSelectors(this.state.showBluesSelector ? null : 'blues')}
-                            style={{ backgroundColor: FILTER_CONFIG.blues.color, borderColor: FILTER_CONFIG.blues.color }}
-                        >
-                            Blues
-                        </Button>
-                        <InlineFilterSelector
-                            show={this.state.showBluesSelector}
-                            onAddFilter={(f) => this.handleAddFilter('bluesFilters', f)}
-                            onClose={() => this.setState({ showBluesSelector: false })}
-                            availableStats={this.getAvailableStats(FILTER_CONFIG.blues.categoryId)}
-                            title="Stat"
-                            color={FILTER_CONFIG.blues.color}
-                            selectorType={FILTER_CONFIG.blues.selectorType}
-                        />
-                    </span>
 
-                    <span style={{ position: 'relative', display: 'inline-block', marginRight: '1rem' }}>
-                        <Button
-                            onClick={() => this.closeAllSelectors(this.state.showAptitudeSelector ? null : 'aptitude')}
-                            style={{ backgroundColor: FILTER_CONFIG.aptitude.color, borderColor: FILTER_CONFIG.aptitude.color }}
-                        >
-                            Aptitudes
-                        </Button>
-                        <InlineFilterSelector
-                            show={this.state.showAptitudeSelector}
-                            onAddFilter={(f) => this.handleAddFilter('aptitudeFilters', f)}
-                            onClose={() => this.setState({ showAptitudeSelector: false })}
-                            availableStats={this.getAvailableStats(FILTER_CONFIG.aptitude.categoryId)}
-                            title="Aptitude"
-                            color={FILTER_CONFIG.aptitude.color}
-                            selectorType={FILTER_CONFIG.aptitude.selectorType}
-                        />
-                    </span>
-
-                    <span style={{ position: 'relative', display: 'inline-block', marginRight: '1rem' }}>
-                        <Button
-                            onClick={() => this.closeAllSelectors(this.state.showUniquesSelector ? null : 'uniques')}
-                            style={{ backgroundColor: FILTER_CONFIG.uniques.color, borderColor: FILTER_CONFIG.uniques.color }}
-                        >
-                            Uniques
-                        </Button>
-                        <InlineFilterSelector
-                            show={this.state.showUniquesSelector}
-                            onAddFilter={(f) => this.handleAddFilter('uniquesFilters', f)}
-                            onClose={() => this.setState({ showUniquesSelector: false })}
-                            availableStats={this.getAvailableStats(FILTER_CONFIG.uniques.categoryId)}
-                            title="Unique"
-                            color={FILTER_CONFIG.uniques.color}
-                            selectorType={FILTER_CONFIG.uniques.selectorType}
-                        />
-                    </span>
-
-                    <span style={{ position: 'relative', display: 'inline-block', marginRight: '1rem' }}>
-                        <Button
-                            onClick={() => this.closeAllSelectors(this.state.showRacesSelector ? null : 'races')}
-                            style={{ backgroundColor: FILTER_CONFIG.races.color, borderColor: FILTER_CONFIG.races.color }}
-                        >
-                            Races/Scenarios
-                        </Button>
-                        <InlineFilterSelector
-                            show={this.state.showRacesSelector}
-                            onAddFilter={(f) => this.handleAddFilter('racesFilters', f)}
-                            onClose={() => this.setState({ showRacesSelector: false })}
-                            availableStats={this.getAvailableStats(FILTER_CONFIG.races.categoryId)}
-                            title="Races"
-                            color={FILTER_CONFIG.races.color}
-                            selectorType={FILTER_CONFIG.races.selectorType}
-                        />
-                    </span>
-
-                    <span style={{ position: 'relative', display: 'inline-block', marginRight: '1rem' }}>
-                        <Button
-                            onClick={() => this.closeAllSelectors(this.state.showSkillsSelector ? null : 'skills')}
-                            style={{ backgroundColor: FILTER_CONFIG.skills.color, borderColor: FILTER_CONFIG.skills.color }}
-                        >
-                            Skills
-                        </Button>
-                        <InlineFilterSelector
-                            show={this.state.showSkillsSelector}
-                            onAddFilter={(f) => this.handleAddFilter('skillsFilters', f)}
-                            onClose={() => this.setState({ showSkillsSelector: false })}
-                            availableStats={this.getAvailableStats(FILTER_CONFIG.skills.categoryId)}
-                            title="Skills"
-                            color={FILTER_CONFIG.skills.color}
-                            selectorType={FILTER_CONFIG.skills.selectorType}
-                        />
-                    </span>
-                    
-                    <input
-                        ref={this.fileInputRef}
-                        type="file"
-                        accept=".json"
-                        onChange={this.handleFileChange}
-                        style={{ display: 'none' }}
+                    <FilterToolbar 
+                        config={FILTER_CONFIG}
+                        visibilityState={visibilityState}
+                        onToggle={this.toggleSelector}
+                        onAddFilter={this.handleAddFilter}
+                        getAvailableStats={(catId) => getAvailableStats(veterans, catId)}
                     />
+                    
+                    <input ref={this.fileInputRef} type="file" accept=".json" onChange={this.handleFileChange} style={{ display: 'none' }} />
                 </div>
 
-                {hasActiveFilters && (
-                    <div className="mb-4">
-                        <div className="d-flex align-items-center mb-2">
-                            <strong className="me-2" style={{ marginRight: '0.5rem' }}>Active Filters:</strong>
-                            <Button 
-                                variant="outline-danger" 
-                                size="sm" 
-                                style={{ padding: '0px 8px', fontSize: '0.8rem' }}
-                                onClick={this.handleClearAllFilters}
-                            >
-                                Clear
-                            </Button>
-                        </div>
-                        <div className="mt-2">
-                            {Object.values(FILTER_CONFIG).map((config) => {
-                                const filters = this.state[config.stateKey] as BaseFilter[];
-                                return filters.map(filter => {
-                                    const isLegacy = filter.type === 'Legacy';
-                                    return (
-                                        <Badge
-                                            key={filter.id}
-                                            variant="info"
-                                            className="mb-2"
-                                            style={{ 
-                                                fontSize: '0.9rem', 
-                                                cursor: 'pointer', 
-                                                backgroundColor: config.color, 
-                                                marginRight: '1rem',
-                                                color: '#fff' 
-                                            }}
-                                            onClick={() => this.handleRemoveFilter(config.stateKey, filter.id)}
-                                        >
-                                            {filter.stat} <span style={{ color: isLegacy ? '#FFD700' : 'inherit' }}>{filter.stars}★</span> ✕
-                                        </Badge>
-                                    );
-                                });
-                            })}
-                        </div>
-                    </div>
-                )}
+				<ActiveFiltersList 
+					filters={{
+						bluesFilters: this.state.bluesFilters,
+						aptitudeFilters: this.state.aptitudeFilters,
+						uniquesFilters: this.state.uniquesFilters,
+						racesFilters: this.state.racesFilters,
+						skillsFilters: this.state.skillsFilters
+					}} 
+					config={FILTER_CONFIG}
+					onRemove={this.handleRemoveFilter}
+					onClearAll={this.handleClearAllFilters}
+				/>
 
-                {this.state.error && (
+                {(error || renderError) && (
                     <Alert variant="danger" dismissible onClose={() => this.setState({ error: '' })}>
-                        {this.state.error}
+                        {error || renderError}
                     </Alert>
                 )}
 
-                {this.state.veterans.length === 0 && !this.state.error && (
-                    <Alert variant="info">
-                        No veterans loaded. Upload a JSON file to get started.
-                    </Alert>
+                {!veterans.length && !error && !renderError && (
+                    <Alert variant="info">No veterans loaded. Upload a JSON file to get started.</Alert>
                 )}
 
-                {this.state.veterans.length > 0 && (
+                {veterans.length > 0 && !renderError && (
                     <div>
                         <div className="d-flex justify-content-between align-items-end mb-3">
-                             <div className="text-muted">
-                                Showing {displayVeterans.length} of {this.state.veterans.length} veterans
-                             </div>
+                             <div className="text-muted">Showing {displayVeterans.length} of {veterans.length} veterans</div>
                              <VeteransSorter 
-                                activeSort={this.state.activeSort} 
-                                onSortChange={(sort) => this.setState({ activeSort: sort })}
+                                activeSort={activeSort} sortDirection={sortDirection}
+                                onSortChange={(s) => this.setState({ activeSort: s })}
+                                onDirectionToggle={() => this.setState(p => ({ sortDirection: p.sortDirection === 'desc' ? 'asc' : 'desc' }))}
                              />
                         </div>
 
-                        {displayVeterans.map((veteran, index) => {
-                            const parent1 = veteran.succession_chara_array.find(p => p.position_id === 10);
-                            const parent2 = veteran.succession_chara_array.find(p => p.position_id === 20);
-                            const aggregated = aggregateFactors(veteran);
-
-                            return (
-                                <Card key={index} className="mb-3">
-                                    <Card.Body>
-                                        <div className="d-flex align-items-start">
-                                            <div style={{ marginRight: '2rem' }}>
-                                                <div className="mb-2">
-                                                    <h5 className="mb-1">{this.formatCardName(this.getCardName(veteran.card_id))}</h5>
-                                                    <div className="text-muted">Rating: {veteran.rank_score}</div>
-                                                </div>
-
-                                                <div className="d-flex">
-                                                    <div className="me-2">
-                                                        <img
-                                                            src={this.getCharaImageUrl(veteran.card_id)}
-                                                            alt={this.getCardName(veteran.card_id)}
-                                                            width="128"
-                                                            height="128"
-                                                            style={{ objectFit: 'contain' }}
-                                                            onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                                                                (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="128" height="128"%3E%3Crect width="128" height="128" fill="%23ddd"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%23999"%3ENo Image%3C/text%3E%3C/svg%3E';
-                                                            }}
-                                                        />
-                                                    </div>
-
-                                                    <div className="d-flex flex-column">
-                                                        {[parent1, parent2].map((parent, pIdx) => parent && (
-                                                            <img
-                                                                key={pIdx}
-                                                                src={this.getCharaImageUrl(parent.card_id)}
-                                                                alt={this.getCardName(parent.card_id)}
-                                                                width="64"
-                                                                height="64"
-                                                                style={{ objectFit: 'contain', marginBottom: pIdx === 0 ? '0' : undefined }}
-                                                                onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                                                                    (e.target as HTMLImageElement).style.display = 'none';
-                                                                }}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex-grow-1">
-                                                <div className="mb-3">
-                                                    {aggregated.length === 0 ? (
-                                                        <small className="text-muted">No factors</small>
-                                                    ) : (
-                                                        [1, 2, 3, 4, 5].map(catId => {
-                                                            const group = aggregated.filter(f => getFactorCategory(f.factorId) === catId);
-                                                            if (group.length === 0) return null;
-                                                            
-                                                            return (
-                                                                <div key={catId} className="mb-1">
-                                                                    {group.map((factor, idx) => (
-                                                                        <Badge
-                                                                            key={idx}
-                                                                            variant="secondary"
-                                                                            className="mb-1"
-                                                                            style={{ fontSize: '0.9rem', backgroundColor: '#4a4a4a', marginRight: '0.5rem' }}
-                                                                        >
-                                                                            <span style={{ color: this.getFactorColor(factor.factorId) }}>
-                                                                                {factor.name}
-                                                                            </span>{' '}
-                                                                            {this.renderStars(factor.level, factor.isGold)}
-                                                                        </Badge>
-                                                                    ))}
-                                                                </div>
-                                                            );
-                                                        })
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </Card.Body>
-                                </Card>
-                            );
-                        })}
+                        {displayVeterans.map((veteran, index) => (
+                            <VeteranCard key={`${veteran.card_id}-${index}`} veteran={veteran} config={FILTER_CONFIG} />
+                        ))}
                     </div>
                 )}
             </Container>

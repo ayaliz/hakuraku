@@ -97,6 +97,10 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     const xAxis = useMemo(() => ({ min: Math.max(0, Math.max(cameraWindow, Math.min(frontRunnerDistance, goalInX) + cameraLead) - cameraWindow), max: Math.max(cameraWindow, Math.min(frontRunnerDistance, goalInX) + cameraLead) }), [frontRunnerDistance, goalInX]);
 
     const horseInfoByIdx = useMemo(() => { const map: Record<number, any> = {}; (raceHorseInfo ?? []).forEach((h: any) => { const idx = (h.frame_order ?? h.frameOrder) - 1; if (idx >= 0) map[idx] = h; }); return map; }, [raceHorseInfo]);
+    const maxHpByIdx = useMemo(() => { const map: Record<number, number> = {}; (frames[0]?.horseFrame ?? []).forEach((h: any, i: number) => { map[i] = h?.hp ?? 0; }); return map; }, [frames]);
+
+
+
 
     const legendNames = useMemo(() => Object.values(displayNames), [displayNames]);
     const [legendSelection, setLegendSelection] = useState<Record<string, boolean>>({});
@@ -150,6 +154,24 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         }
         return events;
     }, [frames]);
+
+    const consumptionRateByIdx = useMemo(() => {
+        const map: Record<number, number> = {};
+        const i = interpolatedFrame.frameIndex;
+        const f0 = frames[i];
+        const f1 = frames[i + 1];
+        if (!f0 || !f1) return map;
+        const dt = (f1.time ?? 0) - (f0.time ?? 0);
+        if (dt <= 1e-9) return map;
+
+        (f0.horseFrame ?? []).forEach((h0: any, idx: number) => {
+            const h1 = f1.horseFrame?.[idx];
+            if (!h0 || !h1) return;
+            const dh = (h0.hp ?? 0) - (h1.hp ?? 0);
+            map[idx] = dh / dt;
+        });
+        return map;
+    }, [frames, interpolatedFrame.frameIndex]);
 
     const spurtDelayEvents = useMemo(() => {
         const events: Record<number, { time: number; duration: number; name: string }[]> = {};
@@ -224,9 +246,13 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                 toggles.speed,
                 toggles.accel,
                 accByIdx,
-                toggles.blocked
+                toggles.blocked,
+                toggles.hp,
+                maxHpByIdx,
+                goalInX,
+                consumptionRateByIdx
             ),
-        [interpolatedFrame, displayNames, horseInfoByIdx, trainerColors, legendSelection, toggles.speed, toggles.accel, accByIdx, toggles.blocked]
+        [interpolatedFrame, displayNames, horseInfoByIdx, trainerColors, legendSelection, toggles.speed, toggles.accel, accByIdx, toggles.blocked, toggles.hp, maxHpByIdx, goalInX, consumptionRateByIdx]
     );
 
     const yMaxWithHeadroom = maxLanePosition + 3;
@@ -321,6 +347,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
 
     const toggleDefs = [
         { id: "skills" as const, label: "Skill labels" },
+        { id: "hp" as const, label: "HP Bar" },
         { id: "blocked" as const, label: "Block indicator" },
         { id: "slopes" as const, label: "Slopes" },
         { id: "speed" as const, label: "Speed [m/s]" },

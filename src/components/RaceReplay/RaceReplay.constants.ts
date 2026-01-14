@@ -17,6 +17,11 @@ export const SPEED_BOX_TEXT = "#000";
 export const SPEED_BOX_FONT_SIZE = 12;
 export const OVERLAY_INSET = 9;
 export const ACCEL_BOX_GAP_Y = 1;
+export const HP_BAR_WIDTH = 44;
+export const HP_BAR_HEIGHT = 6;
+export const HP_BAR_GAP_Y = 11;
+export const HP_BAR_BG_COLOR = "rgba(100, 0, 0, 0.8)";
+export const HP_BAR_FILL_COLOR = "rgba(0, 255, 0, 0.8)";
 
 export const DEFAULT_TEAM_PALETTE = [
     "#2563EB", "#16A34A", "#DC2626", "#9333EA", "#EA580C", "#0891B2",

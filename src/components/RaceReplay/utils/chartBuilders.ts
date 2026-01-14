@@ -31,6 +31,11 @@ import {
     BLOCKED_ICON_SIZE,
     EXCLUDE_SKILL_RE,
     TEMPTATION_TEXT,
+    HP_BAR_WIDTH,
+    HP_BAR_HEIGHT,
+    HP_BAR_GAP_Y,
+    HP_BAR_BG_COLOR,
+    HP_BAR_FILL_COLOR,
 } from "../RaceReplay.constants";
 import { getCharaIcon, formatSigned, stackLabels, labelStyle, mixWithWhite } from "../RaceReplay.utils";
 import { InterpolatedFrame } from "../RaceReplay.types";
@@ -98,9 +103,13 @@ export function buildHorsesCustomSeries(
     showSpeedBox: boolean,
     showAccelBox: boolean,
     accByIdx: Record<number, number>,
-    showBlockedIcon: boolean
+    showBlockedIcon: boolean,
+    showHpBar: boolean,
+    maxHpByIdx: Record<number, number>,
+    goalInX: number,
+    consumptionRateByIdx: Record<number, number>
 ) {
-    const data: Array<{ name: string; value: [number, number, string, string, string, number, number, number] }> = [];
+    const data: Array<{ name: string; value: [number, number, string, string, string, number, number, number, number, number, number] }> = [];
     Object.entries(displayNames).forEach(([iStr, name]) => {
         if (legendSelection && legendSelection[name] === false) return;
         const i = +iStr, h = interpolated.horseFrame[i];
@@ -109,7 +118,10 @@ export function buildHorsesCustomSeries(
         const isBlocked = showBlockedIcon && h.blockFrontHorseIndex != null && h.blockFrontHorseIndex !== -1 ? 1 : 0;
         const speed = h.speed ?? 0;
         const accel = accByIdx[i] ?? 0;
-        data.push({ name, value: [h.distance ?? 0, h.lanePosition ?? 0, name, teamColor, iconUrl, isBlocked, speed, accel] });
+        const maxHp = maxHpByIdx[i] ?? 1;
+        const hp = h.hp ?? 0;
+        const rate = consumptionRateByIdx[i] ?? 0;
+        data.push({ name, value: [h.distance ?? 0, h.lanePosition ?? 0, name, teamColor, iconUrl, isBlocked, speed, accel, maxHp, hp, rate] });
     });
 
     const renderItem = (params: any, api: any) => {
@@ -117,6 +129,9 @@ export function buildHorsesCustomSeries(
         const teamColor = (api.value(3) as string) || "#000", iconUrl = (api.value(4) as string) || "", isBlocked = !!api.value(5);
         const speedRaw = (api.value(6) as number) || 0;
         const accelRaw = (api.value(7) as number) || 0;
+        const maxHp = (api.value(8) as number) || 1;
+        const hp = (api.value(9) as number) || 0;
+        const rate = (api.value(10) as number) || 0;
         const speedText = (speedRaw / 100).toFixed(2);
         const accelText = formatSigned(accelRaw);
 
@@ -154,6 +169,76 @@ export function buildHorsesCustomSeries(
 
         if (showSpeedBox) children.push(...overlayBox(speedRectX, speedRectY, speedText));
         if (showAccelBox) children.push(...overlayBox(accelRectX, accelRectY, accelText));
+
+        if (showHpBar) {
+            const hpPct = Math.max(0, Math.min(1, hp / maxHp));
+            // Center horizontally: cx - half width
+            const hpBarX = cx - HP_BAR_WIDTH / 2;
+
+            // Position below the character: center Y + half height + gap
+            const hpBarY = cy + baseSize / 2 + HP_BAR_GAP_Y;
+
+            children.push({
+                type: "rect",
+                shape: { x: hpBarX, y: hpBarY, width: HP_BAR_WIDTH, height: HP_BAR_HEIGHT },
+                style: { fill: HP_BAR_BG_COLOR },
+                z: 6,
+                silent: true,
+            });
+            children.push({
+                type: "rect",
+                shape: { x: hpBarX, y: hpBarY, width: HP_BAR_WIDTH * hpPct, height: HP_BAR_HEIGHT },
+                style: { fill: HP_BAR_FILL_COLOR },
+                z: 7,
+                silent: true,
+            });
+
+            if (vX > (5 / 6) * goalInX) {
+                // Manual calculation: time = hp / consumption_rate
+                const timeToEmpty = rate > 0 ? hp / rate : Number.POSITIVE_INFINITY;
+                const estText = Number.isFinite(timeToEmpty) ? `${timeToEmpty.toFixed(1)}s` : "∞";
+
+                // Left: Current HP
+                children.push({
+                    type: "text",
+                    style: {
+                        x: hpBarX + 1,
+                        y: hpBarY - 2,
+                        text: `${Math.round(hp)}`,
+                        textAlign: "left",
+                        textVerticalAlign: "bottom",
+                        fontSize: 9, // Smaller font to fit
+                        fill: "#fff",
+                        stroke: "#000",
+                        lineWidth: 2,
+                        fontWeight: "bold",
+                    },
+                    z: 8,
+                    silent: true,
+                });
+
+                // Right: Time estimate
+                if (estText) {
+                    children.push({
+                        type: "text",
+                        style: {
+                            x: hpBarX + HP_BAR_WIDTH - 1,
+                            y: hpBarY - 2,
+                            text: estText,
+                            textAlign: "right",
+                            textVerticalAlign: "bottom",
+                            fontSize: 9,
+                            fill: "#fff",
+                            stroke: "#000",
+                            lineWidth: 2,
+                            fontWeight: "bold",
+                        },
+                        z: 8,
+                        silent: true,
+                    });
+                }
+            }
+        }
 
         return { type: "group", children };
     };
@@ -273,8 +358,13 @@ export function createOptions(args: {
                 const has = typeof name === "string" && name.length > 0;
                 const speed = (value?.[6] ?? 0) / 100;
                 const accel = (value?.[7] ?? 0) / 100;
+                const maxHp = value?.[8];
+                const hp = value?.[9];
                 const accelStr = (accel > 0 ? "+" : "") + accel.toFixed(2);
-                return `${has ? name + "<br/>" : ""}Distance: ${value[0].toFixed(2)}m<br/>Lane: ${Math.round(value[1])}<br/>Speed: ${speed.toFixed(2)} m/s<br/>Accel: ${accelStr} m/s²`;
+                const hpStr = (typeof maxHp === "number" && typeof hp === "number")
+                    ? `<br/>HP: ${Math.round(hp)}/${Math.round(maxHp)} (${((hp / maxHp) * 100).toFixed(1)}%)`
+                    : "";
+                return `${has ? name + "<br/>" : ""}Distance: ${value[0].toFixed(2)}m<br/>Lane: ${Math.round(value[1])}<br/>Speed: ${speed.toFixed(2)} m/s<br/>Accel: ${accelStr} m/s²${hpStr}`;
             }
         },
         grid: { top: 80, right: 16, bottom: 40, left: 50, containLabel: false },

@@ -172,10 +172,8 @@ export function buildHorsesCustomSeries(
 
         if (showHpBar) {
             const hpPct = Math.max(0, Math.min(1, hp / maxHp));
-            // Center horizontally: cx - half width
             const hpBarX = cx - HP_BAR_WIDTH / 2;
 
-            // Position below the character: center Y + half height + gap
             const hpBarY = cy + baseSize / 2 + HP_BAR_GAP_Y;
 
             children.push({
@@ -194,11 +192,9 @@ export function buildHorsesCustomSeries(
             });
 
             if (vX > (5 / 6) * goalInX) {
-                // Manual calculation: time = hp / consumption_rate
                 const timeToEmpty = rate > 0 ? hp / rate : Number.POSITIVE_INFINITY;
                 const estText = Number.isFinite(timeToEmpty) ? `${timeToEmpty.toFixed(1)}s` : "∞";
 
-                // Left: Current HP
                 children.push({
                     type: "text",
                     style: {
@@ -207,7 +203,7 @@ export function buildHorsesCustomSeries(
                         text: `${Math.round(hp)}`,
                         textAlign: "left",
                         textVerticalAlign: "bottom",
-                        fontSize: 9, // Smaller font to fit
+                        fontSize: 9,
                         fill: "#fff",
                         stroke: "#000",
                         lineWidth: 2,
@@ -217,7 +213,6 @@ export function buildHorsesCustomSeries(
                     silent: true,
                 });
 
-                // Right: Time estimate
                 if (estText) {
                     children.push({
                         type: "text",

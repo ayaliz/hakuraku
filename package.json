@@ -33,7 +33,8 @@
     "react-router-dom": "^5.3.0",
     "react-scripts": "^5.0.1",
     "typescript": "^4.4.3",
-    "wanakana": "^5.1.0"
+    "wanakana": "^5.1.0",
+    "webm-muxer": "^5.1.4"
   },
   "scripts": {
     "start": "react-scripts start",

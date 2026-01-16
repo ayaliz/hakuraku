@@ -552,6 +552,10 @@
           "charaId": 1002
         },
         {
+          "id": 32,
+          "charaId": 1022
+        },
+        {
           "id": 33,
           "charaId": 1026
         },
@@ -756,6 +760,10 @@
           "charaId": 1019
         },
         {
+          "id": 94,
+          "charaId": 1022
+        },
+        {
           "id": 95,
           "charaId": 1023
         },
@@ -934,6 +942,10 @@
         {
           "id": 135,
           "charaId": 1018
+        },
+        {
+          "id": 136,
+          "charaId": 1022
         }
       ]
     },
@@ -1278,6 +1290,10 @@
         {
           "id": 196,
           "charaId": 1013
+        },
+        {
+          "id": 197,
+          "charaId": 1022
         }
       ]
     },
@@ -2018,6 +2034,10 @@
           "charaId": 1009
         },
         {
+          "id": 706,
+          "charaId": 1022
+        },
+        {
           "id": 707,
           "charaId": 1039
         },
@@ -2126,6 +2146,10 @@
         {
           "id": 766,
           "charaId": 1012
+        },
+        {
+          "id": 767,
+          "charaId": 1022
         },
         {
           "id": 769,
@@ -2500,6 +2524,10 @@
         {
           "id": 292,
           "charaId": 1018
+        },
+        {
+          "id": 293,
+          "charaId": 1022
         },
         {
           "id": 295,
@@ -3044,6 +3072,10 @@
           "charaId": 1019
         },
         {
+          "id": 433,
+          "charaId": 1022
+        },
+        {
           "id": 434,
           "charaId": 1023
         },
@@ -3374,6 +3406,10 @@
           "charaId": 1019
         },
         {
+          "id": 535,
+          "charaId": 1022
+        },
+        {
           "id": 536,
           "charaId": 1023
         },
@@ -3598,6 +3634,10 @@
           "charaId": 1019
         },
         {
+          "id": 602,
+          "charaId": 1022
+        },
+        {
           "id": 603,
           "charaId": 1023
         },
@@ -3665,6 +3705,10 @@
       "relationType": 3201,
       "relationPoint": 1,
       "member": [
+        {
+          "id": 774,
+          "charaId": 1022
+        },
         {
           "id": 775,
           "charaId": 1028
@@ -4308,6 +4352,10 @@
         {
           "id": 845,
           "charaId": 1001
+        },
+        {
+          "id": 846,
+          "charaId": 1022
         }
       ]
     },
@@ -4520,6 +4568,10 @@
         {
           "id": 877,
           "charaId": 1002
+        },
+        {
+          "id": 878,
+          "charaId": 1022
         }
       ]
     },
@@ -4982,6 +5034,10 @@
         {
           "id": 947,
           "charaId": 1005
+        },
+        {
+          "id": 948,
+          "charaId": 1022
         }
       ]
     },
@@ -5138,6 +5194,10 @@
         {
           "id": 971,
           "charaId": 1006
+        },
+        {
+          "id": 972,
+          "charaId": 1022
         }
       ]
     },
@@ -5374,6 +5434,10 @@
         {
           "id": 1007,
           "charaId": 1010
+        },
+        {
+          "id": 1008,
+          "charaId": 1022
         }
       ]
     },
@@ -5690,6 +5754,10 @@
         {
           "id": 1055,
           "charaId": 1014
+        },
+        {
+          "id": 1056,
+          "charaId": 1022
         }
       ]
     },
@@ -5846,6 +5914,10 @@
         {
           "id": 1079,
           "charaId": 1016
+        },
+        {
+          "id": 1080,
+          "charaId": 1022
         }
       ]
     },
@@ -6162,6 +6234,10 @@
         {
           "id": 1127,
           "charaId": 1019
+        },
+        {
+          "id": 1128,
+          "charaId": 1022
         }
       ]
     },
@@ -6426,6 +6502,10 @@
         {
           "id": 1167,
           "charaId": 1025
+        },
+        {
+          "id": 1168,
+          "charaId": 1022
         }
       ]
     },
@@ -6638,6 +6718,10 @@
         {
           "id": 1199,
           "charaId": 1028
+        },
+        {
+          "id": 1200,
+          "charaId": 1022
         }
       ]
     },
@@ -6904,6 +6988,10 @@
         {
           "id": 1249,
           "charaId": 1030
+        },
+        {
+          "id": 1250,
+          "charaId": 1022
         }
       ]
     },
@@ -7116,6 +7204,10 @@
         {
           "id": 1281,
           "charaId": 1032
+        },
+        {
+          "id": 1282,
+          "charaId": 1022
         }
       ]
     },
@@ -7303,7 +7395,13 @@
     },
     {
       "relationType": 8240,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1314,
+          "charaId": 1022
+        }
+      ]
     },
     {
       "relationType": 8241,
@@ -7445,7 +7543,13 @@
     },
     {
       "relationType": 8256,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1346,
+          "charaId": 1022
+        }
+      ]
     },
     {
       "relationType": 8257,
@@ -7584,6 +7688,10 @@
         {
           "id": 1373,
           "charaId": 1037
+        },
+        {
+          "id": 1374,
+          "charaId": 1022
         }
       ]
     },
@@ -8029,7 +8137,13 @@
     },
     {
       "relationType": 8305,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1444,
+          "charaId": 1022
+        }
+      ]
     },
     {
       "relationType": 8306,
@@ -8111,7 +8225,13 @@
     },
     {
       "relationType": 8315,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1464,
+          "charaId": 1022
+        }
+      ]
     },
     {
       "relationType": 8316,
@@ -8377,7 +8497,13 @@
     },
     {
       "relationType": 8339,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1512,
+          "charaId": 1022
+        }
+      ]
     },
     {
       "relationType": 8340,
@@ -8831,7 +8957,13 @@
     },
     {
       "relationType": 8385,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1604,
+          "charaId": 1022
+        }
+      ]
     },
     {
       "relationType": 8386,
@@ -12522,6 +12654,12 @@
       "groundType": "TURF"
     },
     {
+      "id": 600012,
+      "name": "Sagittarius Cup",
+      "distance": 2500,
+      "groundType": "TURF"
+    },
+    {
       "id": 600017,
       "name": "Taurus Cup Finals",
       "distance": 2400,
@@ -12561,6 +12699,12 @@
       "id": 600023,
       "name": "Scorpio Cup Finals",
       "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 600024,
+      "name": "Sagittarius Cup Finals",
+      "distance": 2500,
       "groundType": "TURF"
     },
     {
@@ -18949,6 +19093,14 @@
       ]
     },
     {
+      "id": 100221,
+      "name": "Fairy Tale",
+      "gradeValue": 340,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
       "id": 100231,
       "name": "∴win Q.E.D.",
       "gradeValue": 340,
@@ -22298,6 +22450,16 @@
       ]
     },
     {
+      "id": 202002,
+      "name": "Familiar Ground",
+      "gradeValue": 217,
+      "tagId": [
+        "302",
+        "402",
+        "502"
+      ]
+    },
+    {
       "id": 202022,
       "name": "Early Start",
       "gradeValue": 217,
@@ -22605,6 +22767,14 @@
       "gradeValue": 180,
       "tagId": [
         "403"
+      ]
+    },
+    {
+      "id": 900221,
+      "name": "Fairy Tale",
+      "gradeValue": 180,
+      "tagId": [
+        "401"
       ]
     },
     {
@@ -59995,6 +60165,11 @@
       "charaId": 1049
     },
     {
+      "id": 10068,
+      "name": "[Tracen Academy] Inari One",
+      "charaId": 1034
+    },
+    {
       "id": 10069,
       "name": "[Tracen Academy] Mejiro Ardan",
       "charaId": 1071
@@ -60163,6 +60338,11 @@
       "id": 20031,
       "name": "[///WARNING GATE///] Shinko Windy",
       "charaId": 1043
+    },
+    {
+      "id": 20032,
+      "name": "[Laughing through the Mud] Inari One",
+      "charaId": 1034
     },
     {
       "id": 20034,
@@ -60518,6 +60698,11 @@
       "id": 30074,
       "name": "[Dazzling Day in the Snow] Marvelous Sunday",
       "charaId": 1055
+    },
+    {
+      "id": 30075,
+      "name": "[My Solo Spun in Spiraling Runs] Manhattan Cafe",
+      "charaId": 1025
     }
   ],
   "textData": [
@@ -66135,7 +66320,7 @@
       "id": 201,
       "category": 201,
       "index": 1301,
-      "text": "The sun is shining bright over <race_course> on this fall day, and our lineup is no less dazzling."
+      "text": "The sun is shining bright over <race_course> on this winter day, and our lineup is no less dazzling."
     },
     {
       "id": 201,
@@ -66453,7 +66638,7 @@
       "id": 201,
       "category": 201,
       "index": 2301,
-      "text": "The sun is shining bright over <race_course> on this fall day, and our lineup is no less dazzling."
+      "text": "The sun is shining bright over <race_course> on this winter day, and our lineup is no less dazzling."
     },
     {
       "id": 201,
@@ -66771,7 +66956,7 @@
       "id": 201,
       "category": 201,
       "index": 3301,
-      "text": "The sun is shining bright over <race_course> on this fall day, and our lineup is no less dazzling."
+      "text": "The sun is shining bright over <race_course> on this winter day, and our lineup is no less dazzling."
     },
     {
       "id": 201,
@@ -99238,6 +99423,18 @@
       "category": 64,
       "index": 9007,
       "text": "Special preregistration rewards."
+    },
+    {
+      "id": 64,
+      "category": 64,
+      "index": 9008,
+      "text": "A prize for Cygames ID 1st Anniversary New Year's Raffle"
+    },
+    {
+      "id": 64,
+      "category": 64,
+      "index": 9009,
+      "text": "A prize for Umamusume: Pretty Derby Link Celebration Event"
     },
     {
       "id": 64,
@@ -134589,7 +134786,7 @@
       "id": 130,
       "category": 130,
       "index": 172,
-      "text": "Capricious Royalty"
+      "text": "Capricious Clover"
     },
     {
       "id": 130,
@@ -139491,13 +139688,13 @@
       "id": 163,
       "category": 163,
       "index": 1033,
-      "text": "I'm Admire Vega... So can I go now? I have to train, win tons of races, and become the greatest racer—in other words, I'm <i>busy.</i>"
+      "text": "My name is Admire Vega... Now, may I please go? I have to train more—win more. So I can be the brightest star."
     },
     {
       "id": 163,
       "category": 163,
       "index": 1034,
-      "text": "Listen up, I'm Inari One! As ya can see, I'm a proud, true-blue Edo girl! And I'm gonna become the biggest, baddest runner you've ever seen!"
+      "text": "Watch it, you're talkin' to Inari One! As I'm sure ya can see, I'm an Edo gal through and through—and I'm gonna be the biggest racer in the scene!"
     },
     {
       "id": 163,
@@ -139599,7 +139796,7 @@
       "id": 163,
       "category": 163,
       "index": 1052,
-      "text": "I'm Haru Urara! I like carrots! Oh, and running\\ntoo! ♪ I'm always working my hardest to take first place!"
+      "text": "I'm Haru Urara! I like carrots! Oh, and running too! ♪ I'm always working my hardest to take first place!"
     },
     {
       "id": 163,
@@ -139629,7 +139826,7 @@
       "id": 163,
       "category": 163,
       "index": 1057,
-      "text": "There's a wind you'll only find while racing. It's a gentle tailwind, calm and true to itself.\\n\\nBy the way, the name's Mr. C.B.—it's a pleasure."
+      "text": "There's a wind you'll only find while racing. It's a gentle tailwind, calm and true to itself. By the way, the name's Mr. C.B.—it's a pleasure."
     },
     {
       "id": 163,
@@ -139707,7 +139904,7 @@
       "id": 163,
       "category": 163,
       "index": 1070,
-      "text": "Sirius Symboli, ready to go! There's no room for complaining in a race. Just keep silent and watch—I'm gonna win and prove that I'm the greatest in the world."
+      "text": "I'm Sirius Symboli. You can shut up and save the pretentious lectures for someone else. Now kick back and watch me prove that I'm on top of the world."
     },
     {
       "id": 163,
@@ -139737,7 +139934,7 @@
       "id": 163,
       "category": 163,
       "index": 9005,
-      "text": "I am the great Sasami Anshinzawa, genius acupuncturist (apprentice). One <i>piercing</i> encounter with me will leave you tingling with energy! See? No worries! ☆"
+      "text": "Sasami Anshinzawa, (apprentice of a) legendary acupuncturist, at your service! With one little poke, I'll have you ready to take on the world! Wow, right? No worries! ☆"
     },
     {
       "id": 163,
@@ -257073,7 +257270,7 @@
       "id": 88,
       "category": 88,
       "index": 10020,
-      "text": "I'm Haru Urara! I like carrots! Oh, and running\\ntoo! ♪ I'm always working my hardest to take first place!"
+      "text": "I'm Haru Urara! I like carrots! Oh, and running too! ♪ I'm always working my hardest to take first place!"
     },
     {
       "id": 88,
@@ -257193,7 +257390,7 @@
       "id": 88,
       "category": 88,
       "index": 10040,
-      "text": "The name's Narita Taishin.\\nI'm in this to make all the people who doubted me look stupid.\\nNow leave me alone."
+      "text": "The name's Narita Taishin. I'm in this to make all the people who doubted me look stupid. Now leave me alone."
     },
     {
       "id": 88,
@@ -257355,7 +257552,7 @@
       "id": 88,
       "category": 88,
       "index": 10067,
-      "text": "The name's Nakayama Festa, and I ain't here for any half-assed races. I like 'em risky—thrilling!"
+      "text": "The name's Nakayama Festa. I need a lot more than a lukewarm race to thrill me, get it? It's gotta be something hotter—hot enough to burn!"
     },
     {
       "id": 88,
@@ -257415,13 +257612,13 @@
       "id": 88,
       "category": 88,
       "index": 10077,
-      "text": "Hello, I'm Narita Top Road! I'll work super hard to live up to the expectations of everyone cheering me on!"
+      "text": "Hi, I'm Narita Top Road! I'm so thankful to all the people rooting for me. I'll do everything I can to make them proud!"
     },
     {
       "id": 88,
       "category": 88,
       "index": 10078,
-      "text": "There's a wind you'll only find while racing. It's a gentle tailwind, calm and true to itself.\\n\\nBy the way, the name's Mr. C.B.—it's a pleasure."
+      "text": "There's a wind you'll only find while racing. It's a gentle tailwind, calm and true to itself. By the way, the name's Mr. C.B.—it's a pleasure."
     },
     {
       "id": 88,
@@ -280377,7 +280574,7 @@
       "id": 163,
       "category": 163,
       "index": 1074,
-      "text": "...Oh? Is it time for self-introductions already? Teehee! My name is Mejiro Bright, and I will strive to live up to the Mejiro family name."
+      "text": "...Oh? Are we doing self-introductions? Ehehe, well, my name is Mejiro Bright. I'll do my best to uphold the Mejiro name."
     },
     {
       "id": 163,

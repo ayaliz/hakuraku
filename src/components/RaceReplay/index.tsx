@@ -50,6 +50,8 @@ import {
 } from "./utils/chartBuilders";
 import courseData from "../../data/tracks/course_data.json";
 import { fromRaceHorseData, TrainedCharaData } from "../../data/TrainedCharaData";
+import { getPassiveStatModifiers } from "./utils/SkillDataUtils";
+import { getCharaActivatedSkillIds } from "../../data/RaceDataUtils";
 
 echarts.use([
     ScatterChart,
@@ -175,6 +177,25 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         return map;
     }, [frames, interpolatedFrame.frameIndex]);
 
+    const prevConsumptionRateByIdx = useMemo(() => {
+        const map: Record<number, number> = {};
+        const i = interpolatedFrame.frameIndex - 1;
+        if (i < 0) return map;
+        const f0 = frames[i];
+        const f1 = frames[i + 1];
+        if (!f0 || !f1) return map;
+        const dt = (f1.time ?? 0) - (f0.time ?? 0);
+        if (dt <= 1e-9) return map;
+
+        (f0.horseFrame ?? []).forEach((h0: any, idx: number) => {
+            const h1 = f1.horseFrame?.[idx];
+            if (!h0 || !h1) return;
+            const dh = (h0.hp ?? 0) - (h1.hp ?? 0);
+            map[idx] = dh / dt;
+        });
+        return map;
+    }, [frames, interpolatedFrame.frameIndex]);
+
     const spurtDelayEvents = useMemo(() => {
         const events: Record<number, { time: number; duration: number; name: string }[]> = {};
         if (!frames || frames.length < 2 || !goalInX) return events;
@@ -265,6 +286,30 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         return td?.slopes ?? [];
     }, [selectedTrackId]);
 
+    const passiveStatModifiers = useMemo(() => {
+        const map: Record<number, { speed: number, stamina: number, power: number, guts: number, wisdom: number }> = {};
+        if (!raceData) return map;
+        (raceHorseInfo || []).forEach((h: any) => {
+            const idx = (h.frame_order ?? h.frameOrder) - 1;
+            if (idx < 0) return;
+
+            // raceData needs to be accessed. The function getCharaActivatedSkillIds takes (raceSimulateData, frameOrder).
+            const skillIds = getCharaActivatedSkillIds(raceData, idx);
+
+            const totalMods = { speed: 0, stamina: 0, power: 0, guts: 0, wisdom: 0 };
+            skillIds.forEach(id => {
+                const mods = getPassiveStatModifiers(id);
+                totalMods.speed += mods.speed || 0;
+                totalMods.stamina += mods.stamina || 0;
+                totalMods.power += mods.power || 0;
+                totalMods.guts += mods.guts || 0;
+                totalMods.wisdom += mods.wisdom || 0;
+            });
+            map[idx] = totalMods;
+        });
+        return map;
+    }, [raceData, raceHorseInfo]);
+
 
     const { t: toggles, bind } = useToggles();
 
@@ -288,13 +333,33 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                 trainedCharaByIdx,
                 oonigeByIdx,
                 lastSpurtStartDistances,
-                trackSlopes
+                trackSlopes,
+                skillActivations,
+                passiveStatModifiers,
+                combinedOtherEvents
             ),
-        [interpolatedFrame, displayNames, horseInfoByIdx, trainerColors, legendSelection, toggles.speed, toggles.accel, accByIdx, toggles.blocked, toggles.hp, maxHpByIdx, goalInX, consumptionRateByIdx, trainedCharaByIdx, oonigeByIdx, lastSpurtStartDistances, trackSlopes]
+        [interpolatedFrame, displayNames, horseInfoByIdx, trainerColors, legendSelection, toggles.speed, toggles.accel, accByIdx, toggles.blocked, toggles.hp, maxHpByIdx, goalInX, consumptionRateByIdx, trainedCharaByIdx, oonigeByIdx, lastSpurtStartDistances, trackSlopes, skillActivations, passiveStatModifiers, combinedOtherEvents]
     );
 
     const yMaxWithHeadroom = maxLanePosition + 3;
-    const skillLabelData = useMemo(() => buildSkillLabels(interpolatedFrame, skillActivations, combinedOtherEvents, renderTime, horseInfoByIdx, trainerColors, displayNames, legendSelection), [interpolatedFrame, skillActivations, combinedOtherEvents, renderTime, horseInfoByIdx, trainerColors, displayNames, legendSelection]);
+    const skillLabelData = useMemo(() => buildSkillLabels(
+        interpolatedFrame,
+        skillActivations,
+        combinedOtherEvents,
+        renderTime,
+        horseInfoByIdx,
+        trainerColors,
+        displayNames,
+        legendSelection,
+        toggles.heuristics,
+        trainedCharaByIdx,
+        oonigeByIdx,
+        trackSlopes,
+        passiveStatModifiers,
+        goalInX,
+        accByIdx,
+        consumptionRateByIdx
+    ), [interpolatedFrame, skillActivations, combinedOtherEvents, renderTime, horseInfoByIdx, trainerColors, displayNames, legendSelection, toggles.heuristics, trainedCharaByIdx, oonigeByIdx, trackSlopes, passiveStatModifiers, goalInX, accByIdx, consumptionRateByIdx]);
     const { straights, corners, straightsFinal, cornersFinal, segMarkers, slopeTriangles } = useCourseLayers(selectedTrackId, goalInX, yMaxWithHeadroom);
 
     const raceMarkers = useMemo(() => { const td = selectedTrackId ? (courseData as Record<string, any>)[selectedTrackId] : undefined; return buildMarkLines(goalInX, raceData, displayNames, segMarkers, td); }, [goalInX, raceData, displayNames, segMarkers, selectedTrackId]);
@@ -607,6 +672,15 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                                         className="mb-1"
                                     />
                                 ))}
+                            </div>
+                            <div className="mt-1">
+                                <Form.Check
+                                    type="checkbox"
+                                    id="toggle-heuristics"
+                                    label="Mode heuristics"
+                                    {...bind("heuristics")}
+                                    className="mb-1"
+                                />
                             </div>
                         </div>
 

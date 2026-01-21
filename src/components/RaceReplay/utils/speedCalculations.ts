@@ -12,6 +12,13 @@ export type SpeedCalculationParams = {
     inLastSpurt: boolean;
     slope: number; // 10000 = 100%
     powerStat: number;
+    gutsStat?: number;
+    greenSkillBonuses?: { speed?: number; stamina?: number; power?: number; guts?: number; wisdom?: number };
+    activeSpeedBuff?: number;
+    isSpotStruggle?: boolean;
+    isDueling?: boolean;
+    isRushed?: boolean;
+    rushedType?: number;
 };
 
 export type TargetSpeedResult = {
@@ -56,14 +63,13 @@ const MOOD_MODIFIER: Record<number, number> = {
     1: 0.96, // Awful
 };
 
-export function adjustStat(stat: number, mood: number): number {
+export function adjustStat(stat: number, mood: number, bonus: number = 0): number {
     let val = stat;
     if (val > 1200) {
         val = 1200 + (val - 1200) / 2;
     }
     const moodMod = MOOD_MODIFIER[mood] || 1.0;
-    return val * moodMod;
-    // Green skills tbd
+    return val * moodMod + bonus;
 }
 
 export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpeedResult {
@@ -73,17 +79,25 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
         speedStat,
         wisdomStat,
         powerStat,
+        gutsStat = 0,
         strategy,
         distanceProficiency,
         mood,
         isOonige,
         inLastSpurt,
         slope,
+        greenSkillBonuses,
+        activeSpeedBuff,
+        isSpotStruggle,
+        isDueling,
+        isRushed,
+        rushedType,
     } = params;
 
-    const adjustedSpeed = adjustStat(speedStat, mood);
-    const adjustedWisdom = adjustStat(wisdomStat, mood);
-    const adjustedPower = adjustStat(powerStat, mood);
+    const adjustedSpeed = adjustStat(speedStat, mood, greenSkillBonuses?.speed);
+    const adjustedWisdom = adjustStat(wisdomStat, mood, greenSkillBonuses?.wisdom);
+    const adjustedPower = adjustStat(powerStat, mood, greenSkillBonuses?.power);
+    const adjustedGuts = adjustStat(gutsStat, mood, greenSkillBonuses?.guts);
 
     const baseSpeed = 20.0 - (courseDistance - 2000) / 1000;
 
@@ -114,6 +128,21 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
         baseTargetSpeed -= penalty;
     }
 
+    // Active Speed Buffs (Type 27)
+    // TODO: current speed buffs, not just target speed
+    baseTargetSpeed += (activeSpeedBuff || 0);
+
+    // Competition Events
+    if (isSpotStruggle) {
+        baseTargetSpeed += Math.pow(500 * adjustedGuts, 0.6) * 0.0001;
+    }
+    if (isDueling) {
+        baseTargetSpeed += Math.pow(200 * adjustedGuts, 0.708) * 0.0001;
+    }
+    if (isRushed && rushedType === 2) {
+        baseTargetSpeed *= 1.04;
+    }
+
     // Randomness
     // Does not affect speed during last spurt.
     if (inLastSpurt) {
@@ -136,4 +165,9 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
         max: maxSpeed,
         base: baseTargetSpeed,
     };
+}
+
+export function calculateReferenceHpConsumption(speed: number, courseDistance: number) {
+    const baseSpeed = 20.0 - (courseDistance - 2000.0) / 1000.0;
+    return 20.0 * Math.pow(Math.max(0, speed - baseSpeed + 12.0), 2) / 144.0;
 }

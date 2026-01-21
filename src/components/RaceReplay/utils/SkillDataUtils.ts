@@ -1,0 +1,69 @@
+
+import skillsData from "../../../data/skills.json";
+
+export type SkillEffect = {
+    type: number;
+    value: number;
+};
+
+export type SkillDef = {
+    id: number;
+    condition_groups: {
+        effects: SkillEffect[];
+    }[];
+};
+
+const skillsMap = new Map<number, SkillDef>();
+(skillsData as any[]).forEach((s: any) => {
+    skillsMap.set(s.id, s);
+});
+
+export function getSkillDef(skillId: number): SkillDef | undefined {
+    return skillsMap.get(skillId);
+}
+
+export function getPassiveStatModifiers(skillId: number): { [key: string]: number } {
+    const def = getSkillDef(skillId);
+    if (!def || !def.condition_groups || def.condition_groups.length === 0) return {};
+
+    const mods: { [key: string]: number } = { speed: 0, stamina: 0, power: 0, guts: 0, wisdom: 0 };
+
+    def.condition_groups.forEach(group => {
+        if (group.effects) {
+            group.effects.forEach(eff => {
+                const val = eff.value / 10000; // e.g. 400000 -> 40
+                switch (eff.type) {
+                    case 1: mods.speed += val; break;
+                    case 2: mods.stamina += val; break;
+                    case 3: mods.power += val; break;
+                    case 4: mods.guts += val; break;
+                    case 5: mods.wisdom += val; break;
+                }
+            });
+        }
+    });
+    return mods;
+}
+
+export function getActiveSpeedModifier(skillId: number): number {
+    const def = getSkillDef(skillId);
+    if (!def || !def.condition_groups || def.condition_groups.length === 0) return 0;
+
+    let speedInc = 0;
+    const group = def.condition_groups[0]; // TODO: maybe implement condition evaluation later
+
+    if (group.effects) {
+        group.effects.forEach(eff => {
+            if (eff.type === 27) {
+                speedInc += eff.value / 10000; // e.g. 4500 -> 0.45 m/s
+            }
+        });
+    }
+    return speedInc;
+}
+
+export function getSkillBaseTime(skillId: number): number {
+    const def = getSkillDef(skillId);
+    if (!def || !def.condition_groups || def.condition_groups.length === 0) return 0;
+    return (def.condition_groups[0] as any).base_time ?? 0;
+}

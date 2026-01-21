@@ -49,6 +49,7 @@ import {
     ECOption,
 } from "./utils/chartBuilders";
 import courseData from "../../data/tracks/course_data.json";
+import { fromRaceHorseData, TrainedCharaData } from "../../data/TrainedCharaData";
 
 echarts.use([
     ScatterChart,
@@ -232,6 +233,38 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         return combined;
     }, [otherEvents, hpZeroEvents, spurtDelayEvents]);
 
+    const trainedCharaByIdx = useMemo(() => {
+        const map: Record<number, TrainedCharaData> = {};
+        (raceHorseInfo ?? []).forEach((h: any) => {
+            const idx = (h.frame_order ?? h.frameOrder) - 1;
+            if (idx >= 0) map[idx] = fromRaceHorseData(h);
+        });
+        return map;
+    }, [raceHorseInfo]);
+
+    const oonigeByIdx = useMemo(() => {
+        const map: Record<number, boolean> = {};
+        Object.entries(skillActivations).forEach(([iStr, list]) => {
+            if (list.some(s => s.param && s.param[1] === 202051)) {
+                map[+iStr] = true;
+            }
+        });
+        return map;
+    }, [skillActivations]);
+
+    const lastSpurtStartDistances = useMemo(() => {
+        const map: Record<number, number> = {};
+        (raceData.horseResult ?? []).forEach((hr, i) => {
+            if (hr.lastSpurtStartDistance && hr.lastSpurtStartDistance > 0) map[i] = hr.lastSpurtStartDistance;
+        });
+        return map;
+    }, [raceData.horseResult]);
+
+    const trackSlopes = useMemo(() => {
+        const td = selectedTrackId ? (courseData as Record<string, any>)[selectedTrackId] : null;
+        return td?.slopes ?? [];
+    }, [selectedTrackId]);
+
 
     const { t: toggles, bind } = useToggles();
 
@@ -251,9 +284,13 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                 toggles.hp,
                 maxHpByIdx,
                 goalInX,
-                consumptionRateByIdx
+                consumptionRateByIdx,
+                trainedCharaByIdx,
+                oonigeByIdx,
+                lastSpurtStartDistances,
+                trackSlopes
             ),
-        [interpolatedFrame, displayNames, horseInfoByIdx, trainerColors, legendSelection, toggles.speed, toggles.accel, accByIdx, toggles.blocked, toggles.hp, maxHpByIdx, goalInX, consumptionRateByIdx]
+        [interpolatedFrame, displayNames, horseInfoByIdx, trainerColors, legendSelection, toggles.speed, toggles.accel, accByIdx, toggles.blocked, toggles.hp, maxHpByIdx, goalInX, consumptionRateByIdx, trainedCharaByIdx, oonigeByIdx, lastSpurtStartDistances, trackSlopes]
     );
 
     const yMaxWithHeadroom = maxLanePosition + 3;

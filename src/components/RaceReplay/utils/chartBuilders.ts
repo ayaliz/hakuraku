@@ -39,6 +39,8 @@ import {
 } from "../RaceReplay.constants";
 import { getCharaIcon, formatSigned, stackLabels, labelStyle, mixWithWhite } from "../RaceReplay.utils";
 import { InterpolatedFrame } from "../RaceReplay.types";
+import { calculateTargetSpeed, getDistanceCategory } from "./speedCalculations";
+import { TrainedCharaData } from "../../../data/TrainedCharaData";
 
 const BLOCKED_ICON = require("../../../data/umamusume_icons/blocked.png");
 
@@ -107,9 +109,17 @@ export function buildHorsesCustomSeries(
     showHpBar: boolean,
     maxHpByIdx: Record<number, number>,
     goalInX: number,
-    consumptionRateByIdx: Record<number, number>
+    consumptionRateByIdx: Record<number, number>,
+    trainedCharaByIdx: Record<number, TrainedCharaData>,
+    oonigeByIdx: Record<number, boolean>,
+    lastSpurtStartDistances: Record<number, number>,
+    trackSlopes: any[]
 ) {
-    const data: Array<{ name: string; value: [number, number, string, string, string, number, number, number, number, number, number] }> = [];
+    const data: Array<{ name: string; value: [number, number, string, string, string, number, number, number, number, number, number, number, number] }> = [];
+
+    // Pre-calculate distance category since it's same for all
+    const distanceCategory = getDistanceCategory(goalInX);
+
     Object.entries(displayNames).forEach(([iStr, name]) => {
         if (legendSelection && legendSelection[name] === false) return;
         const i = +iStr, h = interpolated.horseFrame[i];
@@ -121,7 +131,50 @@ export function buildHorsesCustomSeries(
         const maxHp = maxHpByIdx[i] ?? 1;
         const hp = h.hp ?? 0;
         const rate = consumptionRateByIdx[i] ?? 0;
-        data.push({ name, value: [h.distance ?? 0, h.lanePosition ?? 0, name, teamColor, iconUrl, isBlocked, speed, accel, maxHp, hp, rate] });
+
+        // Target speed calculation
+        let minTarget = 0, maxTarget = 0;
+        const trainedChara = trainedCharaByIdx[i];
+        if (trainedChara) {
+            const currentDistance = h.distance ?? 0;
+            const lastSpurtDist = lastSpurtStartDistances[i] ?? -1;
+            const inLastSpurt = lastSpurtDist > 0 && currentDistance >= lastSpurtDist;
+
+            // Get proficiency for this distance category
+            const distProficiency = trainedChara.properDistances[distanceCategory] ?? 1; // Default to G? Or check logic.
+
+            // Strategy: usually trainedChara.properRunningStyles key? No. 
+            // We need the ACTUAL strategy used in the race.
+            // RaceReplay doesn't easily expose this per horse per frame, but usually it's static.
+            // We can infer from raceData if passed or check where we can get it.
+            // info has running_style?
+            // info (raceHorseInfo item) usually has running_style.
+            const strategy = info.running_style ?? 0;
+
+            // Find current slope
+            // trackSlopes: { start: number, length: number, slope: number }[]
+            // Find s where currentDistance >= s.start and currentDistance < s.start + s.length
+            const currentSlopeObj = trackSlopes.find((s: any) => currentDistance >= s.start && currentDistance < s.start + s.length);
+            const currentSlope = currentSlopeObj?.slope ?? 0;
+
+            const res = calculateTargetSpeed({
+                courseDistance: goalInX,
+                currentDistance,
+                speedStat: trainedChara.speed,
+                wisdomStat: trainedChara.wiz,
+                powerStat: trainedChara.pow,
+                strategy,
+                distanceProficiency: distProficiency,
+                mood: info.motivation ?? 3, // Default to normal
+                isOonige: !!oonigeByIdx[i],
+                inLastSpurt,
+                slope: currentSlope
+            });
+            minTarget = res.min;
+            maxTarget = res.max;
+        }
+
+        data.push({ name, value: [h.distance ?? 0, h.lanePosition ?? 0, name, teamColor, iconUrl, isBlocked, speed, accel, maxHp, hp, rate, minTarget, maxTarget] });
     });
 
     const renderItem = (params: any, api: any) => {
@@ -359,7 +412,15 @@ export function createOptions(args: {
                 const hpStr = (typeof maxHp === "number" && typeof hp === "number")
                     ? `<br/>HP: ${Math.round(hp)}/${Math.round(maxHp)} (${((hp / maxHp) * 100).toFixed(1)}%)`
                     : "";
-                return `${has ? name + "<br/>" : ""}Distance: ${value[0].toFixed(2)}m<br/>Lane: ${Math.round(value[1])}<br/>Speed: ${speed.toFixed(2)} m/s<br/>Accel: ${accelStr} m/s²${hpStr}`;
+
+                const minTarget = value?.[11];
+                const maxTarget = value?.[12];
+                let targetStr = "";
+                if (typeof minTarget === "number" && typeof maxTarget === "number" && maxTarget > 0) {
+                    targetStr = `<br/>Target: ${minTarget.toFixed(2)} - ${maxTarget.toFixed(2)} m/s`;
+                }
+
+                return `${has ? name + "<br/>" : ""}Distance: ${value[0].toFixed(2)}m<br/>Lane: ${Math.round(value[1])}<br/>Speed: ${speed.toFixed(2)} m/s<br/>Accel: ${accelStr} m/s²${hpStr}${targetStr}`;
             }
         },
         grid: { top: 80, right: 16, bottom: 40, left: 50, containLabel: false },

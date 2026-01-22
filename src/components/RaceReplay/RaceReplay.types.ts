@@ -10,6 +10,7 @@ export type RaceReplayProps = {
     trainerColors?: Record<number, string>;
     infoTitle?: string;
     infoContent?: React.ReactNode;
+    detectedCourseId?: number;
 };
 
 export type InterpolatedFrame = {

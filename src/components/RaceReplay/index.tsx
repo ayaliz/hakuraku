@@ -73,6 +73,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     trainerColors,
     infoTitle,
     infoContent,
+    detectedCourseId,
 }) => {
     const frames = useMemo(() => raceData.frame ?? [], [raceData]);
     const startTime = frames[0]?.time ?? 0, endTime = frames[frames.length - 1]?.time ?? 0;
@@ -88,7 +89,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     }, [frames, raceData.horseResult]);
 
     const availableTracks = useAvailableTracks(goalInX);
-    const { selectedTrackId, setSelectedTrackId, guessStatus } = useGuessTrack(goalInX, availableTracks);
+    const { selectedTrackId, setSelectedTrackId, guessStatus } = useGuessTrack(detectedCourseId, goalInX, availableTracks);
 
     const maxLanePosition = useMemo(() => frames.reduce((m, f) => Math.max(m, (f.horseFrame ?? []).reduce((mm: number, h: any) => Math.max(mm, h?.lanePosition ?? 0), 0)), 0), [frames]);
     const interpolatedFrame = useInterpolatedFrame(frames, renderTime);
@@ -366,9 +367,19 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                                 style={{ width: "auto", maxWidth: 320 }}
                             >
                                 {availableTracks.map((t) => (<option key={t.id} value={t.id}>{t.name}</option>))}
+                                {guessStatus === "detected" && selectedTrackId && !availableTracks.some(t => t.id === selectedTrackId) && (
+                                    <option key={selectedTrackId} value={selectedTrackId}>
+                                        {`Detected Track (${selectedTrackId})`}
+                                    </option>
+                                )}
                             </Form.Control>
                         </div>
                         <div className="mt-2" style={{ minHeight: 20 }}>
+                            {guessStatus === "detected" && (
+                                <span style={{ color: "green" }}>
+                                    Detected track from race data
+                                </span>
+                            )}
                             {guessStatus === "guessed" && (
                                 <span style={{ color: "green" }}>
                                     Guessed track based on CM schedule

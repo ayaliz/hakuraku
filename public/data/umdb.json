@@ -644,6 +644,10 @@
           "charaId": 1006
         },
         {
+          "id": 58,
+          "charaId": 1021
+        },
+        {
           "id": 60,
           "charaId": 1045
         }
@@ -758,6 +762,10 @@
         {
           "id": 92,
           "charaId": 1019
+        },
+        {
+          "id": 93,
+          "charaId": 1021
         },
         {
           "id": 94,
@@ -876,6 +884,10 @@
         {
           "id": 125,
           "charaId": 1006
+        },
+        {
+          "id": 126,
+          "charaId": 1021
         }
       ]
     },
@@ -1318,6 +1330,10 @@
         {
           "id": 200,
           "charaId": 1006
+        },
+        {
+          "id": 201,
+          "charaId": 1021
         },
         {
           "id": 202,
@@ -1838,6 +1854,10 @@
           "charaId": 1015
         },
         {
+          "id": 678,
+          "charaId": 1021
+        },
+        {
           "id": 679,
           "charaId": 1023
         },
@@ -1986,6 +2006,10 @@
           "charaId": 1015
         },
         {
+          "id": 653,
+          "charaId": 1021
+        },
+        {
           "id": 654,
           "charaId": 1023
         },
@@ -2120,6 +2144,10 @@
         {
           "id": 690,
           "charaId": 1019
+        },
+        {
+          "id": 691,
+          "charaId": 1021
         },
         {
           "id": 692,
@@ -2422,6 +2450,10 @@
         {
           "id": 256,
           "charaId": 1020
+        },
+        {
+          "id": 257,
+          "charaId": 1021
         },
         {
           "id": 258,
@@ -2743,6 +2775,10 @@
       "relationType": 2801,
       "relationPoint": 1,
       "member": [
+        {
+          "id": 364,
+          "charaId": 1021
+        },
         {
           "id": 366,
           "charaId": 1040
@@ -3192,6 +3228,10 @@
           "charaId": 1012
         },
         {
+          "id": 470,
+          "charaId": 1021
+        },
+        {
           "id": 474,
           "charaId": 1050
         },
@@ -3406,6 +3446,10 @@
           "charaId": 1019
         },
         {
+          "id": 534,
+          "charaId": 1021
+        },
+        {
           "id": 535,
           "charaId": 1022
         },
@@ -3494,6 +3538,10 @@
         {
           "id": 565,
           "charaId": 1016
+        },
+        {
+          "id": 566,
+          "charaId": 1021
         },
         {
           "id": 567,
@@ -3632,6 +3680,10 @@
         {
           "id": 600,
           "charaId": 1019
+        },
+        {
+          "id": 601,
+          "charaId": 1021
         },
         {
           "id": 602,
@@ -3914,6 +3966,10 @@
           "charaId": 1019
         },
         {
+          "id": 831,
+          "charaId": 1021
+        },
+        {
           "id": 832,
           "charaId": 1045
         },
@@ -4074,6 +4130,10 @@
         {
           "id": 320,
           "charaId": 1006
+        },
+        {
+          "id": 321,
+          "charaId": 1021
         }
       ]
     },
@@ -4175,6 +4235,10 @@
       "relationType": 7017,
       "relationPoint": 1,
       "member": [
+        {
+          "id": 336,
+          "charaId": 1021
+        },
         {
           "id": 337,
           "charaId": 1045
@@ -4756,6 +4820,10 @@
         {
           "id": 905,
           "charaId": 1003
+        },
+        {
+          "id": 906,
+          "charaId": 1021
         }
       ]
     },
@@ -4888,6 +4956,10 @@
         {
           "id": 925,
           "charaId": 1004
+        },
+        {
+          "id": 926,
+          "charaId": 1021
         }
       ]
     },
@@ -5246,6 +5318,10 @@
         {
           "id": 979,
           "charaId": 1007
+        },
+        {
+          "id": 980,
+          "charaId": 1021
         }
       ]
     },
@@ -5312,6 +5388,10 @@
         {
           "id": 989,
           "charaId": 1009
+        },
+        {
+          "id": 990,
+          "charaId": 1021
         }
       ]
     },
@@ -5622,6 +5702,10 @@
         {
           "id": 1035,
           "charaId": 1013
+        },
+        {
+          "id": 1036,
+          "charaId": 1021
         }
       ]
     },
@@ -6102,6 +6186,10 @@
         {
           "id": 1107,
           "charaId": 1017
+        },
+        {
+          "id": 1108,
+          "charaId": 1021
         }
       ]
     },
@@ -6805,7 +6893,13 @@
     },
     {
       "relationType": 8191,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1216,
+          "charaId": 1021
+        }
+      ]
     },
     {
       "relationType": 8192,
@@ -7952,6 +8046,10 @@
         {
           "id": 1413,
           "charaId": 1041
+        },
+        {
+          "id": 1414,
+          "charaId": 1021
         }
       ]
     },
@@ -8310,6 +8408,10 @@
         {
           "id": 1479,
           "charaId": 1045
+        },
+        {
+          "id": 1480,
+          "charaId": 1021
         }
       ]
     },
@@ -8400,6 +8502,10 @@
         {
           "id": 1493,
           "charaId": 1046
+        },
+        {
+          "id": 1494,
+          "charaId": 1021
         }
       ]
     },
@@ -8605,7 +8711,13 @@
     },
     {
       "relationType": 8351,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1536,
+          "charaId": 1021
+        }
+      ]
     },
     {
       "relationType": 8352,
@@ -9113,7 +9225,13 @@
     },
     {
       "relationType": 8401,
-      "relationPoint": 1
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1636,
+          "charaId": 1021
+        }
+      ]
     },
     {
       "relationType": 8402,
@@ -12576,6 +12694,24 @@
       "groundType": "TURF"
     },
     {
+      "id": 595501,
+      "name": "Arima Kinen (Hard)",
+      "distance": 2500,
+      "groundType": "TURF"
+    },
+    {
+      "id": 595502,
+      "name": "Arima Kinen (Hard)",
+      "distance": 2500,
+      "groundType": "TURF"
+    },
+    {
+      "id": 595503,
+      "name": "Arima Kinen (Hard)",
+      "distance": 2500,
+      "groundType": "TURF"
+    },
+    {
       "id": 596001,
       "name": "Asahi Hai F.S. (Hard)",
       "distance": 1600,
@@ -14175,6 +14311,24 @@
       "id": 701201,
       "name": "Enduring Spirit",
       "distance": 2500,
+      "groundType": "TURF"
+    },
+    {
+      "id": 701401,
+      "name": "Team Practice",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 701501,
+      "name": "An Inescapable Fear",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 701601,
+      "name": "Believing in Our Dreams",
+      "distance": 2000,
       "groundType": "TURF"
     },
     {
@@ -19093,6 +19247,15 @@
       ]
     },
     {
+      "id": 100211,
+      "name": "White Lightning Comin' Through!",
+      "gradeValue": 340,
+      "tagId": [
+        "401",
+        "403"
+      ]
+    },
+    {
       "id": 100221,
       "name": "Fairy Tale",
       "gradeValue": 340,
@@ -22311,6 +22474,15 @@
       ]
     },
     {
+      "id": 201612,
+      "name": "Tail Nine",
+      "gradeValue": 508,
+      "tagId": [
+        "302",
+        "401"
+      ]
+    },
+    {
       "id": 201621,
       "name": "Shake It Out",
       "gradeValue": 217,
@@ -22606,6 +22778,70 @@
       ]
     },
     {
+      "id": 300031,
+      "name": "Towards the Scenery I Seek",
+      "gradeValue": 0,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
+      "id": 300041,
+      "name": "Creeping Anxiety",
+      "gradeValue": 0,
+      "tagId": [
+        "406"
+      ]
+    },
+    {
+      "id": 300051,
+      "name": "Blatant Fear",
+      "gradeValue": 0,
+      "tagId": [
+        "406"
+      ]
+    },
+    {
+      "id": 300061,
+      "name": "Dream Run",
+      "gradeValue": 0,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
+      "id": 300071,
+      "name": "Show Me What Lies Beyond!",
+      "gradeValue": 0,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
+      "id": 300081,
+      "name": "Hoiya! Have a Good Run!",
+      "gradeValue": 0,
+      "tagId": [
+        "402"
+      ]
+    },
+    {
+      "id": 300091,
+      "name": "As a Friend and Rival",
+      "gradeValue": 0,
+      "tagId": [
+        "403"
+      ]
+    },
+    {
+      "id": 300101,
+      "name": "Cheers of a Fellow Dreamer",
+      "gradeValue": 0,
+      "tagId": [
+        "402"
+      ]
+    },
+    {
       "id": 900011,
       "name": "Shooting Star",
       "gradeValue": 180,
@@ -22766,6 +23002,15 @@
       "name": "Angling and Scheming",
       "gradeValue": 180,
       "tagId": [
+        "403"
+      ]
+    },
+    {
+      "id": 900211,
+      "name": "White Lightning Comin' Through!",
+      "gradeValue": 180,
+      "tagId": [
+        "401",
         "403"
       ]
     },
@@ -36037,7 +36282,7 @@
     },
     {
       "id": 501022115,
-      "name": "“Something Special”"
+      "name": "Something Special"
     },
     {
       "id": 501022116,
@@ -36049,7 +36294,7 @@
     },
     {
       "id": 501022118,
-      "name": "Who Will Escort Me?"
+      "name": "Who Shall Be My Escort?"
     },
     {
       "id": 501022119,
@@ -36377,11 +36622,11 @@
     },
     {
       "id": 501022510,
-      "name": "Her Highness's Growth"
+      "name": "A Noble Pastime"
     },
     {
       "id": 501022511,
-      "name": "A Very Invigorating Royal Tea Party"
+      "name": "An Invigorating Tea Party"
     },
     {
       "id": 501022513,
@@ -36389,11 +36634,11 @@
     },
     {
       "id": 501022514,
-      "name": "There, There, Your Highness"
+      "name": "Pampered Like a Princess"
     },
     {
       "id": 501022515,
-      "name": "Her Highness's Movie Night"
+      "name": "Exciting Movie Night"
     },
     {
       "id": 501022516,
@@ -36429,11 +36674,11 @@
     },
     {
       "id": 501022524,
-      "name": "Love Ramen"
+      "name": "I Love Ramen"
     },
     {
       "id": 501022525,
-      "name": "More Fun!"
+      "name": "It'll Be More Fun!"
     },
     {
       "id": 501022600,
@@ -36465,11 +36710,11 @@
     },
     {
       "id": 501022705,
-      "name": "Her Highness Visits the Flea Market!"
+      "name": "A \"Bazaar\" Afternoon"
     },
     {
       "id": 501022706,
-      "name": "Her Highness Learns to Stan"
+      "name": "Learning the Local \"Oshi\" Culture"
     },
     {
       "id": 501022707,
@@ -54933,7 +55178,7 @@
     },
     {
       "id": 501069116,
-      "name": "How Can You Tell If the Moon Is\\nWaning or Waxing?"
+      "name": "How Can You Tell If the Moon Is\\nWaxing or Waning?"
     },
     {
       "id": 501069117,
@@ -55077,7 +55322,7 @@
     },
     {
       "id": 501069404,
-      "name": "How Can You Tell If the Moon Is\\nWaning or Waxing?"
+      "name": "How Can You Tell If the Moon Is\\nWaxing or Waning?"
     },
     {
       "id": 501069405,
@@ -55221,7 +55466,7 @@
     },
     {
       "id": 501069511,
-      "name": "The Disciplinary Committee President's\\nAward"
+      "name": "The Disciplinary Committee Chairman's Award"
     },
     {
       "id": 501069513,
@@ -55233,7 +55478,7 @@
     },
     {
       "id": 501069515,
-      "name": "Cherry Trees for Flowers, Umamusume\\nFor..."
+      "name": "A Lady to Rival the Cherry Blossom"
     },
     {
       "id": 501069516,
@@ -55345,7 +55590,7 @@
     },
     {
       "id": 501069716,
-      "name": "Back in Shape"
+      "name": "Back in Shape!"
     },
     {
       "id": 501069717,
@@ -59613,15 +59858,15 @@
     },
     {
       "id": 830088001,
-      "name": "見えない献身"
+      "name": "Unseen Assistance"
     },
     {
       "id": 830088002,
-      "name": "言葉では足りない"
+      "name": "Words Aren't Enough"
     },
     {
       "id": 830088003,
-      "name": "みんなとみる夢"
+      "name": "The Dream We All Share"
     },
     {
       "id": 830089001,
@@ -60703,6 +60948,11 @@
       "id": 30075,
       "name": "[My Solo Spun in Spiraling Runs] Manhattan Cafe",
       "charaId": 1025
+    },
+    {
+      "id": 30076,
+      "name": "[Searching for Unseen Sights] Silence Suzuka",
+      "charaId": 1002
     }
   ],
   "textData": [
@@ -115945,6 +116195,36 @@
     {
       "id": 70,
       "category": 70,
+      "index": 30019,
+      "text": "New Year's Countdown Login Bonus"
+    },
+    {
+      "id": 70,
+      "category": 70,
+      "index": 30020,
+      "text": "New Year's Countdown Login Bonus"
+    },
+    {
+      "id": 70,
+      "category": 70,
+      "index": 30021,
+      "text": "New Year's Countdown Login Bonus"
+    },
+    {
+      "id": 70,
+      "category": 70,
+      "index": 30022,
+      "text": "New Year's Countdown Login Bonus"
+    },
+    {
+      "id": 70,
+      "category": 70,
+      "index": 30023,
+      "text": "New Year's Countdown Login Bonus"
+    },
+    {
+      "id": 70,
+      "category": 70,
       "index": 39001,
       "text": "Umamusume: Cinderella Gray Anime Ep. 14 Login Bonus"
     },
@@ -116492,7 +116772,7 @@
       "id": 94,
       "category": 94,
       "index": 513,
-      "text": "Relentless Fear"
+      "text": "An Inescapable Fear"
     },
     {
       "id": 94,
@@ -116510,7 +116790,7 @@
       "id": 94,
       "category": 94,
       "index": 516,
-      "text": "Faith"
+      "text": "Believing in Our Dreams"
     },
     {
       "id": 94,
@@ -135458,7 +135738,7 @@
       "id": 131,
       "category": 131,
       "index": 57,
-      "text": "Win at least 7 graded races of 1,400 meters or less and attain Stamina and Power of 1,200 or higher"
+      "text": "Win at least 7 graded races of 1,400 meters or less and attain Speed and Power of 1,200 or higher"
     },
     {
       "id": 131,
@@ -139562,7 +139842,7 @@
       "id": 163,
       "category": 163,
       "index": 1012,
-      "text": "I see a buncha Umamusume here looking like they wanna fight! Well, Hishiama will give you all you can handle! Come at me! One-on-one!"
+      "text": "I see a buncha Umamusume here looking like they wanna take me on! Well, Hishiama will give you all you can handle! Come at me! One-on-one!"
     },
     {
       "id": 163,
@@ -139622,7 +139902,7 @@
       "id": 163,
       "category": 163,
       "index": 1022,
-      "text": "Pleased to meet you. I am Fine Motion. I look forward to making lots of memories here. Would you happen to know of a good local ramen spot?"
+      "text": "Pleased to meet you. I'm Fine Motion. I look forward to making lots of memories here. Would you happen to know of a good local ramen spot?"
     },
     {
       "id": 163,
@@ -154268,13 +154548,13 @@
       "id": 28,
       "category": 28,
       "index": 701501,
-      "text": "Relentless Fear"
+      "text": "An Inescapable Fear"
     },
     {
       "id": 28,
       "category": 28,
       "index": 701601,
-      "text": "Faith"
+      "text": "Believing in Our Dreams"
     },
     {
       "id": 28,
@@ -163208,13 +163488,13 @@
       "id": 29,
       "category": 29,
       "index": 701501,
-      "text": "Relentless Fear"
+      "text": "An Inescapable Fear"
     },
     {
       "id": 29,
       "category": 29,
       "index": 701601,
-      "text": "Faith"
+      "text": "Believing in Our Dreams"
     },
     {
       "id": 29,
@@ -170426,13 +170706,13 @@
       "id": 32,
       "category": 32,
       "index": 7015,
-      "text": "Relentless Fear"
+      "text": "An Inescapable Fear"
     },
     {
       "id": 32,
       "category": 32,
       "index": 7016,
-      "text": "Faith"
+      "text": "Believing in Our Dreams"
     },
     {
       "id": 32,
@@ -174843,6 +175123,42 @@
       "category": 42,
       "index": 23,
       "text": "x7,500 Three-Times-Only"
+    },
+    {
+      "id": 42,
+      "category": 42,
+      "index": 24,
+      "text": "0"
+    },
+    {
+      "id": 42,
+      "category": 42,
+      "index": 25,
+      "text": "0"
+    },
+    {
+      "id": 42,
+      "category": 42,
+      "index": 26,
+      "text": "0"
+    },
+    {
+      "id": 42,
+      "category": 42,
+      "index": 27,
+      "text": "0"
+    },
+    {
+      "id": 42,
+      "category": 42,
+      "index": 28,
+      "text": "1500"
+    },
+    {
+      "id": 42,
+      "category": 42,
+      "index": 29,
+      "text": "1500"
     },
     {
       "id": 42,
@@ -194894,7 +195210,7 @@
       "id": 181,
       "category": 181,
       "index": 501022115,
-      "text": "“Something Special”"
+      "text": "Something Special"
     },
     {
       "id": 181,
@@ -194912,7 +195228,7 @@
       "id": 181,
       "category": 181,
       "index": 501022118,
-      "text": "Who Will Escort Me?"
+      "text": "Who Shall Be My Escort?"
     },
     {
       "id": 181,
@@ -195404,13 +195720,13 @@
       "id": 181,
       "category": 181,
       "index": 501022510,
-      "text": "Her Highness's Growth"
+      "text": "A Noble Pastime"
     },
     {
       "id": 181,
       "category": 181,
       "index": 501022511,
-      "text": "A Very Invigorating Royal Tea Party"
+      "text": "An Invigorating Tea Party"
     },
     {
       "id": 181,
@@ -195422,13 +195738,13 @@
       "id": 181,
       "category": 181,
       "index": 501022514,
-      "text": "There, There, Your Highness"
+      "text": "Pampered Like a Princess"
     },
     {
       "id": 181,
       "category": 181,
       "index": 501022515,
-      "text": "Her Highness's Movie Night"
+      "text": "Exciting Movie Night"
     },
     {
       "id": 181,
@@ -195482,13 +195798,13 @@
       "id": 181,
       "category": 181,
       "index": 501022524,
-      "text": "Love Ramen"
+      "text": "I Love Ramen"
     },
     {
       "id": 181,
       "category": 181,
       "index": 501022525,
-      "text": "More Fun!"
+      "text": "It'll Be More Fun!"
     },
     {
       "id": 181,
@@ -195536,13 +195852,13 @@
       "id": 181,
       "category": 181,
       "index": 501022705,
-      "text": "Her Highness Visits the Flea Market!"
+      "text": "A \"Bazaar\" Afternoon"
     },
     {
       "id": 181,
       "category": 181,
       "index": 501022706,
-      "text": "Her Highness Learns to Stan"
+      "text": "Learning the Local \"Oshi\" Culture"
     },
     {
       "id": 181,
@@ -223226,7 +223542,7 @@
       "id": 181,
       "category": 181,
       "index": 501069116,
-      "text": "How Can You Tell If the Moon Is\\nWaning or Waxing?"
+      "text": "How Can You Tell If the Moon Is\\nWaxing or Waning?"
     },
     {
       "id": 181,
@@ -223442,7 +223758,7 @@
       "id": 181,
       "category": 181,
       "index": 501069404,
-      "text": "How Can You Tell If the Moon Is\\nWaning or Waxing?"
+      "text": "How Can You Tell If the Moon Is\\nWaxing or Waning?"
     },
     {
       "id": 181,
@@ -223658,7 +223974,7 @@
       "id": 181,
       "category": 181,
       "index": 501069511,
-      "text": "The Disciplinary Committee President's\\nAward"
+      "text": "The Disciplinary Committee Chairman's Award"
     },
     {
       "id": 181,
@@ -223676,7 +223992,7 @@
       "id": 181,
       "category": 181,
       "index": 501069515,
-      "text": "Cherry Trees for Flowers, Umamusume\\nFor..."
+      "text": "A Lady to Rival the Cherry Blossom"
     },
     {
       "id": 181,
@@ -223844,7 +224160,7 @@
       "id": 181,
       "category": 181,
       "index": 501069716,
-      "text": "Back in Shape"
+      "text": "Back in Shape!"
     },
     {
       "id": 181,
@@ -229598,19 +229914,19 @@
       "id": 181,
       "category": 181,
       "index": 830088001,
-      "text": "見えない献身"
+      "text": "Unseen Assistance"
     },
     {
       "id": 181,
       "category": 181,
       "index": 830088002,
-      "text": "言葉では足りない"
+      "text": "Words Aren't Enough"
     },
     {
       "id": 181,
       "category": 181,
       "index": 830088003,
-      "text": "みんなとみる夢"
+      "text": "The Dream We All Share"
     },
     {
       "id": 181,
@@ -257294,7 +257610,7 @@
       "id": 88,
       "category": 88,
       "index": 10024,
-      "text": "I see a buncha Umamusume here looking like they wanna take me on!\\nWell, Hishiama will give you all you can handle!\\nCome at me! One-on-one!"
+      "text": "I see a buncha Umamusume here looking like they wanna take me on! Well, Hishiama will give you all you can handle! Come at me! One-on-one!"
     },
     {
       "id": 88,
@@ -257318,7 +257634,7 @@
       "id": 88,
       "category": 88,
       "index": 10028,
-      "text": "Pleased to meet you. I'm Fine Motion.\\nI'm looking forward to making lots of memories here.\\nDo you happen to know any good local ramen shops?"
+      "text": "Pleased to meet you. I'm Fine Motion. I look forward to making lots of memories here. Would you happen to know of a good local ramen spot?"
     },
     {
       "id": 88,
@@ -257793,6 +258109,12 @@
       "category": 88,
       "index": 20029,
       "text": "\"Ohohoho!\\nWell, time to make plans for the world tour! My first target is France, and then America!\\nWhat about you?\"\\n\\n\"Ooooh, the world, huh? I want to go international too!\\nEngland! Dubai! And Paris—the city of my dreams!\"\\n\\n\"Wonderful! I like your passion! We'll go partner running down the long path to Windsor Castle, shake our rivals' hands with the Arc de Triomphe in the background, and enjoy the night view of Dubai with our friends. That sounds like a great week to me!\\nNow you over there, what do think?\"\\n\\n\"I'm just going to keep winning races at home, thank you very much.\"\\n\\n\"Now that's an idea! You don't even have to step outside the country! Instead, people from all around the world will come just to see your glorious running! Yes, you'll become the center of the world! A true revolution!\"\\n\\n\"Isn't this so nice, each of us with our own precious dreams? Looking out toward the world, and the world looking back.\\nThis is how we become true gems!\""
+    },
+    {
+      "id": 88,
+      "category": 88,
+      "index": 20030,
+      "text": "She always gets up early. While the other Umamusume are still snug in their beds, she heads out the door to start her part-time job of delivering newspapers.\\n\\nAfter work, it's time for classes, followed by training. And after training, it's time for her second part-time job. There've been times when she's held more than three jobs at the same time.\\n\\nFor her, every day is as busy and bustling as the last. Even Umamusume have their limits, so how does she rise above and beyond day after day?\\n\\n\"First, let me recharge with some nutrients. Then, it's back to work!\"\\n\\nIt's because she prepares herself before heading out.\\n\\n<i>A Toughness bar for the tough you!</i>\\n\\nAfter this commercial started playing on TV, it's said that Ines Fujin began receiving copious amounts of Toughness bars from her fans."
     },
     {
       "id": 88,
@@ -280915,6 +281237,12 @@
     {
       "id": 259,
       "category": 259,
+      "index": 1038,
+      "text": "\"Remember this pic? Yeah, from that one time. ♪ \""
+    },
+    {
+      "id": 259,
+      "category": 259,
       "index": 1040,
       "text": "Right now it's a snapshot from camp"
     },
@@ -282409,6 +282737,12 @@
     {
       "id": 63,
       "category": 63,
+      "index": 92,
+      "text": "Finish a Career playthrough in <color=#ff9900>Showtime Mode</color> to raise the <color=#ff9900>Show Gauge</color>. Raise it faster by completing lots of goals and playing on higher difficulties. Get <color=#ff9900>extra rewards</color> based on how many times you fill the gauge."
+    },
+    {
+      "id": 63,
+      "category": 63,
       "index": 93,
       "text": "In Showtime Mode, <color=#ff9900>opponents</color> are harder at higher difficulty levels. Reach a <color=#ff9900>good ending</color> in a playthrough to unlock the next difficulty."
     },
@@ -282519,6 +282853,18 @@
       "category": 63,
       "index": 111,
       "text": "Each time you enter a Carnival Race, it will fill the <color=#ff9900>Challenge Gauge</color>. Fill this gauge completely to start a <color=#ff9900>Challenge Race</color>, but be prepared—it will be <color=#ff9900>Very Hard</color> or even <color=#ff9900>Extreme</color> difficulty!"
+    },
+    {
+      "id": 63,
+      "category": 63,
+      "index": 112,
+      "text": "Place in the top five in an event race to gain a <color=#ff9900>Carnival Bonus spark</color>. Inherit the Carnival Bonus spark in a Career playthrough to receive the <color=#ff9900>Carnival Bonus skill</color>. Umamusume with the Carnival Bonus skill have <color=#ff9900>increased performance and likelihood of Great Mood</color> in event races."
+    },
+    {
+      "id": 63,
+      "category": 63,
+      "index": 113,
+      "text": "When an Umamusume with the <color=#ff9900>Carnival Bonus skill</color> places in the top five of a race, their Carnival Bonus spark <color=#ff9900>levels up</color>. The higher the skill level from the spark gets, the more the racer's performance and likelihood of Great Mood will increase."
     },
     {
       "id": 63,

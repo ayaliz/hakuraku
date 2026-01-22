@@ -15,6 +15,7 @@ type RaceDataPageState = {
 
     rawHorseInfo: any[] | undefined,
     rawScenario: string,
+    detectedCourseId: number | undefined,
     shareStatus: '' | 'sharing' | 'shared',
     shareError: string,
     shareKey: string,
@@ -34,6 +35,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
 
             rawHorseInfo: undefined,
             rawScenario: '',
+            detectedCourseId: undefined,
             shareStatus: '',
             shareError: '',
             shareKey: '',
@@ -80,6 +82,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
                 parsedRaceData: parsedRaceData,
                 rawHorseInfo: horseInfoArray,
                 rawScenario: data.raceScenario,
+                detectedCourseId: undefined, // Shared data might not contain header info easily unless we changed shared format
                 error: '',
             });
         } catch (err: any) {
@@ -120,7 +123,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
         reader.readAsText(file);
     };
 
-	parseRaceJson(json: any) {
+    parseRaceJson(json: any) {
         // CHECK FOR NEW FORMAT
         if (json['race_scenario'] && Array.isArray(json['race_horse_data_array'])) {
             this.parseNewFormat(json);
@@ -133,6 +136,15 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             this.setState({ error: 'Could not find <RaceHorse>k__BackingField or race_horse_data_array in JSON' });
             return;
         }
+
+        let detectedCourseId: number | undefined = undefined;
+        try {
+            const courseSet = json['<RaceCourseSet>k__BackingField'];
+            if (courseSet) {
+                detectedCourseId = courseSet['<Id>k__BackingField'] ?? courseSet.Id;
+            }
+        } catch { }
+
 
         const horseInfo = raceHorseArray
             .map((member: any) => {
@@ -196,13 +208,19 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             return;
         }
 
-        this.finalizeParsing(horseInfo, raceScenario);
+        this.finalizeParsing(horseInfo, raceScenario, detectedCourseId);
     }
 
     parseNewFormat(json: any) {
         try {
             const rawHorses = json['race_horse_data_array'];
             const trainedCharas = json['trained_chara_array'] || [];
+
+            let detectedCourseId: number | undefined = undefined;
+            const courseSet = json['race_course_set'] || json['RaceCourseSet'];
+            if (courseSet) {
+                detectedCourseId = courseSet['id'] ?? courseSet.Id;
+            }
 
             const horseInfo = rawHorses.map((horseData: any, index: number) => {
                 if (!horseData) return null;
@@ -261,14 +279,14 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
                 };
             }).filter((h: any) => h !== null);
 
-            this.finalizeParsing(horseInfo, json['race_scenario']);
+            this.finalizeParsing(horseInfo, json['race_scenario'], detectedCourseId);
 
         } catch (err: any) {
             this.setState({ error: `Failed to parse new JSON format: ${err.message}` });
         }
     }
 
-    finalizeParsing(horseInfo: any[], raceScenario: string) {
+    finalizeParsing(horseInfo: any[], raceScenario: string, detectedCourseId?: number) {
         const parsedRaceData = deserializeFromBase64(raceScenario);
         if (!parsedRaceData) {
             this.setState({ error: 'Failed to parse race scenario data' });
@@ -280,6 +298,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             parsedRaceData: parsedRaceData,
             rawHorseInfo: horseInfo,
             rawScenario: raceScenario,
+            detectedCourseId: detectedCourseId,
             error: '',
             shareStatus: '',
             shareError: '',
@@ -421,7 +440,8 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             {this.state.parsedRaceData && this.state.parsedHorseInfo ? (
                 <RaceDataPresenter
                     raceHorseInfo={this.state.parsedHorseInfo}
-                    raceData={this.state.parsedRaceData} />
+                    raceData={this.state.parsedRaceData}
+                    detectedCourseId={this.state.detectedCourseId} />
             ) : (
                 <Alert variant="info">
                     <p>

@@ -27,6 +27,7 @@ const supportedRaceDataVersion = 100000002;
 type RaceDataPresenterProps = {
     raceHorseInfo: any[],
     raceData: RaceSimulateData,
+    detectedCourseId?: number,
 };
 
 type RaceDataPresenterState = {
@@ -171,7 +172,14 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 </Alert>}
             <CharaList raceHorseInfo={this.props.raceHorseInfo} raceData={this.props.raceData} />
             <FoldCard header="Replay">
-                <RaceReplay raceData={this.props.raceData} raceHorseInfo={this.props.raceHorseInfo} displayNames={this.displayNames(this.props.raceHorseInfo, this.props.raceData)} skillActivations={this.skillActivations(this.props.raceData)} otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo)} />
+                <RaceReplay
+                    raceData={this.props.raceData}
+                    raceHorseInfo={this.props.raceHorseInfo}
+                    displayNames={this.displayNames(this.props.raceHorseInfo, this.props.raceData)}
+                    skillActivations={this.skillActivations(this.props.raceData)}
+                    otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo)}
+                    detectedCourseId={this.props.detectedCourseId}
+                />
             </FoldCard>
             <OtherRaceEventsList raceData={this.props.raceData} displayNames={this.displayNames(this.props.raceHorseInfo, this.props.raceData)} />
             <Form>

@@ -143,8 +143,6 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
         baseTargetSpeed *= 1.04;
     }
 
-    // Randomness
-    // Does not affect speed during last spurt.
     if (inLastSpurt) {
         return {
             min: baseTargetSpeed,

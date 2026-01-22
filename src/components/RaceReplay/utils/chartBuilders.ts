@@ -465,7 +465,7 @@ export function buildSkillLabels(
                     });
                 }
 
-                const res = calculateTargetSpeed({
+                const speedParams = {
                     courseDistance: goalInX,
                     currentDistance,
                     speedStat: trainedChara.speed,
@@ -484,19 +484,26 @@ export function buildSkillLabels(
                     isDueling,
                     isRushed,
                     rushedType
-                });
+                };
 
-                // const currentSpeed = (h.speed ?? 0) / 100; // Already calculated above
-                const accel = (accByIdx[i] ?? 0) / 100; // cm/s^2 -> m/s^2
+                const res = calculateTargetSpeed(speedParams);
 
-                // Adjust Max Speed for Downhill Mode
-                // "increases target speed by 0.3 + SlopePer/10 [m/s]"
-                // SlopePer = (slope / 100).
-                // adjustment = 0.3 + (slope / 1000).
+                const accel = (accByIdx[i] ?? 0) / 100;
                 let referenceMax = res.max;
+
+                // Prevent false positive Pace Up on uphill exit
+                if (currentSlope > 0) {
+                    const slopeEnd = currentSlopeObj ? currentSlopeObj.start + currentSlopeObj.length : currentDistance + 100;
+                    if (slopeEnd - currentDistance < 25) {
+                        const nextSlopeObj = trackSlopes.find((s: any) => slopeEnd >= s.start && slopeEnd < s.start + s.length);
+                        const nextSlope = nextSlopeObj?.slope ?? 0;
+
+                        const resNext = calculateTargetSpeed({ ...speedParams, slope: nextSlope });
+                        referenceMax = Math.max(referenceMax, resNext.max);
+                    }
+                }
+
                 if (isDownhillMode) {
-                    // currentSlope is e.g., -200 for -2%.
-                    // The bonus is based on the magnitude of the slope.
                     referenceMax += 0.3 + Math.abs(currentSlope) / 1000;
                 }
 

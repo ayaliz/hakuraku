@@ -120,10 +120,17 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
         reader.readAsText(file);
     };
 
-    parseRaceJson(json: any) {
+	parseRaceJson(json: any) {
+        // CHECK FOR NEW FORMAT
+        if (json['race_scenario'] && Array.isArray(json['race_horse_data_array'])) {
+            this.parseNewFormat(json);
+            return;
+        }
+
+        // --- OLD FORMAT LOGIC BELOW ---
         const raceHorseArray = json['<RaceHorse>k__BackingField'];
         if (!Array.isArray(raceHorseArray)) {
-            this.setState({ error: 'Could not find <RaceHorse>k__BackingField in JSON' });
+            this.setState({ error: 'Could not find <RaceHorse>k__BackingField or race_horse_data_array in JSON' });
             return;
         }
 
@@ -189,6 +196,79 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             return;
         }
 
+        this.finalizeParsing(horseInfo, raceScenario);
+    }
+
+    parseNewFormat(json: any) {
+        try {
+            const rawHorses = json['race_horse_data_array'];
+            const trainedCharas = json['trained_chara_array'] || [];
+
+            const horseInfo = rawHorses.map((horseData: any, index: number) => {
+                if (!horseData) return null;
+
+                // Attempt to find matching trained chara (assuming 1:1 index alignment)
+                const trainedChara = trainedCharas[index];
+
+                let deck: { position: number, id: number, lb: number, exp: number }[] = [];
+                let parents: { positionId: number, cardId: number, rank: number, factors: { id: number, level: number }[] }[] = [];
+
+                if (trainedChara) {
+                    // Map Deck (Support Cards)
+                    // Checks for both snake_case (typical in cleaned json) and PascalCase just in case
+                    const supportCards = trainedChara['support_card_array'] || trainedChara['SupportCardArray'];
+                    if (Array.isArray(supportCards)) {
+                        deck = supportCards.map((card: any) => ({
+                            position: card['position'] ?? card['Position'],
+                            id: card['support_card_id'] ?? card['SupportCardId'],
+                            lb: card['limit_break_count'] ?? card['LimitBreakCount'],
+                            exp: card['exp'] ?? card['Exp']
+                        })).sort((a: any, b: any) => a.position - b.position);
+                    }
+
+                    // Map Parents (Succession)
+                    const successionList = trainedChara['succession_chara_list'] || trainedChara['SuccessionCharaList'];
+                    if (Array.isArray(successionList)) {
+                        parents = successionList
+                            .filter((p: any) => {
+                                const posId = p['position_id'] ?? p['PositionId'];
+                                return [10, 11, 12, 20, 21, 22].includes(posId);
+                            })
+                            .map((p: any) => {
+                                const factorArray = p['factor_data_array'] || p['FactorDataArray'];
+                                return {
+                                    positionId: p['position_id'] ?? p['PositionId'],
+                                    cardId: p['card_id'] ?? p['CardId'],
+                                    rank: p['rank'] ?? p['Rank'],
+                                    factors: Array.isArray(factorArray)
+                                        ? factorArray.map((f: any) => {
+                                            const fId = f['factor_id'] ?? f['FactorId'];
+                                            return {
+                                                id: fId,
+                                                level: fId % 100
+                                            };
+                                        })
+                                        : []
+                                };
+                            });
+                    }
+                }
+
+                return {
+                    ...horseData,
+                    deck,
+                    parents
+                };
+            }).filter((h: any) => h !== null);
+
+            this.finalizeParsing(horseInfo, json['race_scenario']);
+
+        } catch (err: any) {
+            this.setState({ error: `Failed to parse new JSON format: ${err.message}` });
+        }
+    }
+
+    finalizeParsing(horseInfo: any[], raceScenario: string) {
         const parsedRaceData = deserializeFromBase64(raceScenario);
         if (!parsedRaceData) {
             this.setState({ error: 'Failed to parse race scenario data' });

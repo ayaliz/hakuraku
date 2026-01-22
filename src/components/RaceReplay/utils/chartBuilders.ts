@@ -380,7 +380,7 @@ export function buildSkillLabels(
     consumptionRateByIdx: Record<number, number>
 ) {
     const items: any[] = [];
-    const distanceCategory = getDistanceCategory(goalInX);
+
 
     frame.horseFrame.forEach((h: any, i: number) => {
         if (!h) return;
@@ -400,126 +400,16 @@ export function buildSkillLabels(
         const currentSlopeObj = trackSlopes.find((s: any) => currentDistance >= s.start && currentDistance < s.start + s.length);
         const currentSlope = currentSlopeObj?.slope ?? 0;
 
-        let isDownhillMode = false;
         if (currentSlope < 0) {
-            if (currentSlope < 0) {
-                const rate = consumptionRateByIdx[i] ?? 0;
-                const expected = calculateReferenceHpConsumption(currentSpeed, goalInX);
+            const rate = consumptionRateByIdx[i] ?? 0;
+            const expected = calculateReferenceHpConsumption(currentSpeed, goalInX);
 
-                if (expected > 0 && rate > 0 && rate < expected * 0.8) {
-                    isDownhillMode = true;
-                    items.push({ value: base, id: `downhill-${i}-${time}`, label: next("Downhill Mode") });
-                }
+            if (expected > 0 && rate > 0 && rate < expected * 0.8) {
+                items.push({ value: base, id: `downhill-${i}-${time}`, label: next("Downhill Mode") });
             }
         }
 
-        // Heuristics
-        if (showHeuristics && goalInX > 0 && h.distance < (10 / 24) * goalInX) {
-            const trainedChara = trainedCharaByIdx[i];
-            const isOonige = oonigeByIdx[i] ?? false;
-            const runningStyleStr = info.running_style ?? 0;
-            const strategy = +runningStyleStr > 0 ? +runningStyleStr : (trainedChara?.rawData?.param?.runningStyle ?? 1);
 
-            if (trainedChara && strategy !== 1 && !isOonige) {
-                const greenStats = passiveStatModifiers?.[i];
-
-                // Active Skill Effects
-                let activeSpeedBuff = 0;
-                if (skillActivations && skillActivations[i]) {
-                    skillActivations[i].forEach(activation => {
-                        const skillId = activation.param[1];
-                        const baseTime = getSkillBaseTime(skillId);
-                        if (baseTime > 0) {
-                            const duration = (baseTime / 10000) * (goalInX / 1000);
-                            if (time >= activation.time && time < activation.time + duration) {
-                                activeSpeedBuff += getActiveSpeedModifier(skillId);
-                            }
-                        }
-                    });
-                }
-
-                // Competition Events
-                let isSpotStruggle = false;
-                let isDueling = false;
-                let isRushed = false;
-                let rushedType = 0;
-
-                // Check temptation mode (Rushed)
-                const tempMode = h.temptationMode ?? 0;
-                if (tempMode > 0) {
-                    isRushed = true;
-                    if (tempMode === 4) rushedType = 2;
-                }
-
-                if (otherEvents && otherEvents[i]) {
-                    otherEvents[i].forEach(evt => {
-                        if (time >= evt.time && time < evt.time + evt.duration) {
-                            const name = evt.name || "";
-                            if (name.includes("Spot Struggle") || name.includes("Competes (Pos)")) isSpotStruggle = true;
-                            if (name.includes("Dueling") || name.includes("Competes (Speed)")) isDueling = true;
-                            if (name.includes("Rushed")) {
-                                isRushed = true;
-                                if (name.includes("Boost")) rushedType = 2;
-                            }
-                        }
-                    });
-                }
-
-                const speedParams = {
-                    courseDistance: goalInX,
-                    currentDistance,
-                    speedStat: trainedChara.speed,
-                    wisdomStat: trainedChara.wiz,
-                    powerStat: trainedChara.pow,
-                    gutsStat: trainedChara.guts,
-                    strategy,
-                    distanceProficiency: trainedChara.properDistances[distanceCategory] ?? 1,
-                    mood: info.motivation ?? 3,
-                    isOonige,
-                    inLastSpurt: false, // Position Keep is early race
-                    slope: currentSlope,
-                    greenSkillBonuses: greenStats,
-                    activeSpeedBuff,
-                    isSpotStruggle,
-                    isDueling,
-                    isRushed,
-                    rushedType
-                };
-
-                const res = calculateTargetSpeed(speedParams);
-
-                const accel = (accByIdx[i] ?? 0) / 100;
-                let referenceMax = res.max;
-
-                // Prevent false positive Pace Up on uphill exit
-                if (currentSlope > 0) {
-                    const slopeEnd = currentSlopeObj ? currentSlopeObj.start + currentSlopeObj.length : currentDistance + 100;
-                    if (slopeEnd - currentDistance < 25) {
-                        const nextSlopeObj = trackSlopes.find((s: any) => slopeEnd >= s.start && slopeEnd < s.start + s.length);
-                        const nextSlope = nextSlopeObj?.slope ?? 0;
-
-                        const resNext = calculateTargetSpeed({ ...speedParams, slope: nextSlope });
-                        referenceMax = Math.max(referenceMax, resNext.max);
-                    }
-                }
-
-                if (isDownhillMode) {
-                    referenceMax += 0.3 + Math.abs(currentSlope) / 1000;
-                }
-
-                // Pace Up Logic:
-                // 1. Significantly above max range (>1.02x)
-                // 2. Slightly above max range AND accelerating (>0.2 m/s^2)
-                if (currentSpeed > referenceMax * 1.02 || (currentSpeed > referenceMax && accel > 0.2)) {
-                    items.push({ value: base, id: `heuristic-up-${i}-${time}`, label: next("Pace Up") });
-                }
-                // Pace Down Logic:
-                // 1. Below min range AND NOT recovering (accel <= 0.2 m/s^2)
-                else if (currentSpeed < res.min * 0.98 && accel <= 0.2) {
-                    items.push({ value: base, id: `heuristic-down-${i}-${time}`, label: next("Pace Down") });
-                }
-            }
-        }
 
         (skillActivations[i] ?? [])
             .filter(s => { const dur = s.param?.[2]; const secs = dur > 0 ? dur / 10000 : 2; return time >= s.time && time < s.time + secs && !EXCLUDE_SKILL_RE.test(s.name); })

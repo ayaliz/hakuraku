@@ -34,6 +34,8 @@ import { useAvailableTracks } from "./hooks/useAvailableTracks";
 import { useGuessTrack } from "./hooks/useGuessTrack";
 import { useCourseLayers, slopeRenderItemFactory } from "./hooks/useCourseLayers";
 import { useToggles } from "./hooks/useToggles";
+import { useRaceDerivedData } from "./hooks/useRaceDerivedData";
+import { useRaceExport } from "./hooks/useRaceExport";
 import InfoHover from "./components/InfoHover";
 import LegendItem from "./components/LegendItem";
 import ClipMaker from "./components/ClipMaker";
@@ -49,9 +51,6 @@ import {
     ECOption,
 } from "./utils/chartBuilders";
 import courseData from "../../data/tracks/course_data.json";
-import { fromRaceHorseData, TrainedCharaData } from "../../data/TrainedCharaData";
-import { getPassiveStatModifiers } from "./utils/SkillDataUtils";
-import { getCharaActivatedSkillIds } from "../../data/RaceDataUtils";
 
 echarts.use([
     ScatterChart,
@@ -101,218 +100,37 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     const xAxis = useMemo(() => ({ min: Math.max(0, Math.max(cameraWindow, Math.min(frontRunnerDistance, goalInX) + cameraLead) - cameraWindow), max: Math.max(cameraWindow, Math.min(frontRunnerDistance, goalInX) + cameraLead) }), [frontRunnerDistance, goalInX]);
 
     const horseInfoByIdx = useMemo(() => { const map: Record<number, any> = {}; (raceHorseInfo ?? []).forEach((h: any) => { const idx = (h.frame_order ?? h.frameOrder) - 1; if (idx >= 0) map[idx] = h; }); return map; }, [raceHorseInfo]);
-    const maxHpByIdx = useMemo(() => { const map: Record<number, number> = {}; (frames[0]?.horseFrame ?? []).forEach((h: any, i: number) => { map[i] = h?.hp ?? 0; }); return map; }, [frames]);
 
+    const { t: toggles, bind } = useToggles();
 
-
+    const {
+        maxHpByIdx,
+        consumptionRateByIdx,
+        trainedCharaByIdx,
+        oonigeByIdx,
+        lastSpurtStartDistances,
+        trackSlopes,
+        passiveStatModifiers,
+        combinedOtherEvents
+    } = useRaceDerivedData(
+        raceData,
+        frames,
+        raceHorseInfo,
+        skillActivations,
+        otherEvents,
+        goalInX,
+        selectedTrackId,
+        interpolatedFrame,
+        toggles
+    );
 
     const legendNames = useMemo(() => Object.values(displayNames), [displayNames]);
     const [legendSelection, setLegendSelection] = useState<Record<string, boolean>>({});
     useEffect(() => { setLegendSelection(prev => { const next: Record<string, boolean> = {}; legendNames.forEach(n => { next[n] = prev[n] ?? true; }); return next; }); }, [legendNames]);
     const onEvents = useMemo(() => ({ legendselectchanged: (e: any) => { if (e && e.selected) setLegendSelection(e.selected); } }), []);
 
-    const hpZeroEvents = useMemo(() => {
-        const events: Record<number, { time: number; duration: number; name: string }[]> = {};
-        if (!frames || frames.length < 2) return events;
-
-        const numHorses = frames[0]?.horseFrame?.length ?? 0;
-        for (let h = 0; h < numHorses; h++) {
-            const horseEvents: { time: number; duration: number; name: string }[] = [];
-            let currentStart = -1;
-            let currentEnd = -1;
-
-            for (let i = 0; i < frames.length - 1; i++) {
-                const nextFrameHorse = frames[i + 1]?.horseFrame?.[h];
-                // Check if the next frame exists and has 0 HP
-                if (nextFrameHorse && nextFrameHorse.hp === 0) {
-                    const t = frames[i].time ?? 0;
-                    const nextT = frames[i + 1].time ?? 0;
-
-                    if (currentStart === -1) {
-                        currentStart = t;
-                        currentEnd = nextT;
-                    } else if (Math.abs(t - currentEnd) < 0.001) {
-                        // Contiguous
-                        currentEnd = nextT;
-                    } else {
-                        // Gap found, push previous event
-                        horseEvents.push({ time: currentStart, duration: currentEnd - currentStart, name: "Out of HP" });
-                        currentStart = t;
-                        currentEnd = nextT;
-                    }
-                } else {
-                    if (currentStart !== -1) {
-                        horseEvents.push({ time: currentStart, duration: currentEnd - currentStart, name: "Out of HP" });
-                        currentStart = -1;
-                        currentEnd = -1;
-                    }
-                }
-            }
-            if (currentStart !== -1) {
-                horseEvents.push({ time: currentStart, duration: currentEnd - currentStart, name: "Out of HP" });
-            }
-
-            if (horseEvents.length > 0) {
-                events[h] = horseEvents;
-            }
-        }
-        return events;
-    }, [frames]);
-
-    const consumptionRateByIdx = useMemo(() => {
-        const map: Record<number, number> = {};
-        const i = interpolatedFrame.frameIndex;
-        const f0 = frames[i];
-        const f1 = frames[i + 1];
-        if (!f0 || !f1) return map;
-        const dt = (f1.time ?? 0) - (f0.time ?? 0);
-        if (dt <= 1e-9) return map;
-
-        (f0.horseFrame ?? []).forEach((h0: any, idx: number) => {
-            const h1 = f1.horseFrame?.[idx];
-            if (!h0 || !h1) return;
-            const dh = (h0.hp ?? 0) - (h1.hp ?? 0);
-            map[idx] = dh / dt;
-        });
-        return map;
-    }, [frames, interpolatedFrame.frameIndex]);
-
-    const prevConsumptionRateByIdx = useMemo(() => {
-        const map: Record<number, number> = {};
-        const i = interpolatedFrame.frameIndex - 1;
-        if (i < 0) return map;
-        const f0 = frames[i];
-        const f1 = frames[i + 1];
-        if (!f0 || !f1) return map;
-        const dt = (f1.time ?? 0) - (f0.time ?? 0);
-        if (dt <= 1e-9) return map;
-
-        (f0.horseFrame ?? []).forEach((h0: any, idx: number) => {
-            const h1 = f1.horseFrame?.[idx];
-            if (!h0 || !h1) return;
-            const dh = (h0.hp ?? 0) - (h1.hp ?? 0);
-            map[idx] = dh / dt;
-        });
-        return map;
-    }, [frames, interpolatedFrame.frameIndex]);
-
-    const spurtDelayEvents = useMemo(() => {
-        const events: Record<number, { time: number; duration: number; name: string }[]> = {};
-        if (!frames || frames.length < 2 || !goalInX) return events;
-
-        const phase3Start = (goalInX * 2) / 3;
-        const numHorses = frames[0]?.horseFrame?.length ?? 0;
-
-        for (let h = 0; h < numHorses; h++) {
-            const result = raceData.horseResult?.[h];
-            if (!result) continue;
-
-            const dist = result.lastSpurtStartDistance; // Can be undefined, -1, or number
-            if (dist == null) continue;
-
-            let eventName: string | null = null;
-            if (dist === -1) {
-                eventName = "No spurt";
-            } else {
-                const delay = dist - phase3Start;
-                if (delay > 4) {
-                    eventName = `${delay.toFixed(2)}m spurt delay`;
-                }
-            }
-
-            if (eventName) {
-                // Find time when horse crosses phase3Start
-                // We scan frames to find the first frame where distance >= phase3Start
-                let foundTime = -1;
-                // Optimization: Binary search could be better but linear scan is fine for typical race lengths/FPS
-                for (let i = 0; i < frames.length; i++) {
-                    const d = frames[i]?.horseFrame?.[h]?.distance ?? 0;
-                    if (d >= phase3Start) {
-                        foundTime = frames[i].time ?? 0;
-                        break;
-                    }
-                }
-
-                if (foundTime !== -1) {
-                    events[h] = [{ time: foundTime, duration: 2, name: eventName }];
-                }
-            }
-        }
-        return events;
-    }, [frames, raceData.horseResult, goalInX]);
-
-    const combinedOtherEvents = useMemo(() => {
-        const combined = { ...otherEvents };
-        const merge = (source: Record<number, any[]>) => {
-            Object.entries(source).forEach(([hStr, evts]) => {
-                const h = +hStr;
-                combined[h] = [...(combined[h] ?? []), ...evts];
-            });
-        };
-        merge(hpZeroEvents);
-        merge(spurtDelayEvents);
-        return combined;
-    }, [otherEvents, hpZeroEvents, spurtDelayEvents]);
-
-    const trainedCharaByIdx = useMemo(() => {
-        const map: Record<number, TrainedCharaData> = {};
-        (raceHorseInfo ?? []).forEach((h: any) => {
-            const idx = (h.frame_order ?? h.frameOrder) - 1;
-            if (idx >= 0) map[idx] = fromRaceHorseData(h);
-        });
-        return map;
-    }, [raceHorseInfo]);
-
-    const oonigeByIdx = useMemo(() => {
-        const map: Record<number, boolean> = {};
-        Object.entries(skillActivations).forEach(([iStr, list]) => {
-            if (list.some(s => s.param && s.param[1] === 202051)) {
-                map[+iStr] = true;
-            }
-        });
-        return map;
-    }, [skillActivations]);
-
-    const lastSpurtStartDistances = useMemo(() => {
-        const map: Record<number, number> = {};
-        (raceData.horseResult ?? []).forEach((hr, i) => {
-            if (hr.lastSpurtStartDistance && hr.lastSpurtStartDistance > 0) map[i] = hr.lastSpurtStartDistance;
-        });
-        return map;
-    }, [raceData.horseResult]);
-
-    const trackSlopes = useMemo(() => {
-        const td = selectedTrackId ? (courseData as Record<string, any>)[selectedTrackId] : null;
-        return td?.slopes ?? [];
-    }, [selectedTrackId]);
-
-    const passiveStatModifiers = useMemo(() => {
-        const map: Record<number, { speed: number, stamina: number, power: number, guts: number, wisdom: number }> = {};
-        if (!raceData) return map;
-        (raceHorseInfo || []).forEach((h: any) => {
-            const idx = (h.frame_order ?? h.frameOrder) - 1;
-            if (idx < 0) return;
-
-            // raceData needs to be accessed. The function getCharaActivatedSkillIds takes (raceSimulateData, frameOrder).
-            const skillIds = getCharaActivatedSkillIds(raceData, idx);
-
-            const totalMods = { speed: 0, stamina: 0, power: 0, guts: 0, wisdom: 0 };
-            skillIds.forEach(id => {
-                const mods = getPassiveStatModifiers(id);
-                totalMods.speed += mods.speed || 0;
-                totalMods.stamina += mods.stamina || 0;
-                totalMods.power += mods.power || 0;
-                totalMods.guts += mods.guts || 0;
-                totalMods.wisdom += mods.wisdom || 0;
-            });
-            map[idx] = totalMods;
-        });
-        return map;
-    }, [raceData, raceHorseInfo]);
-
-
-    const { t: toggles, bind } = useToggles();
-
+    const echartsRef = React.useRef<any>(null);
+    const { isExporting, handleExport } = useRaceExport(echartsRef, renderTime, isPlaying, playPause, setRenderTime);
     const legendShadowSeries = useMemo(() => buildLegendShadowSeries(displayNames, horseInfoByIdx, trainerColors), [displayNames, horseInfoByIdx, trainerColors]);
     const horsesSeries = useMemo(
         () =>
@@ -455,6 +273,24 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         { id: "slopes" as const, label: "Slopes" },
         { id: "speed" as const, label: "Speed [m/s]" },
         { id: "accel" as const, label: "Acceleration [m/s^2]" },
+        {
+            id: "heuristics" as const,
+            label: (
+                <span>
+                    Mode heuristics
+                    <OverlayTrigger
+                        placement="top"
+                        overlay={
+                            <Tooltip id="heuristics-info-tooltip">
+                                Attempts to display when Umas are in pace up, pace down, overtake or speed up mode during position keep
+                            </Tooltip>
+                        }
+                    >
+                        <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                    </OverlayTrigger>
+                </span>
+            )
+        },
         { id: "course" as const, label: "Course events" },
         { id: "positionKeep" as const, label: "Position Keep" },
     ];
@@ -505,6 +341,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         };
     }, [frames, interpolatedFrame.frameIndex, isEditingFrame, setIsPlaying, setPlaybackRate, setRenderTime]);
 
+    // Frame jumping and edit logic
     const handleFrameJump = () => {
         const frameIdx = parseInt(tempFrameInput, 10);
         if (!isNaN(frameIdx) && frameIdx >= 0 && frameIdx < frames.length) {
@@ -513,111 +350,6 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
             if (isPlaying) playPause();
         }
         setIsEditingFrame(false);
-    };
-
-    const [isExporting, setIsExporting] = useState(false);
-    const echartsRef = React.useRef<any>(null);
-
-    const handleExport = async (start: number, end: number, fps: number) => {
-        if (isExporting) return;
-        setIsExporting(true);
-        const originalTime = renderTime;
-        const wasPlaying = isPlaying;
-        if (wasPlaying) playPause();
-
-        try {
-            const chartInstance = echartsRef.current?.getEchartsInstance();
-            if (!chartInstance) throw new Error("Chart instance not found");
-
-            const dom = chartInstance.getDom();
-            const width = dom.clientWidth;
-            const height = dom.clientHeight;
-
-            const { Muxer, ArrayBufferTarget } = await import("webm-muxer");
-
-            const muxer = new Muxer({
-                target: new ArrayBufferTarget(),
-                video: {
-                    codec: "V_VP9",
-                    width,
-                    height,
-                    frameRate: fps,
-                },
-            });
-
-            const videoEncoder = new VideoEncoder({
-                output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
-                error: (e) => {
-                    console.error(e);
-                    alert("Video encoding error: " + e.message);
-                },
-            });
-
-            const config: VideoEncoderConfig = {
-                codec: "vp09.00.10.08",
-                width,
-                height,
-                bitrate: 1_000_000,
-                framerate: fps,
-            };
-
-            const support = await VideoEncoder.isConfigSupported(config);
-            if (!support.supported) {
-                console.warn("VP9 config not supported, trying default VP8 or loosening params");
-            }
-
-            videoEncoder.configure(config);
-
-            const dt = 1 / fps;
-            const destCanvas = document.createElement("canvas");
-            const dpr = window.devicePixelRatio || 1;
-            destCanvas.width = width * dpr;
-            destCanvas.height = height * dpr;
-            const ctx = destCanvas.getContext("2d");
-            if (!ctx) throw new Error("Could not get 2d context");
-
-            let frameCount = 0;
-
-            for (let t = start; t <= end; t += dt) {
-                setRenderTime(t);
-
-                await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-                ctx.clearRect(0, 0, destCanvas.width, destCanvas.height);
-                ctx.fillStyle = "#1e1e1e";
-                ctx.fillRect(0, 0, destCanvas.width, destCanvas.height);
-
-                const canvases = dom.querySelectorAll("canvas");
-                canvases.forEach((c: HTMLCanvasElement) => {
-                    ctx.drawImage(c, 0, 0);
-                });
-
-                const frame = new VideoFrame(destCanvas, { timestamp: frameCount * (1000000 / fps) });
-
-                videoEncoder.encode(frame);
-                frame.close();
-                frameCount++;
-            }
-
-            await videoEncoder.flush();
-            muxer.finalize();
-
-            const { buffer } = muxer.target;
-            const blob = new Blob([buffer], { type: "video/webm" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `race_replay_${new Date().toISOString().replace(/[:.]/g, "-")}.webm`;
-            a.click();
-            URL.revokeObjectURL(url);
-
-        } catch (e: any) {
-            console.error(e);
-            alert("Export failed: " + e.message);
-        } finally {
-            setIsExporting(false);
-            setRenderTime(originalTime);
-            if (wasPlaying) playPause();
-        }
     };
 
     return (
@@ -672,15 +404,6 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                                         className="mb-1"
                                     />
                                 ))}
-                            </div>
-                            <div className="mt-1">
-                                <Form.Check
-                                    type="checkbox"
-                                    id="toggle-heuristics"
-                                    label="Mode heuristics"
-                                    {...bind("heuristics")}
-                                    className="mb-1"
-                                />
                             </div>
                         </div>
 

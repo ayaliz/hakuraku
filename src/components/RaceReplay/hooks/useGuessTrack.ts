@@ -14,7 +14,7 @@ export function useGuessTrack(detectedCourseId: number | undefined, goalInX: num
             return;
         }
 
-        // 1. Try to use detected Course ID from wrapper JSON
+        // Try to use detected Course ID from wrapper JSON
         if (detectedCourseId) {
             const idStr = String(detectedCourseId);
             // Check if this ID exists in our course database

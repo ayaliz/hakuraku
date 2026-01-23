@@ -13,11 +13,9 @@ export function useHeuristicEvents(
     passiveStatModifiers: Record<number, any>,
     skillActivations: Record<number, any[]>,
     otherEvents: Record<number, any[]>,
-    consumptionRateByIdx: Record<number, number> // Note: this is typically for current frame in UI, but we might need average or per-frame for full scan. 
-    // Actually, passing a single-frame consumption map isn't enough for a full race scan. 
-    // We'll calculate consumption rate on the fly or ignore downhill mode if too complex? 
-    // The original code used a passed-in rate map which was for the *interpolated* frame.
-    // For the full scan, we can calculate (hp_prev - hp_curr) / dt.
+    consumptionRateByIdx: Record<number, number>,
+    lastSpurtStartDistances: Record<number, number>,
+    detectedCourseId?: number
 ) {
     return useMemo(() => {
         const events: Record<number, { time: number; duration: number; name: string }[]> = {};
@@ -155,18 +153,23 @@ export function useHeuristicEvents(
                     });
                 }
 
+                const lastSpurtDist = lastSpurtStartDistances[i] ?? -1;
+                const inLastSpurt = lastSpurtDist > 0 && currentDistance >= lastSpurtDist;
+
                 const speedParams = {
                     courseDistance: goalInX,
+                    courseId: detectedCourseId,
                     currentDistance,
                     speedStat: trainedChara.speed,
                     wisdomStat: trainedChara.wiz,
                     powerStat: trainedChara.pow,
                     gutsStat: trainedChara.guts,
+                    staminaStat: trainedChara.stamina,
                     strategy,
                     distanceProficiency: trainedChara.properDistances[distanceCategory] ?? 1,
                     mood: info.motivation ?? 3,
                     isOonige,
-                    inLastSpurt: false,
+                    inLastSpurt,
                     slope: currentSlope,
                     greenSkillBonuses: greenStats,
                     activeSpeedBuff,
@@ -264,5 +267,5 @@ export function useHeuristicEvents(
 
         return events;
 
-    }, [frames, goalInX, trainedCharaByIdx, oonigeByIdx, horseInfoByIdx, trackSlopes, passiveStatModifiers, skillActivations, otherEvents]);
+    }, [frames, goalInX, trainedCharaByIdx, oonigeByIdx, horseInfoByIdx, trackSlopes, passiveStatModifiers, skillActivations, otherEvents, lastSpurtStartDistances, detectedCourseId]);
 }

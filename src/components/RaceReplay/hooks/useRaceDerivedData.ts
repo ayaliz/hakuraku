@@ -201,7 +201,9 @@ export function useRaceDerivedData(
         passiveStatModifiers,
         skillActivations,
         otherEvents,
-        consumptionRateByIdx
+        consumptionRateByIdx,
+        lastSpurtStartDistances,
+        selectedTrackId ? +selectedTrackId : undefined
     );
 
     const combinedOtherEvents = useMemo(() => {

@@ -155,9 +155,10 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                 trackSlopes,
                 skillActivations,
                 passiveStatModifiers,
-                combinedOtherEvents
+                combinedOtherEvents,
+                selectedTrackId ? +selectedTrackId : undefined
             ),
-        [interpolatedFrame, displayNames, horseInfoByIdx, trainerColors, legendSelection, toggles.speed, toggles.accel, accByIdx, toggles.blocked, toggles.hp, maxHpByIdx, goalInX, consumptionRateByIdx, trainedCharaByIdx, oonigeByIdx, lastSpurtStartDistances, trackSlopes, skillActivations, passiveStatModifiers, combinedOtherEvents]
+        [interpolatedFrame, displayNames, horseInfoByIdx, trainerColors, legendSelection, toggles.speed, toggles.accel, accByIdx, toggles.blocked, toggles.hp, maxHpByIdx, goalInX, consumptionRateByIdx, trainedCharaByIdx, oonigeByIdx, lastSpurtStartDistances, trackSlopes, skillActivations, passiveStatModifiers, combinedOtherEvents, selectedTrackId]
     );
 
     const yMaxWithHeadroom = maxLanePosition + 3;

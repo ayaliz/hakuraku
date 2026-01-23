@@ -1,18 +1,21 @@
+import raceTrackData from "../../../data/tracks/racetracks.json";
 import { RaceSimulateHorseResultData_RunningStyle } from "../../../data/race_data_pb";
 
 export type SpeedCalculationParams = {
     courseDistance: number;
+    courseId?: number;
     currentDistance: number;
     speedStat: number;
     wisdomStat: number;
-    strategy: number;
-    distanceProficiency: number; // 1-8
-    mood: number; // 1-5
-    isOonige: boolean;
-    inLastSpurt: boolean;
-    slope: number; // 10000 = 100%
     powerStat: number;
     gutsStat?: number;
+    staminaStat?: number;
+    strategy: number;
+    distanceProficiency: number;
+    mood: number;
+    isOonige: boolean;
+    inLastSpurt: boolean;
+    slope: number;
     greenSkillBonuses?: { speed?: number; stamina?: number; power?: number; guts?: number; wisdom?: number };
     activeSpeedBuff?: number;
     isSpotStruggle?: boolean;
@@ -37,13 +40,6 @@ const STRATEGY_PHASE_COEFFS: Record<number, number[]> = {
 };
 const OONIGE_COEFFS = [1.063, 0.962, 0.95];
 
-export function getDistanceCategory(distance: number): number {
-    if (distance <= 1400) return 1;
-    if (distance <= 1800) return 2;
-    if (distance <= 2400) return 3;
-    return 4;
-}
-
 const DISTANCE_PROFICIENCY_MODIFIER: Record<number, number> = {
     8: 1.05, // S
     7: 1.0,  // A
@@ -62,6 +58,9 @@ const MOOD_MODIFIER: Record<number, number> = {
     2: 0.98, // Bad
     1: 0.96, // Awful
 };
+// ... (rest of imports and types)
+
+// ... (existing constants)
 
 export function adjustStat(stat: number, mood: number, bonus: number = 0): number {
     let val = stat;
@@ -72,14 +71,52 @@ export function adjustStat(stat: number, mood: number, bonus: number = 0): numbe
     return val * moodMod + bonus;
 }
 
+export function getTrackStatThresholdModifier(courseId: number, stats: { speed: number, stamina: number, power: number, guts: number, wisdom: number }, mood: number): number {
+    if (!courseId) return 1.0;
+    const trackInfo = raceTrackData.pageProps.racetrackFilterData.find((t: any) => t.id === courseId);
+    if (!trackInfo || !trackInfo.statThresholds || trackInfo.statThresholds.length === 0) return 1.0;
+
+    const moodMod = MOOD_MODIFIER[mood] || 1.0;
+    let totalMod = 0;
+    let count = 0;
+
+    trackInfo.statThresholds.forEach((statName: string) => {
+        const statVal = (stats as any)[statName] ?? 0;
+        const adjusted = statVal * moodMod;
+
+        // Threshold check
+        let mod = 1.0;
+        if (adjusted > 900) mod = 1.2;
+        else if (adjusted > 600) mod = 1.15;
+        else if (adjusted > 300) mod = 1.1;
+        else mod = 1.05;
+
+        totalMod += mod;
+        count++;
+    });
+
+    if (count === 0) return 1.0;
+    return totalMod / count;
+}
+
+export function getDistanceCategory(distance: number): number {
+    if (distance <= 1400) return 1;
+    if (distance <= 1800) return 2;
+    if (distance <= 2400) return 3;
+    return 4;
+}
+
+
 export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpeedResult {
     const {
         courseDistance,
+        courseId,
         currentDistance,
         speedStat,
         wisdomStat,
         powerStat,
         gutsStat = 0,
+        staminaStat = 0,
         strategy,
         distanceProficiency,
         mood,
@@ -94,14 +131,16 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
         rushedType,
     } = params;
 
-    const adjustedSpeed = adjustStat(speedStat, mood, greenSkillBonuses?.speed);
+    const trackSpeedMultiplier = getTrackStatThresholdModifier(courseId || 0, { speed: speedStat, stamina: staminaStat, power: powerStat, guts: gutsStat, wisdom: wisdomStat }, mood);
+
+    const adjustedSpeed = adjustStat(speedStat, mood, greenSkillBonuses?.speed) * trackSpeedMultiplier;
     const adjustedWisdom = adjustStat(wisdomStat, mood, greenSkillBonuses?.wisdom);
     const adjustedPower = adjustStat(powerStat, mood, greenSkillBonuses?.power);
     const adjustedGuts = adjustStat(gutsStat, mood, greenSkillBonuses?.guts);
 
     const baseSpeed = 20.0 - (courseDistance - 2000) / 1000;
 
-    let phase = 0; // 0: Early, 1: Mid, 2: Late
+    let phase = 0; // 0: Early, 1: Mid, 2: Late/Last
     if (currentDistance >= courseDistance * 2 / 3) {
         phase = 2;
     } else if (currentDistance >= courseDistance * 0.2) {
@@ -114,25 +153,31 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
     }
 
     const phaseCoeff = strategyCoeffs[phase];
-
     let baseTargetSpeed = baseSpeed * phaseCoeff;
 
-    if (phase === 2) {
-        const distMod = DISTANCE_PROFICIENCY_MODIFIER[distanceProficiency] || 1.0;
-        baseTargetSpeed += Math.sqrt(500 * adjustedSpeed) * distMod * 0.002;
-    }
+    const distMod = DISTANCE_PROFICIENCY_MODIFIER[distanceProficiency] || 1.0;
+    const speedTerm = Math.sqrt(500 * adjustedSpeed) * distMod * 0.002;
 
+    if (phase === 2) {
+        baseTargetSpeed += speedTerm;
+    }
+    if (inLastSpurt) {
+        const baseTargetSpeedPhase2 = baseSpeed * strategyCoeffs[2];
+        const lateRaceBaseSpeed = baseTargetSpeedPhase2 + speedTerm;
+        const gutsTerm = Math.pow(450 * adjustedGuts, 0.597) * 0.0001;
+
+        baseTargetSpeed = (lateRaceBaseSpeed + 0.01 * baseSpeed) * 1.05 + speedTerm + gutsTerm;
+    }
     if (slope > 0) {
         const slopePer = slope / 10000;
         const penalty = (slopePer * 200) / adjustedPower; // m/s
         baseTargetSpeed -= penalty;
+    } else if (slope < 0) {
+        // downhill
     }
 
-    // Active Speed Buffs (Type 27)
-    // TODO: current speed buffs, not just target speed
     baseTargetSpeed += (activeSpeedBuff || 0);
 
-    // Competition Events
     if (isSpotStruggle) {
         baseTargetSpeed += Math.pow(500 * adjustedGuts, 0.6) * 0.0001;
     }
@@ -143,6 +188,7 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
         baseTargetSpeed *= 1.04;
     }
 
+    // If in Last Spurt, no Wit variance (or rather, we are at the max/fixed speed)
     if (inLastSpurt) {
         return {
             min: baseTargetSpeed,

@@ -117,7 +117,8 @@ export function buildHorsesCustomSeries(
     trackSlopes: any[],
     skillActivations: Record<number, { time: number; name: string; param: number[] }[]> | undefined,
     passiveStatModifiers: Record<number, { speed: number; stamina: number; power: number; guts: number; wisdom: number }> | undefined,
-    otherEvents: Record<number, { time: number; duration: number; name: string }[]> | undefined
+    otherEvents: Record<number, { time: number; duration: number; name: string }[]> | undefined,
+    courseId: number | undefined
 ) {
     const data: Array<{ name: string; value: [number, number, string, string, string, number, number, number, number, number, number, number, number] }> = [];
 
@@ -211,13 +212,15 @@ export function buildHorsesCustomSeries(
                 powerStat: trainedChara.pow,
                 strategy,
                 distanceProficiency: distProficiency,
-                mood: 3, // TODO: mood
+                mood: info?.motivation ?? 3,
                 isOonige,
                 inLastSpurt,
                 slope: currentSlope,
                 greenSkillBonuses: greenStats,
                 activeSpeedBuff,
+                courseId,
                 gutsStat: trainedChara.guts,
+                staminaStat: trainedChara.stamina,
                 isSpotStruggle,
                 isDueling,
                 isRushed,
@@ -507,7 +510,11 @@ export function createOptions(args: {
                 const maxTarget = value?.[12];
                 let targetStr = "";
                 if (typeof minTarget === "number" && typeof maxTarget === "number" && maxTarget > 0) {
-                    targetStr = `<br/>Target: ${minTarget.toFixed(2)} - ${maxTarget.toFixed(2)} m/s`;
+                    if (Math.abs(maxTarget - minTarget) < 0.001) {
+                        targetStr = `<br/>Target: ${maxTarget.toFixed(2)} m/s`;
+                    } else {
+                        targetStr = `<br/>Target: ${minTarget.toFixed(2)} - ${maxTarget.toFixed(2)} m/s`;
+                    }
                 }
 
                 return `${has ? name + "<br/>" : ""}Distance: ${value[0].toFixed(2)}m<br/>Lane: ${Math.round(value[1])}<br/>Speed: ${speed.toFixed(2)} m/s<br/>Accel: ${accelStr} m/s²${hpStr}${targetStr}`;

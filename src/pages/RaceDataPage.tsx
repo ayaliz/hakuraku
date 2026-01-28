@@ -65,7 +65,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             });
     }
 
-    loadSharedData(data: { raceHorseInfo: string, raceScenario: string }) {
+    loadSharedData(data: { raceHorseInfo: string, raceScenario: string, detectedCourseId?: number }) {
         try {
             const horseInfo = JSON.parse(data.raceHorseInfo);
             const parsedRaceData = deserializeFromBase64(data.raceScenario);
@@ -82,7 +82,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
                 parsedRaceData: parsedRaceData,
                 rawHorseInfo: horseInfoArray,
                 rawScenario: data.raceScenario,
-                detectedCourseId: undefined, // Shared data might not contain header info easily unless we changed shared format
+                detectedCourseId: data.detectedCourseId,
                 error: '',
             });
         } catch (err: any) {
@@ -325,13 +325,13 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
     };
 
     private buildContentNonAnon = (): string => {
-        const { rawHorseInfo, rawScenario } = this.state;
+        const { rawHorseInfo, rawScenario, detectedCourseId } = this.state;
         const raceHorseInfo = JSON.stringify(rawHorseInfo);
-        return JSON.stringify({ raceHorseInfo, raceScenario: rawScenario });
+        return JSON.stringify({ raceHorseInfo, raceScenario: rawScenario, detectedCourseId });
     };
 
     private buildContentAnon = (): string | null => {
-        const { rawHorseInfo, rawScenario } = this.state;
+        const { rawHorseInfo, rawScenario, detectedCourseId } = this.state;
         if (!rawHorseInfo) return null;
 
         try {
@@ -351,7 +351,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             });
 
             const raceHorseInfo = JSON.stringify(anonHorseInfo);
-            return JSON.stringify({ raceHorseInfo, raceScenario: rawScenario });
+            return JSON.stringify({ raceHorseInfo, raceScenario: rawScenario, detectedCourseId });
         } catch {
             return null;
         }

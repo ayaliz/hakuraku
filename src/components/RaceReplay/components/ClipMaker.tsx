@@ -6,7 +6,7 @@ interface ClipMakerProps {
     minTime: number;
     maxTime: number;
     currentTime: number;
-    onExport: (start: number, end: number, fps: number) => void;
+    onExport: (start: number, end: number, fps: number, playbackSpeed: number) => void;
     isExporting: boolean;
 }
 
@@ -20,6 +20,7 @@ const ClipMaker: React.FC<ClipMakerProps> = ({
     const [start, setStart] = useState(minTime);
     const [end, setEnd] = useState(maxTime);
     const [fps, setFps] = useState(60);
+    const [speed, setSpeed] = useState(1.0);
 
     useEffect(() => {
         setStart((s) => Math.max(minTime, Math.min(maxTime, s)));
@@ -33,7 +34,7 @@ const ClipMaker: React.FC<ClipMakerProps> = ({
             alert("Start time must be less than end time.");
             return;
         }
-        onExport(start, end, fps);
+        onExport(start, end, fps, speed);
     };
 
     return (
@@ -72,6 +73,16 @@ const ClipMaker: React.FC<ClipMakerProps> = ({
             </div>
 
             <div className="d-flex align-items-center gap-2" style={{ width: "100%", justifyContent: "flex-end" }}>
+                <div className="d-flex align-items-center gap-1">
+                    <Form.Label className="mb-0 text-white" style={{ fontSize: "0.85rem" }}>Speed:</Form.Label>
+                    <Form.Control
+                        type="number"
+                        value={speed}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSpeed(Number(e.target.value))}
+                        step={0.1}
+                        style={{ width: "50px", padding: "2px 5px", height: "auto", fontSize: "0.85rem" }}
+                    />
+                </div>
 
                 <Form.Control
                     as="select"

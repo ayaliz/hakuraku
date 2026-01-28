@@ -118,9 +118,10 @@ export function buildHorsesCustomSeries(
     skillActivations: Record<number, { time: number; name: string; param: number[] }[]> | undefined,
     passiveStatModifiers: Record<number, { speed: number; stamina: number; power: number; guts: number; wisdom: number }> | undefined,
     otherEvents: Record<number, { time: number; duration: number; name: string }[]> | undefined,
-    courseId: number | undefined
+    courseId: number | undefined,
+    startDelayByIdx: Record<number, number>
 ) {
-    const data: Array<{ name: string; value: [number, number, string, string, string, number, number, number, number, number, number, number, number] }> = [];
+    const data: Array<{ name: string; value: [number, number, string, string, string, number, number, number, number, number, number, number, number, number] }> = [];
 
     // Pre-calculate distance category since it's same for all
     const distanceCategory = getDistanceCategory(goalInX);
@@ -136,6 +137,7 @@ export function buildHorsesCustomSeries(
         const maxHp = maxHpByIdx[i] ?? 1;
         const hp = h.hp ?? 0;
         const rate = consumptionRateByIdx[i] ?? 0;
+        const startDelay = startDelayByIdx[i] ?? 0;
 
         // Target speed calculation
         let minTarget = 0, maxTarget = 0;
@@ -231,7 +233,7 @@ export function buildHorsesCustomSeries(
             maxTarget = res.max;
         }
 
-        data.push({ name, value: [h.distance ?? 0, h.lanePosition ?? 0, name, teamColor, iconUrl, isBlocked, speed, accel, maxHp, hp, rate, minTarget, maxTarget] });
+        data.push({ name, value: [h.distance ?? 0, h.lanePosition ?? 0, name, teamColor, iconUrl, isBlocked, speed, accel, maxHp, hp, rate, minTarget, maxTarget, startDelay] });
     });
 
     const renderItem = (params: any, api: any) => {
@@ -517,7 +519,7 @@ export function createOptions(args: {
                     }
                 }
 
-                return `${has ? name + "<br/>" : ""}Distance: ${value[0].toFixed(2)}m<br/>Lane: ${Math.round(value[1])}<br/>Speed: ${speed.toFixed(2)} m/s<br/>Accel: ${accelStr} m/s²${hpStr}${targetStr}`;
+                return `${has ? name + "<br/>" : ""}Distance: ${value[0].toFixed(2)}m<br/>Lane: ${Math.round(value[1])}<br/>Speed: ${speed.toFixed(2)} m/s<br/>Accel: ${accelStr} m/s²${hpStr}${targetStr}<br/>Start delay: ${(value[13] ?? 0).toFixed(5)}`;
             }
         },
         grid: { top: 80, right: 16, bottom: 40, left: 50, containLabel: false },

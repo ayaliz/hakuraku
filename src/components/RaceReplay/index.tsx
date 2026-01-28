@@ -130,6 +130,12 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     useEffect(() => { setLegendSelection(prev => { const next: Record<string, boolean> = {}; legendNames.forEach(n => { next[n] = prev[n] ?? true; }); return next; }); }, [legendNames]);
     const onEvents = useMemo(() => ({ legendselectchanged: (e: any) => { if (e && e.selected) setLegendSelection(e.selected); } }), []);
 
+    const startDelayByIdx = useMemo(() => {
+        const map: Record<number, number> = {};
+        (raceData.horseResult ?? []).forEach((hr, idx) => { if (hr) map[idx] = hr.startDelayTime ?? 0; });
+        return map;
+    }, [raceData.horseResult]);
+
     const echartsRef = React.useRef<any>(null);
     const { isExporting, handleExport } = useRaceExport(echartsRef, renderTime, isPlaying, playPause, setRenderTime);
     const legendShadowSeries = useMemo(() => buildLegendShadowSeries(displayNames, horseInfoByIdx, trainerColors), [displayNames, horseInfoByIdx, trainerColors]);
@@ -156,9 +162,10 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                 skillActivations,
                 passiveStatModifiers,
                 combinedOtherEvents,
-                selectedTrackId ? +selectedTrackId : undefined
+                selectedTrackId ? +selectedTrackId : undefined,
+                startDelayByIdx
             ),
-        [interpolatedFrame, displayNames, horseInfoByIdx, trainerColors, legendSelection, toggles.speed, toggles.accel, accByIdx, toggles.blocked, toggles.hp, maxHpByIdx, goalInX, consumptionRateByIdx, trainedCharaByIdx, oonigeByIdx, lastSpurtStartDistances, trackSlopes, skillActivations, passiveStatModifiers, combinedOtherEvents, selectedTrackId]
+        [interpolatedFrame, displayNames, horseInfoByIdx, trainerColors, legendSelection, toggles.speed, toggles.accel, accByIdx, toggles.blocked, toggles.hp, maxHpByIdx, goalInX, consumptionRateByIdx, trainedCharaByIdx, oonigeByIdx, lastSpurtStartDistances, trackSlopes, skillActivations, passiveStatModifiers, combinedOtherEvents, selectedTrackId, startDelayByIdx]
     );
 
     const yMaxWithHeadroom = maxLanePosition + 3;

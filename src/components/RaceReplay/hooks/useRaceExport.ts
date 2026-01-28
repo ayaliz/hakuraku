@@ -9,7 +9,7 @@ export function useRaceExport(
 ) {
     const [isExporting, setIsExporting] = useState(false);
 
-    const handleExport = async (start: number, end: number, fps: number) => {
+    const handleExport = async (start: number, end: number, fps: number, playbackSpeed: number) => {
         if (isExporting) return;
         setIsExporting(true);
         const originalTime = renderTime;
@@ -59,7 +59,7 @@ export function useRaceExport(
 
             videoEncoder.configure(config);
 
-            const dt = 1 / fps;
+            const dt = playbackSpeed / fps;
             const destCanvas = document.createElement("canvas");
             const dpr = window.devicePixelRatio || 1;
             destCanvas.width = width * dpr;

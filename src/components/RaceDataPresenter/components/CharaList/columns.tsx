@@ -48,7 +48,7 @@ export const charaTableColumns: ColumnDescription<CharaTableData>[] = [
                         placement="bottom"
                         overlay={
                             <Tooltip id={`tooltip-time`}>
-                                The first value is the ingame time, the second is the simulation time. The ingame time is typically nonsense and heavily manipulated to match real world race times on this track.
+                                The first value is the in-game time; the second is the simulation time. The in-game time is typically inaccurate and heavily manipulated to match real-world race times on this track.
                             </Tooltip>
                         }
                     >
@@ -83,7 +83,7 @@ export const charaTableColumns: ColumnDescription<CharaTableData>[] = [
                         placement="bottom"
                         overlay={
                             <Tooltip id={`tooltip-start-delay`}>
-                                Ingame, a start delay of 0.08 or worse is marked as a late start. However, the most devestating effect of high start delay is the loss of 1 frame of acceleration which already occurrs at 0.066, so any start that loses that frame of acceleration is marked as a late start here
+                                Ingame, a start delay of 0.08 or worse is marked as a late start. However, the most devastating effect of high start delay is the loss of 1 frame of acceleration which already occurs at 0.066, so any start that loses that frame of acceleration is marked as a late start here
                             </Tooltip>
                         }
                     >
@@ -116,7 +116,7 @@ export const charaTableColumns: ColumnDescription<CharaTableData>[] = [
                         placement="bottom"
                         overlay={
                             <Tooltip id={`tooltip-spurt-delay`}>
-                                If an uma did a full last spurt, you should see a spurt delay &lt;3m as well as an observed speed matching the theoretical speed. (Theoretical speed calculation requires the correct track to be selected, see top left of Replay)
+                                If an Uma performed a full last spurt, you should see a spurt delay &lt; 3m as well as an observed speed matching the theoretical speed. (Theoretical speed calculation requires the correct track to be selected; see the top left of Replay.)
                             </Tooltip>
                         }
                     >
@@ -167,7 +167,7 @@ export const charaTableColumns: ColumnDescription<CharaTableData>[] = [
                         placement="bottom"
                         overlay={
                             <Tooltip id={`tooltip-hp-result`}>
-                                If the character ran out of HP, shows how far from the finish line they were when it happened. Otherwise shows remaining HP at the finish.
+                                If the Uma ran out of HP, this shows how far from the finish line they were when it occurred. Otherwise, it shows the remaining HP at the finish.
                             </Tooltip>
                         }
                     >

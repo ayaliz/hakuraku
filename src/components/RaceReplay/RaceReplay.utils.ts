@@ -21,7 +21,7 @@ export const labelStyle = (offsetY: number, backgroundColor = "#fff") => ({
 
 export function stackLabels(baseOffset = STACK_BASE_PX, gap = STACK_GAP_PX, backgroundColor?: string) {
     let n = 0;
-    return (text: string) => ({ ...labelStyle(baseOffset + n++ * gap, backgroundColor), formatter: text });
+    return (text: string, overrideColor?: string) => ({ ...labelStyle(baseOffset + n++ * gap, overrideColor || backgroundColor), formatter: text });
 }
 
 export function mixWithWhite(hex: string, ratio: number) {

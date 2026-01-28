@@ -22,6 +22,7 @@ export type SpeedCalculationParams = {
     isDueling?: boolean;
     isRushed?: boolean;
     rushedType?: number;
+    activeSpeedDebuff?: number;
 };
 
 export type TargetSpeedResult = {
@@ -129,6 +130,7 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
         isDueling,
         isRushed,
         rushedType,
+        activeSpeedDebuff,
     } = params;
 
     const trackSpeedMultiplier = getTrackStatThresholdModifier(courseId || 0, { speed: speedStat, stamina: staminaStat, power: powerStat, guts: gutsStat, wisdom: wisdomStat }, mood);
@@ -177,6 +179,7 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
     }
 
     baseTargetSpeed += (activeSpeedBuff || 0);
+    baseTargetSpeed -= (activeSpeedDebuff || 0);
 
     if (isSpotStruggle) {
         baseTargetSpeed += Math.pow(500 * adjustedGuts, 0.6) * 0.0001;

@@ -74,6 +74,23 @@ export function getActiveSpeedModifier(skillId: number): number {
     return speedInc;
 }
 
+export function getActiveSpeedDebuff(skillId: number): number {
+    const def = getSkillDef(skillId);
+    if (!def || !def.condition_groups) return 0;
+
+    let speedDec = 0;
+    def.condition_groups.forEach(group => {
+        if (group.effects) {
+            group.effects.forEach(eff => {
+                if (eff.type === 21) {
+                    speedDec += Math.abs(eff.value) / 10000;
+                }
+            });
+        }
+    });
+    return speedDec;
+}
+
 export function hasSkillEffect(skillId: number, effectType: number): boolean {
     const def = getSkillDef(skillId);
     if (!def || !def.condition_groups || def.condition_groups.length === 0) return false;

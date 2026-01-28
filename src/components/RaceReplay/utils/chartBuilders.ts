@@ -41,7 +41,8 @@ import { getCharaIcon, formatSigned, stackLabels, labelStyle, mixWithWhite } fro
 import { InterpolatedFrame } from "../RaceReplay.types";
 import { calculateTargetSpeed, getDistanceCategory, calculateReferenceHpConsumption } from "./speedCalculations";
 import { TrainedCharaData } from "../../../data/TrainedCharaData";
-import { getActiveSpeedModifier, getSkillBaseTime } from "./SkillDataUtils";
+
+import { getActiveSpeedModifier, getSkillBaseTime, getActiveSpeedDebuff } from "./SkillDataUtils";
 
 const BLOCKED_ICON = require("../../../data/umamusume_icons/blocked.png");
 
@@ -164,19 +165,45 @@ export function buildHorsesCustomSeries(
             const greenStats = passiveStatModifiers?.[i];
 
             let activeSpeedBuff = 0;
-            if (skillActivations && skillActivations[i]) {
+            if (skillActivations) {
                 const currentTime = interpolated.time;
-                skillActivations[i].forEach(activation => {
+                // Buffs (self-cast)
+                if (skillActivations[i]) {
+                    skillActivations[i].forEach(activation => {
+                        const skillId = activation.param[1];
+                        const baseTime = getSkillBaseTime(skillId);
+                        if (baseTime > 0) {
+                            const duration = (baseTime / 10000) * (goalInX / 1000);
+                            if (currentTime >= activation.time && currentTime < activation.time + duration) {
+                                activeSpeedBuff += getActiveSpeedModifier(skillId);
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Debuffs
+            let activeSpeedDebuff = 0;
+            if (skillActivations) {
+                const currentTime = interpolated.time;
+                Object.values(skillActivations).flat().forEach(activation => {
                     const skillId = activation.param[1];
-                    const baseTime = getSkillBaseTime(skillId);
-                    if (baseTime > 0) {
-                        const duration = (baseTime / 10000) * (goalInX / 1000);
-                        if (currentTime >= activation.time && currentTime < activation.time + duration) {
-                            activeSpeedBuff += getActiveSpeedModifier(skillId);
+                    const targetMask = activation.param[4];
+                    const isTarget = (targetMask & (1 << i)) !== 0;
+
+                    if (isTarget) {
+                        const baseTime = getSkillBaseTime(skillId);
+                        if (baseTime > 0) {
+                            const duration = (baseTime / 10000) * (goalInX / 1000);
+                            if (currentTime >= activation.time && currentTime < activation.time + duration) {
+                                activeSpeedDebuff += getActiveSpeedDebuff(skillId);
+                            }
                         }
                     }
                 });
             }
+
+
 
             // Competition Events (Spot Struggle, Dueling, Rushed)
             let isSpotStruggle = false;
@@ -223,10 +250,11 @@ export function buildHorsesCustomSeries(
                 courseId,
                 gutsStat: trainedChara.guts,
                 staminaStat: trainedChara.stamina,
+                activeSpeedDebuff,
                 isSpotStruggle,
                 isDueling,
                 isRushed,
-                rushedType
+                rushedType,
             });
 
             minTarget = res.min;
@@ -420,6 +448,27 @@ export function buildSkillLabels(
             .filter(s => { const dur = s.param?.[2]; const secs = dur > 0 ? dur / 10000 : 2; return time >= s.time && time < s.time + secs && !EXCLUDE_SKILL_RE.test(s.name); })
             .sort((a, b) => a.time - b.time || a.name.localeCompare(b.name))
             .forEach((s) => items.push({ value: base, id: `skill-${i}-${s.time}-${s.name}`, label: next(s.name) }));
+
+        // Add incoming debuffs to labels
+        Object.values(skillActivations ?? {}).flat()
+            .filter(s => {
+                // Ensure it targets this horse 'i'
+                const targetMask = s.param?.[4] ?? 0;
+                if ((targetMask & (1 << i)) === 0) return false;
+
+                // Do not show for self-cast (handled above for buffs, or just avoid duplication)
+                if ((skillActivations[i] ?? []).some(self => self === s)) return false;
+
+                if (getActiveSpeedDebuff(s.param[1]) <= 0) return false;
+
+                const baseTime = getSkillBaseTime(s.param[1]);
+                const dur = baseTime > 0 ? (baseTime / 10000) * (goalInX / 1000) : 2.0;
+                return time >= s.time && time < s.time + dur && !EXCLUDE_SKILL_RE.test(s.name);
+            })
+            .forEach((s) => items.push({ value: base, id: `debuff-${i}-${s.time}-${s.name}`, label: next(`↓ ${s.name}`, "#ffcccb") }));
+
+
+
         (otherEvents[i] ?? [])
             .filter(e => time >= e.time && time < e.time + e.duration)
             .sort((a, b) => a.time - b.time || a.name.localeCompare(b.name))

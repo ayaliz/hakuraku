@@ -78,6 +78,7 @@ type CharaTableData = {
     isLateStart?: boolean;
     lastSpurtTargetSpeed?: number;
     maxAdjustedSpeed?: number;
+    hpOutcome?: { type: 'died'; distance: number; deficit: number } | { type: 'survived'; hp: number };
 };
 
 const getFactorCategory = (factorId: number): number => {
@@ -308,6 +309,42 @@ const charaTableColumns: ColumnDescription<CharaTableData>[] = [
                     ) : null}
                 </div>
             );
+        },
+    },
+    {
+        dataField: 'hpOutcome',
+        isDummyField: true,
+        text: 'HP Result',
+        headerFormatter: () => {
+            return (
+                <span>
+                    HP Result{' '}
+                    <OverlayTrigger
+                        placement="bottom"
+                        overlay={
+                            <Tooltip id={`tooltip-hp-result`}>
+                                If the character ran out of HP, shows how far from the finish line they were when it happened. Otherwise shows remaining HP at the finish.
+                            </Tooltip>
+                        }
+                    >
+                        <span style={{ cursor: 'help', borderBottom: '1px dotted #fff' }}>ⓘ</span>
+                    </OverlayTrigger>
+                </span>
+            );
+        },
+        formatter: (cell, row) => {
+            if (!row.hpOutcome) return '-';
+            if (row.hpOutcome.type === 'died') {
+                return (
+                    <div>
+                        <span style={{ color: '#dc3545', fontWeight: 'bold' }}>Died {row.hpOutcome.distance.toFixed(2)}m early</span>
+                        <br />
+                        <span style={{ fontSize: '0.85em', color: '#dc3545' }}>Missed ~{row.hpOutcome.deficit.toFixed(0)} HP</span>
+                    </div>
+                );
+            } else {
+                return <span style={{ color: '#28a745', fontWeight: 'bold' }}>Survived with {Math.round(row.hpOutcome.hp)} HP</span>;
+            }
         },
     },
     {
@@ -588,8 +625,9 @@ const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData, detected
         const lastSpurtTargetSpeed = lsRes.base;
 
         let maxAdjSpeed = 0;
+        let adjustedGuts = 0;
         if (raceData.frame) {
-            const adjustedGuts = adjustStat(trainedCharaData.guts, data['motivation'], passiveStats.guts);
+            adjustedGuts = adjustStat(trainedCharaData.guts, data['motivation'], passiveStats.guts);
 
             let wasType28Active = false;
 
@@ -724,6 +762,33 @@ const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData, detected
             isLateStart,
             lastSpurtTargetSpeed,
             maxAdjustedSpeed: maxAdjSpeed,
+            hpOutcome: (() => {
+                const frames = raceData.frame ?? [];
+                if (frames.length === 0) return undefined;
+
+                const firstDeathFrame = frames.find(f => (f.horseFrame?.[frameOrder]?.hp ?? 1) === 0);
+
+                if (firstDeathFrame) {
+                    const dist = firstDeathFrame.horseFrame?.[frameOrder]?.distance ?? 0;
+                    if (dist < raceDistance - 0.1) {
+                        const distance = raceDistance - dist;
+                        const baseSpeed = 20.0 - (raceDistance - 2000) / 1000;
+                        const statusModifier = 1.0 + 200.0 / Math.sqrt(600.0 * adjustedGuts);
+                        const currentSpeed = maxAdjSpeed || lastSpurtTargetSpeed || 20;
+
+                        // HPConsumptionPerSecond = 20.0 * (CurrentSpeed - BaseSpeed + 12.0)^2 / 144.0 * StatusModifier * GroundModifier
+                        const hpPerSec = 20.0 * Math.pow(currentSpeed - baseSpeed + 12.0, 2) / 144.0 * statusModifier * 1.0;
+                        const time = distance / currentSpeed;
+                        const deficit = time * hpPerSec;
+
+                        return { type: 'died', distance, deficit };
+                    }
+                }
+
+                const lastFrame = frames[frames.length - 1];
+                const hp = lastFrame.horseFrame?.[frameOrder]?.hp ?? 0;
+                return { type: 'survived', hp };
+            })(),
         };
     });
 

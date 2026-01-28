@@ -20,6 +20,7 @@ type RaceDataPageState = {
     shareError: string,
     shareKey: string,
     shareCache: ShareCache,
+    horseActVersion: string | undefined,
 };
 
 export default class RaceDataPage extends React.Component<{}, RaceDataPageState> {
@@ -40,6 +41,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             shareError: '',
             shareKey: '',
             shareCache: {},
+            horseActVersion: undefined,
         };
 
         this.fileInputRef = React.createRef();
@@ -130,6 +132,8 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             return;
         }
 
+        const horseActVersion = json['horseACT_version'];
+
         // --- OLD FORMAT LOGIC BELOW ---
         const raceHorseArray = json['<RaceHorse>k__BackingField'];
         if (!Array.isArray(raceHorseArray)) {
@@ -208,13 +212,14 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             return;
         }
 
-        this.finalizeParsing(horseInfo, raceScenario, detectedCourseId);
+        this.finalizeParsing(horseInfo, raceScenario, detectedCourseId, horseActVersion);
     }
 
     parseNewFormat(json: any) {
         try {
             const rawHorses = json['race_horse_data_array'];
             const trainedCharas = json['trained_chara_array'] || [];
+            const horseActVersion = json['horseACT_version'];
 
             let detectedCourseId: number | undefined = undefined;
             const courseSet = json['race_course_set'] || json['RaceCourseSet'];
@@ -279,14 +284,14 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
                 };
             }).filter((h: any) => h !== null);
 
-            this.finalizeParsing(horseInfo, json['race_scenario'], detectedCourseId);
+            this.finalizeParsing(horseInfo, json['race_scenario'], detectedCourseId, horseActVersion);
 
         } catch (err: any) {
             this.setState({ error: `Failed to parse new JSON format: ${err.message}` });
         }
     }
 
-    finalizeParsing(horseInfo: any[], raceScenario: string, detectedCourseId?: number) {
+    finalizeParsing(horseInfo: any[], raceScenario: string, detectedCourseId?: number, horseActVersion?: string) {
         const parsedRaceData = deserializeFromBase64(raceScenario);
         if (!parsedRaceData) {
             this.setState({ error: 'Failed to parse race scenario data' });
@@ -303,6 +308,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             shareStatus: '',
             shareError: '',
             shareKey: '',
+            horseActVersion: horseActVersion,
         });
     }
 
@@ -438,10 +444,15 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             <hr />
 
             {this.state.parsedRaceData && this.state.parsedHorseInfo ? (
-                <RaceDataPresenter
-                    raceHorseInfo={this.state.parsedHorseInfo}
-                    raceData={this.state.parsedRaceData}
-                    detectedCourseId={this.state.detectedCourseId} />
+                <>
+                    {(!this.state.horseActVersion || this.state.horseActVersion !== '1.0.2') && <Alert variant="info">
+                        The version of horseACT used to generate this file appears to be outdated. A newer version is available at <a href="https://github.com/ayaliz/horseACT/releases/latest" target="_blank" rel="noreferrer">https://github.com/ayaliz/horseACT/releases/latest</a>. It's recommended to update by replacing your existing horseACT.dll.
+                    </Alert>}
+                    <RaceDataPresenter
+                        raceHorseInfo={this.state.parsedHorseInfo}
+                        raceData={this.state.parsedRaceData}
+                        detectedCourseId={this.state.detectedCourseId} />
+                </>
             ) : (
                 <Alert variant="info">
                     <p>

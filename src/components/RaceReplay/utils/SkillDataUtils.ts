@@ -19,7 +19,19 @@ const skillsMap = new Map<number, SkillDef>();
 });
 
 export function getSkillDef(skillId: number): SkillDef | undefined {
-    return skillsMap.get(skillId);
+    const direct = skillsMap.get(skillId);
+    if (direct) return direct;
+
+    // Handle inherited unique skills (9xxxxx)
+    // These are looked up by converting to 1xxxxx and checking gene_version
+    if (skillId >= 900000 && skillId < 1000000) {
+        const parentId = skillId - 800000;
+        const parentDef = skillsMap.get(parentId);
+        if (parentDef && (parentDef as any).gene_version) {
+            return (parentDef as any).gene_version;
+        }
+    }
+    return undefined;
 }
 
 export function getPassiveStatModifiers(skillId: number): { [key: string]: number } {
@@ -60,6 +72,15 @@ export function getActiveSpeedModifier(skillId: number): number {
         });
     }
     return speedInc;
+}
+
+export function hasSkillEffect(skillId: number, effectType: number): boolean {
+    const def = getSkillDef(skillId);
+    if (!def || !def.condition_groups || def.condition_groups.length === 0) return false;
+
+    return def.condition_groups.some(group =>
+        group.effects && group.effects.some(eff => eff.type === effectType)
+    );
 }
 
 export function getSkillBaseTime(skillId: number): number {

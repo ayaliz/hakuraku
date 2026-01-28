@@ -38,7 +38,7 @@ export const SLOPE_DOWN_FILL = "rgba(221, 221, 255, 0.28)";
 export const SLOPE_DIAG_LINE = "rgba(0,0,0,0.35)";
 export const SLOPE_HALF_RATIO = 0.2;
 
-export const EXCLUDE_SKILL_RE = /(standard\s*distance|-handed|savvy|days|conditions| runner| racecourse|target in sight|focus|concentration)/i;
+export const EXCLUDE_SKILL_RE = /(standard\s*distance|-handed|savvy|days|conditions|winter runner|summer runner|spring runner|fall runner| racecourse|target in sight|focus|concentration)/i;
 export const TEMPTATION_TEXT: Record<number, string> = { 1: "Rushed (Late)", 2: "Rushed (Pace)", 3: "Rushed (Front)", 4: "Rushed (Speed up)" };
 
 export const TOOLBAR_GAP = 12;

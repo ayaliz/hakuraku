@@ -11,6 +11,7 @@ import {
     getCharaActivatedSkillIds,
 } from "../../../data/RaceDataUtils";
 import { fromRaceHorseData, TrainedCharaData } from "../../../data/TrainedCharaData";
+import { adjustStat } from "../../RaceReplay/utils/speedCalculations";
 import * as UMDatabaseUtils from "../../../data/UMDatabaseUtils";
 import UMDatabaseWrapper from "../../../data/UMDatabaseWrapper";
 import CardNamePresenter from "../../CardNamePresenter";
@@ -23,6 +24,20 @@ import {
     runningStyleLabel,
     unknownCharaTag,
 } from "../utils/RacePresenterUtils";
+import {
+    calculateTargetSpeed,
+    getDistanceCategory,
+    calculateReferenceHpConsumption
+} from "../../RaceReplay/utils/speedCalculations";
+import {
+    getPassiveStatModifiers,
+    getActiveSpeedModifier,
+    getSkillBaseTime,
+    hasSkillEffect
+} from "../../RaceReplay/utils/SkillDataUtils";
+import { useAvailableTracks } from "../../RaceReplay/hooks/useAvailableTracks";
+import { useGuessTrack } from "../../RaceReplay/hooks/useGuessTrack";
+import courseData from "../../../data/tracks/course_data.json";
 
 type SupportCardEntry = {
     position: number;
@@ -57,6 +72,9 @@ type CharaTableData = {
 
     deck: SupportCardEntry[],
     parents: ParentEntry[],
+
+    lastSpurtTargetSpeed?: number;
+    maxAdjustedSpeed?: number;
 };
 
 const getFactorCategory = (factorId: number): number => {
@@ -110,7 +128,7 @@ const aggregateFactors = (parents: ParentEntry[]): AggregatedFactor[] => {
         p.factors.forEach(f => {
             const formatted = formatFactor(f.id);
             const name = formatted ? formatted.name : `Factor ${f.id}`;
-            
+
             let itemLevel = f.level;
             if (!itemLevel || itemLevel === 0) {
                 const cat = getFactorCategory(f.id);
@@ -131,10 +149,10 @@ const aggregateFactors = (parents: ParentEntry[]): AggregatedFactor[] => {
 
     const result: AggregatedFactor[] = [];
     map.forEach((val, name) => {
-        result.push({ 
-            id: val.representativeId, 
-            level: val.totalLevel, 
-            nameOverride: name 
+        result.push({
+            id: val.representativeId,
+            level: val.totalLevel,
+            nameOverride: name
         });
     });
 
@@ -191,16 +209,16 @@ const charaTableColumns: ColumnDescription<CharaTableData>[] = [
     {
         dataField: 'lastSpurt',
         isDummyField: true,
-        text: 'Spurt delay',
+        text: 'Last spurt',
         headerFormatter: () => {
             return (
                 <span>
-                    Spurt delay{' '}
+                    Last spurt{' '}
                     <OverlayTrigger
                         placement="top"
                         overlay={
                             <Tooltip id={`tooltip-spurt-delay`}>
-                                High values indicate a lack of HP when entering late-race. Values below roughly 4m aren't indicative of any problems with HP.
+                                If an uma did a full last spurt, you should see a spurt delay &lt;3m as well as an observed speed matching the theoretical speed
                             </Tooltip>
                         }
                     >
@@ -220,8 +238,22 @@ const charaTableColumns: ColumnDescription<CharaTableData>[] = [
             const delay = dist - phase3Start;
             const color = getColorForSpurtDelay(delay);
 
+            const diff = (row.maxAdjustedSpeed && row.lastSpurtTargetSpeed)
+                ? row.maxAdjustedSpeed - row.lastSpurtTargetSpeed
+                : 0;
+            const reached = diff >= -0.05;
+
             return (
-                <span style={{ color, fontWeight: 'bold' }}>{delay.toFixed(2)}m</span>
+                <div style={{ lineHeight: 1.2 }}>
+                    <div>
+                        Delay: <span style={{ color, fontWeight: 'bold' }}>{delay.toFixed(2)}m</span>
+                    </div>
+                    {row.maxAdjustedSpeed && row.lastSpurtTargetSpeed ? (
+                        <div style={{ fontSize: '0.85em', color: reached ? '#28a745' : '#dc3545' }} title="Max Speed Reached vs Theoretical Target">
+                            <span style={{ color: '#fff' }}>Speed:</span> {row.maxAdjustedSpeed.toFixed(2)} <span style={{ opacity: 0.8 }}>({diff > 0 ? '+' : ''}{diff.toFixed(2)})</span>
+                        </div>
+                    ) : null}
+                </div>
             );
         },
     },
@@ -270,15 +302,15 @@ const renderParentGroup = (parents: ParentEntry[], groupName: string) => {
     const aggregatedFactors = aggregateFactors(sortedParents);
 
     return (
-        <div 
-            className="mb-2 p-2 border border-secondary rounded" 
+        <div
+            className="mb-2 p-2 border border-secondary rounded"
             style={{ backgroundColor: 'rgba(0,0,0,0.2)', width: '100%' }}
         >
             <div className="d-flex align-items-center mb-2 flex-wrap">
                 {sortedParents.map((p, idx) => (
-                     <img 
+                    <img
                         key={idx}
-                        src={getCharaImageUrl(p.cardId)} 
+                        src={getCharaImageUrl(p.cardId)}
                         alt={String(p.cardId)}
                         title={`ID: ${p.cardId} (Pos: ${p.positionId})`}
                         style={{ width: '64px', height: '64px', objectFit: 'contain', marginRight: '8px', marginBottom: '4px' }}
@@ -291,18 +323,18 @@ const renderParentGroup = (parents: ParentEntry[], groupName: string) => {
                 {aggregatedFactors.length === 0 ? <span className="text-muted">No factors</span> : aggregatedFactors.map((f, fIdx) => {
                     let name = f.nameOverride;
                     if (!name) {
-                         const formatted = formatFactor(f.id); 
-                         name = formatted ? formatted.name : `Factor ${f.id}`;
+                        const formatted = formatFactor(f.id);
+                        name = formatted ? formatted.name : `Factor ${f.id}`;
                     }
                     return (
-                        <Badge 
-                            key={fIdx} 
+                        <Badge
+                            key={fIdx}
                             variant="dark"
-                            className="mb-1 mr-1" 
-                            style={{ 
-                                marginRight: '3px', 
-                                backgroundColor: '#343a40', 
-                                border: '1px solid #555' 
+                            className="mb-1 mr-1"
+                            style={{
+                                marginRight: '3px',
+                                backgroundColor: '#343a40',
+                                border: '1px solid #555'
                             }}
                         >
                             <span style={{ color: getFactorColor(f.id) }}>
@@ -357,11 +389,11 @@ const charaTableExpandRow: ExpandRowProps<CharaTableData> = {
                                         src={`https://gametora.com/images/umamusume/supports/tex_support_card_${card.id}.png`}
                                         alt={String(card.id)}
                                         title={`ID: ${card.id}`}
-                                        style={{ 
-                                            width: '85px', 
-                                            height: 'auto', 
-                                            borderRadius: '5px', 
-                                            boxShadow: '0 1px 3px rgba(0,0,0,0.3)' 
+                                        style={{
+                                            width: '85px',
+                                            height: 'auto',
+                                            borderRadius: '5px',
+                                            boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
                                         }}
                                         onError={(e) => {
                                             const target = e.target as HTMLImageElement;
@@ -398,14 +430,26 @@ const charaTableExpandRow: ExpandRowProps<CharaTableData> = {
 type CharaListProps = {
     raceHorseInfo: any[];
     raceData: RaceSimulateData;
+    detectedCourseId?: number;
+    skillActivations?: Record<number, { time: number; name: string; param: number[] }[]>;
+    otherEvents?: Record<number, { time: number; duration: number; name: string }[]>;
 };
 
-const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData }) => {
+const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData, detectedCourseId, skillActivations, otherEvents }) => {
+    const raceDistance = calculateRaceDistance(raceData);
+
+    const availableTracks = useAvailableTracks(raceDistance);
+    const { selectedTrackId } = useGuessTrack(detectedCourseId, raceDistance, availableTracks);
+    const effectiveCourseId = selectedTrackId ? parseInt(selectedTrackId) : undefined;
+
     if (!raceHorseInfo || raceHorseInfo.length === 0) {
         return null;
     }
 
-    const raceDistance = calculateRaceDistance(raceData);
+    const distanceCategory = getDistanceCategory(raceDistance);
+    const trackSlopes = effectiveCourseId ? (courseData as any)[effectiveCourseId]?.slopes ?? [] : [];
+
+
 
     const l: CharaTableData[] = raceHorseInfo.map(data => {
         const frameOrder = data['frame_order'] - 1;
@@ -413,6 +457,163 @@ const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData }) => {
         const horseResult = raceData.horseResult[frameOrder];
 
         const trainedCharaData = fromRaceHorseData(data);
+
+
+        // Calculate Last Spurt Speed
+        const activatedSkillIds = getCharaActivatedSkillIds(raceData, frameOrder);
+        const passiveStats = { speed: 0, stamina: 0, power: 0, guts: 0, wisdom: 0 };
+        activatedSkillIds.forEach(id => {
+            const mods = getPassiveStatModifiers(id);
+            passiveStats.speed += mods.speed || 0;
+            passiveStats.stamina += mods.stamina || 0;
+            passiveStats.power += mods.power || 0;
+            passiveStats.guts += mods.guts || 0;
+            passiveStats.wisdom += mods.wisdom || 0;
+        });
+
+        // Determine strategy
+        const runningStyleStr = data.running_style ?? 0;
+        const strategy = +runningStyleStr > 0 ? +runningStyleStr : (trainedCharaData.rawData?.param?.runningStyle ?? 1);
+
+        // Oonige
+        let isOonige = false;
+        if (activatedSkillIds.has(202051)) isOonige = true;
+
+        const distProficiency = trainedCharaData.properDistances[distanceCategory] ?? 1;
+
+        const lsRes = calculateTargetSpeed({
+            courseDistance: raceDistance,
+            currentDistance: raceDistance, // Force late game check
+            speedStat: trainedCharaData.speed,
+            wisdomStat: trainedCharaData.wiz,
+            powerStat: trainedCharaData.pow,
+            gutsStat: trainedCharaData.guts,
+            staminaStat: trainedCharaData.stamina,
+            strategy,
+            distanceProficiency: distProficiency,
+            mood: data['motivation'],
+            isOonige,
+            inLastSpurt: true, // Force last spurt
+            slope: 0,
+            greenSkillBonuses: passiveStats,
+            activeSpeedBuff: 0,
+            courseId: effectiveCourseId
+        });
+
+        const lastSpurtTargetSpeed = lsRes.base;
+
+        let maxAdjSpeed = 0;
+        if (raceData.frame) {
+            const adjustedGuts = adjustStat(trainedCharaData.guts, data['motivation'], passiveStats.guts);
+
+            let wasType28Active = false;
+
+            raceData.frame.forEach((frame, fIdx) => {
+                const h = frame.horseFrame?.[frameOrder];
+                if (!h) return;
+                if ((h.distance ?? 0) > raceDistance) return;
+                const speed = (h.speed ?? 0) / 100;
+                if (speed <= 0) return;
+                const time = frame.time ?? 0;
+
+                let buff = 0;
+                let isType28Active = false;
+
+                // Skills
+                if (skillActivations && skillActivations[frameOrder]) {
+                    skillActivations[frameOrder].forEach(s => {
+                        const baseTime = getSkillBaseTime(s.param[1]);
+                        const duration = baseTime > 0 ? (baseTime / 10000) * (raceDistance / 1000) : 2.0;
+                        if (time >= s.time && time < s.time + duration) {
+                            buff += getActiveSpeedModifier(s.param[1]);
+                            if (hasSkillEffect(s.param[1], 28)) {
+                                isType28Active = true;
+                            }
+                        }
+                    });
+                }
+
+                const shouldSkip = isType28Active || wasType28Active;
+                wasType28Active = isType28Active;
+
+                if (shouldSkip) return;
+
+                // Events
+                if (otherEvents && otherEvents[frameOrder]) {
+                    otherEvents[frameOrder].forEach(e => {
+                        if (time >= e.time && time < e.time + e.duration) {
+                            const name = e.name || "";
+                            if (name.includes("Spot Struggle") || name.includes("Competes (Pos)")) {
+                                buff += Math.pow(500 * adjustedGuts, 0.6) * 0.0001;
+                            }
+                            if (name.includes("Dueling") || name.includes("Competes (Speed)")) {
+                                buff += Math.pow(200 * adjustedGuts, 0.708) * 0.0001;
+                            }
+
+                        }
+                    });
+                }
+
+                // Downhill
+                const dist = h.distance ?? 0;
+                const currentSlopeObj = trackSlopes.find((s: any) => dist >= s.start && dist < s.start + s.length);
+                const currentSlope = currentSlopeObj?.slope ?? 0;
+
+                if (currentSlope < 0) {
+                    // Check for Downhill Mode
+                    const nextFrame = raceData.frame[fIdx + 1];
+                    if (nextFrame) {
+                        const hNext = nextFrame.horseFrame?.[frameOrder];
+                        if (hNext) {
+                            const dt = (nextFrame.time ?? 0) - time;
+                            if (dt > 0) {
+                                const rate = ((h.hp ?? 0) - (hNext.hp ?? 0)) / dt;
+                                const expected = calculateReferenceHpConsumption(speed, raceDistance);
+                                if (expected > 0 && rate > 0 && rate < expected * 0.8) {
+                                    buff += 0.3 + Math.abs(currentSlope) / 1000;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                let isDecelerating = false;
+
+                // Check previous (Backward diff)
+                const prevFrame = fIdx > 0 ? raceData.frame[fIdx - 1] : undefined;
+                if (prevFrame) {
+                    const hPrev = prevFrame.horseFrame?.[frameOrder];
+                    if (hPrev) {
+                        const prevSpeed = (hPrev.speed ?? 0) / 100;
+                        const dt = (time - (prevFrame.time ?? 0));
+                        if (dt > 0) {
+                            const accel = (speed - prevSpeed) / dt;
+                            if (accel < -0.05) isDecelerating = true;
+                        }
+                    }
+                }
+
+                // Check next (Forward diff) - Catches the moment a buff drops but speed hasn't
+                const nextFrame = fIdx < raceData.frame.length - 1 ? raceData.frame[fIdx + 1] : undefined;
+                if (!isDecelerating && nextFrame) {
+                    const hNext = nextFrame.horseFrame?.[frameOrder];
+                    if (hNext) {
+                        const nextSpeed = (hNext.speed ?? 0) / 100;
+                        const dt = ((nextFrame.time ?? 0) - time);
+                        if (dt > 0) {
+                            const accel = (nextSpeed - speed) / dt;
+                            if (accel < -0.05) isDecelerating = true;
+                        }
+                    }
+                }
+
+                if (isDecelerating) return;
+
+                const adj = speed - buff;
+                if (adj > maxAdjSpeed) maxAdjSpeed = adj;
+            });
+        }
+
         return {
             trainedChara: trainedCharaData,
             chara: UMDatabaseWrapper.charas[trainedCharaData.charaId],
@@ -426,12 +627,15 @@ const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData }) => {
             popularityMarks: data['popularity_mark_rank_array'],
             motivation: data['motivation'],
 
-            activatedSkills: getCharaActivatedSkillIds(raceData, frameOrder),
+            activatedSkills: activatedSkillIds,
 
             raceDistance: raceDistance,
 
             deck: data.deck || [],
             parents: data.parents || [],
+
+            lastSpurtTargetSpeed,
+            maxAdjustedSpeed: maxAdjSpeed,
         };
     });
 

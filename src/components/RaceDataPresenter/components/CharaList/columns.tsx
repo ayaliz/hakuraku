@@ -94,7 +94,7 @@ export const charaTableColumns: ColumnDescription<CharaTableData>[] = [
         },
         formatter: (cell, row) => (
             <>
-                {row.startDelay !== undefined ? row.startDelay.toFixed(5) : '-'}
+                {row.startDelay !== undefined ? row.startDelay.toFixed(5) + "s" : '-'}
                 <br />
                 {row.isLateStart ? (
                     <span style={{ color: '#dc3545', fontWeight: 'bold', fontSize: '0.85em' }}>Late start</span>
@@ -116,7 +116,7 @@ export const charaTableColumns: ColumnDescription<CharaTableData>[] = [
                         placement="bottom"
                         overlay={
                             <Tooltip id={`tooltip-spurt-delay`}>
-                                If an Uma performed a full last spurt, you should see a spurt delay &lt; 3m as well as an observed speed matching the theoretical speed. (Theoretical speed calculation requires the correct track to be selected; see the top left of Replay.)
+                                If an Uma performed a full last spurt, you should see a spurt delay &lt; 3m as well as an observed speed matching the theoretical speed. (Theoretical speed calculation requires the correct track to be selected; see the top left of Replay.) This data may look messed up for career races due to the hidden +400 stat modifier.
                             </Tooltip>
                         }
                     >

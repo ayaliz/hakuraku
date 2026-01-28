@@ -276,12 +276,114 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     const clampedRenderTime = clamp(renderTime, startTime, endTime);
 
     const toggleDefs = [
-        { id: "skills" as const, label: "Skill labels" },
-        { id: "hp" as const, label: "HP Bar" },
-        { id: "blocked" as const, label: "Block indicator" },
-        { id: "slopes" as const, label: "Slopes" },
-        { id: "speed" as const, label: "Speed [m/s]" },
-        { id: "accel" as const, label: "Acceleration [m/s^2]" },
+        {
+            id: "skills" as const,
+            label: (
+                <span>
+                    Skill labels
+                    <OverlayTrigger
+                        placement="top"
+                        overlay={
+                            <Tooltip id="skills-info-tooltip">
+                                Toggles popups above Umas' heads to display skill procs and assorted race events like dueling.
+                            </Tooltip>
+                        }
+                    >
+                        <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                    </OverlayTrigger>
+                </span>
+            )
+        },
+        {
+            id: "hp" as const,
+            label: (
+                <span>
+                    HP Bar
+                    <OverlayTrigger
+                        placement="top"
+                        overlay={
+                            <Tooltip id="hp-info-tooltip">
+                                Toggles an HP bar to visualize remaining HP; displays numeric values and estimates for time to live during late-race.
+                            </Tooltip>
+                        }
+                    >
+                        <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                    </OverlayTrigger>
+                </span>
+            )
+        },
+        {
+            id: "blocked" as const,
+            label: (
+                <span>
+                    Block indicator
+                    <OverlayTrigger
+                        placement="top"
+                        overlay={
+                            <Tooltip id="blocked-info-tooltip">
+                                Directly received from the server, but due to the low frequency of race frames during most of the race, short blocks can be missed.
+                            </Tooltip>
+                        }
+                    >
+                        <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                    </OverlayTrigger>
+                </span>
+            )
+        },
+        {
+            id: "slopes" as const,
+            label: (
+                <span>
+                    Slopes
+                    <OverlayTrigger
+                        placement="top"
+                        overlay={
+                            <Tooltip id="slopes-info-tooltip">
+                                Visualizes uphills and downhills on the replay; the visuals are not to scale - refer to the value displayed at the start of each slope for its angle.
+                            </Tooltip>
+                        }
+                    >
+                        <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                    </OverlayTrigger>
+                </span>
+            )
+        },
+        {
+            id: "speed" as const,
+            label: (
+                <span>
+                    Speed [m/s]
+                    <OverlayTrigger
+                        placement="top"
+                        overlay={
+                            <Tooltip id="speed-info-tooltip">
+                                Directly received from the server for each race frame; inter-frame values are interpolated.
+                            </Tooltip>
+                        }
+                    >
+                        <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                    </OverlayTrigger>
+                </span>
+            )
+        },
+        {
+            id: "accel" as const,
+            label: (
+                <span>
+                    Acceleration [m/s^2]
+                    <OverlayTrigger
+                        placement="top"
+                        overlay={
+                            <Tooltip id="accel-info-tooltip">
+                                Not directly received from the server, derived via the speed change between the current and next race frame.
+                            </Tooltip>
+                        }
+                    >
+                        <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                    </OverlayTrigger>
+                </span>
+            )
+        },
         {
             id: "heuristics" as const,
             label: (
@@ -291,7 +393,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                         placement="top"
                         overlay={
                             <Tooltip id="heuristics-info-tooltip">
-                                Attempts to display when Umas are in pace up, pace down, overtake or speed up mode during position keep
+                                Attempts to display when Umas are in Pace Up, Pace Down, Overtake, or Speed Up mode during Position Keep.
                             </Tooltip>
                         }
                     >
@@ -300,8 +402,42 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                 </span>
             )
         },
-        { id: "course" as const, label: "Course events" },
-        { id: "positionKeep" as const, label: "Position Keep" },
+        {
+            id: "course" as const,
+            label: (
+                <span>
+                    Course events
+                    <OverlayTrigger
+                        placement="top"
+                        overlay={
+                            <Tooltip id="course-events-info-tooltip">
+                                Toggles display for assorted information like corners, straights, slopes, and race sections.
+                            </Tooltip>
+                        }
+                    >
+                        <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                    </OverlayTrigger>
+                </span>
+            )
+        },
+        {
+            id: "positionKeep" as const,
+            label: (
+                <span>
+                    Position Keep
+                    <OverlayTrigger
+                        placement="top"
+                        overlay={
+                            <Tooltip id="position-keep-info-tooltip">
+                                Displays position keep zones for each style: when you're ahead of the displayed area you are hit with Pace Down, if you're behind it you roll Wit checks for Pace Up.
+                            </Tooltip>
+                        }
+                    >
+                        <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                    </OverlayTrigger>
+                </span>
+            )
+        },
     ];
 
     const [isEditingFrame, setIsEditingFrame] = useState(false);
@@ -474,7 +610,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                                 placement="top"
                                 overlay={
                                     <Tooltip id="frame-interpolation-tooltip">
-                                        For most of the race, we only receive new race frames from the server every second, and both this replay (and the game client) interpolate between them to display the race.
+                                        For most of the race, we only receive new race frames from the server every second; both this replay (and the game client) interpolate between them to display the race.
                                     </Tooltip>
                                 }
                             >

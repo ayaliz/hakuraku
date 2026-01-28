@@ -6,14 +6,9 @@ const InfoHover: React.FC<{ title?: string; content?: React.ReactNode }> = ({
     content = (
         <div>
             <ul className="mb-0 ps-3">
-                <li>The visualization for the slopes only represents the slope duration.</li>
                 <li>Skill labels are shown for the real skill duration, or for 2 seconds if no duration (e.g. Swinging Maestro).</li>
                 <li>For skills triggering on frame 0 (e.g. Groundwork), the game does not report a duration so the replay defaults to 2 seconds.</li>
-                <li>I can't tell what track we're on directly from packet data. I currently attempt to guess it from the distance of the race and the CM schedule, but you may need to manually select the track outside of that.</li>
-                <li>Track selection only matters for displaying straight/corner sections and slopes correctly.</li>
                 <li>The replay always looks at a 50m (20L) slice of the race relative to the position of the frontmost Uma.</li>
-                <li>Umas with 0 acceleration on frame 0 of the race have a late start.</li>
-                <li>Around 2/3 of the way into the race, you'll typically see a lot of course events labeled "Last Spurt". There'll be one of those per Uma, and it's most relevant when an Uma's last spurt event happens significantly later than 2/3 of the distance, indicating they were too low on HP to attempt a full last spurt. </li>
             </ul>
         </div>
     ),

@@ -195,6 +195,23 @@ const charaTableColumns: ColumnDescription<CharaTableData>[] = [
         dataField: 'df2',
         isDummyField: true,
         text: 'Time',
+        headerFormatter: () => {
+            return (
+                <span>
+                    Time{' '}
+                    <OverlayTrigger
+                        placement="bottom"
+                        overlay={
+                            <Tooltip id={`tooltip-time`}>
+                                The first value is the ingame time, the second is the simulation time. The ingame time is typically nonsense and heavily manipulated to match real world race times on this track.
+                            </Tooltip>
+                        }
+                    >
+                        <span style={{ cursor: 'help', borderBottom: '1px dotted #fff' }}>ⓘ</span>
+                    </OverlayTrigger>
+                </span>
+            );
+        },
         formatter: (cell, row) => <>
             {UMDatabaseUtils.formatTime(row.horseResultData.finishTime!)}
             <br />{UMDatabaseUtils.formatTime(row.horseResultData.finishTimeRaw!)}
@@ -251,10 +268,10 @@ const charaTableColumns: ColumnDescription<CharaTableData>[] = [
                 <span>
                     Last spurt{' '}
                     <OverlayTrigger
-                        placement="top"
+                        placement="bottom"
                         overlay={
                             <Tooltip id={`tooltip-spurt-delay`}>
-                                If an uma did a full last spurt, you should see a spurt delay &lt;3m as well as an observed speed matching the theoretical speed
+                                If an uma did a full last spurt, you should see a spurt delay &lt;3m as well as an observed speed matching the theoretical speed. (Theoretical speed calculation requires the correct track to be selected, see top left of Replay)
                             </Tooltip>
                         }
                     >

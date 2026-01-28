@@ -237,24 +237,24 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                             targetRes.base -= penalty;
                         }
 
-                        // Check for uphill transition which causes deceleration
-                        let isUphillTransition = false;
-                        if (i < raceData.frame.length - 1) {
+                        // Check for uphill interaction (current or next frame) to prevent false cancel
+                        let isAffectedByUphill = currentSlope > 0;
+                        if (!isAffectedByUphill && i < raceData.frame.length - 1) {
                             const nextFrame = raceData.frame[i + 1];
                             const nextH = nextFrame.horseFrame[frameOrder];
                             const nextDist = nextH.distance ?? 0;
                             const nextSlopeObj = trackSlopes.find((s: any) => nextDist >= s.start && nextDist < s.start + s.length);
                             const nextSlope = nextSlopeObj?.slope ?? 0;
 
-                            if (nextSlope > currentSlope && nextSlope > 0) {
-                                isUphillTransition = true;
+                            if (nextSlope > 0) {
+                                isAffectedByUphill = true;
                             }
                         }
 
                         // If Target (with Duel) > Current Speed AND Accel is low
                         // Then Duel is likely not active
-                        // Ignore if we are slowing down due to hitting a hill
-                        if (!isUphillTransition && (targetRes.base > currentSpeed + 0.2) && (accel < 0.1)) {
+                        // Ignore if we are slowing down due to hitting a hill or being on one
+                        if (!isAffectedByUphill && (targetRes.base > currentSpeed + 0.2) && (accel < 0.1)) {
                             endTime = frameTime;
                             break;
                         }

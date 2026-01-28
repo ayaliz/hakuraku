@@ -8,7 +8,7 @@ import {
     RaceSimulateHorseResultData,
 } from "../../../data/race_data_pb";
 import {
-    getCharaActivatedSkillIds,
+    filterCharaSkills,
 } from "../../../data/RaceDataUtils";
 import { fromRaceHorseData, TrainedCharaData } from "../../../data/TrainedCharaData";
 import { adjustStat } from "../../RaceReplay/utils/speedCalculations";
@@ -67,12 +67,15 @@ type CharaTableData = {
     motivation: number,
 
     activatedSkills: Set<number>,
+    activatedSkillCounts: Map<number, number>,
 
     raceDistance: number,
 
     deck: SupportCardEntry[],
     parents: ParentEntry[],
 
+    startDelay?: number;
+    isLateStart?: boolean;
     lastSpurtTargetSpeed?: number;
     maxAdjustedSpeed?: number;
 };
@@ -205,6 +208,39 @@ const charaTableColumns: ColumnDescription<CharaTableData>[] = [
             {runningStyleLabel(row.horseResultData, row.activatedSkills)}
             <br />Mood: {UMDatabaseUtils.motivationLabels[row.motivation]}
         </>,
+    },
+    {
+        dataField: 'startDelay',
+        isDummyField: true,
+        text: 'Start delay',
+        headerFormatter: () => {
+            return (
+                <span>
+                    Start delay{' '}
+                    <OverlayTrigger
+                        placement="bottom"
+                        overlay={
+                            <Tooltip id={`tooltip-start-delay`}>
+                                Ingame, a start delay of 0.08 or worse is marked as a late start. However, the most devestating effect of high start delay is the loss of 1 frame of acceleration which already occurrs at 0.066, so any start that loses that frame of acceleration is marked as a late start here
+                            </Tooltip>
+                        }
+                    >
+                        <span style={{ cursor: 'help', borderBottom: '1px dotted #fff' }}>ⓘ</span>
+                    </OverlayTrigger>
+                </span>
+            );
+        },
+        formatter: (cell, row) => (
+            <>
+                {row.startDelay !== undefined ? row.startDelay.toFixed(5) : '-'}
+                <br />
+                {row.isLateStart ? (
+                    <span style={{ color: '#dc3545', fontWeight: 'bold', fontSize: '0.85em' }}>Late start</span>
+                ) : (
+                    <span style={{ color: '#28a745', fontWeight: 'bold', fontSize: '0.85em' }}>Normal start</span>
+                )}
+            </>
+        ),
     },
     {
         dataField: 'lastSpurt',
@@ -363,7 +399,11 @@ const charaTableExpandRow: ExpandRowProps<CharaTableData> = {
                             <tr key={idx}>
                                 <td>{UMDatabaseWrapper.skillName(cs.skillId)}</td>
                                 <td>Lv {cs.level}</td>
-                                <td>{row.activatedSkills.has(cs.skillId) ? 'Used' : ''}</td>
+                                <td>{(() => {
+                                    const count = row.activatedSkillCounts.get(cs.skillId);
+                                    if (!count) return '';
+                                    return count > 1 ? <strong>{count}x</strong> : 'Used';
+                                })()}</td>
                             </tr>,
                         )}
                     </tbody >
@@ -460,7 +500,13 @@ const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData, detected
 
 
         // Calculate Last Spurt Speed
-        const activatedSkillIds = getCharaActivatedSkillIds(raceData, frameOrder);
+        const skillEvents = filterCharaSkills(raceData, frameOrder);
+        const activatedSkillIds = new Set(skillEvents.map(e => e.param[1]));
+        const activatedSkillCounts = new Map<number, number>();
+        skillEvents.forEach(e => {
+            const skillId = e.param[1];
+            activatedSkillCounts.set(skillId, (activatedSkillCounts.get(skillId) || 0) + 1);
+        });
         const passiveStats = { speed: 0, stamina: 0, power: 0, guts: 0, wisdom: 0 };
         activatedSkillIds.forEach(id => {
             const mods = getPassiveStatModifiers(id);
@@ -478,6 +524,28 @@ const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData, detected
         // Oonige
         let isOonige = false;
         if (activatedSkillIds.has(202051)) isOonige = true;
+
+        // Check for Late Start (0 acceleration at frame 0)
+        let isLateStart = false;
+        if (raceData.frame && raceData.frame.length > 1) {
+            const f0 = raceData.frame[0];
+            const f1 = raceData.frame[1];
+            const h0 = f0.horseFrame?.[frameOrder];
+            const h1 = f1.horseFrame?.[frameOrder];
+
+            if (h0 && h1) {
+                const v0 = (h0.speed ?? 0) / 100;
+                const v1 = (h1.speed ?? 0) / 100;
+                const dt = (f1.time ?? 0) - (f0.time ?? 0);
+
+                if (dt > 0) {
+                    const accel = (v1 - v0) / dt;
+                    if (accel < 0.0001) {
+                        isLateStart = true;
+                    }
+                }
+            }
+        }
 
         const distProficiency = trainedCharaData.properDistances[distanceCategory] ?? 1;
 
@@ -628,12 +696,15 @@ const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData, detected
             motivation: data['motivation'],
 
             activatedSkills: activatedSkillIds,
+            activatedSkillCounts: activatedSkillCounts,
 
             raceDistance: raceDistance,
 
             deck: data.deck || [],
             parents: data.parents || [],
 
+            startDelay: horseResult.startDelayTime,
+            isLateStart,
             lastSpurtTargetSpeed,
             maxAdjustedSpeed: maxAdjSpeed,
         };

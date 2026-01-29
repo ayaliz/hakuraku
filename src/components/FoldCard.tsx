@@ -1,5 +1,5 @@
-import React, {useState} from "react";
-import {Card} from "react-bootstrap";
+import React, { useState } from "react";
+import { Card } from "react-bootstrap";
 
 type FoldCardProps = {
     header: string,

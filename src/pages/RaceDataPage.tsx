@@ -458,23 +458,31 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
                 onChange={this.handleFileChange}
             />
 
-            <Button variant="info" onClick={this.handleUploadClick}>
-                Upload race
-            </Button>
-            {' '}
-            <Button variant="secondary" onClick={() => this.share(false)} disabled={shareStatus === 'sharing' || !parsedRaceData}>
-                {shareStatus === 'sharing' ? 'Sharing...' : 'Share'}
-            </Button>
-            {' '}
-            <Button variant="secondary" onClick={() => this.share(true)} disabled={shareStatus === 'sharing' || !parsedRaceData}>
-                Share Anonymously
-            </Button>
-            {shareStatus === 'shared' && <ShareLinkBox shareUrl={shareUrl} />}
-            {shareError && <span className="ml-2 text-danger">{shareError}</span>}
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '12px' }}>
+                <Button variant="info" size="sm" onClick={this.handleUploadClick}>
+                    Upload race
+                </Button>
+                <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => this.share(false)}
+                    disabled={shareStatus === 'sharing' || !parsedRaceData}
+                >
+                    {shareStatus === 'sharing' ? 'Sharing...' : 'Share'}
+                </Button>
+                <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => this.share(true)}
+                    disabled={shareStatus === 'sharing' || !parsedRaceData}
+                >
+                    Share Anonymously
+                </Button>
+                {shareStatus === 'shared' && <ShareLinkBox shareUrl={shareUrl} />}
+                {shareError && <span className="text-danger" style={{ fontSize: '0.85rem' }}>{shareError}</span>}
+            </div>
 
-            {error && <div className="mt-2 text-danger">{error}</div>}
-
-            <hr />
+            {error && <div className="text-danger" style={{ marginBottom: '12px' }}>{error}</div>}
 
             {this.state.parsedRaceData && this.state.parsedHorseInfo ? (
                 <>

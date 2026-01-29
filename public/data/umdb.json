@@ -19521,6 +19521,14 @@
       ]
     },
     {
+      "id": 110151,
+      "name": "Barcarole of Blessings",
+      "gradeValue": 340,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
       "id": 110171,
       "name": "Arrows Whistle, Shadows Disperse",
       "gradeValue": 340,
@@ -19577,6 +19585,14 @@
       "tagId": [
         "401",
         "403"
+      ]
+    },
+    {
+      "id": 110521,
+      "name": "114th Time's the Charm",
+      "gradeValue": 340,
+      "tagId": [
+        "401"
       ]
     },
     {
@@ -22632,6 +22648,36 @@
       ]
     },
     {
+      "id": 202011,
+      "name": "Headliner",
+      "gradeValue": 508,
+      "tagId": [
+        "204",
+        "302",
+        "401"
+      ]
+    },
+    {
+      "id": 202012,
+      "name": "Feature Act",
+      "gradeValue": 217,
+      "tagId": [
+        "204",
+        "302",
+        "401"
+      ]
+    },
+    {
+      "id": 202021,
+      "name": "Daring Strike",
+      "gradeValue": 508,
+      "tagId": [
+        "104",
+        "302",
+        "401"
+      ]
+    },
+    {
       "id": 202022,
       "name": "Early Start",
       "gradeValue": 217,
@@ -23280,6 +23326,14 @@
       ]
     },
     {
+      "id": 910151,
+      "name": "Barcarole of Blessings",
+      "gradeValue": 180,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
       "id": 910171,
       "name": "Arrows Whistle, Shadows Disperse",
       "gradeValue": 180,
@@ -23339,11 +23393,27 @@
       ]
     },
     {
+      "id": 910521,
+      "name": "114th Time's the Charm",
+      "gradeValue": 180,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
       "id": 910561,
       "name": "Bountiful Harvest",
       "gradeValue": 180,
       "tagId": [
         "401"
+      ]
+    },
+    {
+      "id": 1000011,
+      "name": "Carnival Bonus",
+      "gradeValue": 0,
+      "tagId": [
+        "0"
       ]
     }
   ],
@@ -60440,6 +60510,11 @@
       "charaId": 1038
     },
     {
+      "id": 10075,
+      "name": "[Tracen Academy] Admire Vega",
+      "charaId": 1033
+    },
+    {
       "id": 20001,
       "name": "[Well, Look Who's Home] Fuji Kiseki",
       "charaId": 1005
@@ -60953,6 +61028,21 @@
       "id": 30076,
       "name": "[Searching for Unseen Sights] Silence Suzuka",
       "charaId": 1002
+    },
+    {
+      "id": 30077,
+      "name": "[Lucky Star in the Sky] Admire Vega",
+      "charaId": 1033
+    },
+    {
+      "id": 30078,
+      "name": "[Touching Sleeves Is Good Luck! ♪] Matikanefukukitaru",
+      "charaId": 1056
+    },
+    {
+      "id": 30079,
+      "name": "[Leaping into the Unknown] Meisho Doto",
+      "charaId": 1058
     }
   ],
   "textData": [
@@ -258642,7 +258732,7 @@
       "id": 88,
       "category": 88,
       "index": 30077,
-      "text": "\"Oh, can this truly be? Before me stands a star, with beauty that could almost rival my own! Ahhh, you must be the Leporello to my Don Giovanni!\"\\n\\n\"Wowzers! Ayabe's kimono was the exact same pattern as I foresaw in my dream! Fortune has truly come to us today, pals—all thanks to the great Shiraoki!\"\\n\\n\"Ahaha! Ayabe, you look so pretty! Ehehe, I bet I know your secret too. You must've eaten <i>tons</i> of New Year's mochi, making your skin all mochi-smooth and soft! We should make a batch together!\"\\n\\n\"The year just started, and it's already chaos... <i>Sigh...</i> I guess I'm in for another craz—\"\\n\\n\"W-wa-watch ouuut! S-sorry everyone, but I don—I don't think I can stop! I'm going to crash!\"\\n\\n\"Ah?! W-wait, don't come barreling at <i>me!</i>\""
+      "text": "\"Oh, can this truly be? Before me stands a star, with beauty that could almost rival my own! Ahhh, you must be the Leporello to my Don Giovanni!\"\\n\\n\"Wowzers! Ayabe's kimono was the exact same pattern as I foresaw in my dream! Fortune has truly come to us today, pals—all thanks to the great Shiraoki!\"\\n\\n\"Ahaha! Ayabe, you look so pretty! Ehehe, I bet I know your secret too. You must've eaten <i>tons</i> of New Year's mochi, making your skin all mochi-smooth and soft! We should make a batch together!\"\\n\\n\"The year just started, and it's already chaos... <i>Sigh...</i> I guess I'm in for another craz—\"\\n\\n\"W-wa-watch ouuut! S-sorry everyone, but I don—I don't think I can stop! I'm going to crash!\"\\n\\n\"Ah?! W-wait, don't come barreling at <i>me! </i>\""
     },
     {
       "id": 88,
@@ -277794,7 +277884,7 @@
       "id": 63,
       "category": 63,
       "index": 61,
-      "text": "It's the holiday season once again, and Oguri Cap is invited to a special party being thrown by her fans. To repay them for their loyal support, she tries to think up a special gift that only she can give. With the help of Biwa Hayahide, Marvelous Sunday, and her other friends, Oguri Cap is bound to deliver a holiday miracle her fans won't soon forget!"
+      "text": "Meisho Doto is desperate for some good fortune in the coming year, and Matikanefukukitaru has divined the perfect solution—the National Umamusume Karuta Championship. Though rooted in genteel tradition, the sport is no less intense than a race—as Doto and her ragtag team soon find out. Nevertheless, difficult times often make for deeper friendships."
     },
     {
       "id": 63,
@@ -278640,7 +278730,7 @@
       "id": 70,
       "category": 70,
       "index": 30024,
-      "text": "New Year's Special Login Bonus"
+      "text": "New Year's Celebration Login Bonus"
     },
     {
       "id": 70,

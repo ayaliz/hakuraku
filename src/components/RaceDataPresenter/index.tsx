@@ -12,8 +12,6 @@ import {
 import { fromRaceHorseData, TrainedCharaData } from "../../data/TrainedCharaData";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 import CharaList from "./components/CharaList";
-import FoldCard from "../FoldCard";
-import OtherRaceEventsList from "./components/OtherRaceEventsList";
 import RaceGraph from "./components/RaceGraph";
 import {
     calculateRaceDistance,
@@ -300,6 +298,13 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
     });
 
     render() {
+        const sectionDividerStyle = {
+            height: '1px',
+            background: 'linear-gradient(90deg, transparent 0%, rgba(99, 102, 241, 0.3) 20%, rgba(99, 102, 241, 0.3) 80%, transparent 100%)',
+            margin: '20px 0',
+            border: 'none',
+        };
+
         return <div>
             {(this.props.raceData.header!.version! > supportedRaceDataVersion) &&
                 <Alert variant="warning">
@@ -313,7 +318,10 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 skillActivations={this.skillActivations(this.props.raceData)}
                 otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.props.detectedCourseId, this.skillActivations(this.props.raceData))}
             />
-            <FoldCard header="Replay">
+
+            <div style={sectionDividerStyle} />
+
+            <div className="replay-section">
                 <RaceReplay
                     raceData={this.props.raceData}
                     raceHorseInfo={this.props.raceHorseInfo}
@@ -322,60 +330,65 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                     otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.props.detectedCourseId, this.skillActivations(this.props.raceData))}
                     detectedCourseId={this.props.detectedCourseId}
                 />
-            </FoldCard>
-            <OtherRaceEventsList raceData={this.props.raceData} displayNames={this.displayNames(this.props.raceHorseInfo, this.props.raceData)} />
-            <Form>
-                <Form.Group>
-                    <Form.Label>Chara</Form.Label>
-                    <Form.Control as="select" custom
-                        onChange={(e) => this.setState({ selectedCharaFrameOrder: e.target.value ? parseInt(e.target.value) : undefined })}>
-                        <option value="">-</option>
-                        {Object.entries(this.displayNames(this.props.raceHorseInfo, this.props.raceData))
-                            .sort(([, a], [, b]) => a.localeCompare(b))
-                            .map(([frameOrder, displayName]) => {
-                                return <option value={frameOrder}>{displayName}</option>;
-                            })}
-                    </Form.Control>
-                    <Form.Switch
-                        checked={this.state.showSkills}
-                        onChange={(e) => this.setState({ showSkills: e.target.checked })}
-                        id="show-skills"
-                        label="Show Skills" />
-                    <Form.Switch
-                        checked={this.state.showTargetedSkills}
-                        onChange={(e) => this.setState({ showTargetedSkills: e.target.checked })}
-                        id="show-targeted-skills"
-                        label="Show Targeted Skills" />
-                    <Form.Switch
-                        checked={this.state.showBlocks}
-                        onChange={(e) => this.setState({ showBlocks: e.target.checked })}
-                        id="show-blocks"
-                        label="Show Blocks" />
-                    <Form.Switch
-                        checked={this.state.showTemptationMode}
-                        onChange={(e) => this.setState({ showTemptationMode: e.target.checked })}
-                        id="show-temptation-mode"
-                        label="Show Temptation Mode" />
-                    <Form.Switch
-                        checked={this.state.showOtherRaceEvents}
-                        onChange={(e) => this.setState({ showOtherRaceEvents: e.target.checked })}
-                        id="show-competes"
-                        label={`Show Other Race Events (${Array.from(otherRaceEventLabels.values()).join(', ')})`} />
-                </Form.Group>
-            </Form>
-            {this.state.selectedCharaFrameOrder !== undefined &&
-                <RaceGraph
-                    raceData={this.props.raceData}
-                    frameOrder={this.state.selectedCharaFrameOrder}
-                    displayNames={this.displayNames(this.props.raceHorseInfo, this.props.raceData)}
-                    showSkills={this.state.showSkills}
-                    showTargetedSkills={this.state.showTargetedSkills}
-                    showBlocks={this.state.showBlocks}
-                    showTemptationMode={this.state.showTemptationMode}
-                    showOtherRaceEvents={this.state.showOtherRaceEvents}
-                />
-            }
-            <hr />
+            </div>
+
+            <div style={sectionDividerStyle} />
+
+            <div className="chara-analysis-section">
+                <Form>
+                    <Form.Group>
+                        <Form.Control as="select" custom
+                            onChange={(e) => this.setState({ selectedCharaFrameOrder: e.target.value ? parseInt(e.target.value) : undefined })}>
+                            <option value="">Select Character</option>
+                            {Object.entries(this.displayNames(this.props.raceHorseInfo, this.props.raceData))
+                                .sort(([, a], [, b]) => a.localeCompare(b))
+                                .map(([frameOrder, displayName]) => {
+                                    return <option value={frameOrder}>{displayName}</option>;
+                                })}
+                        </Form.Control>
+                        <Form.Switch
+                            checked={this.state.showSkills}
+                            onChange={(e) => this.setState({ showSkills: e.target.checked })}
+                            id="show-skills"
+                            label="Show Skills" />
+                        <Form.Switch
+                            checked={this.state.showTargetedSkills}
+                            onChange={(e) => this.setState({ showTargetedSkills: e.target.checked })}
+                            id="show-targeted-skills"
+                            label="Show Targeted Skills" />
+                        <Form.Switch
+                            checked={this.state.showBlocks}
+                            onChange={(e) => this.setState({ showBlocks: e.target.checked })}
+                            id="show-blocks"
+                            label="Show Blocks" />
+                        <Form.Switch
+                            checked={this.state.showTemptationMode}
+                            onChange={(e) => this.setState({ showTemptationMode: e.target.checked })}
+                            id="show-temptation-mode"
+                            label="Show Temptation Mode" />
+                        <Form.Switch
+                            checked={this.state.showOtherRaceEvents}
+                            onChange={(e) => this.setState({ showOtherRaceEvents: e.target.checked })}
+                            id="show-competes"
+                            label={`Show Other Race Events (${Array.from(otherRaceEventLabels.values()).join(', ')})`} />
+                    </Form.Group>
+                </Form>
+                {this.state.selectedCharaFrameOrder !== undefined &&
+                    <RaceGraph
+                        raceData={this.props.raceData}
+                        frameOrder={this.state.selectedCharaFrameOrder}
+                        displayNames={this.displayNames(this.props.raceHorseInfo, this.props.raceData)}
+                        showSkills={this.state.showSkills}
+                        showTargetedSkills={this.state.showTargetedSkills}
+                        showBlocks={this.state.showBlocks}
+                        showTemptationMode={this.state.showTemptationMode}
+                        showOtherRaceEvents={this.state.showOtherRaceEvents}
+                    />
+                }
+            </div>
+
+            <div style={sectionDividerStyle} />
+
             <JsonViewer value={this.props.raceData.toJson()} defaultInspectDepth={1} theme="dark" />
         </div>;
     }

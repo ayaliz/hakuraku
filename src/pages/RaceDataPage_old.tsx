@@ -1,8 +1,8 @@
 import React from "react";
-import {Button, Col, Form} from "react-bootstrap";
+import { Button, Col, Form } from "react-bootstrap";
 import RaceDataPresenter from "../components/RaceDataPresenter_old";
-import {RaceSimulateData} from "../data/race_data_pb";
-import {deserializeFromBase64} from "../data/RaceDataParser";
+import { RaceSimulateData } from "../data/race_data_pb";
+import { deserializeFromBase64 } from "../data/RaceDataParser";
 import ShareLinkBox from "../components/ShareLinkBox";
 
 type ShareCache = Record<string, string>;
@@ -45,34 +45,53 @@ export default class RaceDataPageOld extends React.Component<{}, RaceDataPageSta
     }
 
     componentDidMount() {
-        const key = new URLSearchParams(window.location.hash.split('?')[1]).get('bin');
-        if (!key) return;
+        const params = new URLSearchParams(window.location.hash.split('?')[1]);
+        const binKey = params.get('bin');
+        const catboxKey = params.get('catbox');
 
-        const target = `https://cdn.sourceb.in/bins/${key}/0`;
-        const proxied = `https://corsproxy.io/?${encodeURIComponent(target)}`;
-        fetch(proxied)
-            .then(res => {
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                return res.json();
-            })
-            .then(data => {
-                this.setState({
-                    raceHorseInfoInput: data.raceHorseInfo,
-                    raceScenarioInput: data.raceScenario,
-                }, () => this.parse());
-            })
-            .catch(err => {
-                console.error(err);
-                alert(`Failed to load from bin: ${err.message}`);
-            });
+        if (catboxKey) {
+            const target = `https://files.catbox.moe/${catboxKey}`;
+            fetch(target)
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
+                .then(data => {
+                    this.setState({
+                        raceHorseInfoInput: data.raceHorseInfo,
+                        raceScenarioInput: data.raceScenario,
+                    }, () => this.parse());
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert(`Failed to load from catbox: ${err.message}`);
+                });
+        } else if (binKey) {
+            const target = `https://cdn.sourceb.in/bins/${binKey}/0`;
+            fetch(target)
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
+                .then(data => {
+                    this.setState({
+                        raceHorseInfoInput: data.raceHorseInfo,
+                        raceScenarioInput: data.raceScenario,
+                    }, () => this.parse());
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert(`Failed to load from bin: ${err.message}`);
+                });
+        }
     }
 
     parse() {
-        this.setState({parsedRaceData: deserializeFromBase64(this.state.raceScenarioInput.trim())});
+        this.setState({ parsedRaceData: deserializeFromBase64(this.state.raceScenarioInput.trim()) });
         try {
-            this.setState({parsedHorseInfo: JSON.parse(this.state.raceHorseInfoInput)});
+            this.setState({ parsedHorseInfo: JSON.parse(this.state.raceHorseInfoInput) });
         } catch (e) {
-            this.setState({parsedHorseInfo: undefined});
+            this.setState({ parsedHorseInfo: undefined });
         }
     }
 
@@ -203,37 +222,48 @@ export default class RaceDataPageOld extends React.Component<{}, RaceDataPageSta
         }
 
         this.setState({ shareStatus: 'sharing', shareError: '' });
-        fetch('https://sourceb.in/api/bins', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                files: [{ content }]
-            })
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.key) {
-                    const nextCache: ShareCache = { ...this.state.shareCache, [hash]: data.key };
-                    this.setState({ shareStatus: 'shared', shareKey: data.key, shareCache: nextCache });
-                } else {
-                    throw new Error(data.message || 'Unknown error');
-                }
-            })
-            .catch(err => {
-                this.setState({ shareStatus: '', shareError: err.message });
+
+        const blob = new Blob([content], { type: 'application/json' });
+        const formData = new FormData();
+        formData.append('reqtype', 'fileupload');
+        formData.append('fileToUpload', blob, 'race.json');
+
+        try {
+            // Catbox API upload endpoint doesn't support CORS, but file downloads do.
+            // Using proxy for the upload action.
+            const res = await fetch('https://corsproxy.io/?https://catbox.moe/user/api.php', {
+                method: 'POST',
+                body: formData
             });
+
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}`);
+            }
+
+            const text = await res.text();
+            if (text.startsWith('http')) {
+                const parts = text.split('/');
+                const filename = parts[parts.length - 1];
+                const nextCache: ShareCache = { ...this.state.shareCache, [hash]: filename };
+                this.setState({ shareStatus: 'shared', shareKey: filename, shareCache: nextCache });
+            } else {
+                throw new Error('Upload failed: ' + text);
+            }
+        } catch (err: any) {
+            this.setState({ shareStatus: '', shareError: err.message });
+        }
     };
 
     render() {
-        const {shareStatus, shareKey, shareError} = this.state;
-        const shareUrl = `${window.location.origin}${window.location.pathname}#/racedata_old?bin=${shareKey}`;
+        const { shareStatus, shareKey, shareError } = this.state;
+        const shareUrl = `${window.location.origin}${window.location.pathname}#/racedata_old?catbox=${shareKey}`;
 
         return <>
             <input
                 ref={this.fileInputRef}
                 type="file"
                 accept=".txt,text/plain"
-                style={{display: 'none'}}
+                style={{ display: 'none' }}
                 onChange={this.handleFileChange}
             />
 
@@ -246,16 +276,16 @@ export default class RaceDataPageOld extends React.Component<{}, RaceDataPageSta
                             packet), or <code>race_start_params_array.race_horse_data_array</code> (for team race)
                         </Form.Label>
                         <Form.Control as="textarea" rows={3}
-                                      value={this.state.raceHorseInfoInput}
-                                      onChange={e => this.setState({raceHorseInfoInput: e.target.value})}/>
+                            value={this.state.raceHorseInfoInput}
+                            onChange={e => this.setState({ raceHorseInfoInput: e.target.value })} />
                     </Form.Group>
                 </Form.Row>
                 <Form.Row>
                     <Form.Group as={Col}>
                         <Form.Label>[Required] <code>race_scenario</code></Form.Label>
                         <Form.Control as="textarea" rows={3}
-                                      value={this.state.raceScenarioInput}
-                                      onChange={e => this.setState({raceScenarioInput: e.target.value})}/>
+                            value={this.state.raceScenarioInput}
+                            onChange={e => this.setState({ raceScenarioInput: e.target.value })} />
                     </Form.Group>
                 </Form.Row>
 
@@ -275,16 +305,16 @@ export default class RaceDataPageOld extends React.Component<{}, RaceDataPageSta
                 <Button variant="secondary" onClick={() => this.share(true)} disabled={shareStatus === 'sharing'}>
                     Share Anonymously
                 </Button>
-                {shareStatus === 'shared' && <ShareLinkBox shareUrl={shareUrl}/>}
+                {shareStatus === 'shared' && <ShareLinkBox shareUrl={shareUrl} />}
                 {shareError && <span className="ml-2 text-danger">{shareError}</span>}
             </Form>
 
-            <hr/>
+            <hr />
 
             {this.state.parsedRaceData &&
                 <RaceDataPresenter
                     raceHorseInfo={this.state.parsedHorseInfo}
-                    raceData={this.state.parsedRaceData}/>}
+                    raceData={this.state.parsedRaceData} />}
         </>;
     }
 }

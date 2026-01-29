@@ -1,7 +1,27 @@
-import React from "react";
+import React, { Fragment } from "react";
 import { Table } from "react-bootstrap";
 import { TrainedCharaData } from "../data/TrainedCharaData";
 import * as UMDatabaseUtils from "../data/UMDatabaseUtils";
+
+import imgG from "../data/textures/G.png";
+import imgF from "../data/textures/F.png";
+import imgE from "../data/textures/E.png";
+import imgD from "../data/textures/D.png";
+import imgC from "../data/textures/C.png";
+import imgB from "../data/textures/B.png";
+import imgA from "../data/textures/A.png";
+import imgS from "../data/textures/S.png";
+
+const gradeImages: Record<number, string> = {
+  1: imgG, 2: imgF, 3: imgE, 4: imgD,
+  5: imgC, 6: imgB, 7: imgA, 8: imgS
+};
+
+const GradeDisplay = ({ value }: { value: number }) => {
+  const src = gradeImages[value];
+  if (!src) return <>{UMDatabaseUtils.charaProperLabels[value]}</>;
+  return <img src={src} alt={UMDatabaseUtils.charaProperLabels[value]} style={{ height: '20px', width: '20px', verticalAlign: 'middle' }} />;
+};
 
 type CharaProperLabelsProps = {
   chara: TrainedCharaData,
@@ -22,32 +42,28 @@ export default function CharaProperLabels({ chara }: CharaProperLabelsProps) {
       <tbody>
         <tr>
           <td>Turf</td>
-          <td>{UMDatabaseUtils.charaProperLabels[chara.properGroundTurf]}</td>
+          <td className="text-center"><GradeDisplay value={chara.properGroundTurf} /></td>
           <td>Dirt</td>
-          <td>{UMDatabaseUtils.charaProperLabels[chara.properGroundDirt]}</td>
+          <td className="text-center"><GradeDisplay value={chara.properGroundDirt} /></td>
         </tr>
 
         <tr>
           {distanceEntries.map(([k, name]) => {
             const idx = Number(k);
-            return (
-              <React.Fragment key={`dist-${idx}`}>
-                <td>{name}</td>
-                <td>{UMDatabaseUtils.charaProperLabels[chara.properDistances[idx]]}</td>
-              </React.Fragment>
-            );
+            return [
+              <td key={`dist-${idx}-label`}>{name}</td>,
+              <td key={`dist-${idx}-value`} className="text-center"><GradeDisplay value={chara.properDistances[idx]} /></td>
+            ];
           })}
         </tr>
 
         <tr>
           {runningStyleEntries.map(([k, name]) => {
             const idx = Number(k);
-            return (
-              <React.Fragment key={`rs-${idx}`}>
-                <td>{name}</td>
-                <td>{UMDatabaseUtils.charaProperLabels[chara.properRunningStyles[idx]]}</td>
-              </React.Fragment>
-            );
+            return [
+              <td key={`rs-${idx}-label`}>{name}</td>,
+              <td key={`rs-${idx}-value`} className="text-center"><GradeDisplay value={chara.properRunningStyles[idx]} /></td>
+            ];
           })}
         </tr>
       </tbody>

@@ -1,12 +1,13 @@
 import { RaceSimulateData } from "../../../../data/race_data_pb";
 import { filterCharaSkills } from "../../../../data/RaceDataUtils";
-import { fromRaceHorseData } from "../../../../data/TrainedCharaData";
+import { fromRaceHorseData, TrainedCharaData } from "../../../../data/TrainedCharaData";
 import courseData from "../../../../data/tracks/course_data.json";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import { useAvailableTracks } from "../../../RaceReplay/hooks/useAvailableTracks";
 import { useGuessTrack } from "../../../RaceReplay/hooks/useGuessTrack";
 import { getActiveSpeedModifier, getPassiveStatModifiers, getSkillBaseTime, hasSkillEffect } from "../../../RaceReplay/utils/SkillDataUtils";
 import { adjustStat, calculateReferenceHpConsumption, calculateTargetSpeed, getDistanceCategory } from "../../../RaceReplay/utils/speedCalculations";
+import { computeHeuristicEvents } from "../../../RaceReplay/utils/computeHeuristicEvents";
 import { calculateRaceDistance } from "../../utils/RacePresenterUtils";
 import { CharaTableData } from "./types";
 
@@ -28,6 +29,52 @@ export const useCharaTableData = (
 
     const distanceCategory = getDistanceCategory(raceDistance);
     const trackSlopes = effectiveCourseId ? (courseData as any)[effectiveCourseId]?.slopes ?? [] : [];
+
+    // Prepare data for heuristic events calculation
+    const trainedCharaByIdx: Record<number, TrainedCharaData> = {};
+    const oonigeByIdx: Record<number, boolean> = {};
+    const horseInfoByIdx: Record<number, any> = {};
+    const passiveStatModifiers: Record<number, any> = {};
+    const lastSpurtStartDistances: Record<number, number> = {};
+
+    raceHorseInfo.forEach(data => {
+        const frameOrder = data['frame_order'] - 1;
+        const trainedChara = fromRaceHorseData(data);
+        trainedCharaByIdx[frameOrder] = trainedChara;
+        horseInfoByIdx[frameOrder] = data;
+
+        const skillEvents = filterCharaSkills(raceData, frameOrder);
+        const activatedSkillIds = new Set(skillEvents.map(e => e.param[1]));
+        oonigeByIdx[frameOrder] = activatedSkillIds.has(202051);
+
+        const passiveStats = { speed: 0, stamina: 0, power: 0, guts: 0, wisdom: 0 };
+        activatedSkillIds.forEach(id => {
+            const mods = getPassiveStatModifiers(id);
+            passiveStats.speed += mods.speed || 0;
+            passiveStats.stamina += mods.stamina || 0;
+            passiveStats.power += mods.power || 0;
+            passiveStats.guts += mods.guts || 0;
+            passiveStats.wisdom += mods.wisdom || 0;
+        });
+        passiveStatModifiers[frameOrder] = passiveStats;
+
+        const horseResult = raceData.horseResult[frameOrder];
+        lastSpurtStartDistances[frameOrder] = horseResult?.lastSpurtStartDistance ?? -1;
+    });
+
+    const heuristicEvents = computeHeuristicEvents({
+        frames: raceData.frame ?? [],
+        goalInX: raceDistance,
+        trainedCharaByIdx,
+        oonigeByIdx,
+        horseInfoByIdx,
+        trackSlopes,
+        passiveStatModifiers,
+        skillActivations: skillActivations ?? {},
+        otherEvents: otherEvents ?? {},
+        lastSpurtStartDistances,
+        detectedCourseId: effectiveCourseId
+    });
 
     const tableData: CharaTableData[] = raceHorseInfo.map(data => {
         const frameOrder = data['frame_order'] - 1;
@@ -221,6 +268,60 @@ export const useCharaTableData = (
             });
         }
 
+        // Calculate Dueling Time from otherEvents
+        let duelingTime = 0;
+        if (otherEvents && otherEvents[frameOrder]) {
+            otherEvents[frameOrder].forEach(evt => {
+                const name = evt.name || "";
+                if (name.includes("Dueling") || name.includes("Competes (Speed)")) {
+                    duelingTime += evt.duration;
+                }
+            });
+        }
+
+        // Calculate Downhill Mode Time by iterating frames
+        let downhillModeTime = 0;
+        if (raceData.frame && raceData.frame.length > 1) {
+            for (let fIdx = 0; fIdx < raceData.frame.length - 1; fIdx++) {
+                const frame = raceData.frame[fIdx];
+                const nextFrame = raceData.frame[fIdx + 1];
+                const h = frame.horseFrame?.[frameOrder];
+                const hNext = nextFrame.horseFrame?.[frameOrder];
+                if (!h || !hNext) continue;
+
+                const dist = h.distance ?? 0;
+                const currentSlopeObj = trackSlopes.find((s: any) => dist >= s.start && dist < s.start + s.length);
+                const currentSlope = currentSlopeObj?.slope ?? 0;
+
+                if (currentSlope < 0) {
+                    const speed = (h.speed ?? 0) / 100;
+                    const time = frame.time ?? 0;
+                    const dt = (nextFrame.time ?? 0) - time;
+                    if (dt > 0 && speed > 0) {
+                        const rate = ((h.hp ?? 0) - (hNext.hp ?? 0)) / dt;
+                        const expected = calculateReferenceHpConsumption(speed, raceDistance);
+                        if (expected > 0 && rate > 0 && rate < expected * 0.8) {
+                            downhillModeTime += dt;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Calculate Pace Up/Down Time from precomputed heuristic events
+        let paceUpTime = 0;
+        let paceDownTime = 0;
+        if (heuristicEvents && heuristicEvents[frameOrder]) {
+            heuristicEvents[frameOrder].forEach(evt => {
+                const name = evt.name || "";
+                if (name === "Pace Up" || name === "Speed Up" || name === "Overtake") {
+                    paceUpTime += evt.duration;
+                } else if (name === "Pace Down") {
+                    paceDownTime += evt.duration;
+                }
+            });
+        }
+
         return {
             trainedChara: trainedCharaData,
             chara: UMDatabaseWrapper.charas[trainedCharaData.charaId],
@@ -246,6 +347,10 @@ export const useCharaTableData = (
             isLateStart,
             lastSpurtTargetSpeed,
             maxAdjustedSpeed: maxAdjSpeed,
+            duelingTime,
+            downhillModeTime,
+            paceUpTime,
+            paceDownTime,
             hpOutcome: (() => {
                 const frames = raceData.frame ?? [];
                 if (frames.length === 0) return undefined;
@@ -277,6 +382,16 @@ export const useCharaTableData = (
             })(),
         };
     });
+
+    // Calculate time diff to previous finisher
+    const sortedByFinish = [...tableData].sort((a, b) => a.finishOrder - b.finishOrder);
+    for (let i = 1; i < sortedByFinish.length; i++) {
+        const prev = sortedByFinish[i - 1];
+        const curr = sortedByFinish[i];
+        const prevTime = prev.horseResultData.finishTimeRaw ?? 0;
+        const currTime = curr.horseResultData.finishTimeRaw ?? 0;
+        curr.timeDiffToPrev = currTime - prevTime;
+    }
 
     return { tableData, effectiveCourseId };
 };

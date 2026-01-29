@@ -11,6 +11,7 @@ export type RaceReplayProps = {
     infoTitle?: string;
     infoContent?: React.ReactNode;
     detectedCourseId?: number;
+    onTrackChange?: (courseId: number | undefined) => void;
 };
 
 export type InterpolatedFrame = {

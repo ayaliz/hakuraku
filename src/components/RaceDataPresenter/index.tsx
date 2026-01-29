@@ -41,6 +41,7 @@ type RaceDataPresenterProps = {
 
 type RaceDataPresenterState = {
     selectedCharaFrameOrder: number | undefined,
+    activeCourseId: number | undefined,
 
     showSkills: boolean,
     showTargetedSkills: boolean,
@@ -55,6 +56,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
 
         this.state = {
             selectedCharaFrameOrder: undefined,
+            activeCourseId: props.detectedCourseId,
 
             showSkills: true,
             showTargetedSkills: true,
@@ -63,6 +65,10 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
             showOtherRaceEvents: true,
         };
     }
+
+    handleTrackChange = (courseId: number | undefined) => {
+        this.setState({ activeCourseId: courseId });
+    };
 
     displayNames = memoize((raceHorseInfo: any[], raceData: RaceSimulateData) => {
         const nameFromRaceHorseInfo: Record<number, string> = {};
@@ -314,9 +320,9 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
             <CharaList
                 raceHorseInfo={this.props.raceHorseInfo}
                 raceData={this.props.raceData}
-                detectedCourseId={this.props.detectedCourseId}
+                detectedCourseId={this.state.activeCourseId}
                 skillActivations={this.skillActivations(this.props.raceData)}
-                otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.props.detectedCourseId, this.skillActivations(this.props.raceData))}
+                otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.state.activeCourseId, this.skillActivations(this.props.raceData))}
             />
 
             <div style={sectionDividerStyle} />
@@ -327,8 +333,9 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                     raceHorseInfo={this.props.raceHorseInfo}
                     displayNames={this.displayNames(this.props.raceHorseInfo, this.props.raceData)}
                     skillActivations={this.skillActivations(this.props.raceData)}
-                    otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.props.detectedCourseId, this.skillActivations(this.props.raceData))}
+                    otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.state.activeCourseId, this.skillActivations(this.props.raceData))}
                     detectedCourseId={this.props.detectedCourseId}
+                    onTrackChange={this.handleTrackChange}
                 />
             </div>
 

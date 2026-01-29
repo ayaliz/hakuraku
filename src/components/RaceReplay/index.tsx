@@ -74,6 +74,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     infoTitle,
     infoContent,
     detectedCourseId,
+    onTrackChange,
 }) => {
     const frames = useMemo(() => raceData.frame ?? [], [raceData]);
     const startTime = frames[0]?.time ?? 0, endTime = frames[frames.length - 1]?.time ?? 0;
@@ -90,6 +91,13 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
 
     const availableTracks = useAvailableTracks(goalInX);
     const { selectedTrackId, setSelectedTrackId, guessStatus } = useGuessTrack(detectedCourseId, goalInX, availableTracks);
+
+    // Notify parent when track selection changes
+    useEffect(() => {
+        if (onTrackChange) {
+            onTrackChange(selectedTrackId ? parseInt(selectedTrackId, 10) : undefined);
+        }
+    }, [selectedTrackId, onTrackChange]);
 
     const maxLanePosition = useMemo(() => frames.reduce((m, f) => Math.max(m, (f.horseFrame ?? []).reduce((mm: number, h: any) => Math.max(mm, h?.lanePosition ?? 0), 0)), 0), [frames]);
     const interpolatedFrame = useInterpolatedFrame(frames, renderTime);

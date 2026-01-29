@@ -32,9 +32,16 @@ export const charaTableColumns: ColumnDescription<CharaTableData>[] = [
     {
         dataField: 'chara',
         text: '',
-        formatter: (chara: Chara | undefined, row) => chara ? <>
-            {chara.name} {row.trainedChara.viewerName ? `[${row.trainedChara.viewerName}]` : ''} <CardNamePresenter cardId={row.trainedChara.cardId} />
-        </> : unknownCharaTag,
+        formatter: (chara: Chara | undefined, row) => chara ? (
+            <div style={{ lineHeight: 1.2 }}>
+                {chara.name} <CardNamePresenter cardId={row.trainedChara.cardId} />
+                {row.trainedChara.viewerName && (
+                    <div style={{ fontSize: '0.85em', opacity: 0.8 }}>
+                        [{row.trainedChara.viewerName}]
+                    </div>
+                )}
+            </div>
+        ) : unknownCharaTag,
     },
     {
         dataField: 'df2',
@@ -167,7 +174,7 @@ export const charaTableColumns: ColumnDescription<CharaTableData>[] = [
                         placement="bottom"
                         overlay={
                             <Tooltip id={`tooltip-hp-result`}>
-                                If the Uma ran out of HP, this shows how far from the finish line they were when it occurred. Otherwise, it shows the remaining HP at the finish.
+                                Shows remaining HP if an Uma made it to the finish without running out of HP, otherwise shows an estimate for missing HP based on observed last spurt speed.
                             </Tooltip>
                         }
                     >
@@ -179,15 +186,23 @@ export const charaTableColumns: ColumnDescription<CharaTableData>[] = [
         formatter: (cell, row) => {
             if (!row.hpOutcome) return '-';
             if (row.hpOutcome.type === 'died') {
+                const percent = (row.hpOutcome.deficit / row.hpOutcome.startHp) * 100;
                 return (
                     <div>
                         <span style={{ color: '#dc3545', fontWeight: 'bold' }}>Died {row.hpOutcome.distance.toFixed(2)}m early</span>
                         <br />
-                        <span style={{ fontSize: '0.85em', color: '#dc3545' }}>Missed ~{row.hpOutcome.deficit.toFixed(0)} HP</span>
+                        <span style={{ fontSize: '0.85em', color: '#dc3545' }}>~{row.hpOutcome.deficit.toFixed(0)} HP ({percent.toFixed(1)}%) missing</span>
                     </div>
                 );
             } else {
-                return <span style={{ color: '#28a745', fontWeight: 'bold' }}>Survived with {Math.round(row.hpOutcome.hp)} HP</span>;
+                const percent = (row.hpOutcome.hp / row.hpOutcome.startHp) * 100;
+                return (
+                    <div>
+                        <span style={{ color: '#28a745', fontWeight: 'bold' }}>Survived</span>
+                        <br />
+                        <span style={{ fontSize: '0.85em', color: '#28a745' }}>{Math.round(row.hpOutcome.hp)} HP ({percent.toFixed(1)}%) remaining</span>
+                    </div>
+                );
             }
         },
     },

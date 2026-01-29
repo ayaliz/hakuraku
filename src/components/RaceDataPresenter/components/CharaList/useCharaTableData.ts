@@ -250,12 +250,13 @@ export const useCharaTableData = (
                 const frames = raceData.frame ?? [];
                 if (frames.length === 0) return undefined;
 
+                const startHp = frames[0].horseFrame?.[frameOrder]?.hp ?? 1;
+
                 const firstDeathFrame = frames.find(f => (f.horseFrame?.[frameOrder]?.hp ?? 1) === 0);
 
                 if (firstDeathFrame) {
                     const dist = firstDeathFrame.horseFrame?.[frameOrder]?.distance ?? 0;
                     if (dist < raceDistance - 0.1) {
-                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         const distance = raceDistance - dist;
                         const baseSpeed = 20.0 - (raceDistance - 2000) / 1000;
                         const statusModifier = 1.0 + 200.0 / Math.sqrt(600.0 * adjustedGuts);
@@ -266,13 +267,13 @@ export const useCharaTableData = (
                         const time = distance / currentSpeed;
                         const deficit = time * hpPerSec;
 
-                        return { type: 'died' as const, distance, deficit };
+                        return { type: 'died' as const, distance, deficit, startHp };
                     }
                 }
 
                 const lastFrame = frames[frames.length - 1];
                 const hp = lastFrame.horseFrame?.[frameOrder]?.hp ?? 0;
-                return { type: 'survived' as const, hp };
+                return { type: 'survived' as const, hp, startHp };
             })(),
         };
     });

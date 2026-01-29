@@ -1,7 +1,5 @@
 import React from "react";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
-import { ColumnDescription } from "react-bootstrap-table-next";
-import { Chara } from "../../../../data/data_pb";
 import * as UMDatabaseUtils from "../../../../data/UMDatabaseUtils";
 import CardNamePresenter from "../../../CardNamePresenter";
 import CopyButton from "../../../CopyButton";
@@ -11,235 +9,324 @@ import {
     unknownCharaTag,
 } from "../../utils/RacePresenterUtils";
 import { CharaTableData } from "./types";
+import { getRankIcon } from "./rankUtils";
 
-export const charaTableColumns: ColumnDescription<CharaTableData>[] = [
-    {
-        dataField: 'copy',
-        isDummyField: true,
-        text: '',
-        formatter: (cell, row) => <CopyButton content={JSON.stringify(row.trainedChara.rawData)} />,
-    },
-    {
-        dataField: 'finishOrder',
-        text: 'Finish',
-        sort: true,
-    },
-    {
-        dataField: 'frameOrder',
-        text: 'No.',
-        sort: true,
-    },
-    {
-        dataField: 'chara',
-        text: '',
-        formatter: (chara: Chara | undefined, row) => chara ? (
-            <div style={{ lineHeight: 1.2 }}>
-                {chara.name} <CardNamePresenter cardId={row.trainedChara.cardId} />
-                {row.trainedChara.viewerName && (
-                    <div style={{ fontSize: '0.85em', opacity: 0.8 }}>
-                        [{row.trainedChara.viewerName}]
-                    </div>
-                )}
+// Stat icons
+import speedIcon from "../../../../data/textures/speed.png";
+import staminaIcon from "../../../../data/textures/stamina.png";
+import powerIcon from "../../../../data/textures/power.png";
+import gutsIcon from "../../../../data/textures/guts.png";
+import witIcon from "../../../../data/textures/wit.png";
+
+// Column definition interface for CharaTable
+export interface CharaColumnDef {
+    key: string;
+    header: React.ReactNode;
+    cellClassName?: string;
+    renderCell: (row: CharaTableData) => React.ReactNode;
+    stopPropagation?: boolean;
+}
+
+// Shared tooltip info icon component
+const InfoIcon = ({ id, tip }: { id: string; tip: string }) => (
+    <OverlayTrigger
+        placement="bottom"
+        overlay={<Tooltip id={id}>{tip}</Tooltip>}
+    >
+        <span className="header-info" style={{ cursor: 'help', borderBottom: '1px dotted #fff' }}>ⓘ</span>
+    </OverlayTrigger>
+);
+
+// Stats cell component
+const StatsCell: React.FC<{ row: CharaTableData }> = ({ row }) => {
+    const iconStyle: React.CSSProperties = { width: 16, height: 16, marginRight: 2 };
+    const statStyle: React.CSSProperties = { marginRight: 8, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center' };
+    return (
+        <div style={{ lineHeight: 1.4 }}>
+            <div>
+                <span style={statStyle}><img src={speedIcon} alt="Speed" style={iconStyle} />{row.trainedChara.speed}</span>
+                <span style={statStyle}><img src={staminaIcon} alt="Stamina" style={iconStyle} />{row.trainedChara.stamina}</span>
+                <span style={statStyle}><img src={witIcon} alt="Wit" style={iconStyle} />{row.trainedChara.wiz}</span>
             </div>
-        ) : unknownCharaTag,
+            <div>
+                <span style={statStyle}><img src={powerIcon} alt="Power" style={iconStyle} />{row.trainedChara.pow}</span>
+                <span style={statStyle}><img src={gutsIcon} alt="Guts" style={iconStyle} />{row.trainedChara.guts}</span>
+            </div>
+        </div>
+    );
+};
+
+// Running style colors
+const getRunningStyleColor = (runningStyle: number, isOonige: boolean): string => {
+    if (isOonige) return 'rgb(74, 132, 211)'; // Darker blue for Runaway
+    switch (runningStyle) {
+        case 1: return 'rgb(94, 152, 231)';  // Front Runner - Blue
+        case 2: return 'rgb(164, 219, 34)';  // Pace Chaser - Green
+        case 3: return 'rgb(253, 222, 52)';  // Late Surger - Yellow
+        case 4: return 'rgb(255, 178, 49)';  // End Closer - Orange
+        default: return '#9ca3af';
+    }
+};
+
+export const charaTableColumns: CharaColumnDef[] = [
+    {
+        key: 'expand',
+        header: '',
+        cellClassName: 'expand-cell',
+        renderCell: () => null, // Handled specially in CharaCard
     },
     {
-        dataField: 'df2',
-        isDummyField: true,
-        text: 'Time',
-        headerFormatter: () => {
-            return (
-                <span>
-                    Time{' '}
-                    <OverlayTrigger
-                        placement="bottom"
-                        overlay={
-                            <Tooltip id={`tooltip-time`}>
-                                The first value is the in-game time; the second is the simulation time. The in-game time is typically inaccurate and heavily manipulated to match real-world race times on this track.
-                            </Tooltip>
-                        }
-                    >
-                        <span style={{ cursor: 'help', borderBottom: '1px dotted #fff' }}>ⓘ</span>
-                    </OverlayTrigger>
-                </span>
-            );
+        key: 'copy',
+        header: '',
+        cellClassName: 'copy-cell',
+        stopPropagation: true,
+        renderCell: (row) => <CopyButton content={JSON.stringify(row.trainedChara.rawData)} />,
+    },
+    {
+        key: 'finishOrder',
+        header: 'Finish',
+        renderCell: (row) => row.finishOrder,
+    },
+    {
+        key: 'frameOrder',
+        header: 'No.',
+        cellClassName: 'stat-cell',
+        renderCell: (row) => row.frameOrder,
+    },
+    {
+        key: 'chara',
+        header: 'Character',
+        cellClassName: 'chara-name-cell',
+        renderCell: (row) => {
+            const rankInfo = getRankIcon(row.trainedChara.rankScore);
+            return row.chara ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <img
+                        src={rankInfo.icon}
+                        alt={rankInfo.name}
+                        title={`${rankInfo.name} (${row.trainedChara.rankScore})`}
+                        style={{ height: 20, width: 'auto' }}
+                    />
+                    <div>
+                        <span className="chara-name-primary">{row.chara.name}</span>
+                        <span className="chara-name-card"><CardNamePresenter cardId={row.trainedChara.cardId} /></span>
+                        {row.trainedChara.viewerName && (
+                            <span className="chara-viewer-name" style={{ color: '#9ca3af', fontSize: '0.75em' }}>[{row.trainedChara.viewerName}]</span>
+                        )}
+                    </div>
+                </div>
+            ) : unknownCharaTag;
         },
-        formatter: (cell, row) => <>
-            {UMDatabaseUtils.formatTime(row.horseResultData.finishTime!)}
-            <br />{UMDatabaseUtils.formatTime(row.horseResultData.finishTimeRaw!)}
-        </>,
     },
     {
-        dataField: 'df3',
-        isDummyField: true,
-        text: '',
-        formatter: (cell, row) => <>
-            {runningStyleLabel(row.horseResultData, row.activatedSkills)}
-            <br />Mood: {UMDatabaseUtils.motivationLabels[row.motivation]}
-        </>,
-    },
-    {
-        dataField: 'startDelay',
-        isDummyField: true,
-        text: 'Start delay',
-        headerFormatter: () => {
-            return (
-                <span>
-                    Start delay{' '}
-                    <OverlayTrigger
-                        placement="bottom"
-                        overlay={
-                            <Tooltip id={`tooltip-start-delay`}>
-                                Ingame, a start delay of 0.08 or worse is marked as a late start. However, the most devastating effect of high start delay is the loss of 1 frame of acceleration which already occurs at 0.066, so any start that loses that frame of acceleration is marked as a late start here
-                            </Tooltip>
-                        }
-                    >
-                        <span style={{ cursor: 'help', borderBottom: '1px dotted #fff' }}>ⓘ</span>
-                    </OverlayTrigger>
-                </span>
-            );
-        },
-        formatter: (cell, row) => (
+        key: 'time',
+        header: (
+            <span>
+                Time{' '}
+                <InfoIcon
+                    id="tooltip-time"
+                    tip="The first value is finish time, second time difference to the previous finish. Note that this uses the real race simulation time, the ingame time is highly inaccurate."
+                />
+            </span>
+        ),
+        cellClassName: 'time-cell',
+        renderCell: (row) => (
             <>
-                {row.startDelay !== undefined ? row.startDelay.toFixed(5) + "s" : '-'}
-                <br />
-                {row.isLateStart ? (
-                    <span style={{ color: '#dc3545', fontWeight: 'bold', fontSize: '0.85em' }}>Late start</span>
-                ) : (
-                    <span style={{ color: '#28a745', fontWeight: 'bold', fontSize: '0.85em' }}>Normal start</span>
-                )}
+                <span className="time-primary">{UMDatabaseUtils.formatTime(row.horseResultData.finishTimeRaw!)}</span>
+                <span className="time-secondary" style={{ color: '#9ca3af' }}>
+                    {row.timeDiffToPrev !== undefined && row.timeDiffToPrev > 0
+                        ? `+${UMDatabaseUtils.formatTime(row.timeDiffToPrev)}`
+                        : ''}
+                </span>
             </>
         ),
     },
     {
-        dataField: 'lastSpurt',
-        isDummyField: true,
-        text: 'Last spurt',
-        headerFormatter: () => {
+        key: 'styleMood',
+        header: 'Style/Mood',
+        renderCell: (row) => {
+            const isOonige = row.activatedSkills.has(202051);
+            const styleColor = getRunningStyleColor(row.horseResultData.runningStyle!, isOonige);
             return (
-                <span>
-                    Last spurt{' '}
-                    <OverlayTrigger
-                        placement="bottom"
-                        overlay={
-                            <Tooltip id={`tooltip-spurt-delay`}>
-                                If an Uma performed a full last spurt, you should see a spurt delay &lt; 3m as well as an observed speed matching the theoretical speed. (Theoretical speed calculation requires the correct track to be selected; see the top left of Replay.) This data may look messed up for career races due to the hidden +400 stat modifier.
-                            </Tooltip>
-                        }
-                    >
-                        <span style={{ cursor: 'help', borderBottom: '1px dotted #fff' }}>ⓘ</span>
-                    </OverlayTrigger>
-                </span>
-            );
-        },
-        formatter: (cell, row) => {
-            const dist = row.horseResultData.lastSpurtStartDistance;
-            if (!dist) return '-';
-            if (dist === -1) {
-                return <span style={{ color: '#dc3545', fontWeight: 'bold' }}>No spurt</span>;
-            }
-
-            const phase3Start = row.raceDistance * 2 / 3;
-            const delay = dist - phase3Start;
-            const color = getColorForSpurtDelay(delay);
-
-            const diff = (row.maxAdjustedSpeed && row.lastSpurtTargetSpeed)
-                ? row.maxAdjustedSpeed - row.lastSpurtTargetSpeed
-                : 0;
-            const reached = diff >= -0.05;
-
-            return (
-                <div style={{ lineHeight: 1.2 }}>
-                    <div>
-                        Delay: <span style={{ color, fontWeight: 'bold' }}>{delay.toFixed(2)}m</span>
-                    </div>
-                    {row.maxAdjustedSpeed && row.lastSpurtTargetSpeed ? (
-                        <div style={{ fontSize: '0.85em', color: reached ? '#28a745' : '#dc3545' }} title="Max Speed Reached vs Theoretical Target">
-                            <span style={{ color: '#fff' }}>Speed:</span> {row.maxAdjustedSpeed.toFixed(2)} <span style={{ opacity: 0.8 }}>({diff > 0 ? '+' : ''}{diff.toFixed(2)})</span>
-                        </div>
-                    ) : null}
+                <div style={{ lineHeight: 1.3 }}>
+                    <span className="style-badge" style={{ color: styleColor }}>
+                        {runningStyleLabel(row.horseResultData, row.activatedSkills)}
+                    </span>
+                    <br />
+                    <span style={{ fontSize: '0.85em', color: '#9ca3af' }}>
+                        {UMDatabaseUtils.motivationLabels[row.motivation]}
+                    </span>
                 </div>
             );
         },
     },
     {
-        dataField: 'hpOutcome',
-        isDummyField: true,
-        text: 'HP Result',
-        headerFormatter: () => {
-            return (
-                <span>
-                    HP Result{' '}
-                    <OverlayTrigger
-                        placement="bottom"
-                        overlay={
-                            <Tooltip id={`tooltip-hp-result`}>
-                                Shows remaining HP if an Uma made it to the finish without running out of HP, otherwise shows an estimate for missing HP based on observed last spurt speed.
-                            </Tooltip>
-                        }
-                    >
-                        <span style={{ cursor: 'help', borderBottom: '1px dotted #fff' }}>ⓘ</span>
-                    </OverlayTrigger>
+        key: 'startDelay',
+        header: (
+            <span>
+                Start delay{' '}
+                <InfoIcon
+                    id="tooltip-start-delay"
+                    tip="Ingame, a start delay of 80ms or worse is marked as a late start. However, the most devastating effect of high start delay is the loss of 1 frame of acceleration which already occurs at 66ms, so any start that loses that frame of acceleration is marked as a late start here."
+                />
+            </span>
+        ),
+        renderCell: (row) => (
+            <div style={{ lineHeight: 1.2 }}>
+                {row.startDelay !== undefined ? (row.startDelay * 1000).toFixed(1) + 'ms' : '-'}
+                <br />
+                <span className={`mini-badge ${row.isLateStart ? 'danger' : 'success'}`}>
+                    {row.isLateStart ? 'Late' : 'Normal'}
                 </span>
+            </div>
+        ),
+    },
+    {
+        key: 'lastSpurt',
+        header: (
+            <span>
+                Last spurt{' '}
+                <InfoIcon
+                    id="tooltip-spurt-delay"
+                    tip="If an Uma performed a full last spurt, you should see a spurt delay < 3m as well as an observed speed matching the theoretical speed. (Theoretical speed calculation requires the correct track to be selected; see the top left of Replay.) This data may look messed up for career races due to the hidden +400 stat modifier."
+                />
+            </span>
+        ),
+        renderCell: (row) => {
+            const spurtDist = row.horseResultData.lastSpurtStartDistance;
+            if (spurtDist === -1) {
+                return <span className="status-bad">No spurt</span>;
+            }
+            const phase3Start = row.raceDistance * 2 / 3;
+            const spurtDelay = spurtDist ? spurtDist - phase3Start : null;
+            if (spurtDelay === null) return '-';
+
+            const spurtColor = getColorForSpurtDelay(spurtDelay);
+            const speedDiff = (row.maxAdjustedSpeed && row.lastSpurtTargetSpeed)
+                ? row.maxAdjustedSpeed - row.lastSpurtTargetSpeed : 0;
+            const speedReached = speedDiff >= -0.05;
+
+            return (
+                <div style={{ lineHeight: 1.3 }}>
+                    <span>Delay: <span style={{ color: spurtColor, fontWeight: 600 }}>{spurtDelay.toFixed(1)}m</span></span>
+                    {row.maxAdjustedSpeed && row.lastSpurtTargetSpeed && (
+                        <>
+                            <br />
+                            <span style={{ fontSize: '0.85em' }}>
+                                <span style={{ color: '#e5e7eb' }}>Speed: </span>
+                                <span style={{ color: speedReached ? '#4ade80' : '#f87171' }}>
+                                    {row.maxAdjustedSpeed.toFixed(1)}{Math.abs(speedDiff) >= 0.05 && ` (${speedDiff > 0 ? '+' : ''}${speedDiff.toFixed(1)})`}
+                                </span>
+                            </span>
+                        </>
+                    )}
+                </div>
             );
         },
-        formatter: (cell, row) => {
+    },
+    {
+        key: 'hpOutcome',
+        header: (
+            <span>
+                HP Result{' '}
+                <InfoIcon
+                    id="tooltip-hp-result"
+                    tip="Shows remaining HP if an Uma made it to the finish without running out of HP, otherwise shows an estimate for missing HP based on observed last spurt speed."
+                />
+            </span>
+        ),
+        renderCell: (row) => {
             if (!row.hpOutcome) return '-';
             if (row.hpOutcome.type === 'died') {
-                const percent = (row.hpOutcome.deficit / row.hpOutcome.startHp) * 100;
                 return (
-                    <div>
-                        <span style={{ color: '#dc3545', fontWeight: 'bold' }}>Died {row.hpOutcome.distance.toFixed(2)}m early</span>
+                    <div style={{ lineHeight: 1.3 }}>
+                        <span className="status-bad">Died (-{row.hpOutcome.distance.toFixed(0)}m)</span>
                         <br />
-                        <span style={{ fontSize: '0.85em', color: '#dc3545' }}>~{row.hpOutcome.deficit.toFixed(0)} HP ({percent.toFixed(1)}%) missing</span>
+                        <span style={{ fontSize: '0.85em', color: '#f87171' }}>
+                            -{row.hpOutcome.deficit.toFixed(0)} HP ({((row.hpOutcome.deficit / row.hpOutcome.startHp) * 100).toFixed(1)}%)
+                        </span>
                     </div>
                 );
             } else {
-                const percent = (row.hpOutcome.hp / row.hpOutcome.startHp) * 100;
                 return (
-                    <div>
-                        <span style={{ color: '#28a745', fontWeight: 'bold' }}>Survived</span>
+                    <div style={{ lineHeight: 1.3 }}>
+                        <span className="status-good">Survived</span>
                         <br />
-                        <span style={{ fontSize: '0.85em', color: '#28a745' }}>{Math.round(row.hpOutcome.hp)} HP ({percent.toFixed(1)}%) remaining</span>
+                        <span style={{ fontSize: '0.85em', color: '#4ade80' }}>
+                            {Math.round(row.hpOutcome.hp)} HP ({((row.hpOutcome.hp / row.hpOutcome.startHp) * 100).toFixed(1)}%)
+                        </span>
                     </div>
                 );
             }
         },
     },
     {
-        dataField: 'rankScore',
-        isDummyField: true,
-        text: 'Score',
-        formatter: (cell, row) => row.trainedChara.rankScore,
+        key: 'duelingTime',
+        header: (
+            <span>
+                Dueling{' '}
+                <InfoIcon
+                    id="tooltip-dueling"
+                    tip="Approximate time this Uma spent dueling."
+                />
+            </span>
+        ),
+        cellClassName: 'stat-cell',
+        renderCell: (row) => {
+            if (!row.duelingTime || row.duelingTime < 0.01) return '-';
+            return <span style={{ color: '#fbbf24' }}>{row.duelingTime.toFixed(1)}s</span>;
+        },
     },
     {
-        dataField: 'speed',
-        isDummyField: true,
-        text: 'Speed',
-        formatter: (cell, row) => row.trainedChara.speed,
+        key: 'downhillModeTime',
+        header: (
+            <span>
+                Downhill{' '}
+                <InfoIcon
+                    id="tooltip-downhill"
+                    tip="Approximate time this Uma spent in downhill mode."
+                />
+            </span>
+        ),
+        cellClassName: 'stat-cell',
+        renderCell: (row) => {
+            if (!row.downhillModeTime || row.downhillModeTime < 0.01) return '-';
+            return <span style={{ color: '#60a5fa' }}>{row.downhillModeTime.toFixed(1)}s</span>;
+        },
     },
     {
-        dataField: 'stamina',
-        isDummyField: true,
-        text: 'Stamina',
-        formatter: (cell, row) => row.trainedChara.stamina,
+        key: 'paceTime',
+        header: (
+            <span>
+                Pace{' '}
+                <InfoIcon
+                    id="tooltip-pace"
+                    tip="Approximate time this Uma spent in Pace Up mode (or Speed up/Overtake modes if front runner) and Pace Down mode."
+                />
+            </span>
+        ),
+        cellClassName: 'stat-cell',
+        renderCell: (row) => {
+            const hasUp = (row.paceUpTime ?? 0) >= 0.01;
+            const hasDown = (row.paceDownTime ?? 0) >= 0.01;
+            if (!hasUp && !hasDown) return '-';
+            return (
+                <div style={{ lineHeight: 1.3 }}>
+                    {hasUp && (
+                        <span style={{ color: '#4ade80' }}>↑{row.paceUpTime!.toFixed(1)}s</span>
+                    )}
+                    {hasUp && hasDown && <br />}
+                    {hasDown && (
+                        <span style={{ color: '#f87171' }}>↓{row.paceDownTime!.toFixed(1)}s</span>
+                    )}
+                </div>
+            );
+        },
     },
     {
-        dataField: 'pow',
-        isDummyField: true,
-        text: 'Power',
-        formatter: (cell, row) => row.trainedChara.pow,
-    },
-    {
-        dataField: 'guts',
-        isDummyField: true,
-        text: 'Guts',
-        formatter: (cell, row) => row.trainedChara.guts,
-    },
-    {
-        dataField: 'wiz',
-        isDummyField: true,
-        text: 'Wit',
-        formatter: (cell, row) => row.trainedChara.wiz,
+        key: 'stats',
+        header: 'Stats',
+        cellClassName: 'stat-cell',
+        renderCell: (row) => <StatsCell row={row} />,
     },
 ];

@@ -1,13 +1,10 @@
 import React, { useState } from "react";
-import { OverlayTrigger, Tooltip, Table } from "react-bootstrap";
+import { Table } from "react-bootstrap";
 import { CharaTableData, ParentEntry } from "./types";
 import { aggregateFactors, formatFactor, getCharaImageUrl, getFactorColor } from "./utils";
-import { getColorForSpurtDelay, runningStyleLabel, unknownCharaTag } from "../../utils/RacePresenterUtils";
-import * as UMDatabaseUtils from "../../../../data/UMDatabaseUtils";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
-import CardNamePresenter from "../../../CardNamePresenter";
-import CopyButton from "../../../CopyButton";
 import CharaProperLabels from "../../../CharaProperLabels";
+import { charaTableColumns } from "./columns";
 
 const ChevronIcon = () => (
     <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
@@ -19,7 +16,6 @@ interface CharaTableProps {
     data: CharaTableData[];
 }
 
-// Original-style parent group component
 const ParentGroup = ({ parents }: { parents: ParentEntry[] }) => {
     const sortedParents = [...parents].sort((a, b) => a.positionId - b.positionId);
     if (sortedParents.length === 0) return null;
@@ -91,78 +87,9 @@ const CharaTable: React.FC<CharaTableProps> = ({ data }) => {
             <table className="chara-table">
                 <thead>
                     <tr>
-                        <th></th>
-                        <th></th>
-                        <th>Finish</th>
-                        <th>No.</th>
-                        <th>Character</th>
-                        <th>
-                            <span>
-                                Time{' '}
-                                <OverlayTrigger
-                                    placement="bottom"
-                                    overlay={
-                                        <Tooltip id="tooltip-time">
-                                            The first value is the simulation time (accurate); the second is the in-game time which is typically inaccurate and heavily manipulated to match real-world race times on this track.
-                                        </Tooltip>
-                                    }
-                                >
-                                    <span className="header-info" style={{ cursor: 'help', borderBottom: '1px dotted #fff' }}>ⓘ</span>
-                                </OverlayTrigger>
-                            </span>
-                        </th>
-                        <th>Style/Mood</th>
-                        <th>
-                            <span>
-                                Start delay{' '}
-                                <OverlayTrigger
-                                    placement="bottom"
-                                    overlay={
-                                        <Tooltip id="tooltip-start-delay">
-                                            Ingame, a start delay of 0.08 or worse is marked as a late start. However, the most devastating effect of high start delay is the loss of 1 frame of acceleration which already occurs at 0.066, so any start that loses that frame of acceleration is marked as a late start here
-                                        </Tooltip>
-                                    }
-                                >
-                                    <span className="header-info" style={{ cursor: 'help', borderBottom: '1px dotted #fff' }}>ⓘ</span>
-                                </OverlayTrigger>
-                            </span>
-                        </th>
-                        <th>
-                            <span>
-                                Last spurt{' '}
-                                <OverlayTrigger
-                                    placement="bottom"
-                                    overlay={
-                                        <Tooltip id="tooltip-spurt-delay">
-                                            If an Uma performed a full last spurt, you should see a spurt delay &lt; 3m as well as an observed speed matching the theoretical speed. (Theoretical speed calculation requires the correct track to be selected; see the top left of Replay.) This data may look messed up for career races due to the hidden +400 stat modifier.
-                                        </Tooltip>
-                                    }
-                                >
-                                    <span className="header-info" style={{ cursor: 'help', borderBottom: '1px dotted #fff' }}>ⓘ</span>
-                                </OverlayTrigger>
-                            </span>
-                        </th>
-                        <th>
-                            <span>
-                                HP Result{' '}
-                                <OverlayTrigger
-                                    placement="bottom"
-                                    overlay={
-                                        <Tooltip id="tooltip-hp-result">
-                                            Shows remaining HP if an Uma made it to the finish without running out of HP, otherwise shows an estimate for missing HP based on observed last spurt speed.
-                                        </Tooltip>
-                                    }
-                                >
-                                    <span className="header-info" style={{ cursor: 'help', borderBottom: '1px dotted #fff' }}>ⓘ</span>
-                                </OverlayTrigger>
-                            </span>
-                        </th>
-                        <th>Score</th>
-                        <th>SPD</th>
-                        <th>STA</th>
-                        <th>POW</th>
-                        <th>GUT</th>
-                        <th>WIT</th>
+                        {charaTableColumns.map(col => (
+                            <th key={col.key}>{col.header}</th>
+                        ))}
                     </tr>
                 </thead>
                 <tbody>
@@ -171,110 +98,37 @@ const CharaTable: React.FC<CharaTableProps> = ({ data }) => {
                         const rank = row.finishOrder;
                         const rankClass = rank <= 3 ? `rank-${rank}` : '';
 
-                        const spurtDist = row.horseResultData.lastSpurtStartDistance;
-                        const phase3Start = row.raceDistance * 2 / 3;
-                        const spurtDelay = spurtDist && spurtDist !== -1 ? spurtDist - phase3Start : null;
-                        const spurtColor = spurtDelay !== null ? getColorForSpurtDelay(spurtDelay) : undefined;
-
-                        const speedDiff = (row.maxAdjustedSpeed && row.lastSpurtTargetSpeed)
-                            ? row.maxAdjustedSpeed - row.lastSpurtTargetSpeed : 0;
-                        const speedReached = speedDiff >= -0.05;
-
                         const parentGroup1 = row.parents.filter(p => Math.floor(p.positionId / 10) === 1);
                         const parentGroup2 = row.parents.filter(p => Math.floor(p.positionId / 10) === 2);
 
                         const mainRow = (
                             <tr key={`main-${row.frameOrder}`} className={isExpanded ? 'expanded' : ''} onClick={() => toggleRow(row.frameOrder)}>
-                                <td className="expand-cell">
-                                    <span className={`expand-icon ${isExpanded ? 'expanded' : ''}`}>
-                                        <ChevronIcon />
-                                    </span>
-                                </td>
-                                <td className="copy-cell" onClick={e => e.stopPropagation()}>
-                                    <CopyButton content={JSON.stringify(row.trainedChara.rawData)} />
-                                </td>
-                                <td className={`rank-cell ${rankClass}`}>{rank}</td>
-                                <td className="stat-cell">{row.frameOrder}</td>
-                                <td className="chara-name-cell">
-                                    {row.chara ? (
-                                        <>
-                                            <span className="chara-name-primary">{row.chara.name}</span>
-                                            <span className="chara-name-card"><CardNamePresenter cardId={row.trainedChara.cardId} /></span>
-                                            {row.trainedChara.viewerName && (
-                                                <span className="chara-viewer-name" style={{ opacity: 0.6 }}>[{row.trainedChara.viewerName}]</span>
-                                            )}
-                                        </>
-                                    ) : unknownCharaTag}
-                                </td>
-                                <td className="time-cell">
-                                    <span className="time-primary">{UMDatabaseUtils.formatTime(row.horseResultData.finishTimeRaw!)}</span>
-                                    <span className="time-secondary">{UMDatabaseUtils.formatTime(row.horseResultData.finishTime!)}</span>
-                                </td>
-                                <td>
-                                    <div style={{ lineHeight: 1.3 }}>
-                                        <span className="style-badge">{runningStyleLabel(row.horseResultData, row.activatedSkills)}</span>
-                                        <br />
-                                        <span style={{ fontSize: '0.85em', color: '#9ca3af' }}>
-                                            {UMDatabaseUtils.motivationLabels[row.motivation]}
-                                        </span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div style={{ lineHeight: 1.2 }}>
-                                        {row.startDelay !== undefined ? row.startDelay.toFixed(5) + 's' : '-'}
-                                        <br />
-                                        <span className={`mini-badge ${row.isLateStart ? 'danger' : 'success'}`}>
-                                            {row.isLateStart ? 'Late' : 'Normal'}
-                                        </span>
-                                    </div>
-                                </td>
-                                <td>
-                                    {spurtDist === -1 ? (
-                                        <span className="status-bad">No spurt</span>
-                                    ) : spurtDelay !== null ? (
-                                        <div style={{ lineHeight: 1.3 }}>
-                                            <span>Delay: <span style={{ color: spurtColor, fontWeight: 600 }}>{spurtDelay.toFixed(1)}m</span></span>
-                                            {row.maxAdjustedSpeed && row.lastSpurtTargetSpeed && (
-                                                <>
-                                                    <br />
-                                                    <span style={{ fontSize: '0.85em' }}>
-                                                        <span style={{ color: '#e5e7eb' }}>Speed: </span>
-                                                        <span style={{ color: speedReached ? '#4ade80' : '#f87171' }}>
-                                                            {row.maxAdjustedSpeed.toFixed(1)} ({speedDiff > 0 ? '+' : ''}{speedDiff.toFixed(1)})
-                                                        </span>
-                                                    </span>
-                                                </>
-                                            )}
-                                        </div>
-                                    ) : '-'}
-                                </td>
-                                <td>
-                                    {row.hpOutcome ? (
-                                        row.hpOutcome.type === 'died' ? (
-                                            <div style={{ lineHeight: 1.3 }}>
-                                                <span className="status-bad">Died (-{row.hpOutcome.distance.toFixed(0)}m)</span>
-                                                <br />
-                                                <span style={{ fontSize: '0.85em', color: '#f87171' }}>
-                                                    -{row.hpOutcome.deficit.toFixed(0)} HP ({((row.hpOutcome.deficit / row.hpOutcome.startHp) * 100).toFixed(1)}%)
+                                {charaTableColumns.map(col => {
+                                    // Special handling for certain columns
+                                    if (col.key === 'expand') {
+                                        return (
+                                            <td key={col.key} className={col.cellClassName}>
+                                                <span className={`expand-icon ${isExpanded ? 'expanded' : ''}`}>
+                                                    <ChevronIcon />
                                                 </span>
-                                            </div>
-                                        ) : (
-                                            <div style={{ lineHeight: 1.3 }}>
-                                                <span className="status-good">Survived</span>
-                                                <br />
-                                                <span style={{ fontSize: '0.85em', color: '#4ade80' }}>
-                                                    {Math.round(row.hpOutcome.hp)} HP ({((row.hpOutcome.hp / row.hpOutcome.startHp) * 100).toFixed(1)}%)
-                                                </span>
-                                            </div>
-                                        )
-                                    ) : '-'}
-                                </td>
-                                <td className="stat-cell">{row.trainedChara.rankScore}</td>
-                                <td className="stat-cell">{row.trainedChara.speed}</td>
-                                <td className="stat-cell">{row.trainedChara.stamina}</td>
-                                <td className="stat-cell">{row.trainedChara.pow}</td>
-                                <td className="stat-cell">{row.trainedChara.guts}</td>
-                                <td className="stat-cell">{row.trainedChara.wiz}</td>
+                                            </td>
+                                        );
+                                    }
+                                    if (col.key === 'finishOrder') {
+                                        return (
+                                            <td key={col.key} className={`rank-cell ${rankClass}`}>
+                                                {col.renderCell(row)}
+                                            </td>
+                                        );
+                                    }
+
+                                    const handleClick = col.stopPropagation ? (e: React.MouseEvent) => e.stopPropagation() : undefined;
+                                    return (
+                                        <td key={col.key} className={col.cellClassName} onClick={handleClick}>
+                                            {col.renderCell(row)}
+                                        </td>
+                                    );
+                                })}
                             </tr>
                         );
 
@@ -282,10 +136,9 @@ const CharaTable: React.FC<CharaTableProps> = ({ data }) => {
                             return [mainRow];
                         }
 
-                        // Original layout: Skills (left) | Aptitudes + Deck (middle) | Parents (right)
                         const expandedRow = (
                             <tr key={`expanded-${row.frameOrder}`}>
-                                <td colSpan={16} className="expanded-content">
+                                <td colSpan={charaTableColumns.length} className="expanded-content">
                                     <div className="d-flex flex-row align-items-start flex-wrap">
                                         {/* Skills table - left */}
                                         <Table className="w-auto m-1">

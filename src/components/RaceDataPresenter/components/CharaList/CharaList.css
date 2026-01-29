@@ -39,6 +39,7 @@
     top: 0;
     z-index: 10;
     white-space: nowrap;
+    text-align: center;
 }
 
 .chara-table thead th:first-child {
@@ -77,6 +78,7 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     vertical-align: middle;
     white-space: nowrap;
+    text-align: center;
 }
 
 /* Rank column special styling */
@@ -103,6 +105,7 @@
 /* Character name styling */
 .chara-name-cell {
     max-width: 200px;
+    text-align: left;
 }
 
 .chara-name-primary {
@@ -118,9 +121,10 @@
 
 .chara-viewer-name {
     font-size: 0.75em;
-    color: #9ca3af;
+    color: #6b7280;
     display: block;
     margin-top: 2px;
+    text-align: left;
 }
 
 /* Stats cells */
@@ -143,7 +147,7 @@
 
 .time-secondary {
     font-size: 0.85em;
-    color: #6b7280;
+    color: #4b5563;
     display: block;
 }
 
@@ -232,7 +236,6 @@
     transform: rotate(180deg);
 }
 
-/* Expanded row content - Using original Bootstrap flex layout */
 .expanded-content {
     background: rgba(20, 24, 32, 0.8);
     padding: 16px;

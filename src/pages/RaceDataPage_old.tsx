@@ -229,9 +229,7 @@ export default class RaceDataPageOld extends React.Component<{}, RaceDataPageSta
         formData.append('fileToUpload', blob, 'race.json');
 
         try {
-            // Catbox API upload endpoint doesn't support CORS, but file downloads do.
-            // Using proxy for the upload action.
-            const res = await fetch('https://corsproxy.io/?https://catbox.moe/user/api.php', {
+            const res = await fetch('https://proxy.corsfix.com/?https://catbox.moe/user/api.php', {
                 method: 'POST',
                 body: formData
             });

@@ -39,48 +39,50 @@ const ClipMaker: React.FC<ClipMakerProps> = ({
 
     return (
         <div
-            className="d-flex flex-column p-2 mt-2"
+            className="d-flex align-items-center p-2 mt-2"
             style={{
                 backgroundColor: "#222",
                 border: "1px solid #444",
-                borderRadius: "4px",
-                gap: "8px",
-                alignItems: "flex-end",
+                borderRadius: "6px",
+                gap: "16px",
+                flexWrap: "wrap",
             }}
         >
-            <div className="d-flex align-items-center gap-2">
-                <div className="d-flex align-items-center gap-1">
-                    <Form.Label className="mb-0 text-white" style={{ fontSize: "0.85rem" }}>Start (s):</Form.Label>
+            {/* Time range inputs */}
+            <div className="d-flex align-items-center" style={{ gap: "12px" }}>
+                <div className="d-flex align-items-center" style={{ gap: "6px" }}>
+                    <Form.Label className="mb-0 text-white" style={{ fontSize: "0.85rem", whiteSpace: "nowrap" }}>Start (s):</Form.Label>
                     <Form.Control
                         type="number"
                         value={start}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStart(Number(e.target.value))}
                         step={0.1}
-                        style={{ width: "60px", padding: "2px 5px", height: "auto", fontSize: "0.85rem" }}
+                        style={{ width: "75px", padding: "4px 8px", height: "auto", fontSize: "0.85rem" }}
                     />
                 </div>
 
-                <div className="d-flex align-items-center gap-1 ms-2">
-                    <Form.Label className="mb-0 text-white" style={{ fontSize: "0.85rem" }}>End (s):</Form.Label>
+                <div className="d-flex align-items-center" style={{ gap: "6px" }}>
+                    <Form.Label className="mb-0 text-white" style={{ fontSize: "0.85rem", whiteSpace: "nowrap" }}>End (s):</Form.Label>
                     <Form.Control
                         type="number"
                         value={end}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEnd(Number(e.target.value))}
                         step={0.1}
-                        style={{ width: "60px", padding: "2px 5px", height: "auto", fontSize: "0.85rem" }}
+                        style={{ width: "75px", padding: "4px 8px", height: "auto", fontSize: "0.85rem" }}
                     />
                 </div>
             </div>
 
-            <div className="d-flex align-items-center gap-2" style={{ width: "100%", justifyContent: "flex-end" }}>
-                <div className="d-flex align-items-center gap-1">
-                    <Form.Label className="mb-0 text-white" style={{ fontSize: "0.85rem" }}>Speed:</Form.Label>
+            {/* Speed and FPS controls */}
+            <div className="d-flex align-items-center" style={{ gap: "12px" }}>
+                <div className="d-flex align-items-center" style={{ gap: "6px" }}>
+                    <Form.Label className="mb-0 text-white" style={{ fontSize: "0.85rem", whiteSpace: "nowrap" }}>Speed:</Form.Label>
                     <Form.Control
                         type="number"
                         value={speed}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSpeed(Number(e.target.value))}
                         step={0.1}
-                        style={{ width: "50px", padding: "2px 5px", height: "auto", fontSize: "0.85rem" }}
+                        style={{ width: "60px", padding: "4px 8px", height: "auto", fontSize: "0.85rem" }}
                     />
                 </div>
 
@@ -89,7 +91,7 @@ const ClipMaker: React.FC<ClipMakerProps> = ({
                     size="sm"
                     value={fps}
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFps(Number(e.target.value))}
-                    style={{ width: "auto", padding: "2px 5px", height: "auto", fontSize: "0.85rem" }}
+                    style={{ width: "auto", padding: "4px 8px", height: "auto", fontSize: "0.85rem" }}
                     title="Frame Rate"
                 >
                     <option value={30}>30 FPS</option>
@@ -101,7 +103,7 @@ const ClipMaker: React.FC<ClipMakerProps> = ({
                     size="sm"
                     onClick={handleExportClick}
                     disabled={isExporting}
-                    style={{ fontSize: "0.85rem" }}
+                    style={{ fontSize: "0.85rem", whiteSpace: "nowrap", padding: "4px 12px" }}
                 >
                     {isExporting ? (
                         <>

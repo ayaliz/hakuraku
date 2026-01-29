@@ -1,11 +1,9 @@
 import _ from "lodash";
 import React from "react";
-import BootstrapTable from "react-bootstrap-table-next";
 import { RaceSimulateData } from "../../../../data/race_data_pb";
-import FoldCard from "../../../FoldCard";
-import { charaTableColumns } from "./columns";
-import { expandRowOptions } from "./ExpandedRow";
+import CharaTable from "./CharaCard";
 import { useCharaTableData } from "./useCharaTableData";
+import "./CharaList.css";
 
 type CharaListProps = {
     raceHorseInfo: any[];
@@ -24,15 +22,11 @@ const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData, detected
 
     const sortedData = _.sortBy(tableData, d => d.finishOrder);
 
-    return <FoldCard header="Umas">
-        <BootstrapTable bootstrap4 condensed hover
-            classes="responsive-bootstrap-table"
-            wrapperClasses="table-responsive"
-            expandRow={expandRowOptions}
-            data={sortedData}
-            columns={charaTableColumns}
-            keyField="frameOrder" />
-    </FoldCard>;
+    return (
+        <div className="chara-list-section">
+            <CharaTable data={sortedData} />
+        </div>
+    );
 };
 
 export default CharaList;

@@ -1,0 +1,351 @@
+/* CharaList Modern Table Styling */
+
+/* Section header */
+.chara-list-section {
+    margin-bottom: 16px;
+}
+
+.section-header {
+    margin-bottom: 12px;
+    color: #9ca3af;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.chara-table-wrapper {
+    overflow-x: auto;
+    padding: 4px;
+}
+
+/* Modern table styling */
+.chara-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.9rem;
+    color: #e5e7eb;
+}
+
+.chara-table thead th {
+    background: linear-gradient(180deg, rgba(55, 65, 81, 0.9) 0%, rgba(31, 41, 55, 0.95) 100%);
+    color: #9ca3af;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 10px 12px;
+    border-bottom: 2px solid rgba(99, 102, 241, 0.3);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    white-space: nowrap;
+}
+
+.chara-table thead th:first-child {
+    border-top-left-radius: 8px;
+}
+
+.chara-table thead th:last-child {
+    border-top-right-radius: 8px;
+}
+
+/* Table body rows */
+.chara-table tbody tr {
+    transition: background 0.15s ease;
+    cursor: pointer;
+}
+
+.chara-table tbody tr:nth-child(odd) {
+    background: rgba(30, 35, 44, 0.5);
+}
+
+.chara-table tbody tr:nth-child(even) {
+    background: rgba(40, 45, 55, 0.5);
+}
+
+.chara-table tbody tr:hover {
+    background: rgba(99, 102, 241, 0.12);
+}
+
+.chara-table tbody tr.expanded {
+    background: rgba(99, 102, 241, 0.15);
+    border-left: 3px solid #6366f1;
+}
+
+.chara-table tbody td {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+/* Rank column special styling */
+.rank-cell {
+    font-weight: 700;
+    font-size: 1rem;
+    text-align: center;
+    width: 40px;
+}
+
+.rank-cell.rank-1 {
+    color: #fbbf24;
+    text-shadow: 0 0 8px rgba(251, 191, 36, 0.4);
+}
+
+.rank-cell.rank-2 {
+    color: #9ca3af;
+}
+
+.rank-cell.rank-3 {
+    color: #cd7f32;
+}
+
+/* Character name styling */
+.chara-name-cell {
+    max-width: 200px;
+}
+
+.chara-name-primary {
+    font-weight: 600;
+    color: #f3f4f6;
+}
+
+.chara-name-card {
+    font-size: 0.8em;
+    color: #9ca3af;
+    margin-left: 4px;
+}
+
+.chara-viewer-name {
+    font-size: 0.75em;
+    color: #9ca3af;
+    display: block;
+    margin-top: 2px;
+}
+
+/* Stats cells */
+.stat-cell {
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    min-width: 45px;
+}
+
+/* Time display */
+.time-cell {
+    font-variant-numeric: tabular-nums;
+}
+
+.time-primary {
+    font-weight: 600;
+    color: #e5e7eb;
+}
+
+.time-secondary {
+    font-size: 0.85em;
+    color: #6b7280;
+    display: block;
+}
+
+/* Status indicators */
+.status-good {
+    color: #4ade80;
+    font-weight: 600;
+}
+
+.status-bad {
+    color: #f87171;
+    font-weight: 600;
+}
+
+.status-neutral {
+    color: #9ca3af;
+}
+
+/* Small badge styling */
+.mini-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.mini-badge.success {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+}
+
+.mini-badge.danger {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+}
+
+/* Running style badge */
+.style-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(79, 70, 229, 0.15) 100%);
+    color: #a5b4fc;
+    border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+/* Info icon in headers */
+.header-info {
+    cursor: help;
+    margin-left: 4px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.header-info:hover {
+    opacity: 1;
+}
+
+/* Copy button cell */
+.copy-cell {
+    width: 32px;
+    text-align: center;
+}
+
+/* Expand indicator */
+.expand-cell {
+    width: 24px;
+    text-align: center;
+    color: #4b5563;
+    transition: color 0.2s;
+}
+
+.chara-table tbody tr:hover .expand-cell {
+    color: #9ca3af;
+}
+
+.expand-icon {
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+
+.expand-icon.expanded {
+    transform: rotate(180deg);
+}
+
+/* Expanded row content - Using original Bootstrap flex layout */
+.expanded-content {
+    background: rgba(20, 24, 32, 0.8);
+    padding: 16px;
+    animation: fadeSlideIn 0.2s ease;
+}
+
+@keyframes fadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Skills table styling in expanded row */
+.expanded-content .table {
+    background: transparent;
+    font-size: 0.9rem;
+}
+
+.expanded-content .table td {
+    padding: 4px 10px;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.expanded-content .table tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* Deck grid in expanded */
+.deck-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.deck-mini-card {
+    text-align: center;
+}
+
+.deck-mini-card img {
+    width: 70px;
+    border-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    transition: transform 0.15s;
+}
+
+.deck-mini-card:hover img {
+    transform: scale(1.05);
+}
+
+.deck-lb-label {
+    font-size: 0.7rem;
+    color: #9ca3af;
+    margin-top: 2px;
+}
+
+/* Parent group in expanded */
+.parent-mini-group {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
+}
+
+.parent-icons-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.parent-icons-row img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.factor-mini-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.factor-mini-badge {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(52, 58, 64, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.factor-stars {
+    color: #fbbf24;
+    font-weight: 600;
+    margin-left: 3px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .chara-table {
+        font-size: 0.8rem;
+    }
+
+    .chara-table thead th,
+    .chara-table tbody td {
+        padding: 6px 8px;
+    }
+}

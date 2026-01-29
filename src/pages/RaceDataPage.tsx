@@ -48,28 +48,44 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
     }
 
     componentDidMount() {
-        const key = new URLSearchParams(window.location.hash.split('?')[1]).get('bin');
-        if (!key) return;
+        const params = new URLSearchParams(window.location.hash.split('?')[1]);
+        const binKey = params.get('bin');
+        const catboxKey = params.get('catbox');
 
-        const target = `https://cdn.sourceb.in/bins/${key}/0`;
-        const proxied = `https://corsproxy.io/?${encodeURIComponent(target)}`;
-        fetch(proxied)
-            .then(res => {
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                return res.json();
-            })
-            .then(data => {
-                this.loadSharedData(data);
-            })
-            .catch(err => {
-                console.error(err);
-                this.setState({ error: `Failed to load from bin: ${err.message}` });
-            });
+        if (catboxKey) {
+            const target = `https://files.catbox.moe/${catboxKey}`;
+            fetch(target)
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
+                .then(data => {
+                    this.loadSharedData(data);
+                })
+                .catch(err => {
+                    console.error(err);
+                    this.setState({ error: `Failed to load from catbox: ${err.message}` });
+                });
+        } else if (binKey) {
+            const target = `https://cdn.sourceb.in/bins/${binKey}/0`;
+            fetch(target)
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
+                .then(data => {
+                    this.loadSharedData(data);
+                })
+                .catch(err => {
+                    console.error(err);
+                    this.setState({ error: `Failed to load from bin: ${err.message}` });
+                });
+        }
     }
 
     loadSharedData(data: { raceHorseInfo: string, raceScenario: string, detectedCourseId?: number }) {
         try {
-            const horseInfo = JSON.parse(data.raceHorseInfo);
+            const horseInfo = typeof data.raceHorseInfo === 'string' ? JSON.parse(data.raceHorseInfo) : data.raceHorseInfo;
             const parsedRaceData = deserializeFromBase64(data.raceScenario);
 
             if (!parsedRaceData) {
@@ -391,30 +407,40 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
         }
 
         this.setState({ shareStatus: 'sharing', shareError: '' });
-        fetch('https://sourceb.in/api/bins', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                files: [{ content }]
-            })
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.key) {
-                    const nextCache: ShareCache = { ...this.state.shareCache, [hash]: data.key };
-                    this.setState({ shareStatus: 'shared', shareKey: data.key, shareCache: nextCache });
-                } else {
-                    throw new Error(data.message || 'Unknown error');
-                }
-            })
-            .catch(err => {
-                this.setState({ shareStatus: '', shareError: err.message });
+
+        const blob = new Blob([content], { type: 'application/json' });
+        const formData = new FormData();
+        formData.append('reqtype', 'fileupload');
+        formData.append('fileToUpload', blob, 'race.json');
+        try {
+            const res = await fetch('https://corsproxy.io/?https://catbox.moe/user/api.php', {
+                method: 'POST',
+                body: formData
             });
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}`);
+            }
+
+            const text = await res.text();
+
+            if (text.startsWith('http')) {
+                const parts = text.split('/');
+                const filename = parts[parts.length - 1];
+
+                const nextCache: ShareCache = { ...this.state.shareCache, [hash]: filename };
+                this.setState({ shareStatus: 'shared', shareKey: filename, shareCache: nextCache });
+            } else {
+                throw new Error('Upload failed: ' + text);
+            }
+
+        } catch (err: any) {
+            this.setState({ shareStatus: '', shareError: err.message });
+        }
     };
 
     render() {
         const { error, shareStatus, shareKey, shareError, parsedRaceData } = this.state;
-        const shareUrl = `${window.location.origin}${window.location.pathname}#/racedata?bin=${shareKey}`;
+        const shareUrl = `${window.location.origin}${window.location.pathname}#/racedata?catbox=${shareKey}`;
 
         return <>
             <input

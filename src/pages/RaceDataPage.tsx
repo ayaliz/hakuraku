@@ -21,6 +21,7 @@ type RaceDataPageState = {
     shareKey: string,
     shareCache: ShareCache,
     horseActVersion: string | undefined,
+    isShared: boolean,
 };
 
 export default class RaceDataPage extends React.Component<{}, RaceDataPageState> {
@@ -42,6 +43,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             shareKey: '',
             shareCache: {},
             horseActVersion: undefined,
+            isShared: false,
         };
 
         this.fileInputRef = React.createRef();
@@ -102,6 +104,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
                 rawScenario: data.raceScenario,
                 detectedCourseId: data.detectedCourseId,
                 error: '',
+                isShared: true,
             });
         } catch (err: any) {
             this.setState({ error: `Failed to parse shared data: ${err.message}` });
@@ -325,6 +328,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             shareError: '',
             shareKey: '',
             horseActVersion: horseActVersion,
+            isShared: false,
         });
     }
 
@@ -474,7 +478,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
 
             {this.state.parsedRaceData && this.state.parsedHorseInfo ? (
                 <>
-                    {(!this.state.horseActVersion || this.state.horseActVersion !== '1.0.2') && <Alert variant="info">
+                    {(!this.state.isShared && (!this.state.horseActVersion || this.state.horseActVersion !== '1.0.2')) && <Alert variant="info">
                         The version of horseACT used to generate this file appears to be outdated. A newer version is available at <a href="https://github.com/ayaliz/horseACT/releases/latest" target="_blank" rel="noreferrer">https://github.com/ayaliz/horseACT/releases/latest</a>. It's recommended to update by replacing your existing horseACT.dll.
                     </Alert>}
                     <RaceDataPresenter

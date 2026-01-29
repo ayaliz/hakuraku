@@ -229,7 +229,9 @@ export default class RaceDataPageOld extends React.Component<{}, RaceDataPageSta
         formData.append('fileToUpload', blob, 'race.json');
 
         try {
-            const res = await fetch('https://proxy.corsfix.com/?https://catbox.moe/user/api.php', {
+            const workerUrl = 'https://cors-proxy.ayaliz.workers.dev';
+
+            const res = await fetch(`${workerUrl}/?https://catbox.moe/user/api.php`, {
                 method: 'POST',
                 body: formData
             });

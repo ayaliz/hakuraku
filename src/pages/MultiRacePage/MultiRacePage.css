@@ -1,0 +1,639 @@
+/* Multi-Race Analysis Page Styles */
+
+.multirace-container {
+    padding: 20px 0;
+}
+
+/* Upload Zone */
+.upload-zone {
+    border: 2px dashed #4a5568;
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.upload-zone:hover {
+    border-color: #667eea;
+    background: linear-gradient(135deg, #1e1e3f 0%, #1a2a4f 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+}
+
+.upload-zone.drag-over {
+    border-color: #667eea;
+    background: linear-gradient(135deg, #252550 0%, #1e3560 100%);
+}
+
+.upload-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+    color: #667eea;
+}
+
+.upload-text {
+    color: #a0aec0;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.upload-subtext {
+    color: #718096;
+    font-size: 13px;
+}
+
+/* Race List */
+.race-list-container {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #2d3748;
+}
+
+.race-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #2d3748;
+}
+
+.race-list-title {
+    color: #e2e8f0;
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.race-count-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.race-list {
+    display: grid;
+    gap: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.race-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: 1px solid #2d3748;
+    transition: all 0.2s ease;
+}
+
+.race-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: #4a5568;
+}
+
+.race-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.race-item-name {
+    color: #e2e8f0;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.race-item-details {
+    color: #718096;
+    font-size: 12px;
+}
+
+.race-item-remove {
+    background: transparent;
+    border: none;
+    color: #e53e3e;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.race-item-remove:hover {
+    background: rgba(229, 62, 62, 0.15);
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #2d3748;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    border-color: #4a5568;
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+}
+
+.stat-label {
+    color: #a0aec0;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Analysis Tabs */
+.analysis-tabs {
+    margin-bottom: 20px;
+}
+
+.analysis-tabs .nav-tabs {
+    border-bottom: 2px solid #2d3748;
+    gap: 5px;
+}
+
+.analysis-tabs .nav-link {
+    color: #a0aec0;
+    background: transparent;
+    border: none;
+    border-radius: 8px 8px 0 0;
+    padding: 12px 20px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.analysis-tabs .nav-link:hover {
+    color: #e2e8f0;
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.analysis-tabs .nav-link.active {
+    color: #fff;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Data Tables */
+.analysis-table-container {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #2d3748;
+    overflow-x: auto;
+}
+
+.analysis-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.analysis-table thead th {
+    background: rgba(102, 126, 234, 0.15);
+    color: #e2e8f0;
+    font-weight: 600;
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 2px solid #4a5568;
+    position: sticky;
+    top: 0;
+}
+
+.analysis-table thead th:first-child {
+    border-radius: 8px 0 0 0;
+}
+
+.analysis-table thead th:last-child {
+    border-radius: 0 8px 0 0;
+}
+
+.analysis-table tbody tr {
+    transition: background 0.2s ease;
+}
+
+.analysis-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.analysis-table tbody td {
+    padding: 12px 15px;
+    color: #e2e8f0;
+    border-bottom: 1px solid #2d3748;
+}
+
+.analysis-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Win rate bar */
+.win-rate-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.win-rate-fill {
+    height: 8px;
+    background: linear-gradient(90deg, #48bb78 0%, #38a169 100%);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.win-rate-bg {
+    flex: 1;
+    height: 8px;
+    background: #2d3748;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.win-rate-value {
+    color: #48bb78;
+    font-weight: 600;
+    min-width: 50px;
+    text-align: right;
+}
+
+/* Skill Search */
+.skill-search-container {
+    margin-bottom: 20px;
+}
+
+.skill-search-input {
+    background: #1a202c;
+    border: 1px solid #4a5568;
+    border-radius: 8px;
+    padding: 12px 15px;
+    color: #e2e8f0;
+    width: 100%;
+    max-width: 400px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.skill-search-input::placeholder {
+    color: #718096;
+}
+
+.skill-search-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+/* Skill Heatmap */
+.heatmap-container {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 12px;
+    padding: 25px;
+    border: 1px solid #2d3748;
+    margin-top: 20px;
+}
+
+.heatmap-title {
+    color: #e2e8f0;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.heatmap-track {
+    position: relative;
+    height: 80px;
+    background: linear-gradient(90deg, #2d3748 0%, #4a5568 50%, #2d3748 100%);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.heatmap-marker {
+    position: absolute;
+    width: 4px;
+    height: 100%;
+    background: rgba(102, 126, 234, 0.7);
+    transition: all 0.2s ease;
+}
+
+.heatmap-marker:hover {
+    background: #667eea;
+    transform: scaleX(2);
+}
+
+.heatmap-legend {
+    display: flex;
+    justify-content: space-between;
+    color: #718096;
+    font-size: 12px;
+}
+
+/* Position Badge */
+.position-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.position-badge.gold {
+    background: linear-gradient(135deg, #f6e05e 0%, #ecc94b 100%);
+    color: #744210;
+}
+
+.position-badge.silver {
+    background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
+    color: #4a5568;
+}
+
+.position-badge.bronze {
+    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+    color: #fff;
+}
+
+.position-badge.default {
+    background: #4a5568;
+    color: #e2e8f0;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #718096;
+}
+
+.empty-state-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+.empty-state-title {
+    color: #a0aec0;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.empty-state-text {
+    color: #718096;
+    font-size: 14px;
+}
+
+/* Sorting indicators */
+.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.sortable:hover {
+    background: rgba(102, 126, 234, 0.25);
+}
+
+.sort-indicator {
+    margin-left: 5px;
+    opacity: 0.5;
+}
+
+.sort-indicator.active {
+    opacity: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stat-value {
+        font-size: 24px;
+    }
+
+    .upload-zone {
+        padding: 30px 15px;
+    }
+
+    .analysis-table-container {
+        padding: 15px;
+    }
+}
+
+/* Scrollbar styling */
+.race-list::-webkit-scrollbar,
+.analysis-table-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.race-list::-webkit-scrollbar-track,
+.analysis-table-container::-webkit-scrollbar-track {
+    background: #1a1a2e;
+    border-radius: 4px;
+}
+
+.race-list::-webkit-scrollbar-thumb,
+.analysis-table-container::-webkit-scrollbar-thumb {
+    background: #4a5568;
+    border-radius: 4px;
+}
+
+.race-list::-webkit-scrollbar-thumb:hover,
+.analysis-table-container::-webkit-scrollbar-thumb:hover {
+    background: #667eea;
+}
+
+/* Clear all button */
+.clear-all-btn {
+    background: transparent;
+    border: 1px solid #e53e3e;
+    color: #e53e3e;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.clear-all-btn:hover {
+    background: rgba(229, 62, 62, 0.15);
+}
+
+/* Loading spinner */
+.loading-overlay {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+}
+
+.loading-text {
+    color: #a0aec0;
+    margin-left: 15px;
+    font-size: 14px;
+}
+
+/* Win Distribution Charts */
+.win-distribution-section {
+    margin-bottom: 25px;
+}
+
+.charts-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+.pie-chart-container {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #2d3748;
+}
+
+.pie-chart-title {
+    color: #e2e8f0;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.pie-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-width: 180px;
+}
+
+.pie-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.pie-legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.pie-legend-label {
+    color: #e2e8f0;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pie-legend-value {
+    color: #a0aec0;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+/* Portrait image in pie chart */
+.pie-portrait {
+    border-radius: 50%;
+    border: 2px solid #1a1a2e;
+}
+
+/* Skill Analysis Section within track tabs */
+.skill-analysis-section {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #2d3748;
+}
+
+/* Expandable skill table */
+.skill-table-expandable .skill-row {
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.skill-table-expandable .skill-row:hover {
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.skill-table-expandable .skill-row.expanded {
+    background: rgba(102, 126, 234, 0.15);
+}
+
+.skill-table-expandable .expand-icon {
+    color: #667eea;
+    font-size: 10px;
+    transition: transform 0.2s ease;
+}
+
+.skill-table-expandable .heatmap-row {
+    background: rgba(102, 126, 234, 0.08);
+}
+
+.skill-table-expandable .heatmap-row:hover {
+    background: rgba(102, 126, 234, 0.08);
+}
+
+/* Inline heatmap container */
+.inline-heatmap-container {
+    padding: 12px 20px 15px 20px;
+    border-top: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.inline-heatmap-container .heatmap-track {
+    background: linear-gradient(90deg,
+            rgba(102, 126, 234, 0.05) 0%,
+            rgba(102, 126, 234, 0.1) 50%,
+            rgba(102, 126, 234, 0.15) 100%);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.inline-heatmap-legend {
+    position: relative;
+    height: 18px;
+    margin-top: 6px;
+    font-size: 10px;
+    color: #718096;
+}
+
+.inline-heatmap-stats {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #a0aec0;
+}

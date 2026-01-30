@@ -5,11 +5,12 @@ import courseData from "../../../../data/tracks/course_data.json";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import { useAvailableTracks } from "../../../RaceReplay/hooks/useAvailableTracks";
 import { useGuessTrack } from "../../../RaceReplay/hooks/useGuessTrack";
-import { getActiveSpeedModifier, getPassiveStatModifiers, getSkillBaseTime, hasSkillEffect } from "../../../RaceReplay/utils/SkillDataUtils";
-import { adjustStat, calculateReferenceHpConsumption, calculateTargetSpeed, getDistanceCategory } from "../../../RaceReplay/utils/speedCalculations";
+import { getPassiveStatModifiers } from "../../../RaceReplay/utils/SkillDataUtils";
+import { adjustStat, calculateTargetSpeed, getDistanceCategory, calculateReferenceHpConsumption } from "../../../RaceReplay/utils/speedCalculations";
 import { computeHeuristicEvents } from "../../../RaceReplay/utils/computeHeuristicEvents";
 import { calculateRaceDistance } from "../../utils/RacePresenterUtils";
 import { CharaTableData } from "./types";
+import { calculateMaxAdjustedSpeed, calculateHpOutcome } from "../../../RaceReplay/utils/analysisUtils";
 
 export const useCharaTableData = (
     raceHorseInfo: any[],
@@ -155,117 +156,21 @@ export const useCharaTableData = (
 
         const lastSpurtTargetSpeed = lsRes.base;
 
+
         let maxAdjSpeed = 0;
         let adjustedGuts = 0;
         if (raceData.frame) {
             adjustedGuts = adjustStat(trainedCharaData.guts, data['motivation'], passiveStats.guts);
 
-            let wasType28Active = false;
-
-            raceData.frame.forEach((frame, fIdx) => {
-                const h = frame.horseFrame?.[frameOrder];
-                if (!h) return;
-                if ((h.distance ?? 0) > raceDistance) return;
-                const speed = (h.speed ?? 0) / 100;
-                if (speed <= 0) return;
-                const time = frame.time ?? 0;
-
-                let buff = 0;
-                let isType28Active = false;
-
-                // Skills
-                if (skillActivations && skillActivations[frameOrder]) {
-                    skillActivations[frameOrder].forEach(s => {
-                        const baseTime = getSkillBaseTime(s.param[1]);
-                        const duration = baseTime > 0 ? (baseTime / 10000) * (raceDistance / 1000) : 2.0;
-                        if (time >= s.time && time < s.time + duration) {
-                            buff += getActiveSpeedModifier(s.param[1]);
-                            if (hasSkillEffect(s.param[1], 28)) {
-                                isType28Active = true;
-                            }
-                        }
-                    });
-                }
-
-                const shouldSkip = isType28Active || wasType28Active;
-                wasType28Active = isType28Active;
-
-                if (shouldSkip) return;
-
-                // Events
-                if (otherEvents && otherEvents[frameOrder]) {
-                    otherEvents[frameOrder].forEach(e => {
-                        if (time >= e.time && time < e.time + e.duration) {
-                            const name = e.name || "";
-                            if (name.includes("Spot Struggle") || name.includes("Competes (Pos)")) {
-                                buff += Math.pow(500 * adjustedGuts, 0.6) * 0.0001;
-                            }
-                            if (name.includes("Dueling") || name.includes("Competes (Speed)")) {
-                                buff += Math.pow(200 * adjustedGuts, 0.708) * 0.0001;
-                            }
-
-                        }
-                    });
-                }
-
-                // Downhill
-                const dist = h.distance ?? 0;
-                const currentSlopeObj = trackSlopes.find((s: any) => dist >= s.start && dist < s.start + s.length);
-                const currentSlope = currentSlopeObj?.slope ?? 0;
-
-                if (currentSlope < 0) {
-                    // Check for Downhill Mode
-                    const nextFrame = raceData.frame[fIdx + 1];
-                    if (nextFrame) {
-                        const hNext = nextFrame.horseFrame?.[frameOrder];
-                        if (hNext) {
-                            const dt = (nextFrame.time ?? 0) - time;
-                            if (dt > 0) {
-                                const rate = ((h.hp ?? 0) - (hNext.hp ?? 0)) / dt;
-                                const expected = calculateReferenceHpConsumption(speed, raceDistance);
-                                if (expected > 0 && rate > 0 && rate < expected * 0.8) {
-                                    buff += 0.3 + Math.abs(currentSlope) / 1000;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                let isDecelerating = false;
-
-                // Check previous (Backward diff)
-                const prevFrame = fIdx > 0 ? raceData.frame[fIdx - 1] : undefined;
-                if (prevFrame) {
-                    const hPrev = prevFrame.horseFrame?.[frameOrder];
-                    if (hPrev) {
-                        const prevSpeed = (hPrev.speed ?? 0) / 100;
-                        const dt = (time - (prevFrame.time ?? 0));
-                        if (dt > 0) {
-                            const accel = (speed - prevSpeed) / dt;
-                            if (accel < -0.05) isDecelerating = true;
-                        }
-                    }
-                }
-
-                // Check next (Forward diff) - Catches the moment a buff drops but speed hasn't
-                const nextFrame = fIdx < raceData.frame.length - 1 ? raceData.frame[fIdx + 1] : undefined;
-                if (!isDecelerating && nextFrame) {
-                    const hNext = nextFrame.horseFrame?.[frameOrder];
-                    if (hNext) {
-                        const nextSpeed = (hNext.speed ?? 0) / 100;
-                        const dt = ((nextFrame.time ?? 0) - time);
-                        if (dt > 0) {
-                            const accel = (nextSpeed - speed) / dt;
-                            if (accel < -0.05) isDecelerating = true;
-                        }
-                    }
-                }
-
-                if (isDecelerating) return;
-
-                const adj = speed - buff;
-                if (adj > maxAdjSpeed) maxAdjSpeed = adj;
-            });
+            maxAdjSpeed = calculateMaxAdjustedSpeed(
+                raceData.frame,
+                frameOrder,
+                raceDistance,
+                skillActivations,
+                otherEvents,
+                trackSlopes,
+                adjustedGuts
+            );
         }
 
         // Calculate Dueling Time from otherEvents
@@ -351,35 +256,14 @@ export const useCharaTableData = (
             downhillModeTime,
             paceUpTime,
             paceDownTime,
-            hpOutcome: (() => {
-                const frames = raceData.frame ?? [];
-                if (frames.length === 0) return undefined;
-
-                const startHp = frames[0].horseFrame?.[frameOrder]?.hp ?? 1;
-
-                const firstDeathFrame = frames.find(f => (f.horseFrame?.[frameOrder]?.hp ?? 1) === 0);
-
-                if (firstDeathFrame) {
-                    const dist = firstDeathFrame.horseFrame?.[frameOrder]?.distance ?? 0;
-                    if (dist < raceDistance - 0.1) {
-                        const distance = raceDistance - dist;
-                        const baseSpeed = 20.0 - (raceDistance - 2000) / 1000;
-                        const statusModifier = 1.0 + 200.0 / Math.sqrt(600.0 * adjustedGuts);
-                        const currentSpeed = maxAdjSpeed || lastSpurtTargetSpeed || 20;
-
-                        // HPConsumptionPerSecond = 20.0 * (CurrentSpeed - BaseSpeed + 12.0)^2 / 144.0 * StatusModifier * GroundModifier
-                        const hpPerSec = 20.0 * Math.pow(currentSpeed - baseSpeed + 12.0, 2) / 144.0 * statusModifier * 1.0;
-                        const time = distance / currentSpeed;
-                        const deficit = time * hpPerSec;
-
-                        return { type: 'died' as const, distance, deficit, startHp };
-                    }
-                }
-
-                const lastFrame = frames[frames.length - 1];
-                const hp = lastFrame.horseFrame?.[frameOrder]?.hp ?? 0;
-                return { type: 'survived' as const, hp, startHp };
-            })(),
+            hpOutcome: calculateHpOutcome(
+                raceData.frame || [],
+                frameOrder,
+                raceDistance,
+                adjustedGuts,
+                maxAdjSpeed,
+                lastSpurtTargetSpeed
+            ),
         };
     });
 

@@ -8,6 +8,7 @@ import './dark-mode.css';
 import UMDatabaseWrapper from './data/UMDatabaseWrapper';
 import RaceDataPage from "./pages/RaceDataPage";
 import RaceDataPageOld from "./pages/RaceDataPage_old";
+import MultiRacePage from "./pages/MultiRacePage";
 import StoriesPage from "./pages/StoriesPage";
 import SuccessionPage from './pages/SuccessionPage';
 import SuccessionRelationsPage from "./pages/SuccessionRelationsPage";
@@ -40,6 +41,10 @@ export default function App() {
                             <NavDropdown.Item as={Link} to="/racedata">
                                 Parse races
                             </NavDropdown.Item>
+                            <NavDropdown.Item as={Link} to="/multirace">
+                                Multi-Race Analysis
+                            </NavDropdown.Item>
+                            <NavDropdown.Divider />
                             <NavDropdown.Item as={Link} to="/racedata_old">
                                 Parse races [old]
                             </NavDropdown.Item>
@@ -72,6 +77,9 @@ export default function App() {
                 </Route>
                 <Route path="/racedata_old">
                     <RaceDataPageOld />
+                </Route>
+                <Route path="/multirace">
+                    <MultiRacePage />
                 </Route>
                 <Route path="/setup">
                     <SetupGuidePage />

@@ -51,11 +51,18 @@ export default class RaceDataPageOld extends React.Component<{}, RaceDataPageSta
 
         if (catboxKey) {
             const workerUrl = 'https://cors-proxy.ayaliz.workers.dev';
-            const target = `${workerUrl}/?https://files.catbox.moe/${catboxKey}`;
+            const targetUrl = `https://files.catbox.moe/${catboxKey}`;
+            const target = `${workerUrl}/?${targetUrl}`;
             fetch(target)
                 .then(res => {
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    return res.json();
+                    return res.text();
+                })
+                .then(text => {
+                    if (!text || text.trim().length === 0) {
+                        throw new Error('File not found (404) or empty response from server.');
+                    }
+                    return JSON.parse(text);
                 })
                 .then(data => {
                     this.setState({
@@ -65,7 +72,11 @@ export default class RaceDataPageOld extends React.Component<{}, RaceDataPageSta
                 })
                 .catch(err => {
                     console.error(err);
-                    alert(`Failed to load from catbox: ${err.message}`);
+                    let msg = err.message;
+                    if (msg === 'Failed to fetch' || msg.includes('NetworkError')) {
+                        msg += ' (Possible CORS issue or Proxy block)';
+                    }
+                    alert(`Failed to load from catbox: ${msg}`);
                 });
         } else if (binKey) {
             const target = `https://cdn.sourceb.in/bins/${binKey}/0`;
@@ -132,7 +143,11 @@ export default class RaceDataPageOld extends React.Component<{}, RaceDataPageSta
             const anonHorseInfo = Array.isArray(parsed) ? list : list[0];
             const raceHorseInfo = JSON.stringify(anonHorseInfo);
             const raceScenario = scenarioRaw.trim();
-            return JSON.stringify({ raceHorseInfo, raceScenario });
+            return JSON.stringify({
+                raceHorseInfo,
+                raceScenario,
+                salt: Date.now()
+            });
         } catch {
             return null;
         }

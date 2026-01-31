@@ -56,18 +56,29 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
 
         if (catboxKey) {
             const workerUrl = 'https://cors-proxy.ayaliz.workers.dev';
-            const target = `${workerUrl}/?https://files.catbox.moe/${catboxKey}`;
+            const targetUrl = `https://files.catbox.moe/${catboxKey}`;
+            const target = `${workerUrl}/?${targetUrl}`;
             fetch(target)
                 .then(res => {
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    return res.json();
+                    return res.text();
+                })
+                .then(text => {
+                    if (!text || text.trim().length === 0) {
+                        throw new Error('File not found (404) or empty response from server.');
+                    }
+                    return JSON.parse(text);
                 })
                 .then(data => {
                     this.loadSharedData(data);
                 })
                 .catch(err => {
                     console.error(err);
-                    this.setState({ error: `Failed to load from catbox: ${err.message}` });
+                    let msg = err.message;
+                    if (msg === 'Failed to fetch' || msg.includes('NetworkError')) {
+                        msg += ' (Possible CORS issue or Proxy block)';
+                    }
+                    this.setState({ error: `Failed to load from catbox: ${msg}` });
                 });
         } else if (binKey) {
             const target = `https://cdn.sourceb.in/bins/${binKey}/0`;
@@ -378,7 +389,12 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             });
 
             const raceHorseInfo = JSON.stringify(anonHorseInfo);
-            return JSON.stringify({ raceHorseInfo, raceScenario: rawScenario, detectedCourseId });
+            return JSON.stringify({
+                raceHorseInfo,
+                raceScenario: rawScenario,
+                detectedCourseId,
+                salt: Date.now() // Force unique content to prevent Catbox/cache collisions on stale files
+            });
         } catch {
             return null;
         }

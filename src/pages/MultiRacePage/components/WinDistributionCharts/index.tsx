@@ -17,6 +17,9 @@ const WinDistributionCharts: React.FC<WinDistributionChartsProps> = ({
         unifiedCharacterWinsAll,
         unifiedCharacterWinsOpp,
         unifiedCharacterPop,
+        rawUnifiedCharacterWinsAll,
+        rawUnifiedCharacterWinsOpp,
+        rawUnifiedCharacterPop,
         characterLegend,
         characterPerfMetrics,
     } = useWinDistributionData(characterStats, strategyStats, allHorses);
@@ -33,6 +36,9 @@ const WinDistributionCharts: React.FC<WinDistributionChartsProps> = ({
                 winsAll={unifiedCharacterWinsAll}
                 winsOpp={unifiedCharacterWinsOpp}
                 pop={unifiedCharacterPop}
+                rawWinsAll={rawUnifiedCharacterWinsAll}
+                rawWinsOpp={rawUnifiedCharacterWinsOpp}
+                rawPop={rawUnifiedCharacterPop}
                 legend={characterLegend}
                 perfMetrics={characterPerfMetrics}
             />

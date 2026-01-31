@@ -22,10 +22,6 @@ export type ComputeHeuristicEventsParams = {
     detectedCourseId?: number;
 };
 
-/**
- * Computes heuristic events (Pace Up, Pace Down, Speed Up, Overtake) from race frames.
- * This is a pure function that can be called from both useHeuristicEvents hook and useCharaTableData.
- */
 export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Record<number, HeuristicEvent[]> {
     const {
         frames,

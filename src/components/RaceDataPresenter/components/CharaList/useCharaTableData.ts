@@ -12,20 +12,18 @@ import { calculateRaceDistance } from "../../utils/RacePresenterUtils";
 import { CharaTableData } from "./types";
 import { calculateMaxAdjustedSpeed, calculateHpOutcome } from "../../../RaceReplay/utils/analysisUtils";
 
-export const useCharaTableData = (
+// Pure function for computing character table data
+export const computeCharaTableData = (
     raceHorseInfo: any[],
     raceData: RaceSimulateData,
-    detectedCourseId: number | undefined,
+    effectiveCourseId: number | undefined,
     skillActivations: Record<number, { time: number; name: string; param: number[] }[]> | undefined,
     otherEvents: Record<number, { time: number; duration: number; name: string }[]> | undefined
-) => {
+): CharaTableData[] => {
     const raceDistance = calculateRaceDistance(raceData);
-    const availableTracks = useAvailableTracks(raceDistance);
-    const { selectedTrackId } = useGuessTrack(detectedCourseId, raceDistance, availableTracks);
-    const effectiveCourseId = selectedTrackId ? parseInt(selectedTrackId) : undefined;
 
     if (!raceHorseInfo || raceHorseInfo.length === 0) {
-        return { tableData: [] as CharaTableData[], effectiveCourseId };
+        return [];
     }
 
     const distanceCategory = getDistanceCategory(raceDistance);
@@ -276,6 +274,23 @@ export const useCharaTableData = (
         const currTime = curr.horseResultData.finishTimeRaw ?? 0;
         curr.timeDiffToPrev = currTime - prevTime;
     }
+
+    return tableData;
+};
+
+export const useCharaTableData = (
+    raceHorseInfo: any[],
+    raceData: RaceSimulateData,
+    detectedCourseId: number | undefined,
+    skillActivations: Record<number, { time: number; name: string; param: number[] }[]> | undefined,
+    otherEvents: Record<number, { time: number; duration: number; name: string }[]> | undefined
+) => {
+    const raceDistance = calculateRaceDistance(raceData);
+    const availableTracks = useAvailableTracks(raceDistance);
+    const { selectedTrackId } = useGuessTrack(detectedCourseId, raceDistance, availableTracks);
+    const effectiveCourseId = selectedTrackId ? parseInt(selectedTrackId) : undefined;
+
+    const tableData = computeCharaTableData(raceHorseInfo, raceData, effectiveCourseId, skillActivations, otherEvents);
 
     return { tableData, effectiveCourseId };
 };

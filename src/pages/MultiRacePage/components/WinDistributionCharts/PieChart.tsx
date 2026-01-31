@@ -8,16 +8,23 @@ interface PieChartProps {
     size: number;
     unit: string;
     chartId: string;
+    onClick?: () => void;
 }
 
-const PieChart: React.FC<PieChartProps> = ({ slices, size, unit, chartId }) => {
+const PieChart: React.FC<PieChartProps> = ({ slices, size, unit, chartId, onClick }) => {
     const center = size / 2;
     const radius = size * 0.30; // Reduced radius further to make room for larger icons
     const innerRadius = size * 0.15;
     let currentAngle = -90;
 
     return (
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <svg
+            width={size}
+            height={size}
+            viewBox={`0 0 ${size} ${size}`}
+            onClick={onClick}
+            style={{ cursor: onClick ? "pointer" : "default" }}
+        >
             {slices.map((slice, i) => {
                 const angle = (slice.percentage / 100) * 360;
                 const startAngle = currentAngle;

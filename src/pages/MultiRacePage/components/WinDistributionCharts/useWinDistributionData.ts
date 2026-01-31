@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { HorseEntry, CharacterStats, StrategyStats } from "../../types";
 import { STRATEGY_NAMES, STRATEGY_NAMES_SHORT, STRATEGY_COLORS, CHARACTER_COLORS } from "./constants";
 import { StrategyPieSlice, PieSlice, PerformanceMetrics } from "./types";
+import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 
 export const useWinDistributionData = (
     characterStats: CharacterStats[],
@@ -174,9 +175,18 @@ export const useWinDistributionData = (
 
     // Unified Character Data with consistent colors and grouping
     // Refactored to group by Tuple (Chara + Strategy)
-    const { unifiedCharacterWinsAll, unifiedCharacterWinsOpp, unifiedCharacterPop, characterLegend, characterPerfMetrics } = useMemo(() => {
+    const {
+        unifiedCharacterWinsAll,
+        unifiedCharacterWinsOpp,
+        unifiedCharacterPop,
+        rawUnifiedCharacterWinsAll,
+        rawUnifiedCharacterWinsOpp,
+        rawUnifiedCharacterPop,
+        characterLegend,
+        characterPerfMetrics
+    } = useMemo(() => {
 
-        const getKey = (charaId: number, strategy: number) => `${charaId}_${strategy}`;
+        const getKey = (charaId: number, strategy: number, cardId: number) => `${charaId}_${cardId}_${strategy}`;
         const getLabel = (name: string, strategy: number) => `[${STRATEGY_NAMES_SHORT[strategy]}] ${name}`;
 
         // 1. Get filtered horses (for population)
@@ -184,21 +194,22 @@ export const useWinDistributionData = (
         const popTotal = nonPlayerHorses.length;
 
         // 2. Count raw stats (Population)
-        const popMap = new Map<string, { name: string; count: number; charaId: number; strategy: number }>();
+        // 2. Count raw stats (Population)
+        const popMap = new Map<string, { name: string; count: number; charaId: number; strategy: number; cardId: number }>();
         nonPlayerHorses.forEach(h => {
-            const key = getKey(h.charaId, h.strategy);
-            if (!popMap.has(key)) popMap.set(key, { name: getLabel(h.charaName, h.strategy), count: 0, charaId: h.charaId, strategy: h.strategy });
+            const key = getKey(h.charaId, h.strategy, h.cardId);
+            if (!popMap.has(key)) popMap.set(key, { name: getLabel(h.charaName, h.strategy), count: 0, charaId: h.charaId, strategy: h.strategy, cardId: h.cardId });
             popMap.get(key)!.count++;
         });
 
         // 3. Wins (All) - Recalculate from allHorses to support Strategy split
-        const winMapAll = new Map<string, { name: string; count: number; charaId: number; strategy: number }>();
+        const winMapAll = new Map<string, { name: string; count: number; charaId: number; strategy: number; cardId: number }>();
         const winnersAll = allHorses.filter(h => h.finishOrder === 1);
         const winTotalAll = winnersAll.length;
 
         winnersAll.forEach(h => {
-            const key = getKey(h.charaId, h.strategy);
-            if (!winMapAll.has(key)) winMapAll.set(key, { name: getLabel(h.charaName, h.strategy), count: 0, charaId: h.charaId, strategy: h.strategy });
+            const key = getKey(h.charaId, h.strategy, h.cardId);
+            if (!winMapAll.has(key)) winMapAll.set(key, { name: getLabel(h.charaName, h.strategy), count: 0, charaId: h.charaId, strategy: h.strategy, cardId: h.cardId });
             winMapAll.get(key)!.count++;
         });
 
@@ -228,11 +239,11 @@ export const useWinDistributionData = (
             if (bestHorse) effectiveWinners.push(bestHorse);
         });
 
-        const winMapOpp = new Map<string, { name: string; count: number; charaId: number; strategy: number }>();
+        const winMapOpp = new Map<string, { name: string; count: number; charaId: number; strategy: number; cardId: number }>();
         const winTotalOpp = effectiveWinners.length;
         effectiveWinners.forEach(h => {
-            const key = getKey(h.charaId, h.strategy);
-            if (!winMapOpp.has(key)) winMapOpp.set(key, { name: getLabel(h.charaName, h.strategy), count: 0, charaId: h.charaId, strategy: h.strategy });
+            const key = getKey(h.charaId, h.strategy, h.cardId);
+            if (!winMapOpp.has(key)) winMapOpp.set(key, { name: getLabel(h.charaName, h.strategy), count: 0, charaId: h.charaId, strategy: h.strategy, cardId: h.cardId });
             winMapOpp.get(key)!.count++;
         });
 
@@ -245,16 +256,26 @@ export const useWinDistributionData = (
         const keyIds = Array.from(new Set([...topWinsAll, ...topWinsOpp, ...topPop]));
 
         // 6. Assign Colors
-        // For tuples, we still want consistent colors. Maybe base color on CharaId?
-        // But if Oguri (Nige) and Oguri (Sashi) have same color, it's confusing in same chart.
-        // So let's just rotate colors based on rank in the list of keys.
         const colorMap = new Map<string, string>();
-        keyIds.forEach((id, index) => {
-            colorMap.set(id, CHARACTER_COLORS[index % CHARACTER_COLORS.length]);
+        let colorIndex = 0;
+
+        // Assign to Key IDs first (stable for legend/pie)
+        keyIds.forEach((id) => {
+            colorMap.set(id, CHARACTER_COLORS[colorIndex % CHARACTER_COLORS.length]);
+            colorIndex++;
+        });
+
+        // Assign to everyone else
+        const allIds = new Set([...Array.from(winMapAll.keys()), ...Array.from(winMapOpp.keys()), ...Array.from(popMap.keys())]);
+        allIds.forEach((id) => {
+            if (!colorMap.has(id)) {
+                colorMap.set(id, CHARACTER_COLORS[colorIndex % CHARACTER_COLORS.length]);
+                colorIndex++;
+            }
         });
 
         // 7. Generate Slices
-        const commonGenSlices = (sourceMap: Map<string, { name: string; count: number; charaId: number; strategy: number }>, total: number) => {
+        const commonGenSlices = (sourceMap: Map<string, { name: string; count: number; charaId: number; strategy: number; cardId: number }>, total: number) => {
             const slices: PieSlice[] = [];
             let othersCount = 0;
             const othersDetails: string[] = [];
@@ -302,9 +323,32 @@ export const useWinDistributionData = (
             return slices;
         };
 
+        // Helper to generate ALL slices without "Others" grouping (for Bar Chart)
+        const genFullSlices = (sourceMap: Map<string, { name: string; count: number; charaId: number; strategy: number; cardId: number }>, total: number) => {
+            return Array.from(sourceMap.entries())
+                .map(([id, data]) => {
+                    const cardName = data.cardId ? UMDatabaseWrapper.cards[data.cardId]?.name : null;
+                    const label = (cardName && cardName !== "") ? cardName : data.name;
+
+                    return {
+                        value: data.count,
+                        percentage: (data.count / total) * 100,
+                        label: label,
+                        color: colorMap.get(id) || "#718096", // Default color if not in keyIds
+                        charaId: id,
+                        strategyId: data.strategy,
+                    };
+                })
+                .sort((a, b) => b.value - a.value);
+        };
+
         const unifiedCharacterWinsAll = winTotalAll > 0 ? commonGenSlices(winMapAll, winTotalAll) : [];
         const unifiedCharacterWinsOpp = winTotalOpp > 0 ? commonGenSlices(winMapOpp, winTotalOpp) : [];
         const unifiedCharacterPop = popTotal > 0 ? commonGenSlices(popMap, popTotal) : [];
+
+        const rawUnifiedCharacterWinsAll = winTotalAll > 0 ? genFullSlices(winMapAll, winTotalAll) : [];
+        const rawUnifiedCharacterWinsOpp = winTotalOpp > 0 ? genFullSlices(winMapOpp, winTotalOpp) : [];
+        const rawUnifiedCharacterPop = popTotal > 0 ? genFullSlices(popMap, popTotal) : [];
 
         // 8. Legend Data
         const characterLegend = keyIds
@@ -346,7 +390,16 @@ export const useWinDistributionData = (
             };
         });
 
-        return { unifiedCharacterWinsAll, unifiedCharacterWinsOpp, unifiedCharacterPop, characterLegend, characterPerfMetrics };
+        return {
+            unifiedCharacterWinsAll,
+            unifiedCharacterWinsOpp,
+            unifiedCharacterPop,
+            rawUnifiedCharacterWinsAll,
+            rawUnifiedCharacterWinsOpp,
+            rawUnifiedCharacterPop,
+            characterLegend,
+            characterPerfMetrics
+        };
 
     }, [allHorses]);
 
@@ -360,6 +413,9 @@ export const useWinDistributionData = (
         unifiedCharacterWinsAll,
         unifiedCharacterWinsOpp,
         unifiedCharacterPop,
+        rawUnifiedCharacterWinsAll,
+        rawUnifiedCharacterWinsOpp,
+        rawUnifiedCharacterPop,
         characterLegend,
         characterPerfMetrics,
     };

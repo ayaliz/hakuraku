@@ -4,7 +4,7 @@ import { getDistanceCategory, calculateTargetSpeed, adjustStat, calculateReferen
 import { getPassiveStatModifiers, getSkillBaseTime, getActiveSpeedModifier, hasSkillEffect } from "./SkillDataUtils";
 import { filterCharaSkills } from "../../../data/RaceDataUtils";
 import courseData from "../../../data/tracks/course_data.json";
-import UMDatabaseWrapper from "../../../data/UMDatabaseWrapper";
+
 
 export type HpOutcome = { type: 'died', distance: number, deficit: number, startHp: number }
     | { type: 'survived', hp: number, startHp: number };

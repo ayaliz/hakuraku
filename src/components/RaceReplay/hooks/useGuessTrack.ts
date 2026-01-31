@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getAvailableTracks, guessTrackId, TrackInfo } from "../utils/guessTrackUtils";
+import { guessTrackId, TrackInfo } from "../utils/guessTrackUtils";
 
 export function useGuessTrack(detectedCourseId: number | undefined, goalInX: number, availableTracks: TrackInfo[]) {
     const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);

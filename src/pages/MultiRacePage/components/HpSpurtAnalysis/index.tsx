@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Table, ProgressBar, Button, Modal } from 'react-bootstrap';
 import BootstrapTable, { ColumnDescription, ExpandRowProps } from "react-bootstrap-table-next";
 import 'react-bootstrap-table-next/dist/react-bootstrap-table2.min.css';
-import _ from "lodash";
+
 
 import { ParsedRace } from '../../types';
 import { computeHpSpurtStats } from './processData';

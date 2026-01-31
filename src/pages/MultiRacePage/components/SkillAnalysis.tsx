@@ -100,7 +100,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
             const uniqueRaces = new Set(filteredActivations.map(p => p.raceId)).size;
             const uniqueHorses = new Set(filteredActivations.map(p => `${p.raceId}_${p.horseFrameOrder}`)).size;
 
-            const horsesWithSkill = horsesWhoLearned; // Reuse filtering work?
+
             // Wait, horsesWithSkill for winRate calculation are those who had it ACTIVATED? 
             // NO, winRate is usually "of horses who have the skill, what % won?"
             // Check original utils.ts: 
@@ -239,15 +239,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
         });
     }, [filteredSkills, sortKey, sortDir]);
 
-    const getPositionBadge = (position: number) => {
-        if (position === 0) return <span className="position-badge default">-</span>;
-        const rounded = Math.round(position * 10) / 10;
-        let className = "position-badge default";
-        if (rounded <= 1.5) className = "position-badge gold";
-        else if (rounded <= 2.5) className = "position-badge silver";
-        else if (rounded <= 3.5) className = "position-badge bronze";
-        return <span className={className}>{rounded.toFixed(1)}</span>;
-    };
+
 
     const toggleSkill = (skillId: number) => {
         setExpandedSkillId(prev => prev === skillId ? null : skillId);

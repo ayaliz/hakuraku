@@ -1,5 +1,5 @@
 
-import { ParsedRace } from "../../types";
+
 import { CharaHpSpurtStats } from "./types";
 import {
     RaceSimulateData,

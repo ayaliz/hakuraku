@@ -4,12 +4,11 @@ import React from "react";
 import { Alert, Form } from "react-bootstrap";
 import {
     RaceSimulateData,
-    RaceSimulateEventData_SimulateEventType,
 } from "../../data/race_data_pb";
 import {
     filterCharaSkills,
 } from "../../data/RaceDataUtils";
-import { fromRaceHorseData, TrainedCharaData } from "../../data/TrainedCharaData";
+
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 import CharaList from "./components/CharaList";
 import RaceGraph from "./components/RaceGraph";
@@ -18,17 +17,7 @@ import {
     otherRaceEventLabels,
     unknownCharaTag,
 } from "./utils/RacePresenterUtils";
-import {
-    calculateTargetSpeed,
-    adjustStat,
-    getDistanceCategory
-} from "../RaceReplay/utils/speedCalculations";
-import {
-    getPassiveStatModifiers,
-    getActiveSpeedModifier,
-    getSkillBaseTime,
-} from "../RaceReplay/utils/SkillDataUtils";
-import courseData from "../../data/tracks/course_data.json";
+
 import RaceReplay from "../RaceReplay/index";
 import { computeOtherEvents } from "../RaceReplay/utils/analysisUtils";
 

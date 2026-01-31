@@ -55,7 +55,8 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
         const catboxKey = params.get('catbox');
 
         if (catboxKey) {
-            const target = `https://files.catbox.moe/${catboxKey}`;
+            const workerUrl = 'https://cors-proxy.ayaliz.workers.dev';
+            const target = `${workerUrl}/?https://files.catbox.moe/${catboxKey}`;
             fetch(target)
                 .then(res => {
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);

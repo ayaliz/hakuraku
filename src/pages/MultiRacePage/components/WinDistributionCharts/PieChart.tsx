@@ -13,7 +13,7 @@ interface PieChartProps {
 
 const PieChart: React.FC<PieChartProps> = ({ slices, size, unit, chartId, onClick }) => {
     const center = size / 2;
-    const radius = size * 0.30; // Reduced radius further to make room for larger icons
+    const radius = size * 0.30;
     const innerRadius = size * 0.15;
     let currentAngle = -90;
 

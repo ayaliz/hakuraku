@@ -1,0 +1,121 @@
+/* HpSpurtAnalysis.css */
+.hp-analysis-wrapper {
+    background: transparent !important;
+    padding: 0 !important;
+}
+
+/* Base table styling to match CharaList */
+.hp-analysis-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.9rem;
+    color: #e5e7eb;
+    margin-bottom: 0;
+    background: transparent !important;
+}
+
+/* Header Styling */
+.hp-analysis-table thead th {
+    background: linear-gradient(180deg, rgba(55, 65, 81, 0.9) 0%, rgba(31, 41, 55, 0.95) 100%) !important;
+    color: #9ca3af !important;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 12px 12px;
+    border: none !important;
+    border-bottom: 2px solid rgba(99, 102, 241, 0.3) !important;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    vertical-align: middle !important;
+}
+
+.hp-analysis-table thead th:first-child {
+    border-top-left-radius: 8px;
+}
+
+.hp-analysis-table thead th:last-child {
+    border-top-right-radius: 8px;
+}
+
+/* Body Styling */
+.hp-analysis-table tbody tr {
+    transition: background 0.15s ease;
+    cursor: pointer;
+}
+
+.hp-analysis-table tbody tr:nth-of-type(odd) {
+    background: rgba(30, 35, 44, 0.5) !important;
+}
+
+.hp-analysis-table tbody tr:nth-of-type(even) {
+    background: rgba(40, 45, 55, 0.5) !important;
+}
+
+.hp-analysis-table tbody tr:hover {
+    background: rgba(99, 102, 241, 0.12) !important;
+}
+
+/* Cell Styling */
+.hp-analysis-table tbody td {
+    padding: 10px 12px;
+    border: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+    vertical-align: middle;
+    color: #e5e7eb;
+}
+
+/* Remove bootstrap table dark borders override */
+.table-dark th,
+.table-dark td,
+.table-dark thead th {
+    border-color: rgba(255, 255, 255, 0.04);
+}
+
+/* Detail View Styling */
+.analysis-detail-container {
+    padding: 24px;
+    background: rgba(20, 24, 32, 0.95) !important;
+    border-left: 3px solid #6366f1;
+    margin: 10px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+}
+
+.stat-card {
+    background: rgba(30, 41, 59, 0.6) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(4px);
+    transition: transform 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    background: rgba(30, 41, 59, 0.8) !important;
+}
+
+/* Inner tables */
+.detail-table {
+    background: transparent !important;
+}
+
+.detail-table thead th {
+    background: rgba(30, 41, 59, 0.8) !important;
+    color: #9ca3af;
+    border: none;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+}
+
+.detail-table tbody td {
+    background: transparent !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+    color: #d1d5db;
+}
+
+/* Specific overrides for react-bootstrap-table2 */
+.react-bootstrap-table table {
+    table-layout: fixed;
+}

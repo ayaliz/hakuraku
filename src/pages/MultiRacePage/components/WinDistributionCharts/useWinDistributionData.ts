@@ -174,7 +174,7 @@ export const useWinDistributionData = (
     }, [allHorses, opponentStrategyStats]);
 
     // Unified Character Data with consistent colors and grouping
-    // Refactored to group by Tuple (Chara + Strategy)
+
     const {
         unifiedCharacterWinsAll,
         unifiedCharacterWinsOpp,
@@ -194,7 +194,7 @@ export const useWinDistributionData = (
         const popTotal = nonPlayerHorses.length;
 
         // 2. Count raw stats (Population)
-        // 2. Count raw stats (Population)
+
         const popMap = new Map<string, { name: string; count: number; charaId: number; strategy: number; cardId: number }>();
         nonPlayerHorses.forEach(h => {
             const key = getKey(h.charaId, h.strategy, h.cardId);
@@ -214,10 +214,7 @@ export const useWinDistributionData = (
         });
 
         // 4. Wins (Opponents) - Recalculate from effective effective winners
-        // We know effective winners logic is: best placing non-player in each race.
-        // We can reuse the logic from step 1, but we need the specific horse entries to get strategy.
-        // The opponentCharacterStats passed in doesn't have strategy info grouped.
-        // So let's re-derive effective winners.
+
         const races = new Map<string, HorseEntry[]>();
         allHorses.forEach(h => {
             if (!races.has(h.raceId)) races.set(h.raceId, []);

@@ -5,6 +5,8 @@ import { RaceSimulateData } from "../data/race_data_pb";
 import { deserializeFromBase64 } from "../data/RaceDataParser";
 import ShareLinkBox from "../components/ShareLinkBox";
 
+const RaceDataPresenterAny = RaceDataPresenter as any;
+
 type ShareCache = Record<string, string>;
 
 type RaceDataPageState = {
@@ -328,7 +330,7 @@ export default class RaceDataPageOld extends React.Component<{}, RaceDataPageSta
             <hr />
 
             {this.state.parsedRaceData &&
-                <RaceDataPresenter
+                <RaceDataPresenterAny
                     raceHorseInfo={this.state.parsedHorseInfo}
                     raceData={this.state.parsedRaceData} />}
         </>;

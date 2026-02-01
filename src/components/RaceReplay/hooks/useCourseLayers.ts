@@ -48,7 +48,7 @@ export function slopeRenderItemFactory(yMaxWithHeadroom: number) {
         return {
             type: "group",
             children: [
-                { type: "polygon", shape: { points: triangle }, style: api.style({ fill, stroke: null }), silent: true },
+                { type: "polygon", shape: { points: triangle }, style: { fill, stroke: null }, silent: true },
                 { type: "line", shape: { x1: diagStart[0], y1: diagStart[1], x2: diagEnd[0], y2: diagEnd[1] }, style: { stroke: SLOPE_DIAG_LINE, lineWidth: 2, opacity: 0.9 }, silent: true }
             ]
         };

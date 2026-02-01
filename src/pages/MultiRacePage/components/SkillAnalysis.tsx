@@ -79,14 +79,9 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                 (maxD === Number.MAX_SAFE_INTEGER || p.distance <= maxD)
             );
 
-            // Filter learned count
-            // We need to check if any of the horse's learned skills match this skill (or its group)
-            // Since we don't have the raw ID map here easily, we rely on the logic:
             // A horse learned this "Representative Skill" if it has any skill ID s.t. floor(s/10) == floor(repId/10)
             const baseId = Math.floor(baseStat.skillId / 10);
             const horsesWhoLearned = filteredHorses.filter(h => {
-                // Optimization: Convert Set to Array for .some (or stick to iterator if available)
-                // JS Sets iterate in insertion order, loop is fine
                 for (const learnedId of h.learnedSkillIds) {
                     if (Math.floor(learnedId / 10) === baseId) return true;
                 }
@@ -101,15 +96,6 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
             const uniqueHorses = new Set(filteredActivations.map(p => `${p.raceId}_${p.horseFrameOrder}`)).size;
 
 
-            // Wait, horsesWithSkill for winRate calculation are those who had it ACTIVATED? 
-            // NO, winRate is usually "of horses who have the skill, what % won?"
-            // Check original utils.ts: 
-            // const horsesWithSkill = allHorses.filter(h => groupSkillIds.some(id => h.activatedSkillIds.has(id)));
-            // Wait, original logic says "activatedSkillIds.has". This implies winRate is based on activation?
-            // Let's check utils.ts line 452: 
-            // const horsesWithSkill = allHorses.filter(h => groupSkillIds.some(id => h.activatedSkillIds.has(id)));
-            // Yes, winRate in utils.ts is based on ACTIVATION, not LEARNING.
-            // Let's stick to that logic to be consistent.
 
             const horsesWhoActivated = filteredHorses.filter(h => {
                 for (const actId of h.activatedSkillIds) {
@@ -121,19 +107,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
             const winsWithSkill = horsesWhoActivated.filter(h => h.finishOrder === 1).length;
             const winRate = horsesWhoActivated.length > 0 ? (winsWithSkill / horsesWhoActivated.length) * 100 : 0;
 
-            // Normalized Activations
-            // We don't have isGuaranteed flag here, so we approximate or reuse baseStat logic?
-            // If we don't have the flag, we can't perfectly replicate "isGuaranteed" logic (unique 100k-200k or passive).
-            // But we know the ID range for unique. Passive is harder.
-            // However, baseStat.normalizedActivations was calculated.
-            // If we assume the ratio of normalized/raw is constant? No, that depends on WHICH horses.
-            // Let's just recalculate based on simple sum(1/chance). 
-            // We'll miss the "isGuaranteed" check for passives unless we lookup again.
-            // Let's accept a small inaccuracy for passives or try to detect it.
-            // Unique ID check is easy.
             const isUnique = baseStat.skillId >= 100000 && baseStat.skillId < 200000;
-            // For passives, we can check if baseStat.normalizedActivations == baseStat.timesActivated (approximately)
-            // But let's just use the sum(1/chance) logic and if it's Unique, use count.
 
             const uniqueParticipations = new Map<string, SkillActivationPoint>();
             filteredActivations.forEach(p => {
@@ -141,9 +115,6 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                 if (!uniqueParticipations.has(key)) uniqueParticipations.set(key, p);
             });
 
-            // If it was guaranteed in the original calculation, it should be here too.
-            // Best guess: check if original normalized == unique participations count?
-            // Let's just implement the sum.
             let normalizedActivations = Array.from(uniqueParticipations.values()).reduce((sum, p) => {
                 return sum + (1 / p.activationChance);
             }, 0);
@@ -190,13 +161,6 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
             const matchesSearch = !query ||
                 (skill.skillNames?.some(n => n.toLowerCase().includes(query)) || skill.skillName.toLowerCase().includes(query)) ||
                 skill.skillId.toString().includes(query);
-
-            // Filter strategy/chara is already done in activeSkillStats!
-            // But wait, activeSkillStats contains skills that HAVE entries after filtering.
-            // What if a skill exists but has 0 learned/activations in the subset?
-            // The loop above includes it only if (learnedByHorses > 0 || filteredActivations > 0).
-            // So we just need search query filter.
-
             return matchesSearch;
         });
     }, [activeSkillStats, searchQuery]);
@@ -246,8 +210,6 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
     };
 
     const renderHeatmap = (skill: SkillStats) => {
-        // We need to filter activations again for the heatmap
-        // (Optimally this would be passed down, but re-filtering is safe enough)
         const baseActivations = skillActivations.get(skill.skillId) || [];
 
         const minD = minDist === "" ? -1 : Number(minDist);

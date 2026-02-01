@@ -6,6 +6,8 @@ import { RaceSimulateData } from "../data/race_data_pb";
 import { deserializeFromBase64 } from "../data/RaceDataParser";
 import ShareLinkBox from "../components/ShareLinkBox";
 
+const RaceDataPresenterAny = RaceDataPresenter as any;
+
 type ShareCache = Record<string, string>;
 
 type RaceDataPageState = {
@@ -506,7 +508,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
                     {(!this.state.isShared && (!this.state.horseActVersion || this.state.horseActVersion !== '1.0.2')) && <Alert variant="info">
                         The version of horseACT used to generate this file appears to be outdated. A newer version is available at <a href="https://github.com/ayaliz/horseACT/releases/latest" target="_blank" rel="noreferrer">https://github.com/ayaliz/horseACT/releases/latest</a>. It's recommended to update by replacing your existing horseACT.dll.
                     </Alert>}
-                    <RaceDataPresenter
+                    <RaceDataPresenterAny
                         raceHorseInfo={this.state.parsedHorseInfo}
                         raceData={this.state.parsedRaceData}
                         detectedCourseId={this.state.detectedCourseId} />

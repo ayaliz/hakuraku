@@ -1,4 +1,5 @@
 import { JsonViewer } from "@textea/json-viewer";
+import { computeOtherEvents } from "../RaceReplay/utils/analysisUtils";
 import memoize from "memoize-one";
 import React from "react";
 import { Alert, Form } from "react-bootstrap";
@@ -19,7 +20,8 @@ import {
 } from "./utils/RacePresenterUtils";
 
 import RaceReplay from "../RaceReplay/index";
-import { computeOtherEvents } from "../RaceReplay/utils/analysisUtils";
+
+const JsonViewerAny = JsonViewer as any;
 
 const supportedRaceDataVersion = 100000002;
 
@@ -149,7 +151,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                             {Object.entries(this.displayNames(this.props.raceHorseInfo, this.props.raceData))
                                 .sort(([, a], [, b]) => a.localeCompare(b))
                                 .map(([frameOrder, displayName]) => {
-                                    return <option value={frameOrder}>{displayName}</option>;
+                                    return <option key={frameOrder} value={frameOrder}>{displayName}</option>;
                                 })}
                         </Form.Control>
                         <Form.Switch
@@ -195,7 +197,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
 
             <div style={sectionDividerStyle} />
 
-            <JsonViewer value={this.props.raceData.toJson()} defaultInspectDepth={1} theme="dark" />
+            <JsonViewerAny value={this.props.raceData.toJson()} defaultInspectDepth={1} theme="dark" />
         </div>;
     }
 }

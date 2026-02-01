@@ -21,21 +21,11 @@ const PerformancePanel: React.FC<PerformancePanelProps> = ({
     minPopCount = 3,
     minPopPct = 1.0
 }) => {
-    // Dynamic Significance Cutoff
-    // We want to avoid listing characters with very low sample sizes (e.g. 1 win in 1 race).
-    // Rule of thumb: Must have at least a certain number of entries AND represent a meaningful slice of the meta.
     const MIN_POP_COUNT = minPopCount;
-    const MIN_POP_PCT = minPopPct; // 1%
+    const MIN_POP_PCT = minPopPct;
 
     const isSignificant = (m: PerformanceMetrics) => {
-        // Special Handling: If dataset is very small, MIN_POP_PCT might be too strict or MIN_POP_COUNT might be too high.
-        // But generally, for "Analysis", stats based on < 3 entries are pure noise.
-        // For Eishin Flash case (3 entries in 474 total = 0.6%), she fails MIN_POP_PCT.
         if (m.popCount < MIN_POP_COUNT) return false;
-
-        // However, if we have very few total entries (e.g. 50), 3 entries is 6%. MIN_POP_PCT checks out.
-        // If we have 1000 entries, 3 entries is 0.3%. Fails.
-        // So we enforce BOTH: Must be >= 3 entries, AND must be >= 1% of population.
         return m.popPct >= MIN_POP_PCT;
     };
 

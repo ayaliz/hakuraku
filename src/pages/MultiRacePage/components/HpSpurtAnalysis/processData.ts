@@ -206,7 +206,7 @@ export const computeHpSpurtStats = (
                     .filter(s => s.value !== null)
                     .map(s => ({ ...s, value: s.value! }));
 
-                // Avoid creating stats if no recovery skills (optional, but requested logic implies analyzing recovery)
+                // Avoid creating stats if no recovery skills
                 if (knownRecoverySkills.length > 0) {
                     // Group by value
                     const valueGroups = new Map<number, { total: number, ids: number[] }>();
@@ -219,7 +219,7 @@ export const computeHpSpurtStats = (
 
                     // Check activations
                     // skillActivations[frameOrder] contains all skills activated by this chara
-                    // const activatedIds = new Set(skillActivations[frameOrder].map(s => s.param[1])); // Already calculated above
+
 
 
                     const scenarioParts: string[] = [];
@@ -252,14 +252,20 @@ export const computeHpSpurtStats = (
                             totalRuns: 0,
                             fullSpurtCount: 0,
                             survivalCount: 0,
-                            hpOutcomes: []
+                            fullSpurtSurvivalCount: 0,
+                            hpOutcomes: [],
+                            hpOutcomesFullSpurt: []
                         };
                     }
 
                     const recStats = currentStats.recoveryStats[scenarioKey];
                     recStats.totalRuns++;
-                    if (didFullSpurt) recStats.fullSpurtCount++;
+                    if (didFullSpurt) {
+                        recStats.fullSpurtCount++;
+                        recStats.hpOutcomesFullSpurt.push(outcomeValue);
+                    }
                     if (hpOutcome.type === 'survived') recStats.survivalCount++;
+                    if (didFullSpurt && hpOutcome.type === 'survived') recStats.fullSpurtSurvivalCount++;
                     recStats.hpOutcomes.push(outcomeValue);
                 }
             }

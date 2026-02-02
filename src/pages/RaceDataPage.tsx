@@ -24,6 +24,7 @@ type RaceDataPageState = {
     shareCache: ShareCache,
     horseActVersion: string | undefined,
     isShared: boolean,
+    raceType: string | undefined,
 };
 
 export default class RaceDataPage extends React.Component<{}, RaceDataPageState> {
@@ -46,6 +47,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             shareCache: {},
             horseActVersion: undefined,
             isShared: false,
+            raceType: undefined,
         };
 
         this.fileInputRef = React.createRef();
@@ -99,7 +101,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
         }
     }
 
-    loadSharedData(data: { raceHorseInfo: string, raceScenario: string, detectedCourseId?: number }) {
+    loadSharedData(data: { raceHorseInfo: string, raceScenario: string, detectedCourseId?: number, raceType?: string }) {
         try {
             const horseInfo = typeof data.raceHorseInfo === 'string' ? JSON.parse(data.raceHorseInfo) : data.raceHorseInfo;
             const parsedRaceData = deserializeFromBase64(data.raceScenario);
@@ -119,6 +121,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
                 detectedCourseId: data.detectedCourseId,
                 error: '',
                 isShared: true,
+                raceType: data.raceType,
             });
         } catch (err: any) {
             this.setState({ error: `Failed to parse shared data: ${err.message}` });
@@ -183,6 +186,8 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
         } catch { }
 
 
+        const raceType = json['<RaceType>k__BackingField'];
+
         const horseInfo = raceHorseArray
             .map((member: any) => {
                 const horseData = member['_responseHorseData'];
@@ -245,7 +250,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             return;
         }
 
-        this.finalizeParsing(horseInfo, raceScenario, detectedCourseId, horseActVersion);
+        this.finalizeParsing(horseInfo, raceScenario, detectedCourseId, horseActVersion, raceType);
     }
 
     parseNewFormat(json: any) {
@@ -253,6 +258,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             const rawHorses = json['race_horse_data_array'];
             const trainedCharas = json['trained_chara_array'] || [];
             const horseActVersion = json['horseACT_version'];
+            const raceType = json['race_type'] || json['RaceType'];
 
             let detectedCourseId: number | undefined = undefined;
             const courseSet = json['race_course_set'] || json['RaceCourseSet'];
@@ -317,14 +323,14 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
                 };
             }).filter((h: any) => h !== null);
 
-            this.finalizeParsing(horseInfo, json['race_scenario'], detectedCourseId, horseActVersion);
+            this.finalizeParsing(horseInfo, json['race_scenario'], detectedCourseId, horseActVersion, raceType);
 
         } catch (err: any) {
             this.setState({ error: `Failed to parse new JSON format: ${err.message}` });
         }
     }
 
-    finalizeParsing(horseInfo: any[], raceScenario: string, detectedCourseId?: number, horseActVersion?: string) {
+    finalizeParsing(horseInfo: any[], raceScenario: string, detectedCourseId?: number, horseActVersion?: string, raceType?: string) {
         const parsedRaceData = deserializeFromBase64(raceScenario);
         if (!parsedRaceData) {
             this.setState({ error: 'Failed to parse race scenario data' });
@@ -343,6 +349,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             shareKey: '',
             horseActVersion: horseActVersion,
             isShared: false,
+            raceType: raceType,
         });
     }
 
@@ -365,9 +372,9 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
     };
 
     private buildContentNonAnon = (): string => {
-        const { rawHorseInfo, rawScenario, detectedCourseId } = this.state;
+        const { rawHorseInfo, rawScenario, detectedCourseId, raceType } = this.state;
         const raceHorseInfo = JSON.stringify(rawHorseInfo);
-        return JSON.stringify({ raceHorseInfo, raceScenario: rawScenario, detectedCourseId });
+        return JSON.stringify({ raceHorseInfo, raceScenario: rawScenario, detectedCourseId, raceType });
     };
 
     private buildContentAnon = (): string | null => {
@@ -395,6 +402,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
                 raceHorseInfo,
                 raceScenario: rawScenario,
                 detectedCourseId,
+                raceType: this.state.raceType,
                 salt: Date.now() // Force unique content to prevent Catbox/cache collisions on stale files
             });
         } catch {
@@ -511,6 +519,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
                     <RaceDataPresenterAny
                         raceHorseInfo={this.state.parsedHorseInfo}
                         raceData={this.state.parsedRaceData}
+                        raceType={this.state.raceType}
                         detectedCourseId={this.state.detectedCourseId} />
                 </>
             ) : (

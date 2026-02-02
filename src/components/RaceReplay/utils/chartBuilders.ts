@@ -210,6 +210,13 @@ export function buildHorsesCustomSeries(
             let isDueling = false;
             let isRushed = false;
             let rushedType = 0;
+
+            let isPaceUp = false;
+            let isPaceDown = false;
+            let isSpeedUp = false;
+            let isOvertake = false;
+            let isDownhillMode = false;
+
             const currentTime = interpolated.time;
 
             // Check temptation mode (Rushed)
@@ -229,6 +236,12 @@ export function buildHorsesCustomSeries(
                             isRushed = true;
                             if (name.includes("Boost")) rushedType = 2; // "Speed Up"
                         }
+
+                        if (name === "Pace Up") isPaceUp = true;
+                        if (name === "Pace Down") isPaceDown = true;
+                        if (name === "Speed Up") isSpeedUp = true;
+                        if (name === "Overtake") isOvertake = true;
+                        if (name === "Downhill Mode") isDownhillMode = true;
                     }
                 });
             }
@@ -255,6 +268,11 @@ export function buildHorsesCustomSeries(
                 isDueling,
                 isRushed,
                 rushedType,
+                isPaceUp,
+                isPaceDown,
+                isSpeedUp,
+                isOvertake,
+                isDownhillMode,
             });
 
             minTarget = res.min;
@@ -432,6 +450,7 @@ export function buildSkillLabels(
         const currentDistance = h.distance ?? 0;
         const currentSlopeObj = trackSlopes.find((s: any) => currentDistance >= s.start && currentDistance < s.start + s.length);
         const currentSlope = currentSlopeObj?.slope ?? 0;
+        let isDownhillMode = false;
 
         if (currentSlope < 0) {
             const rate = consumptionRateByIdx[i] ?? 0;
@@ -439,6 +458,7 @@ export function buildSkillLabels(
 
             if (expected > 0 && rate > 0 && rate < expected * 0.8) {
                 items.push({ value: base, id: `downhill-${i}-${time}`, label: next("Downhill Mode") });
+                isDownhillMode = true;
             }
         }
 

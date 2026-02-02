@@ -9,6 +9,7 @@ export type ParsedRace = {
     raceDistance: number;
     uploadedAt: Date;
     playerIndices: Set<number>;
+    raceType?: string;
 };
 
 export type HorseEntry = {

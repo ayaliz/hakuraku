@@ -18,7 +18,8 @@ export const computeCharaTableData = (
     raceData: RaceSimulateData,
     effectiveCourseId: number | undefined,
     skillActivations: Record<number, { time: number; name: string; param: number[] }[]> | undefined,
-    otherEvents: Record<number, { time: number; duration: number; name: string }[]> | undefined
+    otherEvents: Record<number, { time: number; duration: number; name: string }[]> | undefined,
+    raceType?: string
 ): CharaTableData[] => {
     const raceDistance = calculateRaceDistance(raceData);
 
@@ -55,6 +56,16 @@ export const computeCharaTableData = (
             passiveStats.guts += mods.guts || 0;
             passiveStats.wisdom += mods.wisdom || 0;
         });
+
+        if (raceType === 'Single') {
+            const flatBonus = 400;
+            passiveStats.speed += flatBonus;
+            passiveStats.stamina += flatBonus;
+            passiveStats.power += flatBonus;
+            passiveStats.guts += flatBonus;
+            passiveStats.wisdom += flatBonus;
+        }
+
         passiveStatModifiers[frameOrder] = passiveStats;
 
         const horseResult = raceData.horseResult[frameOrder];
@@ -100,6 +111,15 @@ export const computeCharaTableData = (
             passiveStats.guts += mods.guts || 0;
             passiveStats.wisdom += mods.wisdom || 0;
         });
+
+        if (raceType === 'Single') {
+            const flatBonus = 400;
+            passiveStats.speed += flatBonus;
+            passiveStats.stamina += flatBonus;
+            passiveStats.power += flatBonus;
+            passiveStats.guts += flatBonus;
+            passiveStats.wisdom += flatBonus;
+        }
 
         // Determine strategy
         const runningStyleStr = data.running_style ?? 0;
@@ -283,14 +303,15 @@ export const useCharaTableData = (
     raceData: RaceSimulateData,
     detectedCourseId: number | undefined,
     skillActivations: Record<number, { time: number; name: string; param: number[] }[]> | undefined,
-    otherEvents: Record<number, { time: number; duration: number; name: string }[]> | undefined
+    otherEvents: Record<number, { time: number; duration: number; name: string }[]> | undefined,
+    raceType?: string
 ) => {
     const raceDistance = calculateRaceDistance(raceData);
     const availableTracks = useAvailableTracks(raceDistance);
     const { selectedTrackId } = useGuessTrack(detectedCourseId, raceDistance, availableTracks);
     const effectiveCourseId = selectedTrackId ? parseInt(selectedTrackId) : undefined;
 
-    const tableData = computeCharaTableData(raceHorseInfo, raceData, effectiveCourseId, skillActivations, otherEvents);
+    const tableData = computeCharaTableData(raceHorseInfo, raceData, effectiveCourseId, skillActivations, otherEvents, raceType);
 
     return { tableData, effectiveCourseId };
 };

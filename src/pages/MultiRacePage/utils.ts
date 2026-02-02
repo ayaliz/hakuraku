@@ -67,6 +67,7 @@ export function parseRaceJson(json: any, fileName: string): ParsedRace | { error
 
     // --- OLD FORMAT LOGIC BELOW ---
     const raceHorseArray = json['<RaceHorse>k__BackingField'];
+    const raceType = json['<RaceType>k__BackingField'];
     if (!Array.isArray(raceHorseArray)) {
         return { error: 'Could not find <RaceHorse>k__BackingField or race_horse_data_array in JSON' };
     }
@@ -122,6 +123,7 @@ export function parseRaceJson(json: any, fileName: string): ParsedRace | { error
         raceDistance,
         uploadedAt: new Date(),
         playerIndices,
+        raceType,
     };
 }
 
@@ -133,6 +135,8 @@ function parseNewFormat(json: any, fileName: string, id: string): ParsedRace | {
         if (courseSet) {
             detectedCourseId = courseSet['id'] ?? courseSet.Id;
         }
+
+        const raceType = json['race_type'] || json['RaceType'];
 
         const horseInfo = rawHorses.filter((h: any) => h !== null);
 
@@ -163,6 +167,7 @@ function parseNewFormat(json: any, fileName: string, id: string): ParsedRace | {
             raceDistance,
             uploadedAt: new Date(),
             playerIndices,
+            raceType
         };
     } catch (err: any) {
         return { error: `Failed to parse new JSON format: ${err.message}` };

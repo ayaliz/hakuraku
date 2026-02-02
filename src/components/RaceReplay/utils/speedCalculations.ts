@@ -23,6 +23,11 @@ export type SpeedCalculationParams = {
     isRushed?: boolean;
     rushedType?: number;
     activeSpeedDebuff?: number;
+    isPaceUp?: boolean;
+    isPaceDown?: boolean;
+    isSpeedUp?: boolean;
+    isOvertake?: boolean;
+    isDownhillMode?: boolean;
 };
 
 export type TargetSpeedResult = {
@@ -131,6 +136,11 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
         isRushed,
         rushedType,
         activeSpeedDebuff,
+        isPaceUp,
+        isPaceDown,
+        isSpeedUp,
+        isOvertake,
+        isDownhillMode,
     } = params;
 
     const trackSpeedMultiplier = getTrackStatThresholdModifier(courseId || 0, { speed: speedStat, stamina: staminaStat, power: powerStat, guts: gutsStat, wisdom: wisdomStat }, mood);
@@ -174,8 +184,30 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
         const slopePer = slope / 10000;
         const penalty = (slopePer * 200) / adjustedPower; // m/s
         baseTargetSpeed -= penalty;
-    } else if (slope < 0) {
-        // downhill
+    }
+    // Note: Downhill non-mode logic is usually handled by consuming less HP, not increasing speed, 
+    // unless in Downhill Mode which is handled below.
+
+    // Apply Position Keep Modifiers to Base Speed (before skills/downhill)
+    let modeMultiplier = 1.0;
+    if (isPaceUp || isSpeedUp) {
+        modeMultiplier = 1.04;
+    } else if (isOvertake) {
+        modeMultiplier = 1.05;
+    } else if (isPaceDown) {
+        modeMultiplier = 0.915;
+    }
+
+    // Rushed type 2 is also a base speed multiplier
+    if (isRushed && rushedType === 2) {
+        modeMultiplier *= 1.04;
+    }
+
+    baseTargetSpeed *= modeMultiplier;
+
+
+    if (isDownhillMode) {
+        baseTargetSpeed += 0.3 + Math.abs(slope) / 1000;
     }
 
     baseTargetSpeed += (activeSpeedBuff || 0);
@@ -186,9 +218,6 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
     }
     if (isDueling) {
         baseTargetSpeed += Math.pow(200 * adjustedGuts, 0.708) * 0.0001;
-    }
-    if (isRushed && rushedType === 2) {
-        baseTargetSpeed *= 1.04;
     }
 
     // If in Last Spurt, no Wit variance (or rather, we are at the max/fixed speed)

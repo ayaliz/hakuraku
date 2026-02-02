@@ -11,10 +11,11 @@ type CharaListProps = {
     detectedCourseId?: number;
     skillActivations?: Record<number, { time: number; name: string; param: number[] }[]>;
     otherEvents?: Record<number, { time: number; duration: number; name: string }[]>;
+    raceType?: string;
 };
 
-const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData, detectedCourseId, skillActivations, otherEvents }) => {
-    const { tableData } = useCharaTableData(raceHorseInfo, raceData, detectedCourseId, skillActivations, otherEvents);
+const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData, detectedCourseId, skillActivations, otherEvents, raceType }) => {
+    const { tableData } = useCharaTableData(raceHorseInfo, raceData, detectedCourseId, skillActivations, otherEvents, raceType);
 
     if (!raceHorseInfo || raceHorseInfo.length === 0) {
         return null;

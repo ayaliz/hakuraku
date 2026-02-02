@@ -57,7 +57,7 @@ export const computeHpSpurtStats = (
         const otherEvents = computeOtherEvents(raceData, race.horseInfo, effectiveCourseId, skillActivations, raceDistance);
 
         // Use the EXACT same computation as CharaList
-        const charaTableData = computeCharaTableData(race.horseInfo, raceData, effectiveCourseId, skillActivations, otherEvents);
+        const charaTableData = computeCharaTableData(race.horseInfo, raceData, effectiveCourseId, skillActivations, otherEvents, race.raceType);
 
         // Extract HP outcomes from the computed data
         charaTableData.forEach(charaData => {
@@ -110,7 +110,6 @@ export const computeHpSpurtStats = (
                     top3Finishes: 0,
                     skillActivationCounts: {},
                     normalizedSkillActivationCounts: {},
-                    fullSpurtCount: 0,
                     survivalCount: 0,
                     hpOutcomesFullSpurt: [],
                     hpOutcomesNonFullSpurt: [],
@@ -173,9 +172,7 @@ export const computeHpSpurtStats = (
                 }
             }
 
-            if (didFullSpurt) {
-                currentStats.fullSpurtCount++;
-            }
+
 
             // Use the HP outcome computed by CharaList logic
             const hpOutcome = charaData.hpOutcome;

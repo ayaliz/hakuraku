@@ -112,15 +112,6 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
             const currentSlopeObj = trackSlopes.find((s: any) => currentDistance >= s.start && currentDistance < s.start + s.length);
             const currentSlope = currentSlopeObj?.slope ?? 0;
 
-            // Downhill Mode Check
-            let isDownhillMode = false;
-            if (currentSlope < 0) {
-                const expected = calculateReferenceHpConsumption(currentSpeed, goalInX);
-                if (expected > 0 && rate > 0 && rate < expected * 0.8) {
-                    isDownhillMode = true;
-                }
-            }
-
             // --- Target Speed Calculation ---
             const greenStats = passiveStatModifiers?.[i];
             let activeSpeedBuff = 0;
@@ -201,8 +192,68 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
                 }
             }
 
+            // Downhill Mode Check & Verification
+            let isDownhillMode = false;
+            let downhillSpeedBonus = 0;
+
+            if (currentSlope < 0) {
+                downhillSpeedBonus = 0.3 + Math.abs(currentSlope) / 1000;
+
+                const expected = calculateReferenceHpConsumption(currentSpeed, goalInX);
+                // HP Check
+                if (expected > 0 && rate > 0 && rate < expected * 0.8) {
+
+                    // Verify speed is consistent with Downhill Mode
+                    const baseSpeedNoBuffs = res.base - activeSpeedBuff;
+
+                    // Candidates
+                    const targetDownhill = res.base + downhillSpeedBonus;
+                    const targetDownhillPaceUp = (baseSpeedNoBuffs * 1.04) + activeSpeedBuff + downhillSpeedBonus;
+                    const targetDownhillPaceDown = (baseSpeedNoBuffs * 0.915) + activeSpeedBuff + downhillSpeedBonus;
+
+                    const candidates = [targetDownhill, targetDownhillPaceUp, targetDownhillPaceDown];
+
+                    const targetNormal = res.base;
+                    const targetPaceUp = (baseSpeedNoBuffs * 1.04) + activeSpeedBuff;
+                    const targetPaceDown = (baseSpeedNoBuffs * 0.915) + activeSpeedBuff;
+                    const nonDownhillCandidates = [targetNormal, targetPaceUp, targetPaceDown];
+
+                    // Find closest
+                    let minDiff = Number.MAX_VALUE;
+                    let bestMatchIsDownhill = true;
+
+                    for (const c of candidates) {
+                        const diff = Math.abs(currentSpeed - c);
+                        if (diff < minDiff) {
+                            minDiff = diff;
+                            bestMatchIsDownhill = true;
+                        }
+                    }
+                    for (const c of nonDownhillCandidates) {
+                        const diff = Math.abs(currentSpeed - c);
+                        if (diff < minDiff) {
+                            minDiff = diff;
+                            bestMatchIsDownhill = false;
+                        }
+                    }
+
+                    if (bestMatchIsDownhill) {
+                        isDownhillMode = true;
+                    } else {
+                        // If ambiguous (far from both or close to normal), reject if strictly close to Normal
+                        // and far from Downhill
+                        if (Math.abs(currentSpeed - targetNormal) < 0.2 && Math.abs(currentSpeed - targetDownhill) > 0.2) {
+                            isDownhillMode = false;
+                        } else {
+                            isDownhillMode = true;
+                        }
+                    }
+                }
+            }
+
             if (isDownhillMode) {
-                referenceMax += 0.3 + Math.abs(currentSlope) / 1000;
+                referenceMax += downhillSpeedBonus;
+                res.min += downhillSpeedBonus;
             }
 
             // --- Mode Logic ---
@@ -212,10 +263,40 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
             let isTriggeredHigh = false;
             let isTriggeredLow = false;
 
+            // "High" Mode Trigger (Pace Up / Speed Up / Overtake)
+            // Trigger if:
+            // 1. Speed is significantly above normal max (> 102%)
+            // 2. Speed is slightly above normal max AND accelerating (> 0.2)
             if (currentSpeed > referenceMax * 1.02 || (currentSpeed > referenceMax && accel > 0.2)) {
                 isTriggeredHigh = true;
-            } else if (currentSpeed < res.min * 0.98 && accel <= 0.2) {
-                isTriggeredLow = true;
+            }
+
+            // "High" Mode Exit Safeguard
+            // If decelerating significantly while not firmly in "High" territory, kill it.
+            if (accel < -0.2 && currentSpeed < referenceMax * 1.005) {
+                isTriggeredHigh = false;
+            }
+
+            // "Low" Mode Trigger (Pace Down)
+            // Trigger if:
+            // 1. Speed is significantly below normal min (< 98%)
+            // 2. Speed is slightly below normal min AND decelerating (< -0.2)
+            // Condition: No active speed skill (checked via activeSpeedBuff <= 0)
+            const theoreticalPaceDown = (res.base * 0.915) + (activeSpeedBuff || 0) + (isDownhillMode ? downhillSpeedBonus : 0);
+
+            if ((currentSpeed < res.min * 0.98 || (currentSpeed < res.min && accel < -0.2)) && activeSpeedBuff <= 0 && accel < 0.2) {
+                // Check if we are actually close to Pace Down target.
+                // If we are significantly faster (> 6% margin) than theoretical Pace Down, it's likely not Pace Down.
+                if (currentSpeed < theoreticalPaceDown * 1.06) {
+                    isTriggeredLow = true;
+                }
+            }
+
+            // "Low" Mode Exit Safeguard
+            // If accelerating significantly while not firmly in "Low" territory, kill it.
+            // Also force exit if we are clearly above Pace Down territory (e.g. due to strong acceleration)
+            if ((accel > 0.2 && currentSpeed > theoreticalPaceDown * 1.02) || (currentSpeed > theoreticalPaceDown * 1.06)) {
+                isTriggeredLow = false;
             }
 
             const currentMode = activeModes[i];

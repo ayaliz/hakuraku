@@ -205,6 +205,7 @@ export function calculateMaxAdjustedSpeed(
 ): number {
     let maxAdjSpeed = 0;
     let wasType28Active = false;
+    let lastDuelingActiveFrameIndex = -100;
 
     for (let fIdx = 0; fIdx < frames.length; fIdx++) {
         const frame = frames[fIdx];
@@ -236,6 +237,7 @@ export function calculateMaxAdjustedSpeed(
         wasType28Active = isType28Active;
         if (shouldSkip) continue;
 
+        let isDuelingActive = false;
         // Other Events
         if (otherEvents && otherEvents[frameOrder]) {
             otherEvents[frameOrder].forEach(e => {
@@ -246,9 +248,16 @@ export function calculateMaxAdjustedSpeed(
                     }
                     if (name.includes("Dueling") || name.includes("Competes (Speed)")) {
                         buff += Math.pow(200 * adjustedGuts, 0.708) * 0.0001;
+                        isDuelingActive = true;
                     }
                 }
             });
+        }
+
+        if (isDuelingActive) {
+            lastDuelingActiveFrameIndex = fIdx;
+        } else {
+            if (fIdx - lastDuelingActiveFrameIndex <= 2) continue;
         }
 
         // Downhill Mode

@@ -29,6 +29,7 @@ type RaceDataPresenterProps = {
     raceHorseInfo: any[],
     raceData: RaceSimulateData,
     detectedCourseId?: number,
+    raceType?: string,
 };
 
 type RaceDataPresenterState = {
@@ -124,6 +125,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 detectedCourseId={this.state.activeCourseId}
                 skillActivations={this.skillActivations(this.props.raceData)}
                 otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.state.activeCourseId, this.skillActivations(this.props.raceData))}
+                raceType={this.props.raceType}
             />
 
             <div style={sectionDividerStyle} />

@@ -450,7 +450,6 @@ export function buildSkillLabels(
         const currentDistance = h.distance ?? 0;
         const currentSlopeObj = trackSlopes.find((s: any) => currentDistance >= s.start && currentDistance < s.start + s.length);
         const currentSlope = currentSlopeObj?.slope ?? 0;
-        let isDownhillMode = false;
 
         if (currentSlope < 0) {
             const rate = consumptionRateByIdx[i] ?? 0;
@@ -458,7 +457,6 @@ export function buildSkillLabels(
 
             if (expected > 0 && rate > 0 && rate < expected * 0.8) {
                 items.push({ value: base, id: `downhill-${i}-${time}`, label: next("Downhill Mode") });
-                isDownhillMode = true;
             }
         }
 

@@ -7,7 +7,9 @@ export interface PieSlice {
     color: string;
     charaId?: number | string;
     strategyId?: number;
+    cardId?: number;
     tooltipLines?: string[];
+    fullLabel?: string;
 }
 
 export interface StrategyPieSlice extends PieSlice {
@@ -17,6 +19,7 @@ export interface StrategyPieSlice extends PieSlice {
 export interface PerformanceMetrics {
     id: number | string;
     label: string;
+    fullLabel?: string;
     diff: number; // percentage points
     impact: number; // Ratio (Win% / Pop%)
     winPct: number; // Share of total wins
@@ -24,6 +27,8 @@ export interface PerformanceMetrics {
     popPct: number;
     popCount: number;
     winCount: number;
+    strategyId?: number;
+    cardId?: number;
 }
 
 export interface WinDistributionChartsProps {

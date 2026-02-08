@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { HorseEntry, CharacterStats, StrategyStats } from "../../types";
-import { STRATEGY_NAMES, STRATEGY_NAMES_SHORT, STRATEGY_COLORS, CHARACTER_COLORS } from "./constants";
+import { STRATEGY_NAMES, STRATEGY_COLORS, CHARACTER_COLORS } from "./constants";
 import { StrategyPieSlice, PieSlice, PerformanceMetrics } from "./types";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 
@@ -9,11 +9,8 @@ export const useWinDistributionData = (
     strategyStats: StrategyStats[],
     allHorses: HorseEntry[]
 ) => {
-    // -------------------------------------------------------------------------
-    // 1. Calculate OPPONENT-ONLY stats (Effective Winners)
-    // -------------------------------------------------------------------------
+
     const { opponentCharacterStats, opponentStrategyStats } = useMemo(() => {
-        // Group by race to determine effective winners (best placing non-player)
         const races = new Map<string, HorseEntry[]>();
         allHorses.forEach(h => {
             if (!races.has(h.raceId)) races.set(h.raceId, []);
@@ -38,7 +35,7 @@ export const useWinDistributionData = (
             }
         });
 
-        // Recalculate Character Stats for Opponents
+
         const charaMap = new Map<number, { charaName: string; wins: number }>();
         effectiveWinners.forEach(h => {
             if (!charaMap.has(h.charaId)) {
@@ -54,7 +51,7 @@ export const useWinDistributionData = (
             totalRaces: 0, top3Finishes: 0, avgFinishPosition: 0, avgFinishTime: 0
         }));
 
-        // Recalculate Strategy Stats for Opponents
+
         const stratMap = new Map<number, { wins: number; winnersByChara: Map<number, { charaName: string; wins: number }> }>();
         effectiveWinners.forEach(h => {
             if (!stratMap.has(h.strategy)) {
@@ -82,9 +79,7 @@ export const useWinDistributionData = (
         return { opponentCharacterStats: oppCharaStats, opponentStrategyStats: oppStratStats };
     }, [allHorses]);
 
-    // -------------------------------------------------------------------------
-    // 2. Prepare Strategy Pie Data (Wins All, Wins Opp, Pop Opp)
-    // -------------------------------------------------------------------------
+
     const strategyPieDataAll = useMemo((): StrategyPieSlice[] => {
         const totalWins = strategyStats.reduce((sum, s) => sum + s.wins, 0);
         if (totalWins === 0) return [];
@@ -115,7 +110,7 @@ export const useWinDistributionData = (
             .sort((a, b) => b.value - a.value);
     }, [opponentStrategyStats]);
 
-    // Population Stats (Strategies)
+
     const popStrategyData = useMemo(() => {
         const nonPlayerHorses = allHorses.filter(h => !h.isPlayer);
         const total = nonPlayerHorses.length;
@@ -136,22 +131,22 @@ export const useWinDistributionData = (
             .sort((a, b) => b.value - a.value);
     }, [allHorses]);
 
-    // Strategy Performance Metrics
+
     const strategyPerfMetrics = useMemo(() => {
         const strategies = [1, 2, 3, 4];
 
-        // 1. Calculate Pop Pcts
+
         const nonPlayerHorses = allHorses.filter(h => !h.isPlayer);
         const totalPop = nonPlayerHorses.length || 1;
         const popMap = new Map<number, number>();
         nonPlayerHorses.forEach(h => popMap.set(h.strategy, (popMap.get(h.strategy) || 0) + 1));
 
-        // 2. Calculate Win Pcts
+
         const totalWins = opponentStrategyStats.reduce((sum, s) => sum + s.wins, 0) || 1;
         const winsMap = new Map<number, number>();
         opponentStrategyStats.forEach(s => winsMap.set(s.strategy, s.wins));
 
-        // 3. Build Metrics
+
         return strategies.map(stratId => {
             const popCount = popMap.get(stratId) || 0;
             const winCount = winsMap.get(stratId) || 0;
@@ -168,12 +163,13 @@ export const useWinDistributionData = (
                 actualWinRate,
                 popPct,
                 popCount,
-                winCount
+                winCount,
+                strategyId: stratId
             };
         }).filter(m => m.popCount > 0 || m.winCount > 0);
     }, [allHorses, opponentStrategyStats]);
 
-    // Unified Character Data with consistent colors and grouping
+
 
     const {
         unifiedCharacterWinsAll,
@@ -187,33 +183,41 @@ export const useWinDistributionData = (
     } = useMemo(() => {
 
         const getKey = (charaId: number, strategy: number, cardId: number) => `${charaId}_${cardId}_${strategy}`;
-        const getLabel = (name: string, strategy: number) => `[${STRATEGY_NAMES_SHORT[strategy]}] ${name}`;
+        const getLabel = (name: string) => name;
 
-        // 1. Get filtered horses (for population)
+
         const nonPlayerHorses = allHorses.filter(h => !h.isPlayer);
         const popTotal = nonPlayerHorses.length;
 
-        // 2. Count raw stats (Population)
 
-        const popMap = new Map<string, { name: string; count: number; charaId: number; strategy: number; cardId: number }>();
+
+        const popMap = new Map<string, { name: string; fullLabel: string; count: number; charaId: number; strategy: number; cardId: number }>();
         nonPlayerHorses.forEach(h => {
             const key = getKey(h.charaId, h.strategy, h.cardId);
-            if (!popMap.has(key)) popMap.set(key, { name: getLabel(h.charaName, h.strategy), count: 0, charaId: h.charaId, strategy: h.strategy, cardId: h.cardId });
+            if (!popMap.has(key)) popMap.set(key, {
+                name: getLabel(h.charaName),
+                fullLabel: h.charaName, // Just use name as base
+                count: 0, charaId: h.charaId, strategy: h.strategy, cardId: h.cardId
+            });
             popMap.get(key)!.count++;
         });
 
-        // 3. Wins (All) - Recalculate from allHorses to support Strategy split
-        const winMapAll = new Map<string, { name: string; count: number; charaId: number; strategy: number; cardId: number }>();
+
+        const winMapAll = new Map<string, { name: string; fullLabel: string; count: number; charaId: number; strategy: number; cardId: number }>();
         const winnersAll = allHorses.filter(h => h.finishOrder === 1);
         const winTotalAll = winnersAll.length;
 
         winnersAll.forEach(h => {
             const key = getKey(h.charaId, h.strategy, h.cardId);
-            if (!winMapAll.has(key)) winMapAll.set(key, { name: getLabel(h.charaName, h.strategy), count: 0, charaId: h.charaId, strategy: h.strategy, cardId: h.cardId });
+            if (!winMapAll.has(key)) winMapAll.set(key, {
+                name: getLabel(h.charaName),
+                fullLabel: h.charaName,
+                count: 0, charaId: h.charaId, strategy: h.strategy, cardId: h.cardId
+            });
             winMapAll.get(key)!.count++;
         });
 
-        // 4. Wins (Opponents) - Recalculate from effective effective winners
+
 
         const races = new Map<string, HorseEntry[]>();
         allHorses.forEach(h => {
@@ -236,15 +240,19 @@ export const useWinDistributionData = (
             if (bestHorse) effectiveWinners.push(bestHorse);
         });
 
-        const winMapOpp = new Map<string, { name: string; count: number; charaId: number; strategy: number; cardId: number }>();
+        const winMapOpp = new Map<string, { name: string; fullLabel: string; count: number; charaId: number; strategy: number; cardId: number }>();
         const winTotalOpp = effectiveWinners.length;
         effectiveWinners.forEach(h => {
             const key = getKey(h.charaId, h.strategy, h.cardId);
-            if (!winMapOpp.has(key)) winMapOpp.set(key, { name: getLabel(h.charaName, h.strategy), count: 0, charaId: h.charaId, strategy: h.strategy, cardId: h.cardId });
+            if (!winMapOpp.has(key)) winMapOpp.set(key, {
+                name: getLabel(h.charaName),
+                fullLabel: h.charaName,
+                count: 0, charaId: h.charaId, strategy: h.strategy, cardId: h.cardId
+            });
             winMapOpp.get(key)!.count++;
         });
 
-        // 5. Determine "Key Characters" (Tuples)
+
         const MAX_SLICES = 6; // Increased slightly since tuples add fragmentation
         const topWinsAll = Array.from(winMapAll.entries()).sort((a, b) => b[1].count - a[1].count).slice(0, MAX_SLICES).map(e => e[0]);
         const topWinsOpp = Array.from(winMapOpp.entries()).sort((a, b) => b[1].count - a[1].count).slice(0, MAX_SLICES).map(e => e[0]);
@@ -252,17 +260,17 @@ export const useWinDistributionData = (
 
         const keyIds = Array.from(new Set([...topWinsAll, ...topWinsOpp, ...topPop]));
 
-        // 6. Assign Colors
+
         const colorMap = new Map<string, string>();
         let colorIndex = 0;
 
-        // Assign to Key IDs first (stable for legend/pie)
+
         keyIds.forEach((id) => {
             colorMap.set(id, CHARACTER_COLORS[colorIndex % CHARACTER_COLORS.length]);
             colorIndex++;
         });
 
-        // Assign to everyone else
+
         const allIds = new Set([...Array.from(winMapAll.keys()), ...Array.from(winMapOpp.keys()), ...Array.from(popMap.keys())]);
         allIds.forEach((id) => {
             if (!colorMap.has(id)) {
@@ -271,13 +279,13 @@ export const useWinDistributionData = (
             }
         });
 
-        // 7. Generate Slices
-        const commonGenSlices = (sourceMap: Map<string, { name: string; count: number; charaId: number; strategy: number; cardId: number }>, total: number) => {
+
+        const commonGenSlices = (sourceMap: Map<string, { name: string; fullLabel: string; count: number; charaId: number; strategy: number; cardId: number }>, total: number) => {
             const slices: PieSlice[] = [];
             let othersCount = 0;
             const othersDetails: string[] = [];
 
-            // First, key characters
+
             keyIds.forEach(id => {
                 if (sourceMap.has(id)) {
                     const data = sourceMap.get(id)!;
@@ -285,14 +293,16 @@ export const useWinDistributionData = (
                         value: data.count,
                         percentage: (data.count / total) * 100,
                         label: data.name,
+                        fullLabel: data.fullLabel,
                         color: colorMap.get(id)!,
                         charaId: id, // String ID
                         strategyId: data.strategy,
+                        cardId: data.cardId,
                     });
                 }
             });
 
-            // Then everyone else
+
             sourceMap.forEach((data, id) => {
                 if (!keyIds.includes(id)) {
                     othersCount += data.count;
@@ -320,8 +330,8 @@ export const useWinDistributionData = (
             return slices;
         };
 
-        // Helper to generate ALL slices without "Others" grouping (for Bar Chart)
-        const genFullSlices = (sourceMap: Map<string, { name: string; count: number; charaId: number; strategy: number; cardId: number }>, total: number) => {
+
+        const genFullSlices = (sourceMap: Map<string, { name: string; fullLabel: string; count: number; charaId: number; strategy: number; cardId: number }>, total: number) => {
             return Array.from(sourceMap.entries())
                 .map(([id, data]) => {
                     const cardName = data.cardId ? UMDatabaseWrapper.cards[data.cardId]?.name : null;
@@ -331,9 +341,11 @@ export const useWinDistributionData = (
                         value: data.count,
                         percentage: (data.count / total) * 100,
                         label: label,
+                        fullLabel: data.fullLabel,
                         color: colorMap.get(id) || "#718096", // Default color if not in keyIds
                         charaId: id,
                         strategyId: data.strategy,
+                        cardId: data.cardId,
                     };
                 })
                 .sort((a, b) => b.value - a.value);
@@ -347,16 +359,20 @@ export const useWinDistributionData = (
         const rawUnifiedCharacterWinsOpp = winTotalOpp > 0 ? genFullSlices(winMapOpp, winTotalOpp) : [];
         const rawUnifiedCharacterPop = popTotal > 0 ? genFullSlices(popMap, popTotal) : [];
 
-        // 8. Legend Data
+
         const characterLegend = keyIds
             .filter(id => (winMapAll.has(id) || winMapOpp.has(id) || popMap.has(id)))
             .map(id => ({
                 id, // string
                 label: (winMapAll.get(id)?.name || winMapOpp.get(id)?.name || popMap.get(id)?.name || "Unknown"),
-                color: colorMap.get(id)!
+                fullLabel: (winMapAll.get(id)?.fullLabel || winMapOpp.get(id)?.fullLabel || popMap.get(id)?.fullLabel),
+                color: colorMap.get(id)!,
+                strategyId: winMapAll.get(id)?.strategy || winMapOpp.get(id)?.strategy || popMap.get(id)?.strategy,
+                cardId: winMapAll.get(id)?.cardId || winMapOpp.get(id)?.cardId || popMap.get(id)?.cardId,
+                charaId: winMapAll.get(id)?.charaId || winMapOpp.get(id)?.charaId || popMap.get(id)?.charaId,
             }));
 
-        // 9. Performance Metrics
+
         const allPerfIds = Array.from(new Set([...Array.from(popMap.keys()), ...Array.from(winMapOpp.keys())]));
         const totalWinsMetric = winTotalOpp || 1;
         const totalPopMetric = popTotal || 1;
@@ -366,8 +382,9 @@ export const useWinDistributionData = (
             const winData = winMapOpp.get(id);
             const popCount = popData?.count || 0;
             const winCount = winData?.count || 0;
-            // Use name from either source
+
             const name = popData?.name || winData?.name || `ID ${id}`;
+            const fullLabel = popData?.fullLabel || winData?.fullLabel;
 
             const popPct = (popCount / totalPopMetric) * 100;
             const winPct = (winCount / totalWinsMetric) * 100;
@@ -377,13 +394,16 @@ export const useWinDistributionData = (
             return {
                 id,
                 label: name,
+                fullLabel,
                 diff: winPct - popPct,
                 impact,
                 winPct,
                 actualWinRate,
                 popPct,
                 popCount,
-                winCount
+                winCount,
+                strategyId: winData?.strategy || popData?.strategy,
+                cardId: winData?.cardId || popData?.cardId,
             };
         });
 

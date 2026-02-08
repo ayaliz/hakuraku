@@ -164,6 +164,13 @@ const MultiRacePage: React.FC = () => {
                             <Tab.Content>
                                 {trackGroups.map((group) => (
                                     <Tab.Pane key={group.courseId} eventKey={`track-${group.courseId}`}>
+                                        <div className="hp-spurt-analysis-section" style={{ marginBottom: '30px' }}>
+                                            <h4 style={{ color: "#e2e8f0", marginBottom: "15px" }}>
+                                                Personal character analysis
+                                            </h4>
+                                            <HpSpurtAnalysis races={group.races} />
+                                        </div>
+
                                         <WinDistributionCharts
                                             characterStats={group.stats.characterStats}
                                             strategyStats={group.stats.strategyStats}
@@ -182,13 +189,6 @@ const MultiRacePage: React.FC = () => {
                                                 strategyStats={group.stats.strategyStats}
                                                 allHorses={group.stats.allHorses}
                                             />
-                                        </div>
-
-                                        <div className="hp-spurt-analysis-section" style={{ marginTop: '30px' }}>
-                                            <h4 style={{ color: "#e2e8f0", marginBottom: "15px" }}>
-                                                Personal character analysis
-                                            </h4>
-                                            <HpSpurtAnalysis races={group.races} />
                                         </div>
                                     </Tab.Pane>
                                 ))}

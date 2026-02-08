@@ -72,11 +72,15 @@ const PieChart: React.FC<PieChartProps> = ({ slices, size, unit, chartId, onClic
 
                 // Only show label/icon if slice is big enough (> 5%)
                 const showLabel = slice.percentage > 5;
-                const iconUrl = showLabel && slice.charaId ? getCharaIcon(slice.charaId) : null;
+                const compositeId = slice.cardId && slice.strategyId
+                    ? `${slice.charaId}_${slice.cardId}_${slice.strategyId}`
+                    : slice.charaId;
+
+                const iconUrl = showLabel && compositeId ? getCharaIcon(compositeId) : null;
                 const clipId = `clip-${chartId}-${i}-${slice.charaId || 's'}`;
 
                 // Tooltip
-                let tooltipText = `${slice.label}: ${slice.value} ${unit} (${slice.percentage.toFixed(1)}%)`;
+                let tooltipText = `${slice.fullLabel || slice.label}: ${slice.value} ${unit} (${slice.percentage.toFixed(1)}%)`;
                 // Add extra info if strategy pie slice has winning characters
                 const stratSlice = slice as StrategyPieSlice;
                 if (stratSlice.winningCharacters && stratSlice.winningCharacters.length > 0) {

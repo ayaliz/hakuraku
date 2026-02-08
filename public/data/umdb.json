@@ -12748,6 +12748,12 @@
       "groundType": "TURF"
     },
     {
+      "id": 600001,
+      "name": "Capricorn Cup",
+      "distance": 1200,
+      "groundType": "TURF"
+    },
+    {
       "id": 600005,
       "name": "Taurus Cup",
       "distance": 2400,
@@ -12793,6 +12799,12 @@
       "id": 600012,
       "name": "Sagittarius Cup",
       "distance": 2500,
+      "groundType": "TURF"
+    },
+    {
+      "id": 600013,
+      "name": "Capricorn Cup Finals",
+      "distance": 1200,
       "groundType": "TURF"
     },
     {
@@ -17372,6 +17384,42 @@
       "name": "Tokyo Daishoten",
       "distance": 2000,
       "groundType": "DIRT"
+    },
+    {
+      "id": 630001,
+      "name": "Carnival Race (Hard)",
+      "distance": 1600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 630002,
+      "name": "Carnival Race (Hard)",
+      "distance": 1800,
+      "groundType": "TURF"
+    },
+    {
+      "id": 630003,
+      "name": "Carnival Race (Hard)",
+      "distance": 2000,
+      "groundType": "TURF"
+    },
+    {
+      "id": 630004,
+      "name": "Carnival Race (Hard)",
+      "distance": 2200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 630005,
+      "name": "Challenge Race (Very Hard)",
+      "distance": 1600,
+      "groundType": "TURF"
+    },
+    {
+      "id": 630006,
+      "name": "Challenge Race (Extreme)",
+      "distance": 1600,
+      "groundType": "TURF"
     }
   ],
   "winsSaddle": [
@@ -22684,6 +22732,14 @@
       "tagId": [
         "104",
         "302",
+        "401"
+      ]
+    },
+    {
+      "id": 202031,
+      "name": "Nothing Ventured",
+      "gradeValue": 334,
+      "tagId": [
         "401"
       ]
     },
@@ -60510,6 +60566,11 @@
       "charaId": 1038
     },
     {
+      "id": 10074,
+      "name": "[Acupuncturist] Sasami Anshinzawa",
+      "charaId": 9005
+    },
+    {
       "id": 10075,
       "name": "[Tracen Academy] Admire Vega",
       "charaId": 1033
@@ -60618,6 +60679,11 @@
       "id": 20021,
       "name": "[Trainers' Teamwork] Aoi Kiryuin",
       "charaId": 9004
+    },
+    {
+      "id": 20022,
+      "name": "[Now Dat's What I Call Grilled Squid!] Tamamo Cross",
+      "charaId": 1021
     },
     {
       "id": 20023,
@@ -61043,6 +61109,11 @@
       "id": 30079,
       "name": "[Leaping into the Unknown] Meisho Doto",
       "charaId": 1058
+    },
+    {
+      "id": 30080,
+      "name": "[This Might Sting!] Sasami Anshinzawa",
+      "charaId": 9005
     }
   ],
   "textData": [
@@ -238464,7 +238535,7 @@
       "id": 48,
       "category": 48,
       "index": 1000011,
-      "text": "Gain +{0}% Carnival Points. This skill will disappear when the event ends."
+      "text": "Increase attributes by +{0}％ in the Racing Carnival. {1}％ chance to also raise runner's mood to Great. This skill will disappear when the event ends."
     },
     {
       "id": 48,
@@ -280230,91 +280301,91 @@
       "id": 67,
       "category": 67,
       "index": 2300041,
-      "text": "Limited-Time: Receive the Lvl 1 Carnival Bonus Spark"
+      "text": "Complete a Career playthrough with the Carnival Bonus skill"
     },
     {
       "id": 67,
       "category": 67,
       "index": 2300042,
-      "text": "Limited-Time: Receive the Lvl 2 Carnival Bonus Spark"
+      "text": "Gain a total of 10,000 Carnival Points"
     },
     {
       "id": 67,
       "category": 67,
       "index": 2300043,
-      "text": "Limited-Time: Receive the Lvl 3 Carnival Bonus Spark"
+      "text": "Gain a total of 20,000 Carnival Points"
     },
     {
       "id": 67,
       "category": 67,
       "index": 2300044,
-      "text": "Limited-Time: Receive the Lvl 4 Carnival Bonus Spark"
+      "text": "Gain a total of 30,000 Carnival Points"
     },
     {
       "id": 67,
       "category": 67,
       "index": 2300045,
-      "text": "Limited-Time: Receive the Lvl 5 Carnival Bonus Spark"
+      "text": "Gain a total of 40,000 Carnival Points"
     },
     {
       "id": 67,
       "category": 67,
       "index": 2300046,
-      "text": "Limited-Time: Gain a total of 10000 Carnival Points"
+      "text": "Gain a total of 50,000 Carnival Points"
     },
     {
       "id": 67,
       "category": 67,
       "index": 2300047,
-      "text": "Limited-Time: Gain a total of 30000 Carnival Points"
+      "text": "Gain a total of 60,000 Carnival Points"
     },
     {
       "id": 67,
       "category": 67,
       "index": 2300048,
-      "text": "Limited-Time: Gain a total of 50000 Carnival Points"
+      "text": "Gain a total of 70,000 Carnival Points"
     },
     {
       "id": 67,
       "category": 67,
       "index": 2300049,
-      "text": "Limited-Time: Gain a total of 70000 Carnival Points"
+      "text": "Gain a total of 80,000 Carnival Points"
     },
     {
       "id": 67,
       "category": 67,
       "index": 2300050,
-      "text": "Limited-Time: Gain a total of 100000 Carnival Points"
+      "text": "Gain a total of 90,000 Carnival Points"
     },
     {
       "id": 67,
       "category": 67,
       "index": 2300051,
-      "text": "Limited-Time: Gain a total of 120000 Carnival Points"
+      "text": "Gain a total of 100,000 Carnival Points"
     },
     {
       "id": 67,
       "category": 67,
       "index": 2300052,
-      "text": "Limited-Time: Gain a total of 140000 Carnival Points"
+      "text": "Gain a total of 140000 Carnival Points"
     },
     {
       "id": 67,
       "category": 67,
       "index": 2300053,
-      "text": "Limited-Time: Gain a total of 160000 Carnival Points"
+      "text": "Gain a total of 160000 Carnival Points"
     },
     {
       "id": 67,
       "category": 67,
       "index": 2300054,
-      "text": "Limited-Time: Gain a total of 180000 Carnival Points"
+      "text": "Gain a total of 180000 Carnival Points"
     },
     {
       "id": 67,
       "category": 67,
       "index": 2300055,
-      "text": "Limited-Time: Gain a total of 200000 Carnival Points"
+      "text": "Gain a total of 200000 Carnival Points"
     },
     {
       "id": 67,

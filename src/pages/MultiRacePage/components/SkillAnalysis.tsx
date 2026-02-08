@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import { SkillStats, SkillActivationPoint, CharacterStats, StrategyStats, HorseEntry } from "../types";
 
 interface SkillAnalysisProps {
@@ -410,7 +411,20 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                                 Activations {renderSortIndicator("timesActivated")}
                             </th>
                             <th className="sortable" onClick={() => handleSort("normalizedActivations")}>
-                                Normalized {renderSortIndicator("normalizedActivations")}
+                                <OverlayTrigger
+                                    placement="top"
+                                    overlay={
+                                        <Tooltip id="normalized-tooltip">
+                                            Estimate for how often the skill's conditions are met with wit checks excluded.
+                                        </Tooltip>
+                                    }
+                                >
+                                    <span style={{ borderBottom: "1px dotted #a0aec0", cursor: "help" }}>
+                                        Normalized
+                                    </span>
+                                </OverlayTrigger>
+                                {" "}
+                                {renderSortIndicator("normalizedActivations")}
                             </th>
                             <th className="sortable" onClick={() => handleSort("meanDistance")}>
                                 Mean Dist {renderSortIndicator("meanDistance")}

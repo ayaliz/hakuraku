@@ -1,6 +1,8 @@
 
 import React from "react";
 import { PerformanceMetrics } from "./types";
+import { getCharaIcon } from "./utils";
+import { STRATEGY_COLORS, STRATEGY_NAMES } from "./constants";
 
 interface PerformancePanelProps {
     items: PerformanceMetrics[];
@@ -64,21 +66,78 @@ const PerformancePanel: React.FC<PerformancePanelProps> = ({
         );
     };
 
-    const renderItem = (item: PerformanceMetrics, isPositive: boolean) => (
-        <div
-            key={item.id}
-            title={`${item.winCount} wins / ${item.popCount} entries\nWin Rate: ${item.actualWinRate.toFixed(1)}%\nWin Share: ${item.winPct.toFixed(1)}%\nPop Share: ${item.popPct.toFixed(1)}%`}
-            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", marginBottom: "4px", cursor: "help" }}
-        >
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: columns === 2 ? "90px" : "110px", color: isPositive ? "#68d391" : "#fc8181" }}>
-                {item.label}
-            </span>
-            {renderValue(item, isPositive)}
-        </div>
-    );
+    const renderItem = (item: PerformanceMetrics, isPositive: boolean) => {
+        const compositeId = item.cardId && item.strategyId
+            ? `${item.id}_${item.cardId}_${item.strategyId}`
+            : item.id;
+        const iconUrl = getCharaIcon(compositeId);
+
+        return (
+            <div
+                key={item.id}
+                title={`${item.fullLabel || item.label}\n${item.winCount} wins / ${item.popCount} entries\nWin Rate: ${item.actualWinRate.toFixed(1)}%\nWin Share: ${item.winPct.toFixed(1)}%\nPop Share: ${item.popPct.toFixed(1)}%`}
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", marginBottom: "8px", cursor: "help" }}
+            >
+                <div style={{ display: "flex", alignItems: "center", overflow: "hidden", maxWidth: columns === 2 ? "180px" : "180px" }}>
+                    {iconUrl && item.strategyId && STRATEGY_COLORS[item.strategyId] ? (
+                        <div
+                            style={{ position: "relative", width: "40px", height: "40px", flexShrink: 0, marginRight: "10px" }}
+                            title={STRATEGY_NAMES[item.strategyId]}
+                        >
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    top: "50%",
+                                    left: "50%",
+                                    transform: "translate(-50%, -50%) translate(0.3px, 1.9px)",
+                                    width: "35px",
+                                    height: "35px",
+                                    backgroundColor: STRATEGY_COLORS[item.strategyId],
+                                    borderRadius: "50%",
+                                    opacity: 0.8
+                                }}
+                            />
+                            <img
+                                src={iconUrl}
+                                alt={item.label}
+                                style={{
+                                    position: "absolute",
+                                    top: 0,
+                                    left: 0,
+                                    width: "100%",
+                                    height: "100%",
+                                    objectFit: "cover",
+                                    borderRadius: "50%"
+                                }}
+                            />
+                        </div>
+                    ) : (
+                        item.strategyId && STRATEGY_COLORS[item.strategyId] && (
+                            <span
+                                style={{
+                                    display: "inline-block",
+                                    width: "8px",
+                                    height: "8px",
+                                    borderRadius: "50%",
+                                    backgroundColor: STRATEGY_COLORS[item.strategyId],
+                                    marginRight: "4px",
+                                    flexShrink: 0,
+                                }}
+                                title={STRATEGY_NAMES[item.strategyId]}
+                            />
+                        )
+                    )}
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: isPositive ? "#68d391" : "#fc8181" }}>
+                        {item.label}
+                    </span>
+                </div>
+                {renderValue(item, isPositive)}
+            </div>
+        );
+    };
 
     const containerStyle: React.CSSProperties = {
-        minWidth: columns === 2 ? "320px" : "180px",
+        minWidth: columns === 2 ? "400px" : "220px",
         padding: "10px",
         background: "rgba(0,0,0,0.2)",
         borderRadius: "8px",

@@ -12,7 +12,6 @@ import { calculateRaceDistance } from "../../utils/RacePresenterUtils";
 import { CharaTableData } from "./types";
 import { calculateMaxAdjustedSpeed, calculateHpOutcome } from "../../../RaceReplay/utils/analysisUtils";
 
-// Pure function for computing character table data
 export const computeCharaTableData = (
     raceHorseInfo: any[],
     raceData: RaceSimulateData,

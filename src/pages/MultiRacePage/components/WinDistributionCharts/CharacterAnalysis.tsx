@@ -1,8 +1,11 @@
+
 import React, { useState } from "react";
 import PieChart from "./PieChart";
 import PerformancePanel from "./PerformancePanel";
 import ChartDetailsModal from "./ChartDetailsModal";
+import { STRATEGY_COLORS, STRATEGY_NAMES } from "./constants";
 import { PieSlice, PerformanceMetrics } from "./types";
+import { getCharaIcon } from "./utils";
 
 interface CharacterAnalysisProps {
     winsAll: PieSlice[];
@@ -11,7 +14,7 @@ interface CharacterAnalysisProps {
     rawWinsAll: PieSlice[];
     rawWinsOpp: PieSlice[];
     rawPop: PieSlice[];
-    legend: { id: number | string; label: string; color: string }[];
+    legend: { id: number | string; label: string; fullLabel?: string; color: string; strategyId?: number; cardId?: number; charaId?: number }[];
     perfMetrics: PerformanceMetrics[];
 }
 
@@ -54,7 +57,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
             </div>
 
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-around", gap: "20px" }}>
-                {/* Wins Pie (All) */}
+
                 <div style={{ textAlign: "center" }}>
                     <div style={{ marginBottom: "10px", color: "#a0aec0", fontSize: "14px" }}>Wins (All)</div>
                     {winsAll.length > 0 ? (
@@ -72,7 +75,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                     )}
                 </div>
 
-                {/* Wins Pie (Opponents) */}
+
                 <div style={{ textAlign: "center" }}>
                     <div style={{ marginBottom: "10px", color: "#a0aec0", fontSize: "14px" }}>Best Placing Opponent</div>
                     {winsOpp.length > 0 ? (
@@ -90,7 +93,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                     )}
                 </div>
 
-                {/* Population Pie */}
+
                 <div style={{ textAlign: "center" }}>
                     <div style={{ marginBottom: "10px", color: "#a0aec0", fontSize: "14px" }}>Population (Opp. Only)</div>
                     {pop.length > 0 ? (
@@ -108,25 +111,77 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                     )}
                 </div>
 
-                {/* Shared Legend */}
                 <div className="pie-legend" style={{ minWidth: "150px" }}>
-                    {legend.map(item => (
-                        <div key={item.id} className="pie-legend-item" style={{ marginBottom: "8px" }}>
-                            <span
-                                className="pie-legend-color"
-                                style={{ background: item.color }}
-                            />
-                            <span className="pie-legend-label" style={{ fontSize: "14px" }}>
-                                {item.label}
-                            </span>
-                        </div>
-                    ))}
-                    {/* Manual "Others" legend entry if either chart has others */}
+                    {legend.map(item => {
+                        const compositeId = item.cardId && item.strategyId
+                            ? `${item.id}_${item.cardId}_${item.strategyId}`
+                            : item.id;
+                        const iconUrl = getCharaIcon(compositeId);
+                        return (
+                            <div key={item.id} className="pie-legend-item" style={{ marginBottom: "8px", alignItems: "center", display: "flex" }}>
+                                <span
+                                    style={{
+                                        display: "inline-block",
+                                        width: "8px",
+                                        height: "20px",
+                                        backgroundColor: item.color,
+                                        marginRight: "6px",
+                                        borderRadius: "2px"
+                                    }}
+                                />
+                                <span
+                                    className="pie-legend-label"
+                                    style={{ fontSize: "14px", cursor: "default", marginRight: "10px" }}
+                                >
+                                    {item.label}
+                                </span>
+                                {iconUrl && item.strategyId && STRATEGY_COLORS[item.strategyId] ? (
+                                    <div
+                                        style={{ position: "relative", width: "40px", height: "40px", flexShrink: 0, cursor: "help" }}
+                                        title={STRATEGY_NAMES[item.strategyId]}
+                                    >
+                                        <div
+                                            style={{
+                                                position: "absolute",
+                                                top: "50%",
+                                                left: "50%",
+                                                transform: "translate(-50%, -50%) translate(0.3px, 1.9px)",
+                                                width: "35px",
+                                                height: "35px",
+                                                backgroundColor: STRATEGY_COLORS[item.strategyId],
+                                                borderRadius: "50%",
+                                                opacity: 0.8
+                                            }}
+                                        />
+                                        <img
+                                            src={iconUrl}
+                                            alt={item.label}
+                                            style={{
+                                                position: "absolute",
+                                                top: 0,
+                                                left: 0,
+                                                width: "100%",
+                                                height: "100%",
+                                                objectFit: "cover",
+                                                borderRadius: "50%"
+                                            }}
+                                        />
+                                    </div>
+                                ) : (
+                                    <span
+                                        className="pie-legend-color"
+                                        style={{ background: item.color, width: "12px", height: "12px", display: "inline-block" }}
+                                    />
+                                )}
+                            </div>
+                        );
+                    })}
+
                     {(winsAll.some(s => s.label === "Others") || winsOpp.some(s => s.label === "Others") || pop.some(s => s.label === "Others")) && (
-                        <div className="pie-legend-item" style={{ marginBottom: "8px" }}>
+                        <div className="pie-legend-item" style={{ marginBottom: "8px", alignItems: "center", display: "flex" }}>
                             <span
                                 className="pie-legend-color"
-                                style={{ background: "#718096" }}
+                                style={{ background: "#718096", marginRight: "8px", width: "12px", height: "12px", display: "inline-block" }}
                             />
                             <span className="pie-legend-label" style={{ fontSize: "14px" }}>
                                 Others
@@ -135,7 +190,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                     )}
                 </div>
 
-                {/* Performance Panel */}
+
                 <PerformancePanel
                     items={perfMetrics}
                     title="Performance (Opponents)"

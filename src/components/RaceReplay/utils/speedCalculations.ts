@@ -207,7 +207,7 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
 
 
     if (isDownhillMode) {
-        baseTargetSpeed += 0.3 + Math.abs(slope) / 1000;
+        baseTargetSpeed += 0.3 + Math.abs(slope) / 1000000;
     }
 
     baseTargetSpeed += (activeSpeedBuff || 0);

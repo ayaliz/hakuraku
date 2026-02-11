@@ -574,6 +574,10 @@
         {
           "id": 38,
           "charaId": 1056
+        },
+        {
+          "id": 1742,
+          "charaId": 1069
         }
       ]
     },
@@ -704,6 +708,10 @@
         {
           "id": 79,
           "charaId": 1059
+        },
+        {
+          "id": 1743,
+          "charaId": 1069
         }
       ]
     },
@@ -1146,6 +1154,16 @@
       ]
     },
     {
+      "relationType": 324,
+      "relationPoint": 2,
+      "member": [
+        {
+          "id": 1744,
+          "charaId": 1069
+        }
+      ]
+    },
+    {
       "relationType": 401,
       "relationPoint": 2,
       "member": [
@@ -1402,6 +1420,34 @@
       ]
     },
     {
+      "relationType": 511,
+      "relationPoint": 2,
+      "member": [
+        {
+          "id": 1746,
+          "charaId": 1041
+        },
+        {
+          "id": 1747,
+          "charaId": 1069
+        }
+      ]
+    },
+    {
+      "relationType": 512,
+      "relationPoint": 2,
+      "member": [
+        {
+          "id": 1749,
+          "charaId": 1069
+        },
+        {
+          "id": 1750,
+          "charaId": 1028
+        }
+      ]
+    },
+    {
       "relationType": 2001,
       "relationPoint": 1,
       "member": [
@@ -1564,6 +1610,20 @@
       ]
     },
     {
+      "relationType": 2202,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1751,
+          "charaId": 1004
+        },
+        {
+          "id": 1752,
+          "charaId": 1069
+        }
+      ]
+    },
+    {
       "relationType": 2301,
       "relationPoint": 1,
       "member": [
@@ -1636,6 +1696,10 @@
         {
           "id": 1694,
           "charaId": 1045
+        },
+        {
+          "id": 1837,
+          "charaId": 1069
         }
       ]
     },
@@ -1956,6 +2020,10 @@
         {
           "id": 671,
           "charaId": 1017
+        },
+        {
+          "id": 1766,
+          "charaId": 1069
         }
       ]
     },
@@ -2278,6 +2346,10 @@
         {
           "id": 703,
           "charaId": 1004
+        },
+        {
+          "id": 1767,
+          "charaId": 1069
         }
       ]
     },
@@ -2534,6 +2606,10 @@
         {
           "id": 288,
           "charaId": 1061
+        },
+        {
+          "id": 2513,
+          "charaId": 1069
         }
       ]
     },
@@ -2688,6 +2764,10 @@
         {
           "id": 1739,
           "charaId": 1061
+        },
+        {
+          "id": 1838,
+          "charaId": 1069
         }
       ]
     },
@@ -2796,6 +2876,10 @@
         {
           "id": 368,
           "charaId": 1045
+        },
+        {
+          "id": 1759,
+          "charaId": 1069
         }
       ]
     },
@@ -3146,6 +3230,10 @@
         {
           "id": 447,
           "charaId": 1058
+        },
+        {
+          "id": 1762,
+          "charaId": 1069
         }
       ]
     },
@@ -3338,6 +3426,10 @@
         {
           "id": 508,
           "charaId": 1059
+        },
+        {
+          "id": 1763,
+          "charaId": 1069
         }
       ]
     },
@@ -3488,6 +3580,10 @@
         {
           "id": 554,
           "charaId": 1059
+        },
+        {
+          "id": 1764,
+          "charaId": 1069
         }
       ]
     },
@@ -3732,6 +3828,10 @@
         {
           "id": 627,
           "charaId": 1059
+        },
+        {
+          "id": 2296,
+          "charaId": 1069
         }
       ]
     },
@@ -3814,6 +3914,10 @@
         {
           "id": 793,
           "charaId": 1052
+        },
+        {
+          "id": 1768,
+          "charaId": 1069
         }
       ]
     },
@@ -4338,6 +4442,30 @@
           "charaId": 1020
         }
       ]
+    },
+    {
+      "relationType": 7025,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1753,
+          "charaId": 1069
+        }
+      ]
+    },
+    {
+      "relationType": 7026,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1756,
+          "charaId": 1069
+        }
+      ]
+    },
+    {
+      "relationType": 7027,
+      "relationPoint": 1
     },
     {
       "relationType": 8001,
@@ -9528,6 +9656,446 @@
           "charaId": 1050
         }
       ]
+    },
+    {
+      "relationType": 8427,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1769,
+          "charaId": 1069
+        },
+        {
+          "id": 1770,
+          "charaId": 1018
+        }
+      ]
+    },
+    {
+      "relationType": 8428,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1771,
+          "charaId": 1069
+        },
+        {
+          "id": 1772,
+          "charaId": 1021
+        }
+      ]
+    },
+    {
+      "relationType": 8429,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1773,
+          "charaId": 1069
+        },
+        {
+          "id": 1774,
+          "charaId": 1023
+        }
+      ]
+    },
+    {
+      "relationType": 8430,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1775,
+          "charaId": 1069
+        },
+        {
+          "id": 1776,
+          "charaId": 1035
+        }
+      ]
+    },
+    {
+      "relationType": 8431,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1777,
+          "charaId": 1069
+        },
+        {
+          "id": 1778,
+          "charaId": 1048
+        }
+      ]
+    },
+    {
+      "relationType": 8432,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1779,
+          "charaId": 1069
+        },
+        {
+          "id": 1780,
+          "charaId": 1007
+        }
+      ]
+    },
+    {
+      "relationType": 8433,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1781,
+          "charaId": 1069
+        },
+        {
+          "id": 1782,
+          "charaId": 1009
+        }
+      ]
+    },
+    {
+      "relationType": 8434,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1783,
+          "charaId": 1069
+        },
+        {
+          "id": 1784,
+          "charaId": 1046
+        }
+      ]
+    },
+    {
+      "relationType": 8435,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1785,
+          "charaId": 1069
+        }
+      ]
+    },
+    {
+      "relationType": 8436,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1787,
+          "charaId": 1069
+        },
+        {
+          "id": 1788,
+          "charaId": 1006
+        }
+      ]
+    },
+    {
+      "relationType": 8437,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1789,
+          "charaId": 1069
+        },
+        {
+          "id": 1790,
+          "charaId": 1050
+        }
+      ]
+    },
+    {
+      "relationType": 8438,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1791,
+          "charaId": 1069
+        },
+        {
+          "id": 1792,
+          "charaId": 1020
+        }
+      ]
+    },
+    {
+      "relationType": 8439,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1793,
+          "charaId": 1069
+        },
+        {
+          "id": 1794,
+          "charaId": 1056
+        }
+      ]
+    },
+    {
+      "relationType": 8440,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1795,
+          "charaId": 1069
+        }
+      ]
+    },
+    {
+      "relationType": 8441,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1797,
+          "charaId": 1069
+        },
+        {
+          "id": 1798,
+          "charaId": 1041
+        }
+      ]
+    },
+    {
+      "relationType": 8442,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1799,
+          "charaId": 1069
+        }
+      ]
+    },
+    {
+      "relationType": 8443,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1801,
+          "charaId": 1069
+        },
+        {
+          "id": 1802,
+          "charaId": 1001
+        }
+      ]
+    },
+    {
+      "relationType": 8444,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1803,
+          "charaId": 1069
+        },
+        {
+          "id": 1804,
+          "charaId": 1002
+        }
+      ]
+    },
+    {
+      "relationType": 8445,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1805,
+          "charaId": 1069
+        },
+        {
+          "id": 1806,
+          "charaId": 1005
+        }
+      ]
+    },
+    {
+      "relationType": 8446,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1807,
+          "charaId": 1069
+        },
+        {
+          "id": 1808,
+          "charaId": 1010
+        }
+      ]
+    },
+    {
+      "relationType": 8447,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1809,
+          "charaId": 1069
+        },
+        {
+          "id": 1810,
+          "charaId": 1016
+        }
+      ]
+    },
+    {
+      "relationType": 8448,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1811,
+          "charaId": 1069
+        },
+        {
+          "id": 1812,
+          "charaId": 1025
+        }
+      ]
+    },
+    {
+      "relationType": 8449,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1813,
+          "charaId": 1069
+        },
+        {
+          "id": 1814,
+          "charaId": 1030
+        }
+      ]
+    },
+    {
+      "relationType": 8450,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1815,
+          "charaId": 1069
+        },
+        {
+          "id": 1816,
+          "charaId": 1032
+        }
+      ]
+    },
+    {
+      "relationType": 8451,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1817,
+          "charaId": 1069
+        }
+      ]
+    },
+    {
+      "relationType": 8452,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1819,
+          "charaId": 1069
+        }
+      ]
+    },
+    {
+      "relationType": 8453,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1821,
+          "charaId": 1069
+        }
+      ]
+    },
+    {
+      "relationType": 8454,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1823,
+          "charaId": 1069
+        }
+      ]
+    },
+    {
+      "relationType": 8455,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1825,
+          "charaId": 1069
+        },
+        {
+          "id": 1826,
+          "charaId": 1014
+        }
+      ]
+    },
+    {
+      "relationType": 8456,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1827,
+          "charaId": 1069
+        },
+        {
+          "id": 1828,
+          "charaId": 1019
+        }
+      ]
+    },
+    {
+      "relationType": 8457,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1829,
+          "charaId": 1069
+        },
+        {
+          "id": 1830,
+          "charaId": 1028
+        }
+      ]
+    },
+    {
+      "relationType": 8458,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1831,
+          "charaId": 1069
+        },
+        {
+          "id": 1832,
+          "charaId": 1037
+        }
+      ]
+    },
+    {
+      "relationType": 8459,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1833,
+          "charaId": 1069
+        }
+      ]
+    },
+    {
+      "relationType": 8460,
+      "relationPoint": 1,
+      "member": [
+        {
+          "id": 1835,
+          "charaId": 1069
+        }
+      ]
     }
   ],
   "raceInstance": [
@@ -9697,6 +10265,12 @@
       "id": 102701,
       "name": "Tenno Sho (Spring)",
       "distance": 3200,
+      "groundType": "TURF"
+    },
+    {
+      "id": 102801,
+      "name": "Satsuki Sho",
+      "distance": 2000,
       "groundType": "TURF"
     },
     {
@@ -18973,6 +19547,28 @@
       "priority": 16,
       "groupId": 18,
       "type": "G1"
+    },
+    {
+      "id": 154,
+      "name": "Classic Triple Crown",
+      "raceInstanceId": [
+        102801,
+        101001,
+        101501
+      ],
+      "priority": 2,
+      "groupId": 1,
+      "type": "SPECIAL"
+    },
+    {
+      "id": 155,
+      "name": "Satsuki Sho",
+      "raceInstanceId": [
+        102801
+      ],
+      "priority": 23,
+      "groupId": 17,
+      "type": "G1"
     }
   ],
   "specialCaseRace": [
@@ -18993,6 +19589,14 @@
       "charaId": [
         1050,
         1023
+      ]
+    },
+    {
+      "raceInstanceId": 102801,
+      "programGroup": 901,
+      "racePermission": "CLASSIC_ONLY",
+      "charaId": [
+        1069
       ]
     }
   ],
@@ -19505,6 +20109,14 @@
     {
       "id": 100611,
       "name": "Prideful King",
+      "gradeValue": 340,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
+      "id": 100691,
+      "name": "Ambition to Surpass the Sakura",
       "gradeValue": 340,
       "tagId": [
         "401"
@@ -20066,6 +20678,15 @@
       "gradeValue": -129,
       "tagId": [
         "401"
+      ]
+    },
+    {
+      "id": 200174,
+      "name": "Spring Spectacle",
+      "gradeValue": 461,
+      "tagId": [
+        "401",
+        "403"
       ]
     },
     {
@@ -23318,6 +23939,14 @@
     {
       "id": 900611,
       "name": "Prideful King",
+      "gradeValue": 180,
+      "tagId": [
+        "401"
+      ]
+    },
+    {
+      "id": 900691,
+      "name": "Ambition to Surpass the Sakura",
       "gradeValue": 180,
       "tagId": [
         "401"
@@ -55592,7 +56221,7 @@
     },
     {
       "id": 501069511,
-      "name": "The Disciplinary Committee Chairman's Award"
+      "name": "The Disciplinary Committee Chairman's\\nAward"
     },
     {
       "id": 501069513,
@@ -224135,7 +224764,7 @@
       "id": 181,
       "category": 181,
       "index": 501069511,
-      "text": "The Disciplinary Committee Chairman's Award"
+      "text": "The Disciplinary Committee Chairman's\\nAward"
     },
     {
       "id": 181,

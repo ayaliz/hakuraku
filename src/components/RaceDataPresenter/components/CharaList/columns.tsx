@@ -1,6 +1,7 @@
 import React from "react";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import * as UMDatabaseUtils from "../../../../data/UMDatabaseUtils";
+import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import CardNamePresenter from "../../../CardNamePresenter";
 import CopyButton from "../../../CopyButton";
 import {
@@ -17,6 +18,7 @@ import staminaIcon from "../../../../data/textures/stamina.png";
 import powerIcon from "../../../../data/textures/power.png";
 import gutsIcon from "../../../../data/textures/guts.png";
 import witIcon from "../../../../data/textures/wit.png";
+import hintIcon from "../../../../data/textures/hint.png";
 
 // Column definition interface for CharaTable
 export interface CharaColumnDef {
@@ -41,6 +43,33 @@ const InfoIcon = ({ id, tip }: { id: string; tip: string }) => (
 const StatsCell: React.FC<{ row: CharaTableData }> = ({ row }) => {
     const iconStyle: React.CSSProperties = { width: 16, height: 16, marginRight: 2 };
     const statStyle: React.CSSProperties = { marginRight: 8, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center' };
+
+    const skillBreakdown = row.trainedChara.skills.map(cs => {
+        const base = UMDatabaseWrapper.skillNeedPoints[cs.skillId] ?? 0;
+        let upgrade = 0;
+        if (UMDatabaseWrapper.skills[cs.skillId]?.rarity === 2) {
+            const lastDigit = cs.skillId % 10;
+            const flippedId = lastDigit === 1 ? cs.skillId + 1 : cs.skillId - 1;
+            upgrade = UMDatabaseWrapper.skillNeedPoints[flippedId] ?? 0;
+        } else if (UMDatabaseWrapper.skills[cs.skillId]?.rarity === 1 && cs.skillId % 10 === 1) {
+            const pairedId = cs.skillId + 1;
+            if (UMDatabaseWrapper.skills[pairedId]?.rarity === 1) {
+                upgrade = UMDatabaseWrapper.skillNeedPoints[pairedId] ?? 0;
+            }
+        }
+        return { name: UMDatabaseWrapper.skillName(cs.skillId), base, upgrade, total: base + upgrade };
+    }).filter(s => s.total > 0);
+
+    const spTooltip = (
+        <Tooltip id={`sp-breakdown-${row.frameOrder}`}>
+            <div style={{ textAlign: 'left', fontSize: '0.85em' }}>
+                {skillBreakdown.map((s, i) => (
+                    <div key={i}>{s.name}: {s.upgrade > 0 ? `${s.base}+${s.upgrade}` : s.base}</div>
+                ))}
+            </div>
+        </Tooltip>
+    );
+
     return (
         <div style={{ lineHeight: 1.4 }}>
             <div>
@@ -51,6 +80,9 @@ const StatsCell: React.FC<{ row: CharaTableData }> = ({ row }) => {
             <div>
                 <span style={statStyle}><img src={powerIcon} alt="Power" style={iconStyle} />{row.trainedChara.pow}</span>
                 <span style={statStyle}><img src={gutsIcon} alt="Guts" style={iconStyle} />{row.trainedChara.guts}</span>
+                <OverlayTrigger placement="bottom" overlay={spTooltip}>
+                    <span style={{ ...statStyle, cursor: 'help' }}><img src={hintIcon} alt="Skill Points" style={iconStyle} />{row.totalSkillPoints}</span>
+                </OverlayTrigger>
             </div>
         </div>
     );
@@ -325,7 +357,7 @@ export const charaTableColumns: CharaColumnDef[] = [
     },
     {
         key: 'stats',
-        header: 'Stats',
+        header: <span>Stats <InfoIcon id="tooltip-stats" tip="The sixth value is total SP in terms of learned skills, using costs without any hint levels." /></span>,
         cellClassName: 'stat-cell',
         renderCell: (row) => <StatsCell row={row} />,
     },

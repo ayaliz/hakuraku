@@ -69,6 +69,7 @@ const ParentGroup = ({ parents }: { parents: ParentEntry[] }) => {
 
 const CharaTable: React.FC<CharaTableProps> = ({ data }) => {
     const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+    const [tableCollapsed, setTableCollapsed] = useState(false);
 
     const toggleRow = (frameOrder: number) => {
         setExpandedRows(prev => {
@@ -87,13 +88,26 @@ const CharaTable: React.FC<CharaTableProps> = ({ data }) => {
             <table className="chara-table">
                 <thead>
                     <tr>
-                        {charaTableColumns.map(col => (
-                            <th key={col.key}>{col.header}</th>
-                        ))}
+                        {charaTableColumns.map(col => {
+                            if (col.key === 'expand') {
+                                return (
+                                    <th key={col.key}>
+                                        <button
+                                            onClick={() => setTableCollapsed(prev => !prev)}
+                                            title={tableCollapsed ? 'Expand table' : 'Collapse table'}
+                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: '0 4px', fontSize: '0.75rem' }}
+                                        >
+                                            {tableCollapsed ? '▶' : '▼'}
+                                        </button>
+                                    </th>
+                                );
+                            }
+                            return <th key={col.key}>{col.header}</th>;
+                        })}
                     </tr>
                 </thead>
                 <tbody>
-                    {data.flatMap(row => {
+                    {!tableCollapsed && data.flatMap(row => {
                         const isExpanded = expandedRows.has(row.frameOrder);
                         const rank = row.finishOrder;
                         const rankClass = rank <= 3 ? `rank-${rank}` : '';

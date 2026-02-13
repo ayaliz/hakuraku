@@ -11,6 +11,7 @@ class _UMDatabaseWrapper {
     raceInstances: Record<number, RaceInstance> = {};
     interestingRaceInstances: RaceInstance[] = [];
     skills: Record<number, Skill> = {};
+    skillNeedPoints: Record<number, number> = {};
     successionRelationMemberCharaIds: Record<number, Set<number>> = {};
     stories: Story[] = [];
     textData: Record<number, Record<number, TextData>> = {};
@@ -31,6 +32,10 @@ class _UMDatabaseWrapper {
                 this.umdb.raceInstance.forEach((race) => this.raceInstances[race.id!] = race);
 
                 this.umdb.skill.forEach((skill) => this.skills[skill.id!] = skill);
+
+                this.umdb.singleModeSkillNeedPoint.forEach((entry) => {
+                    this.skillNeedPoints[entry.id!] = entry.needSkillPoint!;
+                });
 
                 this.umdb.textData.forEach((text) => {
                     if (!this.textData[text.category!]) {

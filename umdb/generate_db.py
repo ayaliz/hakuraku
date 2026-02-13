@@ -138,7 +138,7 @@ def populate_special_case_race(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
 
 
 def populate_skills(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
-    cursor.execute('''SELECT s.id, t.text, s.grade_value, s.tag_id
+    cursor.execute('''SELECT s.id, t.text, s.grade_value, s.tag_id, s.rarity
                       FROM skill_data AS s
                       JOIN text_data AS t ON t."index"=s.id AND t.category=47;''')
     rows = cursor.fetchall()
@@ -148,6 +148,7 @@ def populate_skills(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
         r.name = row[1]
         r.grade_value = row[2]
         r.tag_id.extend(row[3].split('/'))
+        r.rarity = row[4]
         pb.skill.append(r)
 
 
@@ -169,6 +170,19 @@ def populate_stories(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
         r.id = row[0]
         r.name = row[1]
         pb.story.append(r)
+
+
+def populate_single_mode_skill_need_point(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
+    cursor.execute("SELECT id, need_skill_point, status_type, status_value, solvable_type FROM single_mode_skill_need_point;")
+    rows = cursor.fetchall()
+    for row in rows:
+        r = data_pb2.SingleModeSkillNeedPoint()
+        r.id = row[0]
+        r.need_skill_point = row[1]
+        r.status_type = row[2]
+        r.status_value = row[3]
+        r.solvable_type = row[4]
+        pb.single_mode_skill_need_point.append(r)
 
 
 def populate_text_data(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
@@ -213,7 +227,8 @@ def main():
               populate_skills,
               populate_team_stadium_score_bonus,
               populate_stories,
-              populate_text_data):
+              populate_text_data,
+              populate_single_mode_skill_need_point):
         p(pb, cursor)
 
     print(pb)

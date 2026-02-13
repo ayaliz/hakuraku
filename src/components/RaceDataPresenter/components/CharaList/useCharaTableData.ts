@@ -244,6 +244,22 @@ export const computeCharaTableData = (
             });
         }
 
+        const totalSkillPoints = trainedCharaData.skills.reduce((sum, cs) => {
+            const base = UMDatabaseWrapper.skillNeedPoints[cs.skillId] ?? 0;
+            let upgrade = 0;
+            if (UMDatabaseWrapper.skills[cs.skillId]?.rarity === 2) {
+                const lastDigit = cs.skillId % 10;
+                const flippedId = lastDigit === 1 ? cs.skillId + 1 : cs.skillId - 1;
+                upgrade = UMDatabaseWrapper.skillNeedPoints[flippedId] ?? 0;
+            } else if (UMDatabaseWrapper.skills[cs.skillId]?.rarity === 1 && cs.skillId % 10 === 1) {
+                const pairedId = cs.skillId + 1;
+                if (UMDatabaseWrapper.skills[pairedId]?.rarity === 1) {
+                    upgrade = UMDatabaseWrapper.skillNeedPoints[pairedId] ?? 0;
+                }
+            }
+            return sum + base + upgrade;
+        }, 0);
+
         return {
             trainedChara: trainedCharaData,
             chara: UMDatabaseWrapper.charas[trainedCharaData.charaId],
@@ -264,6 +280,8 @@ export const computeCharaTableData = (
 
             deck: data.deck || [],
             parents: data.parents || [],
+
+            totalSkillPoints,
 
             startDelay: horseResult.startDelayTime,
             isLateStart,

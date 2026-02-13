@@ -21,6 +21,8 @@ message UMDatabase {
     repeated Story story = 10;
 
     repeated TextData text_data = 12;
+
+    repeated SingleModeSkillNeedPoint single_mode_skill_need_point = 13;
 }
 
 message Chara {
@@ -134,6 +136,7 @@ message Skill {
     //    ScenarioBegin = 800;
     //    ScenarioEnd = 899;
     repeated string tag_id = 4;
+    optional int32 rarity = 5;
 }
 
 message TeamStadiumScoreBonus {
@@ -151,4 +154,12 @@ message TextData {
     optional int32 category = 2;
     optional int32 index = 3;
     optional string text = 4;
+}
+
+message SingleModeSkillNeedPoint {
+    optional int32 id = 1;
+    optional int32 need_skill_point = 2;
+    optional int32 status_type = 3;
+    optional int32 status_value = 4;
+    optional int32 solvable_type = 5;
 }

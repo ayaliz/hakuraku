@@ -8,7 +8,7 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class UMDatabase(_message.Message):
-    __slots__ = ("version", "chara", "card", "support_card", "succession_relation", "race_instance", "wins_saddle", "special_case_race", "skill", "team_stadium_score_bonus", "story", "text_data")
+    __slots__ = ("version", "chara", "card", "support_card", "succession_relation", "race_instance", "wins_saddle", "special_case_race", "skill", "team_stadium_score_bonus", "story", "text_data", "single_mode_skill_need_point")
     VERSION_FIELD_NUMBER: _ClassVar[int]
     CHARA_FIELD_NUMBER: _ClassVar[int]
     CARD_FIELD_NUMBER: _ClassVar[int]
@@ -21,6 +21,7 @@ class UMDatabase(_message.Message):
     TEAM_STADIUM_SCORE_BONUS_FIELD_NUMBER: _ClassVar[int]
     STORY_FIELD_NUMBER: _ClassVar[int]
     TEXT_DATA_FIELD_NUMBER: _ClassVar[int]
+    SINGLE_MODE_SKILL_NEED_POINT_FIELD_NUMBER: _ClassVar[int]
     version: str
     chara: _containers.RepeatedCompositeFieldContainer[Chara]
     card: _containers.RepeatedCompositeFieldContainer[Card]
@@ -33,7 +34,8 @@ class UMDatabase(_message.Message):
     team_stadium_score_bonus: _containers.RepeatedCompositeFieldContainer[TeamStadiumScoreBonus]
     story: _containers.RepeatedCompositeFieldContainer[Story]
     text_data: _containers.RepeatedCompositeFieldContainer[TextData]
-    def __init__(self, version: _Optional[str] = ..., chara: _Optional[_Iterable[_Union[Chara, _Mapping]]] = ..., card: _Optional[_Iterable[_Union[Card, _Mapping]]] = ..., support_card: _Optional[_Iterable[_Union[SupportCard, _Mapping]]] = ..., succession_relation: _Optional[_Iterable[_Union[SuccessionRelation, _Mapping]]] = ..., race_instance: _Optional[_Iterable[_Union[RaceInstance, _Mapping]]] = ..., wins_saddle: _Optional[_Iterable[_Union[WinsSaddle, _Mapping]]] = ..., special_case_race: _Optional[_Iterable[_Union[SpecialCaseRace, _Mapping]]] = ..., skill: _Optional[_Iterable[_Union[Skill, _Mapping]]] = ..., team_stadium_score_bonus: _Optional[_Iterable[_Union[TeamStadiumScoreBonus, _Mapping]]] = ..., story: _Optional[_Iterable[_Union[Story, _Mapping]]] = ..., text_data: _Optional[_Iterable[_Union[TextData, _Mapping]]] = ...) -> None: ...
+    single_mode_skill_need_point: _containers.RepeatedCompositeFieldContainer[SingleModeSkillNeedPoint]
+    def __init__(self, version: _Optional[str] = ..., chara: _Optional[_Iterable[_Union[Chara, _Mapping]]] = ..., card: _Optional[_Iterable[_Union[Card, _Mapping]]] = ..., support_card: _Optional[_Iterable[_Union[SupportCard, _Mapping]]] = ..., succession_relation: _Optional[_Iterable[_Union[SuccessionRelation, _Mapping]]] = ..., race_instance: _Optional[_Iterable[_Union[RaceInstance, _Mapping]]] = ..., wins_saddle: _Optional[_Iterable[_Union[WinsSaddle, _Mapping]]] = ..., special_case_race: _Optional[_Iterable[_Union[SpecialCaseRace, _Mapping]]] = ..., skill: _Optional[_Iterable[_Union[Skill, _Mapping]]] = ..., team_stadium_score_bonus: _Optional[_Iterable[_Union[TeamStadiumScoreBonus, _Mapping]]] = ..., story: _Optional[_Iterable[_Union[Story, _Mapping]]] = ..., text_data: _Optional[_Iterable[_Union[TextData, _Mapping]]] = ..., single_mode_skill_need_point: _Optional[_Iterable[_Union[SingleModeSkillNeedPoint, _Mapping]]] = ...) -> None: ...
 
 class Chara(_message.Message):
     __slots__ = ("id", "name", "cast_name")
@@ -159,16 +161,18 @@ class SpecialCaseRace(_message.Message):
     def __init__(self, race_instance_id: _Optional[int] = ..., program_group: _Optional[int] = ..., race_permission: _Optional[_Union[SpecialCaseRace.RacePermission, str]] = ..., chara_id: _Optional[_Iterable[int]] = ...) -> None: ...
 
 class Skill(_message.Message):
-    __slots__ = ("id", "name", "grade_value", "tag_id")
+    __slots__ = ("id", "name", "grade_value", "tag_id", "rarity")
     ID_FIELD_NUMBER: _ClassVar[int]
     NAME_FIELD_NUMBER: _ClassVar[int]
     GRADE_VALUE_FIELD_NUMBER: _ClassVar[int]
     TAG_ID_FIELD_NUMBER: _ClassVar[int]
+    RARITY_FIELD_NUMBER: _ClassVar[int]
     id: int
     name: str
     grade_value: int
     tag_id: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, id: _Optional[int] = ..., name: _Optional[str] = ..., grade_value: _Optional[int] = ..., tag_id: _Optional[_Iterable[str]] = ...) -> None: ...
+    rarity: int
+    def __init__(self, id: _Optional[int] = ..., name: _Optional[str] = ..., grade_value: _Optional[int] = ..., tag_id: _Optional[_Iterable[str]] = ..., rarity: _Optional[int] = ...) -> None: ...
 
 class TeamStadiumScoreBonus(_message.Message):
     __slots__ = ("id", "name")
@@ -197,3 +201,17 @@ class TextData(_message.Message):
     index: int
     text: str
     def __init__(self, id: _Optional[int] = ..., category: _Optional[int] = ..., index: _Optional[int] = ..., text: _Optional[str] = ...) -> None: ...
+
+class SingleModeSkillNeedPoint(_message.Message):
+    __slots__ = ("id", "need_skill_point", "status_type", "status_value", "solvable_type")
+    ID_FIELD_NUMBER: _ClassVar[int]
+    NEED_SKILL_POINT_FIELD_NUMBER: _ClassVar[int]
+    STATUS_TYPE_FIELD_NUMBER: _ClassVar[int]
+    STATUS_VALUE_FIELD_NUMBER: _ClassVar[int]
+    SOLVABLE_TYPE_FIELD_NUMBER: _ClassVar[int]
+    id: int
+    need_skill_point: int
+    status_type: int
+    status_value: int
+    solvable_type: int
+    def __init__(self, id: _Optional[int] = ..., need_skill_point: _Optional[int] = ..., status_type: _Optional[int] = ..., status_value: _Optional[int] = ..., solvable_type: _Optional[int] = ...) -> None: ...

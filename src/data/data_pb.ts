@@ -70,6 +70,11 @@ export class UMDatabase extends Message<UMDatabase> {
    */
   textData: TextData[] = [];
 
+  /**
+   * @generated from field: repeated hakuraku.SingleModeSkillNeedPoint single_mode_skill_need_point = 13;
+   */
+  singleModeSkillNeedPoint: SingleModeSkillNeedPoint[] = [];
+
   constructor(data?: PartialMessage<UMDatabase>) {
     super();
     proto2.util.initPartial(data, this);
@@ -90,6 +95,7 @@ export class UMDatabase extends Message<UMDatabase> {
     { no: 8, name: "team_stadium_score_bonus", kind: "message", T: TeamStadiumScoreBonus, repeated: true },
     { no: 10, name: "story", kind: "message", T: Story, repeated: true },
     { no: 12, name: "text_data", kind: "message", T: TextData, repeated: true },
+    { no: 13, name: "single_mode_skill_need_point", kind: "message", T: SingleModeSkillNeedPoint, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UMDatabase {
@@ -696,6 +702,11 @@ export class Skill extends Message<Skill> {
    */
   tagId: string[] = [];
 
+  /**
+   * @generated from field: optional int32 rarity = 5;
+   */
+  rarity?: number;
+
   constructor(data?: PartialMessage<Skill>) {
     super();
     proto2.util.initPartial(data, this);
@@ -708,6 +719,7 @@ export class Skill extends Message<Skill> {
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 3, name: "grade_value", kind: "scalar", T: 17 /* ScalarType.SINT32 */, opt: true },
     { no: 4, name: "tag_id", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 5, name: "rarity", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Skill {
@@ -865,6 +877,67 @@ export class TextData extends Message<TextData> {
 
   static equals(a: TextData | PlainMessage<TextData> | undefined, b: TextData | PlainMessage<TextData> | undefined): boolean {
     return proto2.util.equals(TextData, a, b);
+  }
+}
+
+/**
+ * @generated from message hakuraku.SingleModeSkillNeedPoint
+ */
+export class SingleModeSkillNeedPoint extends Message<SingleModeSkillNeedPoint> {
+  /**
+   * @generated from field: optional int32 id = 1;
+   */
+  id?: number;
+
+  /**
+   * @generated from field: optional int32 need_skill_point = 2;
+   */
+  needSkillPoint?: number;
+
+  /**
+   * @generated from field: optional int32 status_type = 3;
+   */
+  statusType?: number;
+
+  /**
+   * @generated from field: optional int32 status_value = 4;
+   */
+  statusValue?: number;
+
+  /**
+   * @generated from field: optional int32 solvable_type = 5;
+   */
+  solvableType?: number;
+
+  constructor(data?: PartialMessage<SingleModeSkillNeedPoint>) {
+    super();
+    proto2.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto2 = proto2;
+  static readonly typeName = "hakuraku.SingleModeSkillNeedPoint";
+  static readonly fields: FieldList = proto2.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 2, name: "need_skill_point", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 3, name: "status_type", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 4, name: "status_value", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 5, name: "solvable_type", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SingleModeSkillNeedPoint {
+    return new SingleModeSkillNeedPoint().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SingleModeSkillNeedPoint {
+    return new SingleModeSkillNeedPoint().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SingleModeSkillNeedPoint {
+    return new SingleModeSkillNeedPoint().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SingleModeSkillNeedPoint | PlainMessage<SingleModeSkillNeedPoint> | undefined, b: SingleModeSkillNeedPoint | PlainMessage<SingleModeSkillNeedPoint> | undefined): boolean {
+    return proto2.util.equals(SingleModeSkillNeedPoint, a, b);
   }
 }
 

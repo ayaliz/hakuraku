@@ -37,6 +37,8 @@ export type CharaTableData = {
     deck: SupportCardEntry[],
     parents: ParentEntry[],
 
+    totalSkillPoints: number;
+
     startDelay?: number;
     isLateStart?: boolean;
     lastSpurtTargetSpeed?: number;

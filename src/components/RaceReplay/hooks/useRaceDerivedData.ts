@@ -3,7 +3,7 @@ import { fromRaceHorseData, TrainedCharaData } from "../../../data/TrainedCharaD
 import { getCharaActivatedSkillIds } from "../../../data/RaceDataUtils";
 import { getPassiveStatModifiers } from "../utils/SkillDataUtils";
 import { useHeuristicEvents } from "./useHeuristicEvents";
-import courseData from "../../../data/tracks/course_data.json";
+import GameDataLoader from "../../../data/GameDataLoader";
 
 export function useRaceDerivedData(
     raceData: any,
@@ -166,7 +166,7 @@ export function useRaceDerivedData(
     }, [raceData.horseResult]);
 
     const trackSlopes = useMemo(() => {
-        const td = selectedTrackId ? (courseData as Record<string, any>)[selectedTrackId] : null;
+        const td = selectedTrackId ? (GameDataLoader.courseData as Record<string, any>)[selectedTrackId] : null;
         return td?.slopes ?? [];
     }, [selectedTrackId]);
 

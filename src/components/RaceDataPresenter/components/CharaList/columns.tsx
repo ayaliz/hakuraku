@@ -12,13 +12,21 @@ import {
 import { CharaTableData } from "./types";
 import { getRankIcon } from "./rankUtils";
 
-// Stat icons
-import speedIcon from "../../../../data/textures/speed.png";
-import staminaIcon from "../../../../data/textures/stamina.png";
-import powerIcon from "../../../../data/textures/power.png";
-import gutsIcon from "../../../../data/textures/guts.png";
-import witIcon from "../../../../data/textures/wit.png";
-import hintIcon from "../../../../data/textures/hint.png";
+import AssetLoader from "../../../../data/AssetLoader";
+let _statIcons: Record<string, string> | null = null;
+function getStatIcons() {
+    if (!_statIcons) {
+        _statIcons = {
+            speed: AssetLoader.getStatIcon("speed") ?? "",
+            stamina: AssetLoader.getStatIcon("stamina") ?? "",
+            power: AssetLoader.getStatIcon("power") ?? "",
+            guts: AssetLoader.getStatIcon("guts") ?? "",
+            wit: AssetLoader.getStatIcon("wit") ?? "",
+            hint: AssetLoader.getStatIcon("hint") ?? "",
+        };
+    }
+    return _statIcons;
+}
 
 // Column definition interface for CharaTable
 export interface CharaColumnDef {
@@ -73,15 +81,15 @@ const StatsCell: React.FC<{ row: CharaTableData }> = ({ row }) => {
     return (
         <div style={{ lineHeight: 1.4 }}>
             <div>
-                <span style={statStyle}><img src={speedIcon} alt="Speed" style={iconStyle} />{row.trainedChara.speed}</span>
-                <span style={statStyle}><img src={staminaIcon} alt="Stamina" style={iconStyle} />{row.trainedChara.stamina}</span>
-                <span style={statStyle}><img src={witIcon} alt="Wit" style={iconStyle} />{row.trainedChara.wiz}</span>
+                <span style={statStyle}><img src={getStatIcons().speed} alt="Speed" style={iconStyle} />{row.trainedChara.speed}</span>
+                <span style={statStyle}><img src={getStatIcons().stamina} alt="Stamina" style={iconStyle} />{row.trainedChara.stamina}</span>
+                <span style={statStyle}><img src={getStatIcons().wit} alt="Wit" style={iconStyle} />{row.trainedChara.wiz}</span>
             </div>
             <div>
-                <span style={statStyle}><img src={powerIcon} alt="Power" style={iconStyle} />{row.trainedChara.pow}</span>
-                <span style={statStyle}><img src={gutsIcon} alt="Guts" style={iconStyle} />{row.trainedChara.guts}</span>
+                <span style={statStyle}><img src={getStatIcons().power} alt="Power" style={iconStyle} />{row.trainedChara.pow}</span>
+                <span style={statStyle}><img src={getStatIcons().guts} alt="Guts" style={iconStyle} />{row.trainedChara.guts}</span>
                 <OverlayTrigger placement="bottom" overlay={spTooltip}>
-                    <span style={{ ...statStyle, cursor: 'help' }}><img src={hintIcon} alt="Skill Points" style={iconStyle} />{row.totalSkillPoints}</span>
+                    <span style={{ ...statStyle, cursor: 'help' }}><img src={getStatIcons().hint} alt="Skill Points" style={iconStyle} />{row.totalSkillPoints}</span>
                 </OverlayTrigger>
             </div>
         </div>

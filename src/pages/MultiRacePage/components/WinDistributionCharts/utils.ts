@@ -1,5 +1,6 @@
 
-// Icon cache similar to RaceReplay
+import AssetLoader from "../../../../data/AssetLoader";
+
 const ICON_CACHE = new Map<string | number, string | null>();
 
 export const getCharaIcon = (charaId?: number | string | null): string | null => {
@@ -24,26 +25,12 @@ export const getCharaIcon = (charaId?: number | string | null): string | null =>
         baseCharaId = charaId;
     }
 
-    // Try to load new thumbnail if we have a valid cardId
     if (cardId) {
-        try {
-            // "first 4 digits for the first number" -> usually cardId / 100
-            const prefix = Math.floor(cardId / 100);
-            // Dynamic require for custom thumbs
-            url = require(`../../../../data/character_thumbs/chara_stand_${prefix}_${cardId}.png`);
-        } catch {
-            url = null;
-        }
+        url = AssetLoader.getCharaThumb(cardId);
     }
 
-    // Fallback to old icon style if new one failed or no cardId
     if (!url && baseCharaId) {
-        try {
-            // Fallback: standard character icon
-            url = require(`../../../../data/umamusume_icons/chr_icon_${baseCharaId}.png`);
-        } catch {
-            url = null;
-        }
+        url = AssetLoader.getCharaIcon(baseCharaId);
     }
 
     ICON_CACHE.set(charaId, url);

@@ -50,7 +50,7 @@ import {
     buildPositionKeepSeries,
     ECOption,
 } from "./utils/chartBuilders";
-import courseData from "../../data/tracks/course_data.json";
+import GameDataLoader from "../../data/GameDataLoader";
 
 echarts.use([
     ScatterChart,
@@ -197,7 +197,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     ), [interpolatedFrame, skillActivations, combinedOtherEvents, renderTime, horseInfoByIdx, trainerColors, displayNames, legendSelection, toggles.heuristics, trainedCharaByIdx, oonigeByIdx, trackSlopes, passiveStatModifiers, goalInX, accByIdx, consumptionRateByIdx]);
     const { straights, corners, straightsFinal, cornersFinal, segMarkers, slopeTriangles } = useCourseLayers(selectedTrackId, goalInX, yMaxWithHeadroom);
 
-    const raceMarkers = useMemo(() => { const td = selectedTrackId ? (courseData as Record<string, any>)[selectedTrackId] : undefined; return buildMarkLines(goalInX, raceData, displayNames, segMarkers, td); }, [goalInX, raceData, displayNames, segMarkers, selectedTrackId]);
+    const raceMarkers = useMemo(() => { const td = selectedTrackId ? (GameDataLoader.courseData as Record<string, any>)[selectedTrackId] : undefined; return buildMarkLines(goalInX, raceData, displayNames, segMarkers, td); }, [goalInX, raceData, displayNames, segMarkers, selectedTrackId]);
     const courseLabelData = useMemo(() => buildCourseLabelItems(raceMarkers as MarkLine1DDataItemOption[], yMaxWithHeadroom), [raceMarkers, yMaxWithHeadroom]);
 
     const positionKeepSeries = useMemo(() => {

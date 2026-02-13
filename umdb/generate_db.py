@@ -6,6 +6,7 @@ from collections import defaultdict
 import sys
 from google.protobuf import json_format
 import os
+from pathlib import Path
 
 import data_pb2
 
@@ -197,6 +198,16 @@ def populate_text_data(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
         pb.text_data.append(t)
 
 
+def extract_single_mode_rank(cursor: sqlite3.Cursor, assets_dir: Path):
+    cursor.execute("SELECT id, min_value, max_value FROM single_mode_rank ORDER BY id;")
+    rows = cursor.fetchall()
+    data = [{"id": row[0], "min_value": row[1], "max_value": row[2]} for row in rows]
+    out_path = assets_dir / "single_mode_rank.json"
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, separators=(",", ":"))
+    print(f"Extracted {len(data)} rank entries to {out_path}")
+
+
 def main():
     parser = argparse.ArgumentParser()
     default_db_path = os.path.join(
@@ -231,13 +242,23 @@ def main():
               populate_single_mode_skill_need_point):
         p(pb, cursor)
 
-    print(pb)
+    print("Database populated, serializing...")
 
-    with open('../public/data/umdb.binarypb.gz', 'wb') as f:
+    script_dir = Path(__file__).resolve().parent
+    project_root = script_dir.parent
+    output_dir = project_root / "public" / "data"
+    assets_dir = project_root / "assets"
+
+    # Ensure output directory exists
+    os.makedirs(output_dir, exist_ok=True)
+
+    with open(output_dir / 'umdb.binarypb.gz', 'wb') as f:
         f.write(gzip.compress(pb.SerializeToString(), mtime=0))
 
+    extract_single_mode_rank(cursor, assets_dir)
+
     # Force UTF-8 when writing JSON (so ☆ and other characters are preserved)
-    with open('../public/data/umdb.json', 'w', encoding='utf-8') as f:
+    with open(output_dir / 'umdb.json', 'w', encoding='utf-8') as f:
         json.dump(json_format.MessageToDict(pb), f, ensure_ascii=False, indent=2)
 
 

@@ -6,6 +6,8 @@ import { HashRouter, Link, Route, Switch } from "react-router-dom";
 import './App.css';
 import './dark-mode.css';
 import UMDatabaseWrapper from './data/UMDatabaseWrapper';
+import GameDataLoader from './data/GameDataLoader';
+import AssetLoader from './data/AssetLoader';
 import RaceDataPage from "./pages/RaceDataPage";
 import RaceDataPageOld from "./pages/RaceDataPage_old";
 import MultiRacePage from "./pages/MultiRacePage";
@@ -20,7 +22,12 @@ export default function App() {
     const [umdbLoaded, setUmdbLoaded] = useState(false);
 
     useEffect(() => {
-        UMDatabaseWrapper.initialize().then(() => setUmdbLoaded(true));
+        Promise.all([
+            UMDatabaseWrapper.initialize(),
+            GameDataLoader.initialize(),
+            AssetLoader.initialize(),
+        ]).then(() => setUmdbLoaded(true))
+            .catch(err => console.error("Failed to initialize data loaders:", err));
     }, []);
 
     if (!umdbLoaded) {

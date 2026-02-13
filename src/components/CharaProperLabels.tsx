@@ -3,22 +3,23 @@ import { Table } from "react-bootstrap";
 import { TrainedCharaData } from "../data/TrainedCharaData";
 import * as UMDatabaseUtils from "../data/UMDatabaseUtils";
 
-import imgG from "../data/textures/G.png";
-import imgF from "../data/textures/F.png";
-import imgE from "../data/textures/E.png";
-import imgD from "../data/textures/D.png";
-import imgC from "../data/textures/C.png";
-import imgB from "../data/textures/B.png";
-import imgA from "../data/textures/A.png";
-import imgS from "../data/textures/S.png";
+import AssetLoader from "../data/AssetLoader";
 
-const gradeImages: Record<number, string> = {
-  1: imgG, 2: imgF, 3: imgE, 4: imgD,
-  5: imgC, 6: imgB, 7: imgA, 8: imgS
-};
+const gradeLetters = ["", "G", "F", "E", "D", "C", "B", "A", "S"];
+let _gradeImages: Record<number, string> | null = null;
+function getGradeImages(): Record<number, string> {
+  if (!_gradeImages) {
+    _gradeImages = {};
+    for (let i = 1; i <= 8; i++) {
+      const url = AssetLoader.getStatIcon(gradeLetters[i]);
+      if (url) _gradeImages[i] = url;
+    }
+  }
+  return _gradeImages;
+}
 
 const GradeDisplay = ({ value }: { value: number }) => {
-  const src = gradeImages[value];
+  const src = getGradeImages()[value];
   if (!src) return <>{UMDatabaseUtils.charaProperLabels[value]}</>;
   return <img src={src} alt={UMDatabaseUtils.charaProperLabels[value]} style={{ height: '20px', width: '20px', verticalAlign: 'middle' }} />;
 };

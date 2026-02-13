@@ -1,5 +1,5 @@
 
-import skillsData from "../../../data/skills.json";
+import GameDataLoader from "../../../data/GameDataLoader";
 
 export type SkillEffect = {
     type: number;
@@ -13,20 +13,27 @@ export type SkillDef = {
     }[];
 };
 
-const skillsMap = new Map<number, SkillDef>();
-(skillsData as any[]).forEach((s: any) => {
-    skillsMap.set(s.id, s);
-});
+let skillsMap: Map<number, SkillDef> | null = null;
+function getSkillsMap(): Map<number, SkillDef> {
+    if (!skillsMap) {
+        skillsMap = new Map<number, SkillDef>();
+        (GameDataLoader.skills as any[]).forEach((s: any) => {
+            skillsMap!.set(s.id, s);
+        });
+    }
+    return skillsMap;
+}
 
 export function getSkillDef(skillId: number): SkillDef | undefined {
-    const direct = skillsMap.get(skillId);
+    const map = getSkillsMap();
+    const direct = map.get(skillId);
     if (direct) return direct;
 
     // Handle inherited unique skills (9xxxxx)
     // These are looked up by converting to 1xxxxx and checking gene_version
     if (skillId >= 900000 && skillId < 1000000) {
         const parentId = skillId - 800000;
-        const parentDef = skillsMap.get(parentId);
+        const parentDef = map.get(parentId);
         if (parentDef && (parentDef as any).gene_version) {
             return (parentDef as any).gene_version;
         }

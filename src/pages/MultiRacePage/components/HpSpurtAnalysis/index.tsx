@@ -15,11 +15,21 @@ import CardNamePresenter from "../../../../components/CardNamePresenter";
 import CharaProperLabels from "../../../../components/CharaProperLabels";
 import { unknownCharaTag } from "../../../../components/RaceDataPresenter/utils/RacePresenterUtils";
 
-import speedIcon from "../../../../data/textures/speed.png";
-import staminaIcon from "../../../../data/textures/stamina.png";
-import powerIcon from "../../../../data/textures/power.png";
-import gutsIcon from "../../../../data/textures/guts.png";
-import witIcon from "../../../../data/textures/wit.png";
+import AssetLoader from "../../../../data/AssetLoader";
+
+let _statIcons: Record<string, string> | null = null;
+function getStatIcons() {
+    if (!_statIcons) {
+        _statIcons = {
+            speed: AssetLoader.getStatIcon("speed") ?? "",
+            stamina: AssetLoader.getStatIcon("stamina") ?? "",
+            power: AssetLoader.getStatIcon("power") ?? "",
+            guts: AssetLoader.getStatIcon("guts") ?? "",
+            wit: AssetLoader.getStatIcon("wit") ?? "",
+        };
+    }
+    return _statIcons;
+}
 
 interface Props {
     races: ParsedRace[];
@@ -98,11 +108,11 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) 
                     <CharaProperLabels chara={stat.trainedChara} />
                     <div style={{ marginLeft: '20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <div style={{ display: 'flex' }}>
-                            <span style={statStyle} title="Speed"><img src={speedIcon} alt="Speed" style={iconStyle} />{stat.stats.speed}</span>
-                            <span style={statStyle} title="Stamina"><img src={staminaIcon} alt="Stamina" style={iconStyle} />{stat.stats.stamina}</span>
-                            <span style={statStyle} title="Power"><img src={powerIcon} alt="Power" style={iconStyle} />{stat.stats.pow}</span>
-                            <span style={statStyle} title="Guts"><img src={gutsIcon} alt="Guts" style={iconStyle} />{stat.stats.guts}</span>
-                            <span style={statStyle} title="Wisdom"><img src={witIcon} alt="Wisdom" style={iconStyle} />{stat.stats.wiz}</span>
+                            <span style={statStyle} title="Speed"><img src={getStatIcons().speed} alt="Speed" style={iconStyle} />{stat.stats.speed}</span>
+                            <span style={statStyle} title="Stamina"><img src={getStatIcons().stamina} alt="Stamina" style={iconStyle} />{stat.stats.stamina}</span>
+                            <span style={statStyle} title="Power"><img src={getStatIcons().power} alt="Power" style={iconStyle} />{stat.stats.pow}</span>
+                            <span style={statStyle} title="Guts"><img src={getStatIcons().guts} alt="Guts" style={iconStyle} />{stat.stats.guts}</span>
+                            <span style={statStyle} title="Wisdom"><img src={getStatIcons().wit} alt="Wisdom" style={iconStyle} />{stat.stats.wiz}</span>
                         </div>
                     </div>
                 </div>

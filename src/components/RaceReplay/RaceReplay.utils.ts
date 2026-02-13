@@ -1,5 +1,6 @@
 import { RaceSimulateData } from "../../data/race_data_pb";
 import { STACK_BASE_PX, STACK_GAP_PX } from "./RaceReplay.constants";
+import AssetLoader from "../../data/AssetLoader";
 
 export const clamp = (x: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, x));
 export const clamp01 = (x: number) => clamp(x, 0, 1);
@@ -52,12 +53,12 @@ export function bisectFrameIndex(frames: RaceSimulateData["frame"], t: number) {
 
 export function formatSigned(x: number) { const v = x / 100; const s = v.toFixed(2); return (v > 0 ? "+" : "") + s; }
 
+
 const ICON_CACHE = new Map<number, string | null>();
 export const getCharaIcon = (charaId?: number | null) => {
     if (charaId == null) return null;
     if (ICON_CACHE.has(charaId)) return ICON_CACHE.get(charaId)!;
-    let url: string | null = null;
-    try { url = require(`../../data/umamusume_icons/chr_icon_${charaId}.png`); } catch { url = null; }
+    const url = AssetLoader.getCharaIcon(charaId);
     ICON_CACHE.set(charaId, url);
     return url;
 };

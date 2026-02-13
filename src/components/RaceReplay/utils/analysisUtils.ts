@@ -3,7 +3,7 @@ import { fromRaceHorseData, TrainedCharaData } from "../../../data/TrainedCharaD
 import { getDistanceCategory, calculateTargetSpeed, adjustStat, calculateReferenceHpConsumption } from "./speedCalculations";
 import { getPassiveStatModifiers, getSkillBaseTime, getActiveSpeedModifier, hasSkillEffect } from "./SkillDataUtils";
 import { filterCharaSkills } from "../../../data/RaceDataUtils";
-import courseData from "../../../data/tracks/course_data.json";
+import GameDataLoader from "../../../data/GameDataLoader";
 
 
 export type HpOutcome = { type: 'died', distance: number, deficit: number, startHp: number }
@@ -32,7 +32,7 @@ export function computeOtherEvents(
     }
 
     const distanceCategory = getDistanceCategory(goalInX);
-    const trackSlopes = detectedCourseId ? (courseData as any)[detectedCourseId]?.slopes ?? [] : [];
+    const trackSlopes = detectedCourseId ? (GameDataLoader.courseData as any)[detectedCourseId]?.slopes ?? [] : [];
 
     for (const event of raceData.event) {
         const e = event.event!;

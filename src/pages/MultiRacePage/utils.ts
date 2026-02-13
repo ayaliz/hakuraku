@@ -2,8 +2,7 @@ import { RaceSimulateData, RaceSimulateEventData_SimulateEventType } from "../..
 import { deserializeFromBase64 } from "../../data/RaceDataParser";
 import { fromRaceHorseData } from "../../data/TrainedCharaData";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
-import raceTrackData from "../../data/tracks/racetracks.json";
-import skillsJson from "../../data/skills.json";
+import GameDataLoader from "../../data/GameDataLoader";
 import {
     AggregatedStats,
     CharacterStats,
@@ -22,12 +21,18 @@ const STRATEGY_NAMES: Record<number, string> = {
 };
 
 // Map for detailed skill data (condition_groups) logic - imported from skills.json
-const skillsJsonMap = new Map((skillsJson as any[]).map(s => [s.id, s]));
+let _skillsJsonMap: Map<number, any> | null = null;
+function getSkillsJsonMap() {
+    if (!_skillsJsonMap) {
+        _skillsJsonMap = new Map((GameDataLoader.skills as any[]).map(s => [s.id, s]));
+    }
+    return _skillsJsonMap;
+}
 
 // Get track info from course ID
 export function getTrackInfo(courseId: number | undefined): { label: string; id: number; length: number } | null {
     if (!courseId) return null;
-    const track = raceTrackData.pageProps.racetrackFilterData.find((t: any) => t.id === courseId);
+    const track = GameDataLoader.racetracks.pageProps.racetrackFilterData.find((t: any) => t.id === courseId);
     if (!track) return null;
     return { label: track.label, id: track.id, length: track.length };
 }
@@ -449,7 +454,7 @@ export function aggregateStats(races: ParsedRace[]): AggregatedStats {
         const distinctNames = new Map<string, number>(); // Name -> Rarity
 
         groupSkillIds.forEach(id => {
-            const data = skillsJsonMap.get(id);
+            const data = getSkillsJsonMap().get(id);
             const rarity = data?.rarity ?? 0;
 
             if (rarity > maxRarity) {
@@ -495,7 +500,7 @@ export function aggregateStats(races: ParsedRace[]): AggregatedStats {
 
         // Check metadata on representative ID
         const isUnique = representativeId >= 100000 && representativeId < 200000;
-        const detailedSkillData = skillsJsonMap.get(representativeId);
+        const detailedSkillData = getSkillsJsonMap().get(representativeId);
         const isPassive = detailedSkillData?.condition_groups?.some((group: any) =>
             group.effects?.some((effect: any) =>
                 [1, 2, 3, 4, 5].includes(effect.type)

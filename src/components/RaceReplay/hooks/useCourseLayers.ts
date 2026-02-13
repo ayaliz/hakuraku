@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { MarkLine1DDataItemOption } from "echarts/types/src/component/marker/MarkLineModel";
-import courseData from "../../../data/tracks/course_data.json";
+import GameDataLoader from "../../../data/GameDataLoader";
 import { clampRange } from "../RaceReplay.utils";
 import { SLOPE_UP_FILL, SLOPE_DOWN_FILL, SLOPE_DIAG_LINE, SLOPE_HALF_RATIO } from "../RaceReplay.constants";
 
@@ -11,7 +11,7 @@ export function useCourseLayers(selectedTrackId: string | null, goalInX: number,
         const straights: AreaPair[] = [], corners: AreaPair[] = [], straightsFinal: AreaPair[] = [], cornersFinal: AreaPair[] = [];
         const segMarkers: MarkLine1DDataItemOption[] = [];
         const slopeTriangles: { value: [number, number, 1 | -1] }[] = [];
-        const td = selectedTrackId ? (courseData as Record<string, any>)[selectedTrackId] : null;
+        const td = selectedTrackId ? (GameDataLoader.courseData as Record<string, any>)[selectedTrackId] : null;
         if (!td || goalInX <= 0) return { straights, corners, straightsFinal, cornersFinal, segMarkers, slopeTriangles };
 
         const straightsSrc: { start: number; end: number }[] = [];

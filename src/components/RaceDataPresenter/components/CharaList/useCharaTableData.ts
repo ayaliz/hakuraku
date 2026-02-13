@@ -1,7 +1,7 @@
 import { RaceSimulateData } from "../../../../data/race_data_pb";
 import { filterCharaSkills } from "../../../../data/RaceDataUtils";
 import { fromRaceHorseData, TrainedCharaData } from "../../../../data/TrainedCharaData";
-import courseData from "../../../../data/tracks/course_data.json";
+import GameDataLoader from "../../../../data/GameDataLoader";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import { useAvailableTracks } from "../../../RaceReplay/hooks/useAvailableTracks";
 import { useGuessTrack } from "../../../RaceReplay/hooks/useGuessTrack";
@@ -27,7 +27,7 @@ export const computeCharaTableData = (
     }
 
     const distanceCategory = getDistanceCategory(raceDistance);
-    const trackSlopes = effectiveCourseId ? (courseData as any)[effectiveCourseId]?.slopes ?? [] : [];
+    const trackSlopes = effectiveCourseId ? (GameDataLoader.courseData as any)[effectiveCourseId]?.slopes ?? [] : [];
 
     // Prepare data for heuristic events calculation
     const trainedCharaByIdx: Record<number, TrainedCharaData> = {};

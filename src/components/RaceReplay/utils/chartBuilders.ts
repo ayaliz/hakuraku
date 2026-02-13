@@ -44,7 +44,15 @@ import { TrainedCharaData } from "../../../data/TrainedCharaData";
 
 import { getActiveSpeedModifier, getSkillBaseTime, getActiveSpeedDebuff } from "./SkillDataUtils";
 
-const BLOCKED_ICON = require("../../../data/umamusume_icons/blocked.png");
+import AssetLoader from "../../../data/AssetLoader";
+
+let _blockedIcon: string | null | undefined;
+function getBlockedIcon(): string | null {
+    if (_blockedIcon === undefined) {
+        _blockedIcon = AssetLoader.getBlockedIcon();
+    }
+    return _blockedIcon;
+}
 
 export type ECOption = ComposeOption<
     | ScatterSeriesOption
@@ -306,7 +314,7 @@ export function buildHorsesCustomSeries(
             children.push({
                 type: "image",
                 style: {
-                    image: BLOCKED_ICON,
+                    image: getBlockedIcon(),
                     x: cx + (iconUrl ? ICON_SIZE : DOT_SIZE) / 2 - BLOCKED_ICON_SIZE,
                     y: cy + (iconUrl ? ICON_SIZE : DOT_SIZE) / 2 - BLOCKED_ICON_SIZE,
                     width: BLOCKED_ICON_SIZE,

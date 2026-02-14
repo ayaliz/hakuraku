@@ -187,7 +187,7 @@ def populate_single_mode_skill_need_point(pb: data_pb2.UMDatabase, cursor: sqlit
 
 
 def populate_text_data(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
-    cursor.execute("SELECT id, category, `index`, text FROM text_data;")
+    cursor.execute("SELECT id, category, `index`, text FROM text_data WHERE category IN (4, 147);")
     rows = cursor.fetchall()
     for row in rows:
         t = data_pb2.TextData()

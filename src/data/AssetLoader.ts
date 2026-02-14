@@ -6,28 +6,28 @@ class AssetLoaderClass {
     }
 
     getCharaIcon(charaId: number): string {
-        return this.getAssetUrl(`umamusume_icons/chr_icon_${charaId}.png`);
+        return this.getAssetUrl(`umamusume_icons/chr_icon_${charaId}.webp`);
     }
 
     getCharaThumb(cardId: number): string {
         const prefix = Math.floor(cardId / 100);
-        return this.getAssetUrl(`character_thumbs/chara_stand_${prefix}_${cardId}.png`);
+        return this.getAssetUrl(`character_thumbs/chara_stand_${prefix}_${cardId}.webp`);
     }
 
     getStatIcon(name: string): string {
-        return this.getAssetUrl(`textures/${name}.png`);
+        return this.getAssetUrl(`textures/${name}.webp`);
     }
 
     getRankIcon(filename: string): string {
-        return this.getAssetUrl(`textures/uma_ranks/${filename}.png`);
+        return this.getAssetUrl(`textures/uma_ranks/${filename}.webp`);
     }
 
     getSupportCardIcon(id: number): string {
-        return this.getAssetUrl(`umamusume_cards/tex_support_card_${id}.png`);
+        return this.getAssetUrl(`umamusume_cards/tex_support_card_${id}.webp`);
     }
 
     getBlockedIcon(): string {
-        return this.getAssetUrl("umamusume_icons/blocked.png");
+        return this.getAssetUrl("umamusume_icons/blocked.webp");
     }
 
     getGradeIcon(grade: string): string | null {

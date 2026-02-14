@@ -157,8 +157,77 @@ export function computeOtherEvents(
                     }
 
                     if (!isAffectedByUphill && (targetRes.base > currentSpeed + 0.2) && (accel < 0.1)) {
-                        endTime = frameTime;
-                        break;
+                        let duelResumed = false;
+                        for (let j = i + 1; j < raceData.frame.length; j++) {
+                            const futureFrame = raceData.frame[j];
+                            const futureH = futureFrame.horseFrame[frameOrder];
+                            const futureSpeed = (futureH.speed ?? 0) / 100;
+                            const futureTime = futureFrame.time ?? 0;
+                            const futureDist = futureH.distance ?? 0;
+
+                            let futureActiveSpeedBuff = 0;
+                            if (skillActivations && skillActivations[frameOrder]) {
+                                skillActivations[frameOrder].forEach(s => {
+                                    const baseTime = getSkillBaseTime(s.param[1]);
+                                    const dur = baseTime > 0 ? (baseTime / 10000) * (goalInX / 1000) : 2.0;
+                                    if (futureTime >= s.time && futureTime < s.time + dur) {
+                                        futureActiveSpeedBuff += getActiveSpeedModifier(s.param[1]);
+                                    }
+                                });
+                            }
+
+                            const futureTargetRes = calculateTargetSpeed({
+                                courseDistance: goalInX,
+                                courseId: detectedCourseId,
+                                currentDistance: futureDist,
+                                speedStat: trainedChara.speed,
+                                wisdomStat: trainedChara.wiz,
+                                powerStat: trainedChara.pow,
+                                gutsStat: trainedChara.guts,
+                                staminaStat: trainedChara.stamina,
+                                strategy,
+                                distanceProficiency: trainedChara.properDistances[distanceCategory] ?? 1,
+                                mood: rawData['motivation'],
+                                isOonige,
+                                inLastSpurt: futureDist > (raceData.horseResult[frameOrder]?.lastSpurtStartDistance ?? 999999),
+                                slope: 0,
+                                greenSkillBonuses: passiveStats,
+                                activeSpeedBuff: futureActiveSpeedBuff,
+                                isDueling: false,
+                                isSpotStruggle: false
+                            });
+
+                            const futureSlopeObj = trackSlopes.find((s: any) => futureDist >= s.start && futureDist < s.start + s.length);
+                            const futureSlope = futureSlopeObj?.slope ?? 0;
+                            if (futureSlope > 0) {
+                                const slopePer = futureSlope / 10000;
+                                const adjustedPower = adjustStat(trainedChara.pow, rawData['motivation'], passiveStats.power);
+                                futureTargetRes.base -= (slopePer * 200) / adjustedPower;
+                            }
+
+                            let futureDownhillBuff = 0;
+                            if (futureSlope < 0 && j < raceData.frame.length - 1) {
+                                const nextFutureH = raceData.frame[j + 1].horseFrame[frameOrder];
+                                const dt = raceData.frame[j + 1].time! - futureTime;
+                                if (dt > 0) {
+                                    const rate = ((futureH.hp ?? 0) - (nextFutureH.hp ?? 0)) / dt;
+                                    const expected = calculateReferenceHpConsumption(futureSpeed, goalInX);
+                                    if (expected > 0 && rate > 0 && rate < expected * 0.8) {
+                                        futureDownhillBuff = 0.3 + Math.abs(futureSlope) / 1000;
+                                    }
+                                }
+                            }
+
+                            if (futureSpeed > futureTargetRes.base + futureDownhillBuff + 0.05) {
+                                duelResumed = true;
+                                break;
+                            }
+                        }
+
+                        if (!duelResumed) {
+                            endTime = frameTime;
+                            break;
+                        }
                     }
                 }
             }

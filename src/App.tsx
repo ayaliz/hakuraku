@@ -7,7 +7,6 @@ import './App.css';
 import './dark-mode.css';
 import UMDatabaseWrapper from './data/UMDatabaseWrapper';
 import GameDataLoader from './data/GameDataLoader';
-import AssetLoader from './data/AssetLoader';
 import RaceDataPage from "./pages/RaceDataPage";
 import RaceDataPageOld from "./pages/RaceDataPage_old";
 import MultiRacePage from "./pages/MultiRacePage";
@@ -25,7 +24,6 @@ export default function App() {
         Promise.all([
             UMDatabaseWrapper.initialize(),
             GameDataLoader.initialize(),
-            AssetLoader.initialize(),
         ]).then(() => setUmdbLoaded(true))
             .catch(err => console.error("Failed to initialize data loaders:", err));
     }, []);

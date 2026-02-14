@@ -85,12 +85,22 @@ class AssetLoaderClass {
         return this.getAssetUrl(`textures/uma_ranks/${filename}.png`);
     }
 
+    getSupportCardIcon(id: number): string | null {
+        return this.getAssetUrl(`umamusume_cards/tex_support_card_${id}.png`);
+    }
+
     getBlockedIcon(): string | null {
         return this.getAssetUrl("umamusume_icons/blocked.png");
     }
 
     getGradeIcon(grade: string): string | null {
-        return this.getAssetUrl(`textures/${grade}.png`);
+        const gradeToNum: Record<string, string> = {
+            G: "00", F: "02", E: "04", D: "06",
+            C: "08", B: "10", A: "12", S: "14",
+        };
+        const num = gradeToNum[grade];
+        if (!num) return null;
+        return this.getRankIcon(`utx_ico_statusrank_${num}`);
     }
 
     hasAsset(key: string): boolean {

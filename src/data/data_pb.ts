@@ -75,6 +75,11 @@ export class UMDatabase extends Message<UMDatabase> {
    */
   singleModeSkillNeedPoint: SingleModeSkillNeedPoint[] = [];
 
+  /**
+   * @generated from field: repeated hakuraku.SingleModeRank single_mode_rank = 14;
+   */
+  singleModeRank: SingleModeRank[] = [];
+
   constructor(data?: PartialMessage<UMDatabase>) {
     super();
     proto2.util.initPartial(data, this);
@@ -96,6 +101,7 @@ export class UMDatabase extends Message<UMDatabase> {
     { no: 10, name: "story", kind: "message", T: Story, repeated: true },
     { no: 12, name: "text_data", kind: "message", T: TextData, repeated: true },
     { no: 13, name: "single_mode_skill_need_point", kind: "message", T: SingleModeSkillNeedPoint, repeated: true },
+    { no: 14, name: "single_mode_rank", kind: "message", T: SingleModeRank, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UMDatabase {
@@ -938,6 +944,55 @@ export class SingleModeSkillNeedPoint extends Message<SingleModeSkillNeedPoint> 
 
   static equals(a: SingleModeSkillNeedPoint | PlainMessage<SingleModeSkillNeedPoint> | undefined, b: SingleModeSkillNeedPoint | PlainMessage<SingleModeSkillNeedPoint> | undefined): boolean {
     return proto2.util.equals(SingleModeSkillNeedPoint, a, b);
+  }
+}
+
+/**
+ * @generated from message hakuraku.SingleModeRank
+ */
+export class SingleModeRank extends Message<SingleModeRank> {
+  /**
+   * @generated from field: optional int32 id = 1;
+   */
+  id?: number;
+
+  /**
+   * @generated from field: optional int32 min_value = 2;
+   */
+  minValue?: number;
+
+  /**
+   * @generated from field: optional int32 max_value = 3;
+   */
+  maxValue?: number;
+
+  constructor(data?: PartialMessage<SingleModeRank>) {
+    super();
+    proto2.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto2 = proto2;
+  static readonly typeName = "hakuraku.SingleModeRank";
+  static readonly fields: FieldList = proto2.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 2, name: "min_value", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 3, name: "max_value", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SingleModeRank {
+    return new SingleModeRank().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SingleModeRank {
+    return new SingleModeRank().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SingleModeRank {
+    return new SingleModeRank().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SingleModeRank | PlainMessage<SingleModeRank> | undefined, b: SingleModeRank | PlainMessage<SingleModeRank> | undefined): boolean {
+    return proto2.util.equals(SingleModeRank, a, b);
   }
 }
 

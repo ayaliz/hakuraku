@@ -4,6 +4,7 @@ import { CharaTableData, ParentEntry } from "./types";
 import { aggregateFactors, formatFactor, getCharaImageUrl, getFactorColor } from "./utils";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import CharaProperLabels from "../../../CharaProperLabels";
+import AssetLoader from "../../../../data/AssetLoader";
 import { charaTableColumns } from "./columns";
 
 const ChevronIcon = () => (
@@ -192,7 +193,7 @@ const CharaTable: React.FC<CharaTableProps> = ({ data }) => {
                                                     {row.deck.map((card) => (
                                                         <div key={card.position} className="text-center">
                                                             <img
-                                                                src={`https://gametora.com/images/umamusume/supports/tex_support_card_${card.id}.png`}
+                                                                src={AssetLoader.getSupportCardIcon(card.id) ?? ""}
                                                                 alt={String(card.id)}
                                                                 title={`ID: ${card.id}`}
                                                                 style={{

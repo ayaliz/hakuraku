@@ -1,6 +1,6 @@
 import _ from "lodash";
 import pako from "pako";
-import {Card, Chara, RaceInstance, Skill, SupportCard, TextData, UMDatabase} from './data_pb';
+import {Card, Chara, RaceInstance, SingleModeRank, Skill, SupportCard, TextData, UMDatabase} from './data_pb';
 import {Story} from "./UMDatabaseUtils";
 
 class _UMDatabaseWrapper {
@@ -12,6 +12,7 @@ class _UMDatabaseWrapper {
     interestingRaceInstances: RaceInstance[] = [];
     skills: Record<number, Skill> = {};
     skillNeedPoints: Record<number, number> = {};
+    singleModeRanks: SingleModeRank[] = [];
     successionRelationMemberCharaIds: Record<number, Set<number>> = {};
     stories: Story[] = [];
     textData: Record<number, Record<number, TextData>> = {};
@@ -36,6 +37,8 @@ class _UMDatabaseWrapper {
                 this.umdb.singleModeSkillNeedPoint.forEach((entry) => {
                     this.skillNeedPoints[entry.id!] = entry.needSkillPoint!;
                 });
+
+                this.singleModeRanks = this.umdb.singleModeRank.slice();
 
                 this.umdb.textData.forEach((text) => {
                     if (!this.textData[text.category!]) {

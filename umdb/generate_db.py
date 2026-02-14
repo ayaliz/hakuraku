@@ -198,14 +198,15 @@ def populate_text_data(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
         pb.text_data.append(t)
 
 
-def extract_single_mode_rank(cursor: sqlite3.Cursor, assets_dir: Path):
+def populate_single_mode_rank(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
     cursor.execute("SELECT id, min_value, max_value FROM single_mode_rank ORDER BY id;")
     rows = cursor.fetchall()
-    data = [{"id": row[0], "min_value": row[1], "max_value": row[2]} for row in rows]
-    out_path = assets_dir / "single_mode_rank.json"
-    with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, separators=(",", ":"))
-    print(f"Extracted {len(data)} rank entries to {out_path}")
+    for row in rows:
+        r = data_pb2.SingleModeRank()
+        r.id = row[0]
+        r.min_value = row[1]
+        r.max_value = row[2]
+        pb.single_mode_rank.append(r)
 
 
 def main():
@@ -239,7 +240,8 @@ def main():
               populate_team_stadium_score_bonus,
               populate_stories,
               populate_text_data,
-              populate_single_mode_skill_need_point):
+              populate_single_mode_skill_need_point,
+              populate_single_mode_rank):
         p(pb, cursor)
 
     print("Database populated, serializing...")
@@ -247,15 +249,12 @@ def main():
     script_dir = Path(__file__).resolve().parent
     project_root = script_dir.parent
     output_dir = project_root / "public" / "data"
-    assets_dir = project_root / "assets"
 
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
 
     with open(output_dir / 'umdb.binarypb.gz', 'wb') as f:
         f.write(gzip.compress(pb.SerializeToString(), mtime=0))
-
-    extract_single_mode_rank(cursor, assets_dir)
 
     # Force UTF-8 when writing JSON (so ☆ and other characters are preserved)
     with open(output_dir / 'umdb.json', 'w', encoding='utf-8') as f:

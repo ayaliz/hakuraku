@@ -11,7 +11,7 @@ function getGradeImages(): Record<number, string> {
   if (!_gradeImages) {
     _gradeImages = {};
     for (let i = 1; i <= 8; i++) {
-      const url = AssetLoader.getStatIcon(gradeLetters[i]);
+      const url = AssetLoader.getGradeIcon(gradeLetters[i]);
       if (url) _gradeImages[i] = url;
     }
   }
@@ -21,7 +21,7 @@ function getGradeImages(): Record<number, string> {
 const GradeDisplay = ({ value }: { value: number }) => {
   const src = getGradeImages()[value];
   if (!src) return <>{UMDatabaseUtils.charaProperLabels[value]}</>;
-  return <img src={src} alt={UMDatabaseUtils.charaProperLabels[value]} style={{ height: '20px', width: '20px', verticalAlign: 'middle' }} />;
+  return <img src={src} alt={UMDatabaseUtils.charaProperLabels[value]} style={{ height: '20px', width: 'auto', verticalAlign: 'middle' }} />;
 };
 
 type CharaProperLabelsProps = {

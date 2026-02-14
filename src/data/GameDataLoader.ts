@@ -58,10 +58,6 @@ class GameDataLoaderClass {
         return this.data!["tracks/tracknames"];
     }
 
-    get singleModeRank(): { id: number; min_value: number; max_value: number }[] {
-        this.ensureLoaded();
-        return this.data!["single_mode_rank"];
-    }
 }
 
 const GameDataLoader = new GameDataLoaderClass();

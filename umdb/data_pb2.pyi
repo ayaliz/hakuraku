@@ -8,7 +8,7 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class UMDatabase(_message.Message):
-    __slots__ = ("version", "chara", "card", "support_card", "succession_relation", "race_instance", "wins_saddle", "special_case_race", "skill", "team_stadium_score_bonus", "story", "text_data", "single_mode_skill_need_point")
+    __slots__ = ("version", "chara", "card", "support_card", "succession_relation", "race_instance", "wins_saddle", "special_case_race", "skill", "team_stadium_score_bonus", "story", "text_data", "single_mode_skill_need_point", "single_mode_rank")
     VERSION_FIELD_NUMBER: _ClassVar[int]
     CHARA_FIELD_NUMBER: _ClassVar[int]
     CARD_FIELD_NUMBER: _ClassVar[int]
@@ -22,6 +22,7 @@ class UMDatabase(_message.Message):
     STORY_FIELD_NUMBER: _ClassVar[int]
     TEXT_DATA_FIELD_NUMBER: _ClassVar[int]
     SINGLE_MODE_SKILL_NEED_POINT_FIELD_NUMBER: _ClassVar[int]
+    SINGLE_MODE_RANK_FIELD_NUMBER: _ClassVar[int]
     version: str
     chara: _containers.RepeatedCompositeFieldContainer[Chara]
     card: _containers.RepeatedCompositeFieldContainer[Card]
@@ -35,7 +36,8 @@ class UMDatabase(_message.Message):
     story: _containers.RepeatedCompositeFieldContainer[Story]
     text_data: _containers.RepeatedCompositeFieldContainer[TextData]
     single_mode_skill_need_point: _containers.RepeatedCompositeFieldContainer[SingleModeSkillNeedPoint]
-    def __init__(self, version: _Optional[str] = ..., chara: _Optional[_Iterable[_Union[Chara, _Mapping]]] = ..., card: _Optional[_Iterable[_Union[Card, _Mapping]]] = ..., support_card: _Optional[_Iterable[_Union[SupportCard, _Mapping]]] = ..., succession_relation: _Optional[_Iterable[_Union[SuccessionRelation, _Mapping]]] = ..., race_instance: _Optional[_Iterable[_Union[RaceInstance, _Mapping]]] = ..., wins_saddle: _Optional[_Iterable[_Union[WinsSaddle, _Mapping]]] = ..., special_case_race: _Optional[_Iterable[_Union[SpecialCaseRace, _Mapping]]] = ..., skill: _Optional[_Iterable[_Union[Skill, _Mapping]]] = ..., team_stadium_score_bonus: _Optional[_Iterable[_Union[TeamStadiumScoreBonus, _Mapping]]] = ..., story: _Optional[_Iterable[_Union[Story, _Mapping]]] = ..., text_data: _Optional[_Iterable[_Union[TextData, _Mapping]]] = ..., single_mode_skill_need_point: _Optional[_Iterable[_Union[SingleModeSkillNeedPoint, _Mapping]]] = ...) -> None: ...
+    single_mode_rank: _containers.RepeatedCompositeFieldContainer[SingleModeRank]
+    def __init__(self, version: _Optional[str] = ..., chara: _Optional[_Iterable[_Union[Chara, _Mapping]]] = ..., card: _Optional[_Iterable[_Union[Card, _Mapping]]] = ..., support_card: _Optional[_Iterable[_Union[SupportCard, _Mapping]]] = ..., succession_relation: _Optional[_Iterable[_Union[SuccessionRelation, _Mapping]]] = ..., race_instance: _Optional[_Iterable[_Union[RaceInstance, _Mapping]]] = ..., wins_saddle: _Optional[_Iterable[_Union[WinsSaddle, _Mapping]]] = ..., special_case_race: _Optional[_Iterable[_Union[SpecialCaseRace, _Mapping]]] = ..., skill: _Optional[_Iterable[_Union[Skill, _Mapping]]] = ..., team_stadium_score_bonus: _Optional[_Iterable[_Union[TeamStadiumScoreBonus, _Mapping]]] = ..., story: _Optional[_Iterable[_Union[Story, _Mapping]]] = ..., text_data: _Optional[_Iterable[_Union[TextData, _Mapping]]] = ..., single_mode_skill_need_point: _Optional[_Iterable[_Union[SingleModeSkillNeedPoint, _Mapping]]] = ..., single_mode_rank: _Optional[_Iterable[_Union[SingleModeRank, _Mapping]]] = ...) -> None: ...
 
 class Chara(_message.Message):
     __slots__ = ("id", "name", "cast_name")
@@ -215,3 +217,13 @@ class SingleModeSkillNeedPoint(_message.Message):
     status_value: int
     solvable_type: int
     def __init__(self, id: _Optional[int] = ..., need_skill_point: _Optional[int] = ..., status_type: _Optional[int] = ..., status_value: _Optional[int] = ..., solvable_type: _Optional[int] = ...) -> None: ...
+
+class SingleModeRank(_message.Message):
+    __slots__ = ("id", "min_value", "max_value")
+    ID_FIELD_NUMBER: _ClassVar[int]
+    MIN_VALUE_FIELD_NUMBER: _ClassVar[int]
+    MAX_VALUE_FIELD_NUMBER: _ClassVar[int]
+    id: int
+    min_value: int
+    max_value: int
+    def __init__(self, id: _Optional[int] = ..., min_value: _Optional[int] = ..., max_value: _Optional[int] = ...) -> None: ...

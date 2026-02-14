@@ -1,10 +1,9 @@
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 import { getFactorCategory } from "../../data/VeteransHelper";
+import AssetLoader from "../../data/AssetLoader";
 
 export const getCharaImageUrl = (cardId: number): string => {
-    const cardIdStr = String(cardId);
-    const first4Digits = cardIdStr.substring(0, 4);
-    return `https://gametora.com/images/umamusume/characters/thumb/chara_stand_${first4Digits}_${cardId}.png`;
+    return AssetLoader.getCharaThumb(cardId) ?? "";
 };
 
 export const getCardName = (cardId: number): string => {

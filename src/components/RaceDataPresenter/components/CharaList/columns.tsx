@@ -2,7 +2,6 @@ import React from "react";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import * as UMDatabaseUtils from "../../../../data/UMDatabaseUtils";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
-import CardNamePresenter from "../../../CardNamePresenter";
 import CopyButton from "../../../CopyButton";
 import {
     getColorForSpurtDelay,
@@ -26,6 +25,28 @@ function getStatIcons() {
         };
     }
     return _statIcons;
+}
+
+let _styleMoodIcons: { style: Record<number, string>; mood: Record<number, string> } | null = null;
+function getStyleMoodIcons() {
+    if (!_styleMoodIcons) {
+        _styleMoodIcons = {
+            style: {
+                1: AssetLoader.getStatIcon("front") ?? "",
+                2: AssetLoader.getStatIcon("pace") ?? "",
+                3: AssetLoader.getStatIcon("late") ?? "",
+                4: AssetLoader.getStatIcon("end") ?? "",
+            },
+            mood: {
+                1: AssetLoader.getStatIcon("awful") ?? "",
+                2: AssetLoader.getStatIcon("bad") ?? "",
+                3: AssetLoader.getStatIcon("normal") ?? "",
+                4: AssetLoader.getStatIcon("good") ?? "",
+                5: AssetLoader.getStatIcon("great") ?? "",
+            },
+        };
+    }
+    return _styleMoodIcons;
 }
 
 // Column definition interface for CharaTable
@@ -96,17 +117,6 @@ const StatsCell: React.FC<{ row: CharaTableData }> = ({ row }) => {
     );
 };
 
-// Running style colors
-const getRunningStyleColor = (runningStyle: number, isOonige: boolean): string => {
-    if (isOonige) return 'rgb(74, 132, 211)'; // Darker blue for Runaway
-    switch (runningStyle) {
-        case 1: return 'rgb(94, 152, 231)';  // Front Runner - Blue
-        case 2: return 'rgb(164, 219, 34)';  // Pace Chaser - Green
-        case 3: return 'rgb(253, 222, 52)';  // Late Surger - Yellow
-        case 4: return 'rgb(255, 178, 49)';  // End Closer - Orange
-        default: return '#9ca3af';
-    }
-};
 
 export const charaTableColumns: CharaColumnDef[] = [
     {
@@ -147,9 +157,14 @@ export const charaTableColumns: CharaColumnDef[] = [
                         title={`${rankInfo.name} (${row.trainedChara.rankScore})`}
                         style={{ height: 20, width: 'auto' }}
                     />
+                    <img
+                        src={AssetLoader.getCharaThumb(row.trainedChara.cardId) ?? ""}
+                        alt={UMDatabaseWrapper.cards[row.trainedChara.cardId]?.name ?? String(row.trainedChara.cardId)}
+                        title={UMDatabaseWrapper.cards[row.trainedChara.cardId]?.name ?? String(row.trainedChara.cardId)}
+                        style={{ height: 40, width: 'auto', objectFit: 'contain' }}
+                    />
                     <div>
                         <span className="chara-name-primary">{row.chara.name}</span>
-                        <span className="chara-name-card"><CardNamePresenter cardId={row.trainedChara.cardId} /></span>
                         {row.trainedChara.viewerName && (
                             <span className="chara-viewer-name" style={{ color: '#9ca3af', fontSize: '0.75em' }}>[{row.trainedChara.viewerName}]</span>
                         )}
@@ -185,17 +200,13 @@ export const charaTableColumns: CharaColumnDef[] = [
         key: 'styleMood',
         header: 'Style/Mood',
         renderCell: (row) => {
-            const isOonige = row.activatedSkills.has(202051);
-            const styleColor = getRunningStyleColor(row.horseResultData.runningStyle!, isOonige);
+            const styleName = runningStyleLabel(row.horseResultData, row.activatedSkills);
+            const moodName = UMDatabaseUtils.motivationLabels[row.motivation] ?? "";
+            const icons = getStyleMoodIcons();
             return (
-                <div style={{ lineHeight: 1.3 }}>
-                    <span className="style-badge" style={{ color: styleColor }}>
-                        {runningStyleLabel(row.horseResultData, row.activatedSkills)}
-                    </span>
-                    <br />
-                    <span style={{ fontSize: '0.85em', color: '#9ca3af' }}>
-                        {UMDatabaseUtils.motivationLabels[row.motivation]}
-                    </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <img src={icons.style[row.horseResultData.runningStyle!]} alt={styleName} title={styleName} style={{ height: 40, width: 'auto' }} />
+                    <img src={icons.mood[row.motivation]} alt={moodName} title={moodName} style={{ height: 40, width: 'auto' }} />
                 </div>
             );
         },

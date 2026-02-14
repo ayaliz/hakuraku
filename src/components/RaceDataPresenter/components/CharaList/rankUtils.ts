@@ -1,12 +1,12 @@
 import AssetLoader from "../../../../data/AssetLoader";
-import GameDataLoader from "../../../../data/GameDataLoader";
+import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 
 let _sorted: { id: number; min_value: number }[] | null = null;
 
 function getSortedRanks() {
     if (!_sorted) {
-        _sorted = GameDataLoader.singleModeRank
-            .map(r => ({ id: r.id, min_value: r.min_value }))
+        _sorted = UMDatabaseWrapper.singleModeRanks
+            .map(r => ({ id: r.id!, min_value: r.minValue! }))
             .sort((a, b) => b.min_value - a.min_value);
     }
     return _sorted;

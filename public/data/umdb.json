@@ -288815,5 +288815,497 @@
       "statusValue": 0,
       "solvableType": 0
     }
+  ],
+  "singleModeRank": [
+    {
+      "id": 1,
+      "minValue": 0,
+      "maxValue": 299
+    },
+    {
+      "id": 2,
+      "minValue": 300,
+      "maxValue": 599
+    },
+    {
+      "id": 3,
+      "minValue": 600,
+      "maxValue": 899
+    },
+    {
+      "id": 4,
+      "minValue": 900,
+      "maxValue": 1299
+    },
+    {
+      "id": 5,
+      "minValue": 1300,
+      "maxValue": 1799
+    },
+    {
+      "id": 6,
+      "minValue": 1800,
+      "maxValue": 2299
+    },
+    {
+      "id": 7,
+      "minValue": 2300,
+      "maxValue": 2899
+    },
+    {
+      "id": 8,
+      "minValue": 2900,
+      "maxValue": 3499
+    },
+    {
+      "id": 9,
+      "minValue": 3500,
+      "maxValue": 4899
+    },
+    {
+      "id": 10,
+      "minValue": 4900,
+      "maxValue": 6499
+    },
+    {
+      "id": 11,
+      "minValue": 6500,
+      "maxValue": 8199
+    },
+    {
+      "id": 12,
+      "minValue": 8200,
+      "maxValue": 9999
+    },
+    {
+      "id": 13,
+      "minValue": 10000,
+      "maxValue": 12099
+    },
+    {
+      "id": 14,
+      "minValue": 12100,
+      "maxValue": 14499
+    },
+    {
+      "id": 15,
+      "minValue": 14500,
+      "maxValue": 15899
+    },
+    {
+      "id": 16,
+      "minValue": 15900,
+      "maxValue": 17499
+    },
+    {
+      "id": 17,
+      "minValue": 17500,
+      "maxValue": 19199
+    },
+    {
+      "id": 18,
+      "minValue": 19200,
+      "maxValue": 19599
+    },
+    {
+      "id": 19,
+      "minValue": 19600,
+      "maxValue": 19999
+    },
+    {
+      "id": 20,
+      "minValue": 20000,
+      "maxValue": 20399
+    },
+    {
+      "id": 21,
+      "minValue": 20400,
+      "maxValue": 20799
+    },
+    {
+      "id": 22,
+      "minValue": 20800,
+      "maxValue": 21199
+    },
+    {
+      "id": 23,
+      "minValue": 21200,
+      "maxValue": 21599
+    },
+    {
+      "id": 24,
+      "minValue": 21600,
+      "maxValue": 22099
+    },
+    {
+      "id": 25,
+      "minValue": 22100,
+      "maxValue": 22499
+    },
+    {
+      "id": 26,
+      "minValue": 22500,
+      "maxValue": 22999
+    },
+    {
+      "id": 27,
+      "minValue": 23000,
+      "maxValue": 23399
+    },
+    {
+      "id": 28,
+      "minValue": 23400,
+      "maxValue": 23899
+    },
+    {
+      "id": 29,
+      "minValue": 23900,
+      "maxValue": 24299
+    },
+    {
+      "id": 30,
+      "minValue": 24300,
+      "maxValue": 24799
+    },
+    {
+      "id": 31,
+      "minValue": 24800,
+      "maxValue": 25299
+    },
+    {
+      "id": 32,
+      "minValue": 25300,
+      "maxValue": 25799
+    },
+    {
+      "id": 33,
+      "minValue": 25800,
+      "maxValue": 26299
+    },
+    {
+      "id": 34,
+      "minValue": 26300,
+      "maxValue": 26799
+    },
+    {
+      "id": 35,
+      "minValue": 26800,
+      "maxValue": 27299
+    },
+    {
+      "id": 36,
+      "minValue": 27300,
+      "maxValue": 27799
+    },
+    {
+      "id": 37,
+      "minValue": 27800,
+      "maxValue": 28299
+    },
+    {
+      "id": 38,
+      "minValue": 28300,
+      "maxValue": 28799
+    },
+    {
+      "id": 39,
+      "minValue": 28800,
+      "maxValue": 29399
+    },
+    {
+      "id": 40,
+      "minValue": 29400,
+      "maxValue": 29899
+    },
+    {
+      "id": 41,
+      "minValue": 29900,
+      "maxValue": 30399
+    },
+    {
+      "id": 42,
+      "minValue": 30400,
+      "maxValue": 30999
+    },
+    {
+      "id": 43,
+      "minValue": 31000,
+      "maxValue": 31499
+    },
+    {
+      "id": 44,
+      "minValue": 31500,
+      "maxValue": 32099
+    },
+    {
+      "id": 45,
+      "minValue": 32100,
+      "maxValue": 32699
+    },
+    {
+      "id": 46,
+      "minValue": 32700,
+      "maxValue": 33199
+    },
+    {
+      "id": 47,
+      "minValue": 33200,
+      "maxValue": 33799
+    },
+    {
+      "id": 48,
+      "minValue": 33800,
+      "maxValue": 34399
+    },
+    {
+      "id": 49,
+      "minValue": 34400,
+      "maxValue": 34999
+    },
+    {
+      "id": 50,
+      "minValue": 35000,
+      "maxValue": 35599
+    },
+    {
+      "id": 51,
+      "minValue": 35600,
+      "maxValue": 36199
+    },
+    {
+      "id": 52,
+      "minValue": 36200,
+      "maxValue": 36799
+    },
+    {
+      "id": 53,
+      "minValue": 36800,
+      "maxValue": 37499
+    },
+    {
+      "id": 54,
+      "minValue": 37500,
+      "maxValue": 38099
+    },
+    {
+      "id": 55,
+      "minValue": 38100,
+      "maxValue": 38699
+    },
+    {
+      "id": 56,
+      "minValue": 38700,
+      "maxValue": 39399
+    },
+    {
+      "id": 57,
+      "minValue": 39400,
+      "maxValue": 39999
+    },
+    {
+      "id": 58,
+      "minValue": 40000,
+      "maxValue": 40699
+    },
+    {
+      "id": 59,
+      "minValue": 40700,
+      "maxValue": 41299
+    },
+    {
+      "id": 60,
+      "minValue": 41300,
+      "maxValue": 41999
+    },
+    {
+      "id": 61,
+      "minValue": 42000,
+      "maxValue": 42699
+    },
+    {
+      "id": 62,
+      "minValue": 42700,
+      "maxValue": 43399
+    },
+    {
+      "id": 63,
+      "minValue": 43400,
+      "maxValue": 43999
+    },
+    {
+      "id": 64,
+      "minValue": 44000,
+      "maxValue": 44699
+    },
+    {
+      "id": 65,
+      "minValue": 44700,
+      "maxValue": 45399
+    },
+    {
+      "id": 66,
+      "minValue": 45400,
+      "maxValue": 46199
+    },
+    {
+      "id": 67,
+      "minValue": 46200,
+      "maxValue": 46899
+    },
+    {
+      "id": 68,
+      "minValue": 46900,
+      "maxValue": 47599
+    },
+    {
+      "id": 69,
+      "minValue": 47600,
+      "maxValue": 48299
+    },
+    {
+      "id": 70,
+      "minValue": 48300,
+      "maxValue": 48999
+    },
+    {
+      "id": 71,
+      "minValue": 49000,
+      "maxValue": 49799
+    },
+    {
+      "id": 72,
+      "minValue": 49800,
+      "maxValue": 50499
+    },
+    {
+      "id": 73,
+      "minValue": 50500,
+      "maxValue": 51299
+    },
+    {
+      "id": 74,
+      "minValue": 51300,
+      "maxValue": 51999
+    },
+    {
+      "id": 75,
+      "minValue": 52000,
+      "maxValue": 52799
+    },
+    {
+      "id": 76,
+      "minValue": 52800,
+      "maxValue": 53599
+    },
+    {
+      "id": 77,
+      "minValue": 53600,
+      "maxValue": 54399
+    },
+    {
+      "id": 78,
+      "minValue": 54400,
+      "maxValue": 55199
+    },
+    {
+      "id": 79,
+      "minValue": 55200,
+      "maxValue": 55899
+    },
+    {
+      "id": 80,
+      "minValue": 55900,
+      "maxValue": 56699
+    },
+    {
+      "id": 81,
+      "minValue": 56700,
+      "maxValue": 57499
+    },
+    {
+      "id": 82,
+      "minValue": 57500,
+      "maxValue": 58399
+    },
+    {
+      "id": 83,
+      "minValue": 58400,
+      "maxValue": 59199
+    },
+    {
+      "id": 84,
+      "minValue": 59200,
+      "maxValue": 59999
+    },
+    {
+      "id": 85,
+      "minValue": 60000,
+      "maxValue": 60799
+    },
+    {
+      "id": 86,
+      "minValue": 60800,
+      "maxValue": 61699
+    },
+    {
+      "id": 87,
+      "minValue": 61700,
+      "maxValue": 62499
+    },
+    {
+      "id": 88,
+      "minValue": 62500,
+      "maxValue": 63399
+    },
+    {
+      "id": 89,
+      "minValue": 63400,
+      "maxValue": 64199
+    },
+    {
+      "id": 90,
+      "minValue": 64200,
+      "maxValue": 65099
+    },
+    {
+      "id": 91,
+      "minValue": 65100,
+      "maxValue": 65999
+    },
+    {
+      "id": 92,
+      "minValue": 66000,
+      "maxValue": 66799
+    },
+    {
+      "id": 93,
+      "minValue": 66800,
+      "maxValue": 67699
+    },
+    {
+      "id": 94,
+      "minValue": 67700,
+      "maxValue": 68599
+    },
+    {
+      "id": 95,
+      "minValue": 68600,
+      "maxValue": 69499
+    },
+    {
+      "id": 96,
+      "minValue": 69500,
+      "maxValue": 70399
+    },
+    {
+      "id": 97,
+      "minValue": 70400,
+      "maxValue": 71399
+    },
+    {
+      "id": 98,
+      "minValue": 71400,
+      "maxValue": 99999
+    }
   ]
 }

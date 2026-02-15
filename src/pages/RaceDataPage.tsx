@@ -528,14 +528,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
                 </>
             ) : (
                 <Alert variant="info">
-                    <p>
-                        If you're on the original version of horseACT, visit the{' '}
-                        <Link to="/setup">setup page</Link> to update to the latest version.
-                    </p>
-                    <p className="mb-0">
-                        Looking to analyze older saved races? Use the{' '}
-                        <Link to="/racedata_old">legacy race parser</Link>.
-                    </p>
+                    Visit the <Link to="/setup">setup page</Link> if you don't know how to get your race data.
                 </Alert>
             )}
         </>;

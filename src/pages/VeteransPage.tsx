@@ -142,8 +142,6 @@ export default class VeteransPage extends React.Component<{}, VeteransPageState>
 
         return (
             <Container>
-                <h1 className="mt-4 mb-4">Veterans</h1>
-
                 <div className="mb-5" style={{ position: 'relative' }}>
                     <Button variant="primary" onClick={this.handleUploadClick} style={{ marginRight: '1rem' }}>
                         Upload JSON

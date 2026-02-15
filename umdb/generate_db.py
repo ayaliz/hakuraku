@@ -3,7 +3,6 @@ import gzip
 import hashlib
 import json
 import sqlite3
-from collections import defaultdict
 import sys
 from datetime import date
 from google.protobuf import json_format
@@ -54,28 +53,6 @@ def populate_support_cards(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
         pb.support_card.append(c)
 
 
-def populate_succession_relation(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
-    relations = {}
-
-    cursor.execute("SELECT relation_type, relation_point FROM succession_relation;")
-    rows = cursor.fetchall()
-    for row in rows:
-        r = data_pb2.SuccessionRelation()
-        r.relation_type = row[0]
-        r.relation_point = row[1]
-        relations[r.relation_type] = r
-
-    cursor.execute("SELECT id, relation_type, chara_id FROM succession_relation_member ORDER BY id;")
-    rows = cursor.fetchall()
-    for row in rows:
-        member = data_pb2.SuccessionRelation.Member()
-        member.id = row[0]
-        member.chara_id = row[2]
-        relations[row[1]].member.append(member)
-
-    pb.succession_relation.extend(relations.values())
-
-
 def populate_race_instance(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
     cursor.execute("""SELECT ri.id, rcs.distance, rcs.ground, t.text
                       FROM race_instance AS ri
@@ -92,54 +69,6 @@ def populate_race_instance(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
         pb.race_instance.append(r)
 
 
-def populate_wins_saddle(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
-    instance_id_columns = ', '.join(['s.race_instance_id_%d' % i for i in range(1, 9)])
-    cursor.execute('''SELECT s.id, t.text, s.priority, s.group_id, s.win_saddle_type, %s
-                      FROM single_mode_wins_saddle AS s
-                      JOIN text_data AS t
-                      ON t.category=111 AND s.id = t."index";''' % instance_id_columns)
-    rows = cursor.fetchall()
-    for row in rows:
-        w = data_pb2.WinsSaddle()
-        w.id = row[0]
-        w.name = row[1]
-        w.priority = row[2]
-        w.group_id = row[3]
-        w.type = row[4]
-        w.race_instance_id.extend([i for i in row[5:] if i > 0])
-        pb.wins_saddle.append(w)
-
-
-def populate_special_case_race(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
-    cursor.execute('''SELECT p1.race_instance_id, p1.program_group, p1.race_permission
-                      FROM single_mode_program AS p1
-                      INNER JOIN single_mode_program AS p2
-                      ON p1.base_program_id != 0 AND p2.base_program_id = 0
-                         AND p1.base_program_id = p2.id
-                         AND p1.race_instance_id != p2.race_instance_id;''')
-    rows = cursor.fetchall()
-    races = []
-    groups_to_query = set()
-    for row in rows:
-        race = data_pb2.SpecialCaseRace()
-        race.race_instance_id = row[0]
-        race.program_group = row[1]
-        race.race_permission = row[2]
-        races.append(race)
-        groups_to_query.add(str(race.program_group))
-
-    cursor.execute('''SELECT chara_id, program_group FROM single_mode_chara_program
-                      WHERE program_group IN (%s);''' % ', '.join(groups_to_query))
-    rows = cursor.fetchall()
-    groups = defaultdict(list)
-    for row in rows:
-        groups[row[1]].append(row[0])
-
-    for race in races:
-        race.chara_id.extend(groups[race.program_group])
-        pb.special_case_race.append(race)
-
-
 def populate_skills(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
     cursor.execute('''SELECT s.id, t.text, s.grade_value, s.tag_id, s.rarity
                       FROM skill_data AS s
@@ -153,26 +82,6 @@ def populate_skills(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
         r.tag_id.extend(row[3].split('/'))
         r.rarity = row[4]
         pb.skill.append(r)
-
-
-def populate_team_stadium_score_bonus(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
-    cursor.execute("SELECT `index`, text FROM text_data WHERE category=148;")
-    rows = cursor.fetchall()
-    for row in rows:
-        r = data_pb2.TeamStadiumScoreBonus()
-        r.id = row[0]
-        r.name = row[1]
-        pb.team_stadium_score_bonus.append(r)
-
-
-def populate_stories(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
-    cursor.execute("SELECT `index`, text FROM text_data WHERE category=181;")
-    rows = cursor.fetchall()
-    for row in rows:
-        r = data_pb2.Story()
-        r.id = row[0]
-        r.name = row[1]
-        pb.story.append(r)
 
 
 def populate_single_mode_skill_need_point(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
@@ -234,13 +143,8 @@ def main():
     for p in (populate_charas,
               populate_cards,
               populate_support_cards,
-              populate_succession_relation,
               populate_race_instance,
-              populate_wins_saddle,
-              populate_special_case_race,
               populate_skills,
-              populate_team_stadium_score_bonus,
-              populate_stories,
               populate_text_data,
               populate_single_mode_skill_need_point,
               populate_single_mode_rank):

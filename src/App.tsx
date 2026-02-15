@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Container, Nav, Navbar, NavDropdown, Spinner } from "react-bootstrap";
+import { Container, Nav, Navbar, Spinner } from "react-bootstrap";
 import 'react-bootstrap-table-next/dist/react-bootstrap-table2.css';
 import 'react-bootstrap-typeahead/css/Typeahead.css';
 import { HashRouter, Link, Route, Switch } from "react-router-dom";
@@ -8,11 +8,7 @@ import './dark-mode.css';
 import UMDatabaseWrapper from './data/UMDatabaseWrapper';
 import GameDataLoader from './data/GameDataLoader';
 import RaceDataPage from "./pages/RaceDataPage";
-import RaceDataPageOld from "./pages/RaceDataPage_old";
 import MultiRacePage from "./pages/MultiRacePage";
-import StoriesPage from "./pages/StoriesPage";
-import SuccessionPage from './pages/SuccessionPage';
-import SuccessionRelationsPage from "./pages/SuccessionRelationsPage";
 import SetupGuidePage from './pages/SetupGuidePage';
 import VeteransPage from './pages/VeteransPage';
 import MasterDataPage from './pages/MasterDataPage';
@@ -44,18 +40,8 @@ export default function App() {
                         <Nav.Link as={Link} to="/">Home</Nav.Link>
                         <Nav.Link as={Link} to="/veterans">Veterans</Nav.Link>
                         <Nav.Link as={Link} to="/masterdata">Master Data</Nav.Link>
-                        <NavDropdown title="Race Analysis" id="race-analysis-nav-dropdown">
-                            <NavDropdown.Item as={Link} to="/racedata">
-                                Parse races
-                            </NavDropdown.Item>
-                            <NavDropdown.Item as={Link} to="/multirace">
-                                Multi-Race Analysis
-                            </NavDropdown.Item>
-                            <NavDropdown.Divider />
-                            <NavDropdown.Item as={Link} to="/racedata_old">
-                                Parse races [old]
-                            </NavDropdown.Item>
-                        </NavDropdown>
+                        <Nav.Link as={Link} to="/racedata">Race Analysis</Nav.Link>
+                        <Nav.Link as={Link} to="/multirace">Multi-Race Analysis</Nav.Link>
                     </Nav>
                     <Nav className="ml-auto">
                         <Nav.Link as={Link} to="/setup">How to get my race data <small style={{ color: 'red' }}>(Jan 13 update!)</small></Nav.Link>
@@ -70,20 +56,8 @@ export default function App() {
                 <Route path="/veterans">
                     <VeteransPage />
                 </Route>
-                <Route path="/succession">
-                    <SuccessionPage />
-                </Route>
-                <Route path="/successionrelations">
-                    <SuccessionRelationsPage />
-                </Route>
-                <Route path="/stories">
-                    <StoriesPage />
-                </Route>
                 <Route path="/racedata">
                     <RaceDataPage />
-                </Route>
-                <Route path="/racedata_old">
-                    <RaceDataPageOld />
                 </Route>
                 <Route path="/multirace">
                     <MultiRacePage />
@@ -103,6 +77,6 @@ export default function App() {
 }
 
 function Home() {
-    return <Alert variant="primary">Nothing here yet</Alert>;
+    return <img src={process.env.PUBLIC_URL + '/assets/sky.webp'} alt="Sky" style={{ width: '100%' }} />;
 }
 

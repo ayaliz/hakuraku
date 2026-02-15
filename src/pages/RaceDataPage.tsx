@@ -61,7 +61,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
         const kvKey = params.get('kv');
 
         if (kvKey) {
-            fetch(`https://savedraces.ayaliz.workers.dev/share/${kvKey}`)
+            fetch(`https://cors-proxy.ayaliz.workers.dev/share/${kvKey}`)
                 .then(res => {
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
                     return res.json();
@@ -455,7 +455,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
         this.setState({ shareStatus: 'sharing', shareError: '' });
 
         try {
-            const res = await fetch('https://savedraces.ayaliz.workers.dev/share', {
+            const res = await fetch('https://cors-proxy.ayaliz.workers.dev/share', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Alert, Button, Col, Container, Row, Spinner, Tab, Tabs } from 'react-bootstrap';
+import { Alert, Button, ButtonGroup, Col, Container, Dropdown, Row, Spinner, Tab, Tabs } from 'react-bootstrap';
 import pako from 'pako';
 import initSqlJs, { Database, QueryExecResult } from 'sql.js';
 import { useLocation } from 'react-router-dom';
+import CodeMirror from '@uiw/react-codemirror';
+import { sql as sqlLang, SQLite } from '@codemirror/lang-sql';
+import { oneDark } from '@codemirror/theme-one-dark';
 
 let cachedDb: Database | null = null;
 
@@ -42,23 +45,25 @@ interface DiffData {
 
 function SqlBrowserTab() {
     const location = useLocation();
-    const queryParam = new URLSearchParams(location.search).get('q') ?? '';
+    const params = new URLSearchParams(location.search);
+    const queryParam = params.get('q') ?? '';
+    const filterParam = params.get('filter') ?? '';
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [tableList, setTableList] = useState<string[]>([]);
+    const [sqlSchema, setSqlSchema] = useState<Record<string, string[]>>({});
     const [sql, setSql] = useState(queryParam);
     const [results, setResults] = useState<QueryExecResult[] | null>(null);
     const [queryError, setQueryError] = useState<string | null>(null);
     const [dbLoaded, setDbLoaded] = useState(!!cachedDb);
     const [copied, setCopied] = useState(false);
     const [crossRef, setCrossRef] = useState<{ column: string; tables: string[] } | null>(null);
-    const [filterText, setFilterText] = useState('');
+    const [filterText, setFilterText] = useState(filterParam);
     const [tableSearch, setTableSearch] = useState('');
 
     const executeQuery = (db: Database, sqlStr: string) => {
         setCrossRef(null);
-        setFilterText('');
         setQueryError(null);
         try {
             const stmt = db.prepare(sqlStr);
@@ -112,16 +117,24 @@ function SqlBrowserTab() {
 
     const populateTables = (db: Database) => {
         const res = db.exec("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;");
-        if (res.length > 0) {
-            const tables = res[0].values.map((r) => String(r[0]));
-            const nonEmpty = tables.filter(t => db.exec(`SELECT 1 FROM "${t}" LIMIT 1`).length > 0);
-            setTableList(nonEmpty);
+        if (res.length === 0) return;
+        const tables = res[0].values.map((r) => String(r[0]));
+        const schema: Record<string, string[]> = {};
+        const nonEmpty: string[] = [];
+        for (const t of tables) {
+            if (db.exec(`SELECT 1 FROM "${t}" LIMIT 1`).length === 0) continue;
+            nonEmpty.push(t);
+            const info = db.exec(`PRAGMA table_info("${t}")`);
+            schema[t] = info.length > 0 ? info[0].values.map(row => String(row[1])) : [];
         }
+        setTableList(nonEmpty);
+        setSqlSchema(schema);
     };
 
     const handleTableClick = (table: string) => {
         const q = `SELECT * FROM "${table}" LIMIT 100`;
         setSql(q);
+        setFilterText('');
         setQueryError(null);
         if (cachedDb) executeQuery(cachedDb, q);
     };
@@ -143,9 +156,45 @@ function SqlBrowserTab() {
         setCrossRef({ column: columnName, tables: matching });
     };
 
+    const exportData = (format: 'csv' | 'json') => {
+        if (!results || results.length === 0) return;
+        const res = results[0];
+        const filteredRows = res.values.filter(row =>
+            !filterText || row.some(cell => cell !== null && String(cell).toLowerCase().includes(filterText.toLowerCase()))
+        );
+        let content: string;
+        let mime: string;
+        let ext: string;
+        if (format === 'csv') {
+            const escape = (v: any) => {
+                const s = v === null ? '' : String(v);
+                return /[,"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+            };
+            const lines = [res.columns.map(escape).join(','), ...filteredRows.map(row => row.map(escape).join(','))];
+            content = lines.join('\r\n');
+            mime = 'text/csv';
+            ext = 'csv';
+        } else {
+            const objects = filteredRows.map(row =>
+                Object.fromEntries(res.columns.map((col, i) => [col, row[i]]))
+            );
+            content = JSON.stringify(objects, null, 2);
+            mime = 'application/json';
+            ext = 'json';
+        }
+        const blob = new Blob([content], { type: mime });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `export.${ext}`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
     const copyShareLink = () => {
         const base = window.location.href.split('#')[0];
-        const url = `${base}#/masterdata?q=${encodeURIComponent(sql)}`;
+        const qs = new URLSearchParams({ q: sql, ...(filterText ? { filter: filterText } : {}) });
+        const url = `${base}#/masterdata?${qs.toString()}`;
         navigator.clipboard.writeText(url).then(() => {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
@@ -192,21 +241,31 @@ function SqlBrowserTab() {
                         }
                     </Col>
                     <Col md={9}>
-                        <textarea
-                            className="form-control mb-2"
-                            rows={4}
+                        <CodeMirror
                             value={sql}
-                            onChange={(e) => setSql(e.target.value)}
-                            placeholder="SELECT * FROM table_name LIMIT 100"
-                            style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}
+                            onChange={(value) => setSql(value)}
+                            extensions={[sqlLang({ dialect: SQLite, schema: sqlSchema })]}
+                            theme={oneDark}
+                            basicSetup={{ lineNumbers: false, foldGutter: false }}
+                            style={{ fontFamily: 'monospace', fontSize: '0.9rem', marginBottom: '0.5rem' }}
                         />
                         <Button variant="success" onClick={runQuery} disabled={!sql.trim()}>
                             Run Query
                         </Button>
                         {' '}
-                        <Button variant="outline-secondary" onClick={copyShareLink} disabled={!sql.trim()}>
+                        <Button variant="outline-primary" onClick={copyShareLink} disabled={!sql.trim()}>
                             {copied ? 'Copied!' : 'Share'}
                         </Button>
+                        {' '}
+                        <Dropdown as={ButtonGroup}>
+                            <Dropdown.Toggle variant="outline-info" disabled={!results || results.length === 0}>
+                                Export
+                            </Dropdown.Toggle>
+                            <Dropdown.Menu>
+                                <Dropdown.Item onClick={() => exportData('csv')}>CSV</Dropdown.Item>
+                                <Dropdown.Item onClick={() => exportData('json')}>JSON</Dropdown.Item>
+                            </Dropdown.Menu>
+                        </Dropdown>
                         {' '}
                         <input
                             type="text"

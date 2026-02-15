@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Alert, Button, ButtonGroup, Col, Container, Dropdown, Row, Spinner, Tab, Tabs } from 'react-bootstrap';
 import pako from 'pako';
 import initSqlJs, { Database, QueryExecResult } from 'sql.js';
@@ -114,6 +114,7 @@ function SqlBrowserTab() {
     useEffect(() => {
         if (queryParam) loadDatabase(queryParam);
         else if (cachedDb) populateTables(cachedDb);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const populateTables = (db: Database) => {

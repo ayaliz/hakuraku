@@ -3123,6 +3123,11 @@
   resolved "https://registry.npmjs.org/@types/dom-webcodecs/-/dom-webcodecs-0.1.18.tgz"
   integrity sha512-vAvE8C9DGWR+tkb19xyjk1TSUlJ7RUzzp4a9Anu7mwBT+fpyePWK1UxmH14tMO5zHmrnrRIMg5NutnnDztLxgg==
 
+"@types/emscripten@*":
+  version "1.41.5"
+  resolved "https://registry.npmjs.org/@types/emscripten/-/emscripten-1.41.5.tgz"
+  integrity sha512-cMQm7pxu6BxtHyqJ7mQZ2kXWV5SLmugybFdHCBbJ5eHzOo6VhBckEgAT3//rP5FwPHNPeEiq4SmQ5ucBwsOo4Q==
+
 "@types/eslint-scope@^3.7.3":
   version "3.7.4"
   resolved "https://registry.npmjs.org/@types/eslint-scope/-/eslint-scope-3.7.4.tgz"
@@ -3266,12 +3271,7 @@
   resolved "https://registry.npmjs.org/@types/mime/-/mime-3.0.1.tgz"
   integrity sha512-Y4XFY5VJAuw0FgAqPNd6NNoV44jbq9Bz2L7Rh/J6jLTiHBSBJa9fxqQIvkIld4GsoDOcCbvzOUAbLPsSKKg+uA==
 
-"@types/node@*":
-  version "18.14.0"
-  resolved "https://registry.npmjs.org/@types/node/-/node-18.14.0.tgz"
-  integrity sha512-5EWrvLmglK+imbCJY0+INViFWUHg1AHel1sq4ZVSfdcNqGy9Edv3UB9IIzzg+xPaUcAgZYcfVs2fBcwDeZzU0A==
-
-"@types/node@^16.18.46":
+"@types/node@*", "@types/node@^16.18.46":
   version "16.18.46"
   resolved "https://registry.npmjs.org/@types/node/-/node-16.18.46.tgz"
   integrity sha512-Mnq3O9Xz52exs3mlxMcQuA7/9VFe/dXcrgAyfjLkABIqxXKOgBRjyazTxUbjsxDa4BP7hhPliyjVTP9RDP14xg==
@@ -3456,6 +3456,14 @@
   resolved "https://registry.npmjs.org/@types/sockjs/-/sockjs-0.3.33.tgz"
   integrity sha512-f0KEEe05NvUnat+boPTZ0dgaLZ4SfSouXUgv5noUiefG2ajgKjmETo9ZJyuqsl7dfl2aHlLJUiki6B4ZYldiiw==
   dependencies:
+    "@types/node" "*"
+
+"@types/sql.js@^1.4.9":
+  version "1.4.9"
+  resolved "https://registry.npmjs.org/@types/sql.js/-/sql.js-1.4.9.tgz"
+  integrity sha512-ep8b36RKHlgWPqjNG9ToUrPiwkhwh0AEzy883mO5Xnd+cL6VBH1EvSjBAAuxLUFF2Vn/moE3Me6v9E1Lo+48GQ==
+  dependencies:
+    "@types/emscripten" "*"
     "@types/node" "*"
 
 "@types/stack-utils@^2.0.0":
@@ -10542,6 +10550,11 @@ sprintf-js@~1.0.2:
   version "1.0.3"
   resolved "https://registry.npmjs.org/sprintf-js/-/sprintf-js-1.0.3.tgz"
   integrity sha1-BOaSb2YolTVPPdAVIDYzuFcpfiw=
+
+sql.js@^1.14.0:
+  version "1.14.0"
+  resolved "https://registry.npmjs.org/sql.js/-/sql.js-1.14.0.tgz"
+  integrity sha512-NXYh+kFqLiYRCNAaHD0PcbjFgXyjuolEKLMk5vRt2DgPENtF1kkNzzMlg42dUk5wIsH8MhUzsRhaUxIisoSlZQ==
 
 stable@^0.1.8:
   version "0.1.8"

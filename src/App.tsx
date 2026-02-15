@@ -15,6 +15,7 @@ import SuccessionPage from './pages/SuccessionPage';
 import SuccessionRelationsPage from "./pages/SuccessionRelationsPage";
 import SetupGuidePage from './pages/SetupGuidePage';
 import VeteransPage from './pages/VeteransPage';
+import MasterDataPage from './pages/MasterDataPage';
 
 
 export default function App() {
@@ -42,6 +43,7 @@ export default function App() {
                     <Nav className="mr-auto">
                         <Nav.Link as={Link} to="/">Home</Nav.Link>
                         <Nav.Link as={Link} to="/veterans">Veterans</Nav.Link>
+                        <Nav.Link as={Link} to="/masterdata">Master Data</Nav.Link>
                         <NavDropdown title="Race Analysis" id="race-analysis-nav-dropdown">
                             <NavDropdown.Item as={Link} to="/racedata">
                                 Parse races
@@ -88,6 +90,9 @@ export default function App() {
                 </Route>
                 <Route path="/setup">
                     <SetupGuidePage />
+                </Route>
+                <Route path="/masterdata">
+                    <MasterDataPage />
                 </Route>
                 <Route path="/">
                     <Home />

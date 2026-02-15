@@ -6,6 +6,10 @@ import { useLocation } from 'react-router-dom';
 
 let cachedDb: Database | null = null;
 
+const isDateColumn = (col: string) => col.endsWith('_date');
+const formatUnixTimestamp = (ts: number) =>
+    new Date(ts * 1000).toLocaleString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+
 interface VersionEntry {
     hash: string;
     short_hash: string;
@@ -48,8 +52,13 @@ function SqlBrowserTab() {
     const [queryError, setQueryError] = useState<string | null>(null);
     const [dbLoaded, setDbLoaded] = useState(!!cachedDb);
     const [copied, setCopied] = useState(false);
+    const [crossRef, setCrossRef] = useState<{ column: string; tables: string[] } | null>(null);
+    const [filterText, setFilterText] = useState('');
+    const [tableSearch, setTableSearch] = useState('');
 
     const executeQuery = (db: Database, sqlStr: string) => {
+        setCrossRef(null);
+        setFilterText('');
         setQueryError(null);
         try {
             const stmt = db.prepare(sqlStr);
@@ -104,19 +113,34 @@ function SqlBrowserTab() {
     const populateTables = (db: Database) => {
         const res = db.exec("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;");
         if (res.length > 0) {
-            setTableList(res[0].values.map((r) => String(r[0])));
+            const tables = res[0].values.map((r) => String(r[0]));
+            const nonEmpty = tables.filter(t => db.exec(`SELECT 1 FROM "${t}" LIMIT 1`).length > 0);
+            setTableList(nonEmpty);
         }
     };
 
     const handleTableClick = (table: string) => {
-        setSql(`SELECT * FROM "${table}" LIMIT 100`);
-        setResults(null);
+        const q = `SELECT * FROM "${table}" LIMIT 100`;
+        setSql(q);
         setQueryError(null);
+        if (cachedDb) executeQuery(cachedDb, q);
     };
 
     const runQuery = () => {
         if (!cachedDb) return;
         executeQuery(cachedDb, sql);
+    };
+
+    const handleColumnClick = (columnName: string) => {
+        if (!cachedDb) return;
+        const tablesRes = cachedDb.exec("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;");
+        if (tablesRes.length === 0) { setCrossRef({ column: columnName, tables: [] }); return; }
+        const allTables = tablesRes[0].values.map(r => String(r[0]));
+        const matching = allTables.filter(t => {
+            const info = cachedDb!.exec(`PRAGMA table_info("${t}")`);
+            return info.length > 0 && info[0].values.some(row => String(row[1]) === columnName);
+        });
+        setCrossRef({ column: columnName, tables: matching });
     };
 
     const copyShareLink = () => {
@@ -142,17 +166,30 @@ function SqlBrowserTab() {
             {dbLoaded && (
                 <Row>
                     <Col md={3} style={{ maxHeight: '70vh', overflowY: 'auto', borderRight: '1px solid #444' }}>
-                        <div className="mb-2"><strong>Tables</strong></div>
-                        {tableList.map((t) => (
-                            <div
-                                key={t}
-                                onClick={() => handleTableClick(t)}
-                                style={{ cursor: 'pointer', padding: '2px 4px', fontSize: '0.85rem' }}
-                                className="table-row-hover"
-                            >
-                                {t}
-                            </div>
-                        ))}
+                        <div className="mb-2 d-flex align-items-center" style={{ gap: 6 }}>
+                            <strong>Tables</strong>
+                            <input
+                                type="text"
+                                className="form-control form-control-sm"
+                                placeholder="Search..."
+                                value={tableSearch}
+                                onChange={(e) => setTableSearch(e.target.value)}
+                                style={{ flex: 1 }}
+                            />
+                        </div>
+                        {tableList
+                            .filter(t => !tableSearch || t.toLowerCase().includes(tableSearch.toLowerCase()))
+                            .map((t) => (
+                                <div
+                                    key={t}
+                                    onClick={() => handleTableClick(t)}
+                                    style={{ cursor: 'pointer', padding: '2px 4px', fontSize: '0.85rem' }}
+                                    className="table-row-hover"
+                                >
+                                    {t}
+                                </div>
+                            ))
+                        }
                     </Col>
                     <Col md={9}>
                         <textarea
@@ -170,6 +207,15 @@ function SqlBrowserTab() {
                         <Button variant="outline-secondary" onClick={copyShareLink} disabled={!sql.trim()}>
                             {copied ? 'Copied!' : 'Share'}
                         </Button>
+                        {' '}
+                        <input
+                            type="text"
+                            className="form-control d-inline-block ml-1"
+                            placeholder="Filter rows..."
+                            value={filterText}
+                            onChange={(e) => setFilterText(e.target.value)}
+                            style={{ width: 180, verticalAlign: 'middle' }}
+                        />
                         {queryError && <Alert variant="danger" className="mt-2">{queryError}</Alert>}
                         {results !== null && results.length === 0 && (
                             <Alert variant="info" className="mt-2">Query returned no results.</Alert>
@@ -180,20 +226,58 @@ function SqlBrowserTab() {
                                     <table key={i} className="table table-sm table-striped table-bordered" style={{ fontSize: '0.8rem' }}>
                                         <thead className="thead-dark">
                                             <tr>
-                                                {res.columns.map((c) => <th key={c}>{c}</th>)}
+                                                {res.columns.map((c) => (
+                                                    <th key={c} onClick={() => handleColumnClick(c)} style={{ cursor: 'pointer' }} title="Find tables with this column">
+                                                        {c}
+                                                    </th>
+                                                ))}
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {res.values.map((row, ri) => (
-                                                <tr key={ri}>
-                                                    {row.map((cell, ci) => (
-                                                        <td key={ci}>{cell === null ? <em>NULL</em> : String(cell)}</td>
-                                                    ))}
-                                                </tr>
-                                            ))}
+                                            {res.values
+                                                .filter(row => !filterText || row.some(cell => cell !== null && String(cell).toLowerCase().includes(filterText.toLowerCase())))
+                                                .map((row, ri) => (
+                                                    <tr key={ri}>
+                                                        {row.map((cell, ci) => (
+                                                            <td key={ci}>
+                                                                {cell === null
+                                                                    ? <em>NULL</em>
+                                                                    : isDateColumn(res.columns[ci]) && typeof cell === 'number' && cell > 0
+                                                                        ? <>{cell}<br /><small className="text-muted">{formatUnixTimestamp(cell)}</small></>
+                                                                        : String(cell)
+                                                                }
+                                                            </td>
+                                                        ))}
+                                                    </tr>
+                                                ))
+                                            }
                                         </tbody>
                                     </table>
                                 ))}
+                            </div>
+                        )}
+                        {crossRef && (
+                            <div className="mt-3 p-2" style={{ border: '1px solid #555', borderRadius: 4, fontSize: '0.85rem' }}>
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <span>
+                                        <strong><code>{crossRef.column}</code></strong>
+                                        {' '}found in {crossRef.tables.length} table(s)
+                                    </span>
+                                    <Button variant="outline-secondary" size="sm" onClick={() => setCrossRef(null)}>✕</Button>
+                                </div>
+                                {crossRef.tables.length === 0
+                                    ? <span className="text-muted">Not found in any table.</span>
+                                    : crossRef.tables.map(t => (
+                                        <span
+                                            key={t}
+                                            onClick={() => handleTableClick(t)}
+                                            className="badge badge-secondary mr-1"
+                                            style={{ cursor: 'pointer' }}
+                                        >
+                                            {t}
+                                        </span>
+                                    ))
+                                }
                             </div>
                         )}
                     </Col>
@@ -385,9 +469,8 @@ function DiffViewer({ diff, collapsedTables, onToggleTable }: DiffViewerProps) {
 export default function MasterDataPage() {
     return (
         <Container className="mt-4">
-            <h1 className="mb-4">Master Data</h1>
             <Tabs defaultActiveKey="browser" id="masterdata-tabs">
-                <Tab eventKey="browser" title="Table Browser / SQL">
+                <Tab eventKey="browser" title="Table Browser">
                     <SqlBrowserTab />
                 </Tab>
                 <Tab eventKey="history" title="Version History">

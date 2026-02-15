@@ -113,6 +113,7 @@ function SqlBrowserTab() {
 
     useEffect(() => {
         if (queryParam) loadDatabase(queryParam);
+        else if (cachedDb) populateTables(cachedDb);
     }, []);
 
     const populateTables = (db: Database) => {

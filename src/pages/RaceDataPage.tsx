@@ -58,7 +58,22 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
         const binKey = params.get('bin');
         const catboxKey = params.get('catbox');
 
-        if (catboxKey) {
+        const kvKey = params.get('kv');
+
+        if (kvKey) {
+            fetch(`https://savedraces.ayaliz.workers.dev/share/${kvKey}`)
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
+                .then(data => {
+                    this.loadSharedData(data);
+                })
+                .catch(err => {
+                    console.error(err);
+                    this.setState({ error: `Failed to load shared data: ${err.message}` });
+                });
+        } else if (catboxKey) {
             const workerUrl = 'https://cors-proxy.ayaliz.workers.dev';
             const targetUrl = `https://files.catbox.moe/${catboxKey}`;
             const target = `${workerUrl}/?${targetUrl}`;
@@ -439,33 +454,22 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
 
         this.setState({ shareStatus: 'sharing', shareError: '' });
 
-        const blob = new Blob([content], { type: 'application/json' });
-        const formData = new FormData();
-        formData.append('reqtype', 'fileupload');
-        formData.append('fileToUpload', blob, 'race.json');
-
         try {
-            const workerUrl = 'https://cors-proxy.ayaliz.workers.dev';
-
-            const res = await fetch(`${workerUrl}/?https://catbox.moe/user/api.php`, {
+            const res = await fetch('https://savedraces.ayaliz.workers.dev/share', {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Share-Secret': process.env.REACT_APP_SHARE_SECRET ?? '',
+                },
+                body: content,
             });
             if (!res.ok) {
                 throw new Error(`HTTP ${res.status}`);
             }
 
-            const text = await res.text();
-
-            if (text.startsWith('http')) {
-                const parts = text.split('/');
-                const filename = parts[parts.length - 1];
-
-                const nextCache: ShareCache = { ...this.state.shareCache, [hash]: filename };
-                this.setState({ shareStatus: 'shared', shareKey: filename, shareCache: nextCache });
-            } else {
-                throw new Error('Upload failed: ' + text);
-            }
+            const { key } = await res.json();
+            const nextCache: ShareCache = { ...this.state.shareCache, [hash]: key };
+            this.setState({ shareStatus: 'shared', shareKey: key, shareCache: nextCache });
 
         } catch (err: any) {
             this.setState({ shareStatus: '', shareError: err.message });
@@ -474,7 +478,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
 
     render() {
         const { error, shareStatus, shareKey, shareError, parsedRaceData } = this.state;
-        const shareUrl = `${window.location.origin}${window.location.pathname}#/racedata?catbox=${shareKey}`;
+        const shareUrl = `${window.location.origin}${window.location.pathname}#/racedata?kv=${shareKey}`;
 
         return <>
             <input

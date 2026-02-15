@@ -120,7 +120,7 @@ const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
                 </div>
 
                 {/* Performance Panel */}
-                <PerformancePanel items={perfMetrics} title="Performance (Opponents)" maxItems={4} columns={1} displayMode="multiplier" />
+                <PerformancePanel items={perfMetrics} title="Performance (Opponents)" maxItems={4} columns={1} displayMode="multiplier" showIcons={false} />
             </div>
         </div>
     );

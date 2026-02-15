@@ -1,9 +1,11 @@
 import argparse
 import gzip
+import hashlib
 import json
 import sqlite3
 from collections import defaultdict
 import sys
+from datetime import date
 from google.protobuf import json_format
 import os
 from pathlib import Path
@@ -259,6 +261,135 @@ def main():
     # Force UTF-8 when writing JSON (so ☆ and other characters are preserved)
     with open(output_dir / 'umdb.json', 'w', encoding='utf-8') as f:
         json.dump(json_format.MessageToDict(pb), f, ensure_ascii=False, indent=2)
+
+    generate_masterdata_artifacts(args.db_path, cursor, output_dir)
+
+
+def _dump_all_tables(cursor: sqlite3.Cursor) -> dict:
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;")
+    tables = [row[0] for row in cursor.fetchall()]
+    snapshot = {}
+    for table in tables:
+        cursor.execute(f'SELECT * FROM "{table}";')
+        cols = [desc[0] for desc in cursor.description]
+        rows = [list(row) for row in cursor.fetchall()]
+        snapshot[table] = {"columns": cols, "rows": rows}
+    return snapshot
+
+
+def _compute_diff(old_snapshot: dict, new_snapshot: dict) -> dict:
+    tables_diff = {}
+    all_tables = set(old_snapshot.keys()) | set(new_snapshot.keys())
+    for table in all_tables:
+        old_data = old_snapshot.get(table, {"columns": [], "rows": []})
+        new_data = new_snapshot.get(table, {"columns": [], "rows": []})
+        columns = new_data["columns"] if new_data["columns"] else old_data["columns"]
+
+        old_rows = {tuple(r[0:1]): r for r in old_data["rows"]} if old_data["rows"] else {}
+        new_rows = {tuple(r[0:1]): r for r in new_data["rows"]} if new_data["rows"] else {}
+
+        added = [r for k, r in new_rows.items() if k not in old_rows]
+        removed = [r for k, r in old_rows.items() if k not in new_rows]
+        modified = []
+        for k in old_rows:
+            if k in new_rows and old_rows[k] != new_rows[k]:
+                modified.append({"key": k[0], "before": old_rows[k], "after": new_rows[k]})
+
+        if added or removed or modified:
+            tables_diff[table] = {
+                "columns": columns,
+                "added": added,
+                "removed": removed,
+                "modified": modified,
+            }
+    return tables_diff
+
+
+def generate_masterdata_artifacts(db_path: str, cursor: sqlite3.Cursor, output_dir: Path):
+    masterdata_dir = output_dir / "masterdata"
+    diffs_dir = masterdata_dir / "diffs"
+    os.makedirs(diffs_dir, exist_ok=True)
+
+    with open(db_path, "rb") as f:
+        raw_bytes = f.read()
+    new_hash = hashlib.sha256(raw_bytes).hexdigest()
+    short_hash = new_hash[:12]
+    today = date.today().isoformat()
+
+    with open(masterdata_dir / "master.mdb.gz", "wb") as f:
+        f.write(gzip.compress(raw_bytes, mtime=0))
+
+    meta_path = masterdata_dir / "meta.json"
+    if meta_path.exists():
+        with open(meta_path, "r", encoding="utf-8") as f:
+            meta = json.load(f)
+    else:
+        meta = None
+
+    if meta and meta.get("hash") == new_hash:
+        print("masterdata: same hash, skipping artifact update.")
+        return
+
+    previous_hash = meta["hash"] if meta else None
+
+    snapshot_path = masterdata_dir / "snapshot.json.gz"
+    old_snapshot = None
+    if snapshot_path.exists() and previous_hash:
+        with gzip.open(snapshot_path, "rt", encoding="utf-8") as f:
+            old_snapshot = json.load(f)
+
+    new_snapshot = _dump_all_tables(cursor)
+
+    with gzip.open(snapshot_path, "wt", encoding="utf-8") as f:
+        json.dump(new_snapshot, f, ensure_ascii=False)
+
+    versions_path = masterdata_dir / "versions.json"
+    if versions_path.exists():
+        with open(versions_path, "r", encoding="utf-8") as f:
+            versions = json.load(f)
+    else:
+        versions = []
+
+    diff_summary = None
+    if old_snapshot is not None:
+        tables_diff = _compute_diff(old_snapshot, new_snapshot)
+        tables_changed = len(tables_diff)
+        total_added = sum(len(v["added"]) for v in tables_diff.values())
+        total_removed = sum(len(v["removed"]) for v in tables_diff.values())
+        total_modified = sum(len(v["modified"]) for v in tables_diff.values())
+        diff_summary = {
+            "tables_changed": tables_changed,
+            "added": total_added,
+            "removed": total_removed,
+            "modified": total_modified,
+        }
+        diff_data = {
+            "from_hash": previous_hash,
+            "to_hash": new_hash,
+            "date": today,
+            "summary": diff_summary,
+            "tables": tables_diff,
+        }
+        diff_path = diffs_dir / f"{short_hash}.json.gz"
+        with gzip.open(diff_path, "wt", encoding="utf-8") as f:
+            json.dump(diff_data, f, ensure_ascii=False)
+        print(f"masterdata: diff written to {diff_path}")
+
+    version_entry = {
+        "hash": new_hash,
+        "short_hash": short_hash,
+        "date": today,
+        "previous_hash": previous_hash,
+        "summary": diff_summary,
+    }
+    versions.append(version_entry)
+    with open(versions_path, "w", encoding="utf-8") as f:
+        json.dump(versions, f, ensure_ascii=False, indent=2)
+
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump({"hash": new_hash, "date": today, "previous_hash": previous_hash}, f, ensure_ascii=False, indent=2)
+
+    print(f"masterdata: artifacts updated (hash={short_hash})")
 
 
 if __name__ == '__main__':

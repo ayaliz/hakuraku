@@ -24,6 +24,8 @@ jobs:
           cache: yarn
       - run: yarn --frozen-lockfile
       - run: yarn build
+        env:
+          REACT_APP_SHARE_SECRET: ${{ secrets.REACT_APP_SHARE_SECRET }}
       - name: Upload Pages artifact (only once)
         uses: actions/upload-pages-artifact@v3
         with:

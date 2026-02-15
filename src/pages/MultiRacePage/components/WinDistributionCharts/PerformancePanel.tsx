@@ -12,6 +12,7 @@ interface PerformancePanelProps {
     displayMode?: "multiplier" | "winRatePop";
     minPopCount?: number;
     minPopPct?: number;
+    showIcons?: boolean;
 }
 
 const PerformancePanel: React.FC<PerformancePanelProps> = ({
@@ -21,7 +22,8 @@ const PerformancePanel: React.FC<PerformancePanelProps> = ({
     columns = 1,
     displayMode = "multiplier",
     minPopCount = 3,
-    minPopPct = 1.0
+    minPopPct = 1.0,
+    showIcons = true
 }) => {
     const MIN_POP_COUNT = minPopCount;
     const MIN_POP_PCT = minPopPct;
@@ -79,7 +81,7 @@ const PerformancePanel: React.FC<PerformancePanelProps> = ({
                 style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", marginBottom: "8px", cursor: "help" }}
             >
                 <div style={{ display: "flex", alignItems: "center", overflow: "hidden", maxWidth: columns === 2 ? "180px" : "180px" }}>
-                    {iconUrl && item.strategyId && STRATEGY_COLORS[item.strategyId] ? (
+                    {showIcons && iconUrl && item.strategyId && STRATEGY_COLORS[item.strategyId] ? (
                         <div
                             style={{ position: "relative", width: "40px", height: "40px", flexShrink: 0, marginRight: "10px" }}
                             title={STRATEGY_NAMES[item.strategyId]}

@@ -30,7 +30,7 @@ export default function App() {
     }
 
     return <HashRouter>
-        <Navbar bg="dark" variant="dark" expand="lg">
+        <Navbar className="haku-nav" variant="dark" expand="lg">
             <Container>
                 <Navbar.Brand as={Link} to="/">Hakuraku</Navbar.Brand>
                 <Navbar.Toggle aria-controls="basic-navbar-nav" />
@@ -44,8 +44,7 @@ export default function App() {
                         <Nav.Link as={Link} to="/multirace">Multi-Race Analysis</Nav.Link>
                     </Nav>
                     <Nav className="ml-auto">
-                        <Nav.Link as={Link} to="/setup">How to get my race data <small style={{ color: 'red' }}>(Jan 13 update!)</small></Nav.Link>
-
+                        <Nav.Link as={Link} to="/setup">Setup Guide</Nav.Link>
                     </Nav>
                 </Navbar.Collapse>
             </Container>
@@ -77,6 +76,12 @@ export default function App() {
 }
 
 function Home() {
-    return <img src={process.env.PUBLIC_URL + '/assets/sky.webp'} alt="Sky" style={{ width: '100%' }} />;
+    return (
+        <div style={{ maxWidth: 900, margin: '32px auto' }}>
+            <div style={{ borderRadius: 12, boxShadow: 'var(--haku-shadow-lg)', overflow: 'hidden' }}>
+                <img src={process.env.PUBLIC_URL + '/assets/sky.webp'} alt="Sky" style={{ width: '100%', display: 'block' }} />
+            </div>
+        </div>
+    );
 }
 

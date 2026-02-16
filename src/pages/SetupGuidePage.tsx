@@ -1,36 +1,23 @@
 import React from 'react';
 
 const SetupGuidePage = () => {
-    const containerStyle = {
-        padding: '20px',
-        maxWidth: '1000px',
-        margin: '0 auto',
-        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-        color: '#e0e0e0',
-    };
-
-    const headerStyle = {
-        marginBottom: '30px',
-        textAlign: 'center' as const,
-    };
-
     const cardContainerStyle = {
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+        gridTemplateColumns: 'repeat(3, 1fr)',
         gap: '20px',
         marginBottom: '40px',
     };
 
     const cardStyle = {
-        backgroundColor: '#2d2d2d',
-        borderRadius: '8px',
+        backgroundColor: 'var(--haku-bg-2)',
+        borderRadius: 'var(--haku-radius)',
         padding: '20px',
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
-        border: '1px solid #444',
+        boxShadow: 'var(--haku-shadow)',
+        border: '1px solid var(--haku-border)',
     };
 
     const stepTitleStyle = {
-        color: '#90caf9',
+        color: '#65D283',
         fontSize: '1.1rem',
         marginBottom: '10px',
         textTransform: 'uppercase' as const,
@@ -38,7 +25,7 @@ const SetupGuidePage = () => {
     };
 
     const linkStyle = {
-        color: '#64b5f6',
+        color: 'var(--haku-accent)',
         textDecoration: 'none',
         fontWeight: 'bold',
     };
@@ -56,24 +43,20 @@ const SetupGuidePage = () => {
     };
 
     const boldStyle = {
-        fontWeight: 'bold',
+        fontWeight: 'bold' as const,
         color: '#fff',
     };
 
     const configSectionStyle = {
-        backgroundColor: '#2d2d2d',
-        borderRadius: '8px',
+        backgroundColor: 'var(--haku-bg-2)',
+        borderRadius: 'var(--haku-radius)',
         padding: '25px',
         marginTop: '30px',
-        borderLeft: '5px solid #64b5f6',
+        borderLeft: '4px solid #65D283',
     };
 
     return (
-        <div style={containerStyle}>
-            <div style={headerStyle}>
-                <h1 style={{ fontSize: '2.5rem', marginBottom: '10px', color: '#fff' }}>Getting Started</h1>
-            </div>
-
+        <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
             <div style={cardContainerStyle}>
                 {/* Step 1 */}
                 <div style={cardStyle}>
@@ -86,7 +69,7 @@ const SetupGuidePage = () => {
                         </a>{' '}
                         to install it.
                     </p>
-                    <p style={{ fontSize: '0.9rem', color: '#aaa', fontStyle: 'italic' }}>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--haku-text-muted)', fontStyle: 'italic' }}>
                         The installer likes throwing an I/O error at the end since it expects the folder structure of the japanese version, you can ignore if you correctly selected the game version and location.
                     </p>
                 </div>
@@ -130,7 +113,7 @@ const SetupGuidePage = () => {
                         <span style={boldStyle}>Documents</span> folder.
                     </p>
                     <p style={{ fontSize: '0.9rem', marginTop: '10px' }}>
-                        If you’d like a different save location, see the config section at the bottom of the page.
+                        If you'd like a different save location, see the config section at the bottom of the page.
                     </p>
                 </div>
 
@@ -159,35 +142,35 @@ const SetupGuidePage = () => {
                         <a href="#/veterans" style={linkStyle}>
                             Veteran page
                         </a>{' '}
-                        if you’d like to filter your veteran Umas to find specific spark combinations.
+                        if you'd like to filter your veteran Umas to find specific spark combinations.
                     </p>
                 </div>
             </div>
 
             <div style={configSectionStyle}>
-                <h2 style={{ borderBottom: '1px solid #555', paddingBottom: '10px', marginBottom: '20px', color: '#fff' }}>horseACT Configuration</h2>
+                <h2 style={{ borderBottom: '1px solid var(--haku-border)', paddingBottom: '10px', marginBottom: '20px', color: '#fff' }}>horseACT Configuration</h2>
                 <p>
                     Inside your <span style={boldStyle}>hachimi</span> folder, you will find <span style={boldStyle}>horseACTConfig.json</span> after launching the game with horseACT installed. Inside, you will find the following entries:
                 </p>
                 <ul style={{ listStyleType: 'none', padding: 0 }}>
                     <li style={{ marginBottom: '15px' }}>
-                        <div style={{ ...boldStyle, color: '#90caf9' }}>outputPath</div>
-                        The location of the “Saved races” folder.
+                        <div style={{ fontWeight: 'bold', color: '#a5c9b8' }}>outputPath</div>
+                        The location of the "Saved races" folder.
                     </li>
                     <li style={{ marginBottom: '15px' }}>
-                        <div style={{ ...boldStyle, color: '#90caf9' }}>enableLogging</div>
+                        <div style={{ fontWeight: 'bold', color: '#a5c9b8' }}>enableLogging</div>
                         Disabled by default. If enabled, horseACT writes a log file to the hachimi folder with potentially useful information for troubleshooting should you run into any issues.
                     </li>
                     <li style={{ marginBottom: '15px' }}>
-                        <div style={{ ...boldStyle, color: '#90caf9' }}>dumpStaticVariableDefine</div>
-                        Disabled by default. If enabled, horseACT dumps the contents of StaticVariableDefine when you enter a race. Leave off unless you have use for what’s in there (potentially crash prone on game updates).
+                        <div style={{ fontWeight: 'bold', color: '#a5c9b8' }}>dumpStaticVariableDefine</div>
+                        Disabled by default. If enabled, horseACT dumps the contents of StaticVariableDefine when you enter a race. Leave off unless you have use for what's in there (potentially crash prone on game updates).
                     </li>
                     <li style={{ marginBottom: '15px' }}>
-                        <div style={{ ...boldStyle, color: '#90caf9' }}>dumpEnums</div>
-                        Disabled by default. If enabled, horseACT dumps race related enums when you enter a race. Leave off unless you have use for what’s in there (potentially crash prone on game updates).
+                        <div style={{ fontWeight: 'bold', color: '#a5c9b8' }}>dumpEnums</div>
+                        Disabled by default. If enabled, horseACT dumps race related enums when you enter a race. Leave off unless you have use for what's in there (potentially crash prone on game updates).
                     </li>
                     <li style={{ marginBottom: '15px' }}>
-                        <div style={{ ...boldStyle, color: '#90caf9' }}>fieldBlacklist</div>
+                        <div style={{ fontWeight: 'bold', color: '#a5c9b8' }}>fieldBlacklist</div>
                         A list of fields that are skipped when dumping race/veteran data. By default, blacklists fields with potentially identifiable information like your ingame ID, as well as fields containing duplicate copies of the race scenario data to significantly reduce the file size of saved races.
                     </li>
                 </ul>

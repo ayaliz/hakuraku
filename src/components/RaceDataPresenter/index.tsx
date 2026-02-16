@@ -108,7 +108,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
     render() {
         const sectionDividerStyle = {
             height: '1px',
-            background: 'linear-gradient(90deg, transparent 0%, rgba(99, 102, 241, 0.3) 20%, rgba(99, 102, 241, 0.3) 80%, transparent 100%)',
+            background: 'linear-gradient(90deg, transparent 0%, rgba(165, 201, 184, 0.4) 20%, rgba(165, 201, 184, 0.4) 80%, transparent 100%)',
             margin: '20px 0',
             border: 'none',
         };

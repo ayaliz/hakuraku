@@ -110,9 +110,6 @@ const MultiRacePage: React.FC = () => {
 
     return (
         <div className="multirace-container">
-            <h2 style={{ color: "#e2e8f0", marginBottom: "20px" }}>
-                Multi-Race Analysis
-            </h2>
 
             <RaceUploadZone
                 onFilesSelected={handleFilesSelected}
@@ -198,17 +195,6 @@ const MultiRacePage: React.FC = () => {
                 </>
             )}
 
-            {races.length === 0 && !isProcessing && (
-                <div className="empty-state">
-                    <div className="empty-state-icon"></div>
-                    <div className="empty-state-title">No races loaded yet</div>
-                    <div className="empty-state-text">
-                        Upload race JSON files above to start analyzing your race data.
-                        <br />
-                        You can drag and drop multiple files at once!
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

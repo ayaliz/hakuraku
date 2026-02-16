@@ -16,7 +16,7 @@ Grandparent 2:  [2, 6, 7, 10, 11, 14, 15, 17, 18, 21, 23, 25, 26, 29, 32, 34, 35
 
 For every overlapping value in the parent's array and either of the grandparent's arrays, 1 affinity is added.
 
-The parent has ID 10 in her array, so both grandparents sharing that yields +2 affinity. The parent's ID 147 win isn't shared, so it does nothing.
+The parent has ID 10 in her array, so both grandparents sharing that yields +2 total affinity. The parent's ID 147 win isn't shared, so it does nothing.
 
 ## win saddle IDs
 
@@ -27,7 +27,7 @@ We can look up the meaning of each win saddle ID by looking at category 111 in t
 
 As we can see, the parent array in the previous section includes epithets like Classic Triple Crown (`1`), as well as assorted single race wins like Arima Kinen (`10`).
 
-However, some oddities arise fairly quickly. For example, Takarazuka Kinen has an entry as both `14` and `147`. In the arrays from before, this exact issue exists — the parent ran the `147` version of Takarazuka Kinen, but the grandparents both ran the `14` version and as such won't get affinity.
+However, some oddities arise fairly quickly. For example, Takarazuka Kinen has an entry as both `14` and `147`. In the arrays from before, this exact issue exists - the parent ran the `147` version of Takarazuka Kinen, but the grandparents both ran the `14` version and as such won't get affinity.
 
 It turns out this happens when an Uma has a special career version of a race. In this case, McQueen's senior year Takarazuka Kinen career goal uses a custom version of the race made just for her. Winning it yields `147` instead of `14`.
 

@@ -105,8 +105,9 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     const accByIdx = useCurrentAcceleration(frames, interpolatedFrame.frameIndex);
 
     const frontRunnerDistance = interpolatedFrame.horseFrame.reduce((m: number, h: any) => Math.max(m, h?.distance ?? 0), 0);
-    const cameraWindow = 80, cameraLead = 8;
-    const xAxis = useMemo(() => ({ min: Math.max(0, Math.max(cameraWindow, Math.min(frontRunnerDistance, goalInX) + cameraLead) - cameraWindow), max: Math.max(cameraWindow, Math.min(frontRunnerDistance, goalInX) + cameraLead) }), [frontRunnerDistance, goalInX]);
+    const [cameraWindow, setCameraWindow] = useState(80);
+    const cameraLead = cameraWindow * 0.1;
+    const xAxis = useMemo(() => ({ min: Math.max(0, Math.max(cameraWindow, Math.min(frontRunnerDistance, goalInX) + cameraLead) - cameraWindow), max: Math.max(cameraWindow, Math.min(frontRunnerDistance, goalInX) + cameraLead) }), [frontRunnerDistance, goalInX, cameraWindow]);
 
     const horseInfoByIdx = useMemo(() => { const map: Record<number, any> = {}; (raceHorseInfo ?? []).forEach((h: any) => { const idx = (h.frame_order ?? h.frameOrder) - 1; if (idx >= 0) map[idx] = h; }); return map; }, [raceHorseInfo]);
 
@@ -201,6 +202,31 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     const raceMarkers = useMemo(() => { const td = selectedTrackId ? (GameDataLoader.courseData as Record<string, any>)[selectedTrackId] : undefined; return buildMarkLines(goalInX, raceData, displayNames, segMarkers, td); }, [goalInX, raceData, displayNames, segMarkers, selectedTrackId]);
     const courseLabelData = useMemo(() => buildCourseLabelItems(raceMarkers as MarkLine1DDataItemOption[], yMaxWithHeadroom), [raceMarkers, yMaxWithHeadroom]);
 
+    const sectionTickSeries = useMemo(() => {
+        if (!goalInX) return null;
+        return {
+            id: "section-ticks",
+            type: "scatter" as const,
+            silent: true,
+            z: 3,
+            clip: false,
+            tooltip: { show: false },
+            symbol: "rect",
+            symbolSize: [2, 10],
+            symbolOffset: [0, 5],
+            itemStyle: { color: "#888" },
+            label: {
+                show: true,
+                position: "bottom" as const,
+                distance: 8,
+                fontSize: 9,
+                color: "#888",
+                formatter: (params: any) => String(params.dataIndex + 1),
+            },
+            data: Array.from({ length: 24 }, (_, i) => [i * goalInX / 24, 0]),
+        };
+    }, [goalInX]);
+
     const positionKeepSeries = useMemo(() => {
         if (!toggles.positionKeep || !goalInX) return null;
         if (frontRunnerDistance >= (10 / 24) * goalInX) return null;
@@ -242,6 +268,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                 tooltip: { show: false }
             } : null,
             toggles.course ? markerSeries : null,
+            sectionTickSeries,
             positionKeepSeries,
             ...legendShadowSeries,
             horsesSeries as any,
@@ -271,7 +298,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
             } : null,
         ];
         return list.filter(Boolean);
-    }, [bgSeries, toggles.slopes, slopeRenderItem, slopeTriangles, toggles.course, markerSeries, positionKeepSeries, legendShadowSeries, horsesSeries, courseLabelData, toggles.skills, skillLabelData]);
+    }, [bgSeries, toggles.slopes, slopeRenderItem, slopeTriangles, toggles.course, markerSeries, sectionTickSeries, positionKeepSeries, legendShadowSeries, horsesSeries, courseLabelData, toggles.skills, skillLabelData]);
 
     const options: ECOption = useMemo(() => createOptions({
         xMin: xAxis.min,
@@ -587,6 +614,34 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                                     />
                                 ))}
                             </div>
+                        <div className="d-flex align-items-center mt-2" style={{ gap: 6 }}>
+                            <Form.Label className="mb-0" style={{ whiteSpace: "nowrap" }}>
+                                View window:
+                                <OverlayTrigger
+                                    placement="top"
+                                    overlay={
+                                        <Tooltip id="camera-window-tooltip">
+                                            Controls how many metres of the track are visible at once. The camera follows the frontmost character, with a 10% lead ahead of them.
+                                        </Tooltip>
+                                    }
+                                >
+                                    <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                                </OverlayTrigger>
+                            </Form.Label>
+                            <Form.Control
+                                type="number"
+                                min={20}
+                                max={400}
+                                step={10}
+                                value={cameraWindow}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                    const v = parseInt(e.target.value, 10);
+                                    if (!isNaN(v) && v >= 20 && v <= 400) setCameraWindow(v);
+                                }}
+                                style={{ width: 80 }}
+                            />
+                            <span style={{ color: "#aaa" }}>m</span>
+                        </div>
                         </div>
 
                     </div>

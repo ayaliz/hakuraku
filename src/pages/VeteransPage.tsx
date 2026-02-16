@@ -141,7 +141,7 @@ export default class VeteransPage extends React.Component<{}, VeteransPageState>
         };
 
         return (
-            <Container>
+            <Container style={{ paddingTop: 20 }}>
                 <div className="mb-5" style={{ position: 'relative' }}>
                     <Button variant="primary" onClick={this.handleUploadClick} style={{ marginRight: '1rem' }}>
                         Upload JSON

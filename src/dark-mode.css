@@ -1,46 +1,206 @@
 /* src/dark-mode.css */
+
+/* =============================================
+   Design Tokens
+   ============================================= */
+:root {
+  --haku-bg-0: #1a1d21;
+  --haku-bg-1: #212529;
+  --haku-bg-2: #2a2f36;
+  --haku-bg-3: #343a40;
+  --haku-border: rgba(75, 85, 99, 0.35);
+  --haku-border-accent: rgba(99, 102, 241, 0.45);
+  --haku-accent: #667eea;
+  --haku-accent-2: #764ba2;
+  --haku-text-primary: #f0f2f5;
+  --haku-text-secondary: #9ba3b0;
+  --haku-text-muted: #6b7280;
+  --haku-radius: 8px;
+  --haku-radius-lg: 12px;
+  --haku-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  --haku-shadow-lg: 0 4px 24px rgba(0,0,0,0.5);
+  --haku-transition: 0.18s ease;
+}
+
+/* =============================================
+   Base
+   ============================================= */
 body {
-  background-color: #212529;
-  color: #f8f9fa;
+  background-color: var(--haku-bg-0);
+  color: var(--haku-text-primary);
 }
 
 .card {
-  background-color: #343a40;
-  border-color: #454d55;
+  background-color: var(--haku-bg-2);
+  border-color: var(--haku-border);
 }
 
 .table {
-  color: #f8f9fa;
+  color: var(--haku-text-primary);
 }
 
 .table-bordered, .table-bordered td, .table-bordered th {
-  border-color: #454d55;
+  border-color: rgba(75, 85, 99, 0.3);
 }
 
 .table-hover tbody tr:hover {
-  color: #f8f9fa;
+  color: var(--haku-text-primary);
   background-color: rgba(255, 255, 255, 0.075);
 }
 
 .form-control {
-    background-color: #343a40;
-    color: #f8f9fa;
-    border-color: #454d55;
+  background-color: var(--haku-bg-3);
+  color: var(--haku-text-primary);
+  border-color: rgba(75, 85, 99, 0.5);
 }
 
 .form-control:focus {
-    background-color: #343a40;
-    color: #f8f9fa;
-    border-color: #80bdff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  background-color: var(--haku-bg-3);
+  color: var(--haku-text-primary);
+  border-color: var(--haku-accent);
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
 }
 
 .form-control[readonly] {
-    background-color: #343a40;
-    color: #f8f9fa;
+  background-color: var(--haku-bg-3);
+  color: var(--haku-text-primary);
 }
 
 .list-group-item {
-    background-color: #343a40;
-    border-color: #454d55;
+  background-color: var(--haku-bg-3);
+  border-color: var(--haku-border);
+}
+
+/* =============================================
+   Navbar
+   ============================================= */
+.haku-nav {
+  background: var(--haku-bg-1) !important;
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(90deg, #65D283, #a8e6b8) 1;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.35);
+}
+
+.haku-nav .navbar-brand {
+  font-weight: 700;
+  font-size: 1.2rem;
+  background: linear-gradient(135deg, #65D283, #a8e6b8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.03em;
+}
+
+.haku-nav .nav-link {
+  color: var(--haku-text-secondary) !important;
+  transition: color var(--haku-transition);
+}
+
+.haku-nav .nav-link:hover {
+  color: var(--haku-text-primary) !important;
+}
+
+/* =============================================
+   Page Header
+   ============================================= */
+.page-header {
+  padding: 28px 0 20px;
+  border-bottom: 1px solid var(--haku-border);
+  margin-bottom: 24px;
+}
+
+.page-header h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.page-header .page-subtitle {
+  color: var(--haku-text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* =============================================
+   Action Bar
+   ============================================= */
+.action-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background: var(--haku-bg-2);
+  border: 1px solid var(--haku-border);
+  border-radius: var(--haku-radius);
+  margin-bottom: 16px;
+}
+
+/* =============================================
+   Upload Zone
+   ============================================= */
+.upload-zone {
+  border: 2px dashed var(--haku-border-accent);
+  border-radius: var(--haku-radius-lg);
+  background: var(--haku-bg-2);
+  padding: 40px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--haku-transition), background var(--haku-transition);
+  margin-bottom: 16px;
+}
+
+.upload-zone:hover,
+.upload-zone.drag-over {
+  border-color: var(--haku-accent);
+  background: rgba(102, 126, 234, 0.07);
+}
+
+.upload-zone .upload-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  opacity: 0.6;
+}
+
+.upload-zone .upload-label {
+  color: var(--haku-text-secondary);
+  font-size: 0.95rem;
+}
+
+/* =============================================
+   Haku Table (unchanged)
+   ============================================= */
+.haku-table {
+  border-collapse: collapse;
+}
+
+.haku-table thead th {
+  background: linear-gradient(180deg, rgba(55, 65, 81, 0.9) 0%, rgba(31, 41, 55, 0.95) 100%) !important;
+  color: #e5e7eb !important;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  border-bottom: 2px solid rgba(99, 102, 241, 0.4) !important;
+  border-top: none !important;
+  white-space: nowrap;
+}
+
+.haku-table thead th:first-child { border-radius: 6px 0 0 0; }
+.haku-table thead th:last-child  { border-radius: 0 6px 0 0; }
+
+.haku-table tbody tr:nth-child(odd)  { background: rgba(30, 35, 44, 0.6); }
+.haku-table tbody tr:nth-child(even) { background: rgba(40, 45, 55, 0.6); }
+
+.haku-table tbody tr:hover {
+  background: rgba(99, 102, 241, 0.15);
+}
+
+.haku-table td,
+.haku-table th {
+  border-color: rgba(75, 85, 99, 0.3) !important;
+}
+
+/* Table list sidebar row hover (MasterData) */
+.table-row-hover:hover {
+  background: rgba(99, 102, 241, 0.12);
+  border-radius: 3px;
 }

@@ -255,12 +255,12 @@ function SqlBrowserTab() {
                             Run Query
                         </Button>
                         {' '}
-                        <Button variant="outline-primary" onClick={copyShareLink} disabled={!sql.trim()}>
+                        <Button variant="secondary" onClick={copyShareLink} disabled={!sql.trim()}>
                             {copied ? 'Copied!' : 'Share'}
                         </Button>
                         {' '}
                         <Dropdown as={ButtonGroup}>
-                            <Dropdown.Toggle variant="outline-info" disabled={!results || results.length === 0}>
+                            <Dropdown.Toggle variant="secondary" disabled={!results || results.length === 0}>
                                 Export
                             </Dropdown.Toggle>
                             <Dropdown.Menu>
@@ -284,8 +284,8 @@ function SqlBrowserTab() {
                         {results && results.length > 0 && (
                             <div style={{ maxHeight: '55vh', overflowY: 'auto', overflowX: 'auto', marginTop: '1rem' }}>
                                 {results.map((res, i) => (
-                                    <table key={i} className="table table-sm table-striped table-bordered" style={{ fontSize: '0.8rem' }}>
-                                        <thead className="thead-dark">
+                                    <table key={i} className="table table-sm table-bordered haku-table" style={{ fontSize: '0.8rem' }}>
+                                        <thead>
                                             <tr>
                                                 {res.columns.map((c) => (
                                                     <th key={c} onClick={() => handleColumnClick(c)} style={{ cursor: 'pointer' }} title="Find tables with this column">
@@ -484,7 +484,7 @@ function DiffViewer({ diff, collapsedTables, onToggleTable }: DiffViewerProps) {
                         </div>
                         {!collapsed && (
                             <div style={{ overflowX: 'auto' }}>
-                                <table className="table table-sm table-bordered mb-0" style={{ fontSize: '0.78rem' }}>
+                                <table className="table table-sm table-bordered haku-table mb-0" style={{ fontSize: '0.78rem' }}>
                                     <thead>
                                         <tr>
                                             <th style={{ width: 60 }}>Change</th>

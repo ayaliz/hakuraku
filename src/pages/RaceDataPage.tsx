@@ -25,6 +25,7 @@ type RaceDataPageState = {
     horseActVersion: string | undefined,
     isShared: boolean,
     raceType: string | undefined,
+    dragOver: boolean,
 };
 
 export default class RaceDataPage extends React.Component<{}, RaceDataPageState> {
@@ -48,6 +49,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
             horseActVersion: undefined,
             isShared: false,
             raceType: undefined,
+            dragOver: false,
         };
 
         this.fileInputRef = React.createRef();
@@ -476,11 +478,45 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
         }
     };
 
+    handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        this.setState({ dragOver: true });
+    };
+
+    handleDragLeave = () => {
+        this.setState({ dragOver: false });
+    };
+
+    handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        this.setState({ dragOver: false });
+        const file = e.dataTransfer.files?.[0];
+        if (!file) return;
+
+        if (!/\.json$/i.test(file.name)) {
+            alert('Please drop a .json file.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onerror = () => alert('Failed to read the file.');
+        reader.onload = () => {
+            try {
+                const text = String(reader.result ?? '');
+                const json = JSON.parse(text);
+                this.parseRaceJson(json);
+            } catch (err: any) {
+                this.setState({ error: `Failed to parse JSON: ${err.message}` });
+            }
+        };
+        reader.readAsText(file);
+    };
+
     render() {
-        const { error, shareStatus, shareKey, shareError, parsedRaceData } = this.state;
+        const { error, shareStatus, shareKey, shareError, parsedRaceData, dragOver } = this.state;
         const shareUrl = `${window.location.origin}${window.location.pathname}#/racedata?kv=${shareKey}`;
 
-        return <>
+        return <div style={{ paddingTop: 20 }}>
             <input
                 ref={this.fileInputRef}
                 type="file"
@@ -489,29 +525,42 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
                 onChange={this.handleFileChange}
             />
 
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '12px' }}>
-                <Button variant="info" size="sm" onClick={this.handleUploadClick}>
-                    Upload race
-                </Button>
-                <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => this.share(false)}
-                    disabled={shareStatus === 'sharing' || !parsedRaceData}
+            {!parsedRaceData ? (
+                <div
+                    className={`upload-zone${dragOver ? ' drag-over' : ''}`}
+                    onClick={this.handleUploadClick}
+                    onDragOver={this.handleDragOver}
+                    onDragLeave={this.handleDragLeave}
+                    onDrop={this.handleDrop}
                 >
-                    {shareStatus === 'sharing' ? 'Sharing...' : 'Share'}
-                </Button>
-                <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => this.share(true)}
-                    disabled={shareStatus === 'sharing' || !parsedRaceData}
-                >
-                    Share Anonymously
-                </Button>
-                {shareStatus === 'shared' && <ShareLinkBox shareUrl={shareUrl} />}
-                {shareError && <span className="text-danger" style={{ fontSize: '0.85rem' }}>{shareError}</span>}
-            </div>
+                    <div className="upload-icon">&#9650;</div>
+                    <div className="upload-label">Drop a .json race file here, or click to browse</div>
+                </div>
+            ) : (
+                <div className="action-bar">
+                    <Button variant="primary" size="sm" onClick={this.handleUploadClick}>
+                        Upload new race
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => this.share(false)}
+                        disabled={shareStatus === 'sharing'}
+                    >
+                        {shareStatus === 'sharing' ? 'Sharing...' : 'Share'}
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => this.share(true)}
+                        disabled={shareStatus === 'sharing'}
+                    >
+                        Share (anon)
+                    </Button>
+                    {shareStatus === 'shared' && <ShareLinkBox shareUrl={shareUrl} />}
+                    {shareError && <span className="text-danger" style={{ fontSize: '0.85rem' }}>{shareError}</span>}
+                </div>
+            )}
 
             {error && <div className="text-danger" style={{ marginBottom: '12px' }}>{error}</div>}
 
@@ -531,6 +580,6 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
                     Visit the <Link to="/setup">setup page</Link> if you don't know how to get your race data.
                 </Alert>
             )}
-        </>;
+        </div>;
     }
 }

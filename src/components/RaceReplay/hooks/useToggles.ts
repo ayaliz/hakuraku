@@ -1,11 +1,11 @@
 import React, { useReducer } from "react";
 
-type Toggles = { speed: boolean; accel: boolean; skills: boolean; slopes: boolean; blocked: boolean; course: boolean; positionKeep: boolean; hp: boolean; heuristics: boolean };
+type Toggles = { speed: boolean; accel: boolean; skills: boolean; slopes: boolean; blocked: boolean; course: boolean; positionKeep: boolean; hp: boolean; heuristics: boolean; skillDuration: boolean };
 
 export function useToggles(initial?: Partial<Toggles>) {
     const [t, set] = useReducer(
         (s: Toggles, a: Partial<Toggles>) => ({ ...s, ...a }),
-        { speed: false, accel: false, skills: true, slopes: true, blocked: true, course: true, positionKeep: false, hp: false, heuristics: false, ...(initial || {}) }
+        { speed: false, accel: false, skills: true, slopes: true, blocked: true, course: true, positionKeep: false, hp: false, heuristics: false, skillDuration: false, ...(initial || {}) }
     );
     const bind = (k: keyof Toggles) => ({
         checked: t[k],

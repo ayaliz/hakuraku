@@ -42,7 +42,7 @@ import { InterpolatedFrame } from "../RaceReplay.types";
 import { calculateTargetSpeed, getDistanceCategory } from "./speedCalculations";
 import { TrainedCharaData } from "../../../data/TrainedCharaData";
 
-import { getActiveSpeedModifier, getSkillBaseTime, getActiveSpeedDebuff } from "./SkillDataUtils";
+import { getActiveSpeedModifier, getSkillBaseTime, getSkillDurationSecs, getActiveSpeedDebuff } from "./SkillDataUtils";
 
 import AssetLoader from "../../../data/AssetLoader";
 
@@ -436,7 +436,8 @@ export function buildSkillLabels(
     passiveStatModifiers: Record<number, { speed: number; stamina: number; power: number; guts: number; wisdom: number }> | undefined,
     goalInX: number,
     accByIdx: Record<number, number>,
-    consumptionRateByIdx: Record<number, number>
+    consumptionRateByIdx: Record<number, number>,
+    showSkillDuration: boolean = false
 ) {
     const items: any[] = [];
 
@@ -458,27 +459,34 @@ export function buildSkillLabels(
 
 
         (skillActivations[i] ?? [])
-            .filter(s => { const dur = s.param?.[2]; const secs = dur > 0 ? dur / 10000 : 2; return time >= s.time && time < s.time + secs && !EXCLUDE_SKILL_RE.test(s.name); })
+            .filter(s => {
+                const dur = getSkillDurationSecs(s.param[1], goalInX, s.param?.[2]);
+                return time >= s.time && time < s.time + dur && !EXCLUDE_SKILL_RE.test(s.name);
+            })
             .sort((a, b) => a.time - b.time || a.name.localeCompare(b.name))
-            .forEach((s) => items.push({ value: base, id: `skill-${i}-${s.time}-${s.name}`, label: next(s.name) }));
+            .forEach((s) => {
+                const dur = getSkillDurationSecs(s.param[1], goalInX, s.param?.[2]);
+                const remaining = Math.max(0, s.time + dur - time);
+                const label = showSkillDuration ? `${s.name} ${remaining.toFixed(1)}s` : s.name;
+                items.push({ value: base, id: `skill-${i}-${s.time}-${s.name}`, label: next(label) });
+            });
 
         // Add incoming debuffs to labels
         Object.values(skillActivations ?? {}).flat()
             .filter(s => {
-                // Ensure it targets this horse 'i'
                 const targetMask = s.param?.[4] ?? 0;
                 if ((targetMask & (1 << i)) === 0) return false;
-
-                // Do not show for self-cast (handled above for buffs, or just avoid duplication)
                 if ((skillActivations[i] ?? []).some(self => self === s)) return false;
-
                 if (getActiveSpeedDebuff(s.param[1]) <= 0) return false;
-
-                const baseTime = getSkillBaseTime(s.param[1]);
-                const dur = baseTime > 0 ? (baseTime / 10000) * (goalInX / 1000) : 2.0;
+                const dur = getSkillDurationSecs(s.param[1], goalInX);
                 return time >= s.time && time < s.time + dur && !EXCLUDE_SKILL_RE.test(s.name);
             })
-            .forEach((s) => items.push({ value: base, id: `debuff-${i}-${s.time}-${s.name}`, label: next(`↓ ${s.name}`, "#ffcccb") }));
+            .forEach((s) => {
+                const dur = getSkillDurationSecs(s.param[1], goalInX);
+                const remaining = Math.max(0, s.time + dur - time);
+                const label = showSkillDuration ? `↓ ${s.name} ${remaining.toFixed(1)}s` : `↓ ${s.name}`;
+                items.push({ value: base, id: `debuff-${i}-${s.time}-${s.name}`, label: next(label, "#ffcccb") });
+            });
 
 
 

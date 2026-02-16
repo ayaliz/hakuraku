@@ -112,3 +112,12 @@ export function getSkillBaseTime(skillId: number): number {
     if (!def || !def.condition_groups || def.condition_groups.length === 0) return 0;
     return (def.condition_groups[0] as any).base_time ?? 0;
 }
+
+// Returns skill duration in seconds, derived from skill.json base_time * courseDistance/1000.
+// Falls back to param[2] (raw event data) if base_time is unavailable, then to 2s as a last resort.
+export function getSkillDurationSecs(skillId: number, courseDistance: number, fallbackParam?: number): number {
+    const baseTime = getSkillBaseTime(skillId);
+    if (baseTime > 0) return (baseTime / 10000) * (courseDistance / 1000);
+    if (fallbackParam != null && fallbackParam > 0) return fallbackParam / 10000;
+    return 2;
+}

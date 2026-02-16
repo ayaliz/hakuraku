@@ -5,12 +5,6 @@
     margin-bottom: 16px;
 }
 
-.section-header {
-    margin-bottom: 12px;
-    color: #9ca3af;
-    font-weight: 600;
-    font-size: 1.1rem;
-}
 
 .chara-table-wrapper {
     overflow-x: auto;
@@ -113,11 +107,6 @@
     color: #f3f4f6;
 }
 
-.chara-name-card {
-    font-size: 0.8em;
-    color: #9ca3af;
-    margin-left: 4px;
-}
 
 .chara-viewer-name {
     font-size: 0.75em;
@@ -162,9 +151,6 @@
     font-weight: 600;
 }
 
-.status-neutral {
-    color: #9ca3af;
-}
 
 /* Small badge styling */
 .mini-badge {
@@ -185,17 +171,6 @@
     color: #f87171;
 }
 
-/* Running style badge */
-.style-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(79, 70, 229, 0.15) 100%);
-    color: #a5b4fc;
-    border: 1px solid rgba(99, 102, 241, 0.25);
-}
 
 /* Info icon in headers */
 .header-info {
@@ -270,76 +245,6 @@
     background: rgba(255, 255, 255, 0.03);
 }
 
-/* Deck grid in expanded */
-.deck-mini-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-}
-
-.deck-mini-card {
-    text-align: center;
-}
-
-.deck-mini-card img {
-    width: 70px;
-    border-radius: 4px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-    transition: transform 0.15s;
-}
-
-.deck-mini-card:hover img {
-    transform: scale(1.05);
-}
-
-.deck-lb-label {
-    font-size: 0.7rem;
-    color: #9ca3af;
-    margin-top: 2px;
-}
-
-/* Parent group in expanded */
-.parent-mini-group {
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
-    padding: 10px;
-    margin-bottom: 8px;
-}
-
-.parent-icons-row {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 8px;
-}
-
-.parent-icons-row img {
-    width: 48px;
-    height: 48px;
-    object-fit: contain;
-    border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.factor-mini-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-}
-
-.factor-mini-badge {
-    font-size: 0.75rem;
-    padding: 2px 6px;
-    border-radius: 4px;
-    background: rgba(52, 58, 64, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.factor-stars {
-    color: #fbbf24;
-    font-weight: 600;
-    margin-left: 3px;
-}
 
 /* Responsive */
 @media (max-width: 768px) {

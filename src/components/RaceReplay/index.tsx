@@ -193,8 +193,9 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         passiveStatModifiers,
         goalInX,
         accByIdx,
-        consumptionRateByIdx
-    ), [interpolatedFrame, skillActivations, combinedOtherEvents, renderTime, horseInfoByIdx, trainerColors, displayNames, legendSelection, toggles.heuristics, trainedCharaByIdx, oonigeByIdx, trackSlopes, passiveStatModifiers, goalInX, accByIdx, consumptionRateByIdx]);
+        consumptionRateByIdx,
+        toggles.skillDuration
+    ), [interpolatedFrame, skillActivations, combinedOtherEvents, renderTime, horseInfoByIdx, trainerColors, displayNames, legendSelection, toggles.heuristics, trainedCharaByIdx, oonigeByIdx, trackSlopes, passiveStatModifiers, goalInX, accByIdx, consumptionRateByIdx, toggles.skillDuration]);
     const { straights, corners, straightsFinal, cornersFinal, segMarkers, slopeTriangles } = useCourseLayers(selectedTrackId, goalInX, yMaxWithHeadroom);
 
     const raceMarkers = useMemo(() => { const td = selectedTrackId ? (GameDataLoader.courseData as Record<string, any>)[selectedTrackId] : undefined; return buildMarkLines(goalInX, raceData, displayNames, segMarkers, td); }, [goalInX, raceData, displayNames, segMarkers, selectedTrackId]);
@@ -294,6 +295,24 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                         overlay={
                             <Tooltip id="skills-info-tooltip">
                                 Toggles popups above Umas' heads to display skill procs and assorted race events like dueling.
+                            </Tooltip>
+                        }
+                    >
+                        <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                    </OverlayTrigger>
+                </span>
+            )
+        },
+        {
+            id: "skillDuration" as const,
+            label: (
+                <span>
+                    Skill timers
+                    <OverlayTrigger
+                        placement="top"
+                        overlay={
+                            <Tooltip id="skill-duration-info-tooltip">
+                                Shows remaining duration in seconds on skill labels (e.g. "Groundwork 3.0s"). Requires Skill labels to be enabled.
                             </Tooltip>
                         }
                     >
@@ -552,7 +571,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                                 className="d-grid"
                                 style={{
                                     display: "grid",
-                                    gridTemplateColumns: "repeat(3, minmax(160px, auto))",
+                                    gridTemplateColumns: "repeat(4, minmax(160px, auto))",
                                     columnGap: TOOLBAR_INLINE_GAP,
                                     rowGap: 4,
                                 }}

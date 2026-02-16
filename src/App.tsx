@@ -13,6 +13,7 @@ import SetupGuidePage from './pages/SetupGuidePage';
 import VeteransPage from './pages/VeteransPage';
 import MasterDataPage from './pages/MasterDataPage';
 import NotesPage from './pages/NotesPage';
+import RaceDataPageOld from './pages/RaceDataPage_old';
 
 
 export default function App() {
@@ -43,6 +44,7 @@ export default function App() {
                         <Nav.Link as={Link} to="/masterdata">Master Data</Nav.Link>
                         <Nav.Link as={Link} to="/racedata">Race Analysis</Nav.Link>
                         <Nav.Link as={Link} to="/multirace">Multi-Race Analysis</Nav.Link>
+                        <Nav.Link as={Link} to="/racedata_old">Parse races [old]</Nav.Link>
                         <Nav.Link as={Link} to="/notes">Research Notes</Nav.Link>
                     </Nav>
                     <Nav className="ml-auto">
@@ -56,6 +58,9 @@ export default function App() {
             <Switch>
                 <Route path="/veterans">
                     <VeteransPage />
+                </Route>
+                <Route path="/racedata_old">
+                    <RaceDataPageOld />
                 </Route>
                 <Route path="/racedata">
                     <RaceDataPage />

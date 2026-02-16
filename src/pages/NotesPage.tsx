@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { useHistory, useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
@@ -45,6 +47,8 @@ function NoteCard({ entry, onClick }: { entry: NoteEntry; onClick: () => void })
 }
 
 export default function NotesPage() {
+    const { noteId } = useParams<{ noteId?: string }>();
+    const history = useHistory();
     const [notes, setNotes] = useState<NoteEntry[]>([]);
     const [selected, setSelected] = useState<NoteEntry | null>(null);
     const [markdown, setMarkdown] = useState('');
@@ -61,16 +65,22 @@ export default function NotesPage() {
             .then((data: NoteEntry[]) => {
                 setNotes(data);
                 setLoading(false);
+                if (noteId) {
+                    const entry = data.find((n: NoteEntry) => n.id === noteId);
+                    if (entry) openNote(entry, false);
+                }
             })
             .catch(err => {
                 setError(err.message);
                 setLoading(false);
             });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    function openNote(entry: NoteEntry) {
+    function openNote(entry: NoteEntry, pushHistory = true) {
         setSelected(entry);
         setMdLoading(true);
+        if (pushHistory) history.push(`/notes/${entry.id}`);
         fetch(process.env.PUBLIC_URL + '/notes/' + entry.filename)
             .then(r => {
                 if (!r.ok) throw new Error(`Failed to load note: ${r.status}`);
@@ -89,6 +99,7 @@ export default function NotesPage() {
     function backToList() {
         setSelected(null);
         setMarkdown('');
+        history.push('/notes');
     }
 
     if (loading) {
@@ -130,7 +141,7 @@ export default function NotesPage() {
                         lineHeight: 1.7,
                     }}>
                         <ReactMarkdown
-                            remarkPlugins={[remarkMath]}
+                            remarkPlugins={[remarkGfm, remarkMath]}
                             rehypePlugins={[rehypeKatex as any]}
                             components={{
                                 h1: ({ children }) => <h1 style={{ borderBottom: '1px solid var(--haku-border)', paddingBottom: 10, marginBottom: 20, color: 'var(--haku-text-primary)' }}>{children}</h1>,
@@ -139,6 +150,15 @@ export default function NotesPage() {
                                 p: ({ children }) => <p style={{ color: 'var(--haku-text-secondary)' }}>{children}</p>,
                                 li: ({ children }) => <li style={{ color: 'var(--haku-text-secondary)', marginBottom: 4 }}>{children}</li>,
                                 strong: ({ children }) => <strong style={{ color: 'var(--haku-text-primary)' }}>{children}</strong>,
+                                a: ({ href, children }) => {
+                                    const resolved = href?.startsWith('attachments/')
+                                        ? `${process.env.PUBLIC_URL}/notes/${href}`
+                                        : href;
+                                    return <a href={resolved} target="_blank" rel="noreferrer" style={{ color: 'var(--haku-accent)' }}>{children}</a>;
+                                },
+                                table: ({ children }) => <table style={{ borderCollapse: 'collapse', width: '100%', marginTop: 12, marginBottom: 12 }}>{children}</table>,
+                                th: ({ children }) => <th style={{ border: '1px solid var(--haku-border)', padding: '6px 12px', color: 'var(--haku-text-primary)', textAlign: 'center', backgroundColor: 'var(--haku-bg-3, rgba(255,255,255,0.05))' }}>{children}</th>,
+                                td: ({ children }) => <td style={{ border: '1px solid var(--haku-border)', padding: '5px 12px', color: 'var(--haku-text-secondary)', textAlign: 'center' }}>{children}</td>,
                                 code: ({ children, className }) => {
                                     const isBlock = className?.startsWith('language-');
                                     return isBlock ? (

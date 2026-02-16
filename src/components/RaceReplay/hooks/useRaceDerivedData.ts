@@ -216,9 +216,9 @@ export function useRaceDerivedData(
         };
         merge(hpZeroEvents);
         merge(spurtDelayEvents);
-        merge(heuristicEvents);
+        if (toggles.heuristics) merge(heuristicEvents);
         return combined;
-    }, [otherEvents, hpZeroEvents, spurtDelayEvents, heuristicEvents]);
+    }, [otherEvents, hpZeroEvents, spurtDelayEvents, heuristicEvents, toggles.heuristics]);
 
     return {
         horseInfoByIdx,

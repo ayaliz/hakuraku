@@ -1,6 +1,6 @@
-# Gallop.SingleModeUtils.CalcRelationPoint
+# SingleModeUtils.CalcRelationPoint
 
-This function is in charge of displaying triangle/circle/double circle as a benchmark for the total affinity of your parents.
+This function is in charge of calculating the total affinity of your parents/grandparents to decide whether to display triangle, circle or double circle affinity.
 
 ## Race bonus
 
@@ -16,11 +16,11 @@ Grandparent 2:  [2, 6, 7, 10, 11, 14, 15, 17, 18, 21, 23, 25, 26, 29, 32, 34, 35
 
 For every overlapping value in the parent's array and either of the grandparent's arrays, 1 affinity is added.
 
-The parent has ID 10 in her array, so both grandparents sharing that yields +2 affinity. The parent's ID 147 isn't shared, so it does nothing.
+The parent has ID 10 in her array, so both grandparents sharing that yields +2 affinity. The parent's ID 147 win isn't shared, so it does nothing.
 
 ## win saddle IDs
 
-Each value represents either a specific graded race win, or a pair of race wins.
+Each value represents either a specific graded race win, or a pair of race wins that are part of an epithet.
 We can look up the meaning of each win saddle ID by looking at category 111 in the text_data table:
 
 [text\_data WHERE category = 111](https://ayaliz.github.io/hakuraku//#/masterdata?q=SELECT+%22index%22%2C+%22text%22+FROM+%22text_data%22+WHERE+category+%3D+111)
@@ -31,4 +31,45 @@ However, some oddities arise fairly quickly. For example, Takarazuka Kinen has a
 
 It turns out this happens when an Uma has a special career version of a race. In this case, McQueen's senior year Takarazuka Kinen career goal uses a custom version of the race made just for her. Winning it yields `147` instead of `14`.
 
-Winning the Senior Spring Triple Crown on her similarly yields `145` instead of `4`, so that epithet's affinity is also lost if your grandparents have the normal version.
+Winning the Senior Spring Triple Crown (which includes Takarazuka Kinen) on her similarly yields `145` instead of `4`, so that epithet's affinity is also lost if your grandparents have the normal version.
+
+## Conclusion
+
+For the purposes of the client calculation of affinity totals, special versions of career races and epithets that include them do NOT overlap with the normal versions.
+
+This does not affect every single career race. In McQueen's case, only her Takarazuka Kinen is a custom race.
+
+Whether this actually has implications for your spark proc chances or is just a client bug is unclear. As far as I'm aware, no dataset testing this exists, or is likely to ever exist since we're talking about 1-2 affinity differences which would require a substantial amount of data to notice.
+
+## Verification
+
+If you'd like to verify this yourself, attach [CalcRelationPoint.ts](attachments/CalcRelationPoint.ts) as a Frida script to the game process and watch its output while selecting parents.
+
+In the case of the McQueen from before, selecting her as a parent for Seiun Sky yields:
+
+```
+[Relation] Total: 72 | Base: 54 | RaceBonus: 18
+```
+
+The 54 base value is expected for Seiun Sky with McQueen as a parent with Oguri Cap and El Condor Pasa as grandparents.
+
+The 18 RaceBonus is the result of the win_saddle_id arrays listed earlier:
+
+| ID | × Oguri Cap | × El Condor Pasa |
+|----|:-----------:|:----------------:|
+| 2  | -           | ✓                |
+| 5  | ✓           | -                |
+| 10 | ✓           | ✓                |
+| 11 | -           | ✓                |
+| 13 | ✓           | -                |
+| 15 | ✓           | ✓                |
+| 17 | ✓           | ✓                |
+| 18 | -           | ✓                |
+| 23 | ✓           | ✓                |
+| 25 | -           | ✓                |
+| 26 | ✓           | ✓                |
+| 27 | ✓           | -                |
+| 34 | -           | ✓                |
+| **Total** | **8** | **10** |
+
+8 + 10 = **18** race bonus affinity. The client is not counting McQueen's career Takarazuka Kinen as an overlapping race with the normal Takarazuka Kinens the other two umas ran.

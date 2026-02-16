@@ -1,7 +1,7 @@
 [
   {
     "id": "affinity",
-    "title": "Gallop.SingleModeUtils.CalcRelationPoint",
+    "title": "SingleModeUtils.CalcRelationPoint",
     "filename": "affinity.md",
     "date": "2026-02-16",
     "description": "How the game shows triangle/circle/double circle affinity."

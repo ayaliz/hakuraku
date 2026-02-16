@@ -74,6 +74,9 @@ export default function App() {
                 <Route path="/masterdata">
                     <MasterDataPage />
                 </Route>
+                <Route path="/notes/:noteId">
+                    <NotesPage />
+                </Route>
                 <Route path="/notes">
                     <NotesPage />
                 </Route>

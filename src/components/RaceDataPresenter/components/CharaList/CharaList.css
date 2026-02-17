@@ -246,6 +246,21 @@
 }
 
 
+/* Stat icon used in stats cell */
+.stat-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 2px;
+}
+
+/* Stat label wrapper (icon + value inline) */
+.stat-label-item {
+    margin-right: 8px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .chara-table {

@@ -1,9 +1,13 @@
-import { JsonViewer } from "@textea/json-viewer";
+import { JsonView, darkStyles, collapseAllNested } from "react-json-view-lite";
+const hakuJsonStyles = { ...darkStyles, container: 'haku-json-viewer' };
+import "react-json-view-lite/dist/index.css";
 import memoize from "memoize-one";
 import React from "react";
 import { Alert, Form } from "react-bootstrap";
+import { toJson } from "@bufbuild/protobuf";
 import {
     RaceSimulateData,
+    RaceSimulateDataSchema,
     RaceSimulateEventData_SimulateEventType,
 } from "../../data/race_data_pb";
 import {
@@ -177,13 +181,13 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
             <Form>
                 <Form.Group>
                     <Form.Label>Chara</Form.Label>
-                    <Form.Control as="select" custom
+                    <Form.Control as="select"
                         onChange={(e) => this.setState({ selectedCharaFrameOrder: e.target.value ? parseInt(e.target.value) : undefined })}>
                         <option value="">-</option>
                         {Object.entries(this.displayNames(this.props.raceHorseInfo, this.props.raceData))
                             .sort(([, a], [, b]) => a.localeCompare(b))
                             .map(([frameOrder, displayName]) => {
-                                return <option value={frameOrder}>{displayName}</option>;
+                                return <option key={frameOrder} value={frameOrder}>{displayName}</option>;
                             })}
                     </Form.Control>
                     <Form.Switch
@@ -226,7 +230,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 />
             }
             <hr />
-            <JsonViewer value={this.props.raceData.toJson()} defaultInspectDepth={1} theme="dark" />
+            <JsonView data={toJson(RaceSimulateDataSchema, this.props.raceData) as object} style={hakuJsonStyles} shouldExpandNode={collapseAllNested} />
         </div>;
     }
 }

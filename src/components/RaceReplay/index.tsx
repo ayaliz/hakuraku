@@ -18,6 +18,7 @@ import { Button, Form, OverlayTrigger, Tooltip } from "react-bootstrap";
 import type { MarkLine1DDataItemOption } from "echarts/types/src/component/marker/MarkLineModel";
 
 import { RaceReplayProps } from "./RaceReplay.types";
+import "./RaceReplay.css";
 import InfoHover from "./components/InfoHover";
 import {
     STRAIGHT_FILL,
@@ -326,7 +327,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                             </Tooltip>
                         }
                     >
-                        <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                        <span className="toggle-info-icon">ⓘ</span>
                     </OverlayTrigger>
                 </span>
             )
@@ -344,7 +345,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                             </Tooltip>
                         }
                     >
-                        <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                        <span className="toggle-info-icon">ⓘ</span>
                     </OverlayTrigger>
                 </span>
             )
@@ -362,7 +363,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                             </Tooltip>
                         }
                     >
-                        <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                        <span className="toggle-info-icon">ⓘ</span>
                     </OverlayTrigger>
                 </span>
             )
@@ -380,7 +381,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                             </Tooltip>
                         }
                     >
-                        <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                        <span className="toggle-info-icon">ⓘ</span>
                     </OverlayTrigger>
                 </span>
             )
@@ -398,7 +399,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                             </Tooltip>
                         }
                     >
-                        <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                        <span className="toggle-info-icon">ⓘ</span>
                     </OverlayTrigger>
                 </span>
             )
@@ -416,7 +417,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                             </Tooltip>
                         }
                     >
-                        <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                        <span className="toggle-info-icon">ⓘ</span>
                     </OverlayTrigger>
                 </span>
             )
@@ -434,7 +435,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                             </Tooltip>
                         }
                     >
-                        <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                        <span className="toggle-info-icon">ⓘ</span>
                     </OverlayTrigger>
                 </span>
             )
@@ -452,7 +453,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                             </Tooltip>
                         }
                     >
-                        <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                        <span className="toggle-info-icon">ⓘ</span>
                     </OverlayTrigger>
                 </span>
             )
@@ -470,7 +471,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                             </Tooltip>
                         }
                     >
-                        <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                        <span className="toggle-info-icon">ⓘ</span>
                     </OverlayTrigger>
                 </span>
             )
@@ -488,7 +489,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                             </Tooltip>
                         }
                     >
-                        <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                        <span className="toggle-info-icon">ⓘ</span>
                     </OverlayTrigger>
                 </span>
             )
@@ -626,7 +627,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                                         </Tooltip>
                                     }
                                 >
-                                    <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                                    <span className="toggle-info-icon">ⓘ</span>
                                 </OverlayTrigger>
                             </Form.Label>
                             <Form.Control
@@ -667,15 +668,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                                         if (e.key === "Enter") handleFrameJump();
                                         if (e.key === "Escape") setIsEditingFrame(false);
                                     }}
-                                    style={{
-                                        width: "60px",
-                                        backgroundColor: "#333",
-                                        color: "#fff",
-                                        border: "1px solid #555",
-                                        borderRadius: "4px",
-                                        padding: "0 4px",
-                                        fontSize: "inherit",
-                                    }}
+                                    className="frame-input-inline"
                                 />
                             ) : (
                                 <span
@@ -683,7 +676,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                                         setTempFrameInput(interpolatedFrame.frameIndex.toString());
                                         setIsEditingFrame(true);
                                     }}
-                                    style={{ cursor: "pointer", textDecoration: "underline", textDecorationStyle: "dotted" }}
+                                    className="frame-number-clickable"
                                     title="Click to jump to frame"
                                 >
                                     {interpolatedFrame.frameIndex}
@@ -697,7 +690,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                                     </Tooltip>
                                 }
                             >
-                                <span style={{ marginLeft: 5, cursor: "help", borderBottom: "1px dotted #aaa" }}>ⓘ</span>
+                                <span className="toggle-info-icon">ⓘ</span>
                             </OverlayTrigger>
                         </span>
 

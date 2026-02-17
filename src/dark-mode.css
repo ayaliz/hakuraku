@@ -279,3 +279,15 @@ body {
   background: rgba(99, 102, 241, 0.12);
   border-radius: 3px;
 }
+
+.haku-json-viewer {
+  line-height: 1.2;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  background: var(--haku-bg-1);
+  border: 1px solid var(--haku-border);
+  border-radius: var(--haku-radius);
+  padding: 12px;
+  font-size: 0.875rem;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}

@@ -35,16 +35,19 @@ def pack_json():
 
 def copy_images():
     out_dir = PROJECT_ROOT / "public" / "assets"
-    if out_dir.exists():
-        shutil.rmtree(out_dir)
     count = 0
+    skipped = 0
     for path in sorted(ASSETS_DIR.rglob("*.png")):
         rel = path.relative_to(ASSETS_DIR)
+        webp_dest = out_dir / rel.with_suffix(".webp")
+        if webp_dest.exists():
+            skipped += 1
+            continue
         dest = out_dir / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(path, dest)
         count += 1
-    print(f"  Copied {count} image files to {out_dir}")
+    print(f"  Copied {count} new image files to {out_dir} ({skipped} skipped, webp already present)")
 
 
 def main():

@@ -1,10 +1,14 @@
-import { JsonViewer } from "@textea/json-viewer";
+import { JsonView, darkStyles, collapseAllNested } from "react-json-view-lite";
+const hakuJsonStyles = { ...darkStyles, container: 'haku-json-viewer' };
+import "react-json-view-lite/dist/index.css";
 import { computeOtherEvents } from "../RaceReplay/utils/analysisUtils";
 import memoize from "memoize-one";
 import React from "react";
 import { Alert, Form } from "react-bootstrap";
+import { toJson } from "@bufbuild/protobuf";
 import {
     RaceSimulateData,
+    RaceSimulateDataSchema,
 } from "../../data/race_data_pb";
 import {
     filterCharaSkills,
@@ -21,7 +25,6 @@ import {
 
 import RaceReplay from "../RaceReplay/index";
 
-const JsonViewerAny = JsonViewer as any;
 
 const supportedRaceDataVersion = 100000002;
 
@@ -147,7 +150,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
             <div className="chara-analysis-section">
                 <Form>
                     <Form.Group>
-                        <Form.Control as="select" custom
+                        <Form.Control as="select"
                             onChange={(e) => this.setState({ selectedCharaFrameOrder: e.target.value ? parseInt(e.target.value) : undefined })}>
                             <option value="">Select Character</option>
                             {Object.entries(this.displayNames(this.props.raceHorseInfo, this.props.raceData))
@@ -199,7 +202,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
 
             <div style={sectionDividerStyle} />
 
-            <JsonViewerAny value={this.props.raceData.toJson()} defaultInspectDepth={1} theme="dark" />
+            <JsonView data={toJson(RaceSimulateDataSchema, this.props.raceData) as object} style={hakuJsonStyles} shouldExpandNode={collapseAllNested} />
         </div>;
     }
 }

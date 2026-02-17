@@ -1,4 +1,3 @@
-import React from "react";
 import { RaceSimulateData } from "../../data/race_data_pb";
 
 export type RaceReplayProps = {
@@ -8,8 +7,6 @@ export type RaceReplayProps = {
     skillActivations: Record<number, { time: number; name: string; param: number[] }[]>;
     otherEvents: Record<number, { time: number; duration: number; name: string }[]>;
     trainerColors?: Record<number, string>;
-    infoTitle?: string;
-    infoContent?: React.ReactNode;
     detectedCourseId?: number;
     onTrackChange?: (courseId: number | undefined) => void;
 };

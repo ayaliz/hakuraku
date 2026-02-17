@@ -160,7 +160,7 @@ const MultiRacePage: React.FC = () => {
 
                             <Tab.Content>
                                 {trackGroups.map((group) => (
-                                    <Tab.Pane key={group.courseId} eventKey={`track-${group.courseId}`}>
+                                    <Tab.Pane key={group.courseId} eventKey={`track-${group.courseId}`} transition={false}>
                                         <div className="hp-spurt-analysis-section" style={{ marginBottom: '30px' }}>
                                             <h4 style={{ color: "#e2e8f0", marginBottom: "15px" }}>
                                                 Personal character analysis

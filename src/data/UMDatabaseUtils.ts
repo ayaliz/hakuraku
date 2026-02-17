@@ -1,4 +1,3 @@
-import {AllTypeaheadOwnAndInjectedProps} from "react-bootstrap-typeahead";
 import {toKatakana, toRomaji} from "wanakana";
 import {Chara, SupportCard} from './data_pb';
 import {RaceSimulateHorseResultData_RunningStyle} from "./race_data_pb";
@@ -23,11 +22,6 @@ export function getPopularityMark(n: number) {
     return `${n}${mark}`;
 }
 
-export function charaTypeaheadMatcher(option: Chara, props: AllTypeaheadOwnAndInjectedProps<Chara>) {
-    const labelKey = charaNameWithIdAndCast(option);
-    return normalizeRomaji(labelKey).indexOf(normalizeRomaji(props.text)) !== -1 ||
-        normalizeKatakana(labelKey).indexOf(normalizeKatakana(props.text)) !== -1;
-}
 
 export function formatTime(time: number): string {
     const min = Math.floor(time / 60);

@@ -208,7 +208,7 @@ const HpDistributionModal: React.FC<Props> = ({ isOpen, onClose, title, data }) 
     }, []);
 
     return (
-        <Modal show={isOpen} onHide={onClose} centered size="xl" contentClassName="bg-dark text-light border-secondary">
+        <Modal show={isOpen} onHide={onClose} centered size="xl" contentClassName="bg-dark text-light border-secondary" animation={false}>
             <Modal.Header closeButton className="border-secondary">
                 <Modal.Title style={{ fontSize: '1.2rem' }}>{title}</Modal.Title>
             </Modal.Header>

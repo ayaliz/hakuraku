@@ -18,6 +18,7 @@ import { Button, Form, OverlayTrigger, Tooltip } from "react-bootstrap";
 import type { MarkLine1DDataItemOption } from "echarts/types/src/component/marker/MarkLineModel";
 
 import { RaceReplayProps } from "./RaceReplay.types";
+import InfoHover from "./components/InfoHover";
 import {
     STRAIGHT_FILL,
     CORNER_FILL,
@@ -36,7 +37,6 @@ import { useCourseLayers, slopeRenderItemFactory } from "./hooks/useCourseLayers
 import { useToggles } from "./hooks/useToggles";
 import { useRaceDerivedData } from "./hooks/useRaceDerivedData";
 import { useRaceExport } from "./hooks/useRaceExport";
-import InfoHover from "./components/InfoHover";
 import LegendItem from "./components/LegendItem";
 import ClipMaker from "./components/ClipMaker";
 import {
@@ -71,8 +71,6 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     skillActivations,
     otherEvents,
     trainerColors,
-    infoTitle,
-    infoContent,
     detectedCourseId,
     onTrackChange,
 }) => {
@@ -324,7 +322,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                         placement="top"
                         overlay={
                             <Tooltip id="skills-info-tooltip">
-                                Toggles popups above Umas' heads to display skill procs and assorted race events like dueling.
+                                Toggles popups above Umas' heads to display skill procs and assorted race events like dueling. Skills with no duration (e.g. Swinging Maestro) are shown for 2 seconds.
                             </Tooltip>
                         }
                     >
@@ -741,7 +739,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                     <span className="ms-3">{clampedRenderTime.toFixed(2)}s / {endTime.toFixed(2)}s</span>
                 </div>
                 <div className="ms-3">
-                    <InfoHover title={infoTitle} content={infoContent} />
+                    <InfoHover />
                 </div>
             </div>
         </div>

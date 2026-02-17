@@ -72,7 +72,7 @@ const VeteranCard: React.FC<VeteranCardProps> = ({ veteran, config }) => {
                                             {group.map((factor, idx) => (
                                                 <Badge
                                                     key={idx}
-                                                    variant="secondary"
+                                                    bg="secondary"
                                                     className="mb-1"
                                                     style={{ fontSize: '0.9rem', backgroundColor: '#4a4a4a', marginRight: '0.5rem' }}
                                                 >

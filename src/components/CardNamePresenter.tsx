@@ -12,7 +12,7 @@ export default function CardNamePresenter(props: CardNamePresenterProps) {
     </Tooltip>;
 
     return <OverlayTrigger overlay={renderTooltip}>
-        <Badge variant="secondary">
+        <Badge bg="secondary">
             {props.cardId}
         </Badge>
     </OverlayTrigger>;

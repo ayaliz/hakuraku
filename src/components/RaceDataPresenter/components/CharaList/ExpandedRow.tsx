@@ -41,8 +41,8 @@ const ParentGroup = ({ parents }: { parents: ParentEntry[], groupName: string })
                     return (
                         <Badge
                             key={fIdx}
-                            variant="dark"
-                            className="mb-1 mr-1"
+                            bg="dark"
+                            className="mb-1 me-1"
                             style={{
                                 marginRight: '3px',
                                 backgroundColor: '#343a40',

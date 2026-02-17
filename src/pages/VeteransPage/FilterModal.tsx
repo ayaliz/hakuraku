@@ -65,7 +65,7 @@ export default class FilterModal extends React.Component<FilterModalProps, Filte
         const currentStars = this.state.stars > maxStars ? maxStars : this.state.stars;
 
         return (
-            <Modal show={this.props.show} onHide={this.props.onHide} contentClassName="bg-dark text-light">
+            <Modal show={this.props.show} onHide={this.props.onHide} contentClassName="bg-dark text-light" animation={false}>
                 <Modal.Header closeButton className="bg-dark text-light border-secondary">
                     <Modal.Title>{this.props.title}</Modal.Title>
                 </Modal.Header>

@@ -50,7 +50,7 @@ const ParentGroup = ({ parents }: { parents: ParentEntry[] }) => {
                     return (
                         <span
                             key={fIdx}
-                            className="mb-1 mr-1 badge badge-dark"
+                            className="mb-1 me-1 badge text-bg-dark"
                             style={{
                                 marginRight: '3px',
                                 backgroundColor: '#343a40',

@@ -13,7 +13,6 @@ export function useRaceDerivedData(
     otherEvents: Record<number, any[]>,
     goalInX: number,
     selectedTrackId: string | null,
-    interpolatedFrame: any,
     toggles: { heuristics: boolean }
 ) {
     const horseInfoByIdx = useMemo(() => {
@@ -77,24 +76,6 @@ export function useRaceDerivedData(
         }
         return events;
     }, [frames]);
-
-    const consumptionRateByIdx = useMemo(() => {
-        const map: Record<number, number> = {};
-        const i = interpolatedFrame.frameIndex;
-        const f0 = frames[i];
-        const f1 = frames[i + 1];
-        if (!f0 || !f1) return map;
-        const dt = (f1.time ?? 0) - (f0.time ?? 0);
-        if (dt <= 1e-9) return map;
-
-        (f0.horseFrame ?? []).forEach((h0: any, idx: number) => {
-            const h1 = f1.horseFrame?.[idx];
-            if (!h0 || !h1) return;
-            const dh = (h0.hp ?? 0) - (h1.hp ?? 0);
-            map[idx] = dh / dt;
-        });
-        return map;
-    }, [frames, interpolatedFrame.frameIndex]);
 
     const spurtDelayEvents = useMemo(() => {
         const events: Record<number, { time: number; duration: number; name: string }[]> = {};
@@ -201,7 +182,7 @@ export function useRaceDerivedData(
         passiveStatModifiers,
         skillActivations,
         otherEvents,
-        consumptionRateByIdx,
+        {},
         lastSpurtStartDistances,
         selectedTrackId ? +selectedTrackId : undefined
     );
@@ -223,7 +204,6 @@ export function useRaceDerivedData(
     return {
         horseInfoByIdx,
         maxHpByIdx,
-        consumptionRateByIdx,
         trainedCharaByIdx,
         oonigeByIdx,
         lastSpurtStartDistances,

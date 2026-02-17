@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import EChartsReactCore from "echarts-for-react/lib/core";
 import {
     ScatterChart,
@@ -31,7 +31,7 @@ import {
 import { clamp } from "./RaceReplay.utils";
 import { useRafPlayer } from "./hooks/useRafPlayer";
 import { useInterpolatedFrame } from "./hooks/useInterpolatedFrame";
-import { useCurrentAcceleration } from "./hooks/useCurrentAcceleration";
+import { useCanvasOverlay } from "./hooks/useCanvasOverlay";
 import { useAvailableTracks } from "./hooks/useAvailableTracks";
 import { useGuessTrack } from "./hooks/useGuessTrack";
 import { useCourseLayers, slopeRenderItemFactory } from "./hooks/useCourseLayers";
@@ -43,8 +43,6 @@ import ClipMaker from "./components/ClipMaker";
 import {
     createOptions,
     buildLegendShadowSeries,
-    buildHorsesCustomSeries,
-    buildSkillLabels,
     buildCourseLabelItems,
     buildMarkLines,
     noTooltipScatter,
@@ -77,7 +75,10 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
 }) => {
     const frames = useMemo(() => raceData.frame ?? [], [raceData]);
     const startTime = frames[0]?.time ?? 0, endTime = frames[frames.length - 1]?.time ?? 0;
-    const { time: renderTime, setTime: setRenderTime, isPlaying, setIsPlaying, playPause, setPlaybackRate } = useRafPlayer(startTime, endTime);
+    // Stable forwarding callback so useRafPlayer can be declared before useRafChartUpdate
+    const tickRef = useRef<((t: number) => void) | undefined>(undefined);
+    const onFrame = useCallback((t: number) => tickRef.current?.(t), []);
+    const { time: renderTime, setTime: setRenderTime, isPlaying, setIsPlaying, playPause, setPlaybackRate } = useRafPlayer(startTime, endTime, onFrame);
 
 
 
@@ -99,17 +100,10 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     }, [selectedTrackId, onTrackChange]);
 
     const maxLanePosition = useMemo(() => frames.reduce((m, f) => Math.max(m, (f.horseFrame ?? []).reduce((mm: number, h: any) => Math.max(mm, h?.lanePosition ?? 0), 0)), 0), [frames]);
+    // Used only for frame counter display and keyboard handler — throttled to ~15fps via React state
     const interpolatedFrame = useInterpolatedFrame(frames, renderTime);
 
-    const accByIdx = useCurrentAcceleration(frames, interpolatedFrame.frameIndex);
-
-    const frontRunnerDistance = interpolatedFrame.horseFrame.reduce((m: number, h: any) => Math.max(m, h?.distance ?? 0), 0);
     const [cameraWindow, setCameraWindow] = useState(80);
-    const xAxis = useMemo(() => {
-        const lead = cameraWindow * 0.1;
-        const front = Math.min(frontRunnerDistance, goalInX) + lead;
-        return { min: Math.max(0, Math.max(cameraWindow, front) - cameraWindow), max: Math.max(cameraWindow, front) };
-    }, [frontRunnerDistance, goalInX, cameraWindow]);
 
     const horseInfoByIdx = useMemo(() => { const map: Record<number, any> = {}; (raceHorseInfo ?? []).forEach((h: any) => { const idx = (h.frame_order ?? h.frameOrder) - 1; if (idx >= 0) map[idx] = h; }); return map; }, [raceHorseInfo]);
 
@@ -117,7 +111,6 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
 
     const {
         maxHpByIdx,
-        consumptionRateByIdx,
         trainedCharaByIdx,
         oonigeByIdx,
         lastSpurtStartDistances,
@@ -132,7 +125,6 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         otherEvents,
         goalInX,
         selectedTrackId,
-        interpolatedFrame,
         toggles
     );
 
@@ -148,57 +140,39 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     }, [raceData.horseResult]);
 
     const echartsRef = React.useRef<any>(null);
-    const { isExporting, handleExport } = useRaceExport(echartsRef, renderTime, isPlaying, playPause, setRenderTime);
+    const canvasRef = React.useRef<HTMLCanvasElement>(null);
+    const { isExporting, handleExport } = useRaceExport(echartsRef, canvasRef, renderTime, isPlaying, playPause, setRenderTime);
     const legendShadowSeries = useMemo(() => buildLegendShadowSeries(displayNames, horseInfoByIdx, trainerColors), [displayNames, horseInfoByIdx, trainerColors]);
-    const horsesSeries = useMemo(
-        () =>
-            buildHorsesCustomSeries(
-                interpolatedFrame,
-                displayNames,
-                horseInfoByIdx,
-                trainerColors,
-                legendSelection,
-                toggles.speed,
-                toggles.accel,
-                accByIdx,
-                toggles.blocked,
-                toggles.hp,
-                maxHpByIdx,
-                goalInX,
-                consumptionRateByIdx,
-                trainedCharaByIdx,
-                oonigeByIdx,
-                lastSpurtStartDistances,
-                trackSlopes,
-                skillActivations,
-                passiveStatModifiers,
-                combinedOtherEvents,
-                selectedTrackId ? +selectedTrackId : undefined,
-                startDelayByIdx
-            ),
-        [interpolatedFrame, displayNames, horseInfoByIdx, trainerColors, legendSelection, toggles.speed, toggles.accel, accByIdx, toggles.blocked, toggles.hp, maxHpByIdx, goalInX, consumptionRateByIdx, trainedCharaByIdx, oonigeByIdx, lastSpurtStartDistances, trackSlopes, skillActivations, passiveStatModifiers, combinedOtherEvents, selectedTrackId, startDelayByIdx]
-    );
 
     const yMaxWithHeadroom = maxLanePosition + 3;
-    const skillLabelData = useMemo(() => buildSkillLabels(
-        interpolatedFrame,
-        skillActivations,
-        combinedOtherEvents,
-        renderTime,
+
+    const { tick, interpolatedFrameRef, xAxisRef } = useCanvasOverlay(echartsRef, canvasRef, {
+        frames,
+        displayNames,
         horseInfoByIdx,
         trainerColors,
-        displayNames,
         legendSelection,
-        toggles.heuristics,
+        toggles,
+        maxHpByIdx,
+        goalInX,
         trainedCharaByIdx,
         oonigeByIdx,
+        lastSpurtStartDistances,
         trackSlopes,
+        skillActivations,
         passiveStatModifiers,
-        goalInX,
-        accByIdx,
-        consumptionRateByIdx,
-        toggles.skillDuration
-    ), [interpolatedFrame, skillActivations, combinedOtherEvents, renderTime, horseInfoByIdx, trainerColors, displayNames, legendSelection, toggles.heuristics, trainedCharaByIdx, oonigeByIdx, trackSlopes, passiveStatModifiers, goalInX, accByIdx, consumptionRateByIdx, toggles.skillDuration]);
+        combinedOtherEvents,
+        selectedTrackId,
+        startDelayByIdx,
+        cameraWindow,
+        yMaxWithHeadroom,
+    });
+    tickRef.current = tick;
+
+    useEffect(() => {
+        if (frames.length > 0) tick(frames[0].time ?? 0);
+    }, [frames, tick]);
+
     const { straights, corners, straightsFinal, cornersFinal, segMarkers, slopeTriangles } = useCourseLayers(selectedTrackId, goalInX, yMaxWithHeadroom);
 
     const raceMarkers = useMemo(() => { const td = selectedTrackId ? (GameDataLoader.courseData as Record<string, any>)[selectedTrackId] : undefined; return buildMarkLines(goalInX, raceData, displayNames, segMarkers, td); }, [goalInX, raceData, displayNames, segMarkers, selectedTrackId]);
@@ -229,11 +203,11 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         };
     }, [goalInX]);
 
+    // Placeholder series for React options — imperative path updates markArea data every frame
     const positionKeepSeries = useMemo(() => {
         if (!toggles.positionKeep || !goalInX) return null;
-        if (frontRunnerDistance >= (10 / 24) * goalInX) return null;
-        return buildPositionKeepSeries(frontRunnerDistance, goalInX, yMaxWithHeadroom);
-    }, [toggles.positionKeep, goalInX, frontRunnerDistance, yMaxWithHeadroom]);
+        return { id: "position-keep-areas", type: "scatter" as const, silent: true, data: [], markArea: { silent: true, data: [] } };
+    }, [toggles.positionKeep, goalInX]);
 
     const bgSeries = useMemo(() => [
         { id: "bg-straights", fill: STRAIGHT_FILL, data: straights },
@@ -273,7 +247,6 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
             sectionTickSeries,
             positionKeepSeries,
             ...legendShadowSeries,
-            horsesSeries as any,
             toggles.course ? {
                 id: "course-labels",
                 type: "scatter",
@@ -287,29 +260,19 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                 clip: false,
                 labelLayout: { moveOverlap: "shiftY" as const }
             } : null,
-            toggles.skills ? {
-                id: "skills-overlay",
-                type: "scatter",
-                data: skillLabelData,
-                symbolSize: 0,
-                z: 10,
-                zlevel: 1,
-                animation: false,
-                silent: true,
-                tooltip: { show: false }
-            } : null,
         ];
         return list.filter(Boolean);
-    }, [bgSeries, toggles.slopes, slopeRenderItem, slopeTriangles, toggles.course, markerSeries, sectionTickSeries, positionKeepSeries, legendShadowSeries, horsesSeries, courseLabelData, toggles.skills, skillLabelData]);
+    }, [bgSeries, toggles.slopes, slopeRenderItem, slopeTriangles, toggles.course, markerSeries, sectionTickSeries, positionKeepSeries, legendShadowSeries, courseLabelData]);
 
     const options: ECOption = useMemo(() => createOptions({
-        xMin: xAxis.min,
-        xMax: xAxis.max,
+        xMin: xAxisRef.current.min,
+        xMax: xAxisRef.current.max,
         yMax: yMaxWithHeadroom,
         series: seriesList as ECOption["series"],
         legendNames,
         legendSelection,
-    }), [xAxis.min, xAxis.max, yMaxWithHeadroom, seriesList, legendNames, legendSelection]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }), [cameraWindow, yMaxWithHeadroom, seriesList, legendNames, legendSelection]);
 
     const clampedRenderTime = clamp(renderTime, startTime, endTime);
 
@@ -504,13 +467,13 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
             if (isEditingFrame) return;
             if (e.key === "ArrowUp") {
                 e.preventDefault();
-                const currentIdx = interpolatedFrame.frameIndex;
+                const currentIdx = interpolatedFrameRef.current.frameIndex;
                 if (currentIdx < frames.length - 1) {
                     setRenderTime(frames[currentIdx + 1].time ?? 0);
                 }
             } else if (e.key === "ArrowDown") {
                 e.preventDefault();
-                const currentIdx = interpolatedFrame.frameIndex;
+                const currentIdx = interpolatedFrameRef.current.frameIndex;
                 if (currentIdx > 0) {
                     setRenderTime(frames[currentIdx - 1].time ?? 0);
                 }
@@ -540,7 +503,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
             window.removeEventListener("keydown", handleKeyDown);
             window.removeEventListener("keyup", handleKeyUp);
         };
-    }, [frames, interpolatedFrame.frameIndex, isEditingFrame, setIsPlaying, setPlaybackRate, setRenderTime]);
+    }, [frames, interpolatedFrameRef, isEditingFrame, setIsPlaying, setPlaybackRate, setRenderTime]);
 
     // Frame jumping and edit logic
     const handleFrameJump = () => {
@@ -706,16 +669,22 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                 </div>
             )}
 
-            <EChartsReactCore
-                ref={echartsRef}
-                echarts={echarts}
-                option={options}
-                style={{ height: "500px" }}
-                notMerge={true}
-                lazyUpdate={true}
-                theme="dark"
-                onEvents={onEvents}
-            />
+            <div style={{ position: "relative", height: "500px" }}>
+                <EChartsReactCore
+                    ref={echartsRef}
+                    echarts={echarts}
+                    option={options}
+                    style={{ height: "500px", width: "100%" }}
+                    notMerge={true}
+                    lazyUpdate={true}
+                    theme="dark"
+                    onEvents={onEvents}
+                />
+                <canvas
+                    ref={canvasRef}
+                    style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none" }}
+                />
+            </div>
 
             <div className="d-flex align-items-center justify-content-between mt-2">
                 <div className="d-flex align-items-center flex-grow-1">

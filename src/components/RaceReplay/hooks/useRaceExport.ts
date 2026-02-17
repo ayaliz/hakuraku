@@ -1,7 +1,9 @@
 import { useState } from "react";
+import type { RefObject } from "react";
 
 export function useRaceExport(
     echartsRef: any,
+    overlayCanvasRef: RefObject<HTMLCanvasElement | null>,
     renderTime: number,
     isPlaying: boolean,
     playPause: () => void,
@@ -81,6 +83,9 @@ export function useRaceExport(
                 canvases.forEach((c: HTMLCanvasElement) => {
                     ctx.drawImage(c, 0, 0);
                 });
+                if (overlayCanvasRef.current) {
+                    ctx.drawImage(overlayCanvasRef.current, 0, 0, width * dpr, height * dpr);
+                }
 
                 const frame = new VideoFrame(destCanvas, { timestamp: frameCount * (1000000 / fps) });
 

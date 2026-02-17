@@ -2,14 +2,15 @@
 import struct from "@aksel/structjs";
 import {Base64} from "js-base64";
 import pako from "pako";
+import { create } from "@bufbuild/protobuf";
 import {
-    RaceSimulateData,
-    RaceSimulateData_EventDataWrapper,
-    RaceSimulateEventData,
-    RaceSimulateFrameData,
-    RaceSimulateHeaderData,
-    RaceSimulateHorseFrameData,
-    RaceSimulateHorseResultData,
+    RaceSimulateDataSchema,
+    RaceSimulateData_EventDataWrapperSchema,
+    RaceSimulateEventDataSchema,
+    RaceSimulateFrameDataSchema,
+    RaceSimulateHeaderDataSchema,
+    RaceSimulateHorseFrameDataSchema,
+    RaceSimulateHorseResultDataSchema,
 } from "./race_data_pb";
 
 const oneInt16 = struct('<h');
@@ -21,14 +22,14 @@ const oneFloat = struct('<f');
 
 function deserializeHeader(buffer: ArrayBuffer) {
     const [maxLength, version] = twoInt32s.unpack_from(buffer, 0);
-    return [new RaceSimulateHeaderData({maxLength: maxLength, version: version}), 4 + maxLength];
+    return [create(RaceSimulateHeaderDataSchema, {maxLength: maxLength, version: version}), 4 + maxLength];
 }
 
 const horseFrameStruct = struct('<fHHHbb');
 
 function deserializeHorseFrame(buffer: ArrayBuffer, offset: number) {
     const [distance, lanePosition, speed, hp, temptationMode, blockFrontHorseIndex] = horseFrameStruct.unpack_from(buffer, offset);
-    return new RaceSimulateHorseFrameData({
+    return create(RaceSimulateHorseFrameDataSchema, {
         distance: distance,
         lanePosition: lanePosition,
         speed: speed,
@@ -39,7 +40,7 @@ function deserializeHorseFrame(buffer: ArrayBuffer, offset: number) {
 }
 
 function deserializeFrame(buffer: ArrayBuffer, offset: number, horseNum: number, horseFrameSize: number) {
-    const frame = new RaceSimulateFrameData({time: oneFloat.unpack_from(buffer, offset)[0]});
+    const frame = create(RaceSimulateFrameDataSchema, {time: oneFloat.unpack_from(buffer, offset)[0]});
     offset += 4;
     for (let i = 0; i < horseNum; i++) {
         frame.horseFrame.push(deserializeHorseFrame(buffer, offset));
@@ -52,7 +53,7 @@ const horseResultStruct = struct('<ifffBBfBif');
 
 function deserializeHorseResult(buffer: ArrayBuffer, offset: number) {
     const [finishOrder, finishTime, finishDiffTime, startDelayTime, gutsOrder, wizOrder, lastSpurtStartDistance, runningStyle, defeat, finishTimeRaw] = horseResultStruct.unpack_from(buffer, offset);
-    return new RaceSimulateHorseResultData({
+    return create(RaceSimulateHorseResultDataSchema, {
         finishOrder: finishOrder,
         finishTime: finishTime,
         finishDiffTime: finishDiffTime,
@@ -70,7 +71,7 @@ const eventStruct = struct('<fbb');
 
 function deserializeEvent(buffer: ArrayBuffer, offset: number) {
     const [frameTime, type, paramCount] = eventStruct.unpack_from(buffer, offset);
-    const event = new RaceSimulateEventData({
+    const event = create(RaceSimulateEventDataSchema, {
         frameTime: frameTime,
         type: type,
         paramCount: paramCount,
@@ -89,7 +90,7 @@ function deserialize(input: Uint8Array) {
     const buffer = input.buffer;
 
     let [header, offset] = deserializeHeader(buffer);
-    const data = new RaceSimulateData({header: header});
+    const data = create(RaceSimulateDataSchema, {header: header});
 
     const [distanceDiffMax, horseNum, horseFrameSize, horseResultSize] = raceStruct.unpack_from(buffer, offset);
     data.distanceDiffMax = distanceDiffMax;
@@ -127,7 +128,7 @@ function deserialize(input: Uint8Array) {
     offset += 4;
 
     for (let i = 0; i < data.eventCount!; i++) {
-        const eventWrapper = new RaceSimulateData_EventDataWrapper();
+        const eventWrapper = create(RaceSimulateData_EventDataWrapperSchema);
         eventWrapper.eventSize = oneInt16.unpack_from(buffer, offset)[0];
         offset += 2;
         eventWrapper.event = deserializeEvent(buffer, offset);

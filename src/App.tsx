@@ -1,19 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { Container, Nav, Navbar, Spinner } from "react-bootstrap";
-import 'react-bootstrap-table-next/dist/react-bootstrap-table2.css';
 import 'react-bootstrap-typeahead/css/Typeahead.css';
 import { HashRouter, Link, Route, Routes } from "react-router-dom";
 import './App.css';
 import './dark-mode.css';
 import UMDatabaseWrapper from './data/UMDatabaseWrapper';
 import GameDataLoader from './data/GameDataLoader';
-import RaceDataPage from "./pages/RaceDataPage";
-import MultiRacePage from "./pages/MultiRacePage";
-import SetupGuidePage from './pages/SetupGuidePage';
-import VeteransPage from './pages/VeteransPage';
-import MasterDataPage from './pages/MasterDataPage';
-import NotesPage from './pages/NotesPage';
-import RaceDataPageOld from './pages/RaceDataPage_old';
+
+const RaceDataPage    = lazy(() => import("./pages/RaceDataPage"));
+const MultiRacePage   = lazy(() => import("./pages/MultiRacePage"));
+const RaceDataPageOld = lazy(() => import("./pages/RaceDataPage_old"));
+const MasterDataPage  = lazy(() => import("./pages/MasterDataPage"));
+const NotesPage       = lazy(() => import("./pages/NotesPage"));
+const SetupGuidePage  = lazy(() => import("./pages/SetupGuidePage"));
+const VeteransPage    = lazy(() => import("./pages/VeteransPage"));
 
 
 export default function App() {
@@ -55,17 +55,19 @@ export default function App() {
         </Navbar>
 
         <Container>
-            <Routes>
-                <Route path="/veterans" element={<VeteransPage />} />
-                <Route path="/racedata_old" element={<RaceDataPageOld />} />
-                <Route path="/racedata" element={<RaceDataPage />} />
-                <Route path="/multirace" element={<MultiRacePage />} />
-                <Route path="/setup" element={<SetupGuidePage />} />
-                <Route path="/masterdata" element={<MasterDataPage />} />
-                <Route path="/notes/:noteId" element={<NotesPage />} />
-                <Route path="/notes" element={<NotesPage />} />
-                <Route path="/" element={<Home />} />
-            </Routes>
+            <Suspense fallback={<div className="p-4 text-center"><Spinner animation="border" /></div>}>
+                <Routes>
+                    <Route path="/veterans" element={<VeteransPage />} />
+                    <Route path="/racedata_old" element={<RaceDataPageOld />} />
+                    <Route path="/racedata" element={<RaceDataPage />} />
+                    <Route path="/multirace" element={<MultiRacePage />} />
+                    <Route path="/setup" element={<SetupGuidePage />} />
+                    <Route path="/masterdata" element={<MasterDataPage />} />
+                    <Route path="/notes/:noteId" element={<NotesPage />} />
+                    <Route path="/notes" element={<NotesPage />} />
+                    <Route path="/" element={<Home />} />
+                </Routes>
+            </Suspense>
         </Container>
     </HashRouter>;
 }

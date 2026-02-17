@@ -5,7 +5,7 @@
 }
 
 /* Upload Zone */
-.upload-zone {
+.multirace-upload-zone {
     border: 2px dashed #4a5568;
     border-radius: 12px;
     padding: 40px 20px;
@@ -16,14 +16,14 @@
     margin-bottom: 20px;
 }
 
-.upload-zone:hover {
+.multirace-upload-zone:hover {
     border-color: #667eea;
     background: linear-gradient(135deg, #1e1e3f 0%, #1a2a4f 100%);
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
 }
 
-.upload-zone.drag-over {
+.multirace-upload-zone.drag-over {
     border-color: #667eea;
     background: linear-gradient(135deg, #252550 0%, #1e3560 100%);
 }
@@ -336,19 +336,6 @@
     margin-bottom: 10px;
 }
 
-.heatmap-marker {
-    position: absolute;
-    width: 4px;
-    height: 100%;
-    background: rgba(102, 126, 234, 0.7);
-    transition: all 0.2s ease;
-}
-
-.heatmap-marker:hover {
-    background: #667eea;
-    transform: scaleX(2);
-}
-
 .heatmap-legend {
     display: flex;
     justify-content: space-between;
@@ -395,22 +382,11 @@
     color: #718096;
 }
 
-.empty-state-icon {
-    font-size: 64px;
-    margin-bottom: 20px;
-    opacity: 0.5;
-}
-
 .empty-state-title {
     color: #a0aec0;
     font-size: 20px;
     font-weight: 600;
     margin-bottom: 10px;
-}
-
-.empty-state-text {
-    color: #718096;
-    font-size: 14px;
 }
 
 /* Sorting indicators */

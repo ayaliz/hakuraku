@@ -114,8 +114,3 @@
     border-color: rgba(255, 255, 255, 0.05) !important;
     color: #d1d5db;
 }
-
-/* Specific overrides for react-bootstrap-table2 */
-.react-bootstrap-table table {
-    table-layout: fixed;
-}

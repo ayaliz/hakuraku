@@ -1,5 +1,5 @@
 import React from "react";
-import BootstrapTable, { ColumnDescription } from "react-bootstrap-table-next";
+import { Table } from "react-bootstrap";
 import _ from "lodash";
 import { RaceSimulateData } from "../../../data/race_data_pb";
 import FoldCard from "../../FoldCard";
@@ -13,24 +13,6 @@ type CompeteTableData = {
     }[],
 };
 
-const competeTableColumns: ColumnDescription<CompeteTableData>[] = [
-    {
-        dataField: 'time',
-        text: 'Time',
-    },
-    {
-        dataField: 'type',
-        text: 'Type',
-    },
-    {
-        dataField: 'charas',
-        text: '',
-        formatter: (_, row) => <>
-            {row.charas.map(c => <>{c.displayName}<br /></>)}
-        </>,
-    },
-];
-
 type OtherRaceEventsListProps = {
     raceData: RaceSimulateData;
     displayNames: Record<number, string>;
@@ -41,7 +23,7 @@ const OtherRaceEventsList: React.FC<OtherRaceEventsListProps> = ({ raceData, dis
         .filter(e => otherRaceEventLabels.has(e.type!)),
         e => e.frameTime!);
 
-    const d: CompeteTableData[] = _.values(groupedEvents).map(events => {
+    const data: CompeteTableData[] = _.values(groupedEvents).map(events => {
         const time = events[0].frameTime!;
         return {
             time: time,
@@ -56,12 +38,33 @@ const OtherRaceEventsList: React.FC<OtherRaceEventsListProps> = ({ raceData, dis
     });
 
     return <FoldCard header="Other Race Events">
-        <BootstrapTable bootstrap4 condensed hover
-            classes="responsive-bootstrap-table"
-            wrapperClasses="table-responsive"
-            data={d}
-            columns={competeTableColumns}
-            keyField="time" />
+        <div className="table-responsive">
+            <Table striped bordered hover size="sm" className="responsive-bootstrap-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Type</th>
+                        <th>Characters</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {data.map((row, idx) => (
+                        <tr key={row.time}>
+                            <td>{row.time}</td>
+                            <td>{row.type}</td>
+                            <td>
+                                {row.charas.map((c, cIdx) => (
+                                    <React.Fragment key={cIdx}>
+                                        {c.displayName}
+                                        {cIdx < row.charas.length - 1 && <br />}
+                                    </React.Fragment>
+                                ))}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </Table>
+        </div>
     </FoldCard>;
 };
 

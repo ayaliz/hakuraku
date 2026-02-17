@@ -12,6 +12,7 @@ import { CharaTableData } from "./types";
 import { getRankIcon } from "./rankUtils";
 
 import AssetLoader from "../../../../data/AssetLoader";
+import "./CharaList.css";
 let _statIcons: Record<string, string> | null = null;
 function getStatIcons() {
     if (!_statIcons) {
@@ -70,9 +71,6 @@ const InfoIcon = ({ id, tip }: { id: string; tip: string }) => (
 
 // Stats cell component
 const StatsCell: React.FC<{ row: CharaTableData }> = ({ row }) => {
-    const iconStyle: React.CSSProperties = { width: 16, height: 16, marginRight: 2 };
-    const statStyle: React.CSSProperties = { marginRight: 8, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center' };
-
     const skillBreakdown = row.trainedChara.skills.map(cs => {
         const base = UMDatabaseWrapper.skillNeedPoints[cs.skillId] ?? 0;
         let upgrade = 0;
@@ -102,15 +100,15 @@ const StatsCell: React.FC<{ row: CharaTableData }> = ({ row }) => {
     return (
         <div style={{ lineHeight: 1.4 }}>
             <div>
-                <span style={statStyle}><img src={getStatIcons().speed} alt="Speed" style={iconStyle} />{row.trainedChara.speed}</span>
-                <span style={statStyle}><img src={getStatIcons().stamina} alt="Stamina" style={iconStyle} />{row.trainedChara.stamina}</span>
-                <span style={statStyle}><img src={getStatIcons().wit} alt="Wit" style={iconStyle} />{row.trainedChara.wiz}</span>
+                <span className="stat-label-item"><img src={getStatIcons().speed} alt="Speed" className="stat-icon" />{row.trainedChara.speed}</span>
+                <span className="stat-label-item"><img src={getStatIcons().stamina} alt="Stamina" className="stat-icon" />{row.trainedChara.stamina}</span>
+                <span className="stat-label-item"><img src={getStatIcons().wit} alt="Wit" className="stat-icon" />{row.trainedChara.wiz}</span>
             </div>
             <div>
-                <span style={statStyle}><img src={getStatIcons().power} alt="Power" style={iconStyle} />{row.trainedChara.pow}</span>
-                <span style={statStyle}><img src={getStatIcons().guts} alt="Guts" style={iconStyle} />{row.trainedChara.guts}</span>
+                <span className="stat-label-item"><img src={getStatIcons().power} alt="Power" className="stat-icon" />{row.trainedChara.pow}</span>
+                <span className="stat-label-item"><img src={getStatIcons().guts} alt="Guts" className="stat-icon" />{row.trainedChara.guts}</span>
                 <OverlayTrigger placement="bottom" overlay={spTooltip}>
-                    <span style={{ ...statStyle, cursor: 'help' }}><img src={getStatIcons().hint} alt="Skill Points" style={iconStyle} />{row.totalSkillPoints}</span>
+                    <span className="stat-label-item" style={{ cursor: 'help' }}><img src={getStatIcons().hint} alt="Skill Points" className="stat-icon" />{row.totalSkillPoints}</span>
                 </OverlayTrigger>
             </div>
         </div>
@@ -166,7 +164,7 @@ export const charaTableColumns: CharaColumnDef[] = [
                     <div>
                         <span className="chara-name-primary">{row.chara.name}</span>
                         {row.trainedChara.viewerName && (
-                            <span className="chara-viewer-name" style={{ color: '#9ca3af', fontSize: '0.75em' }}>[{row.trainedChara.viewerName}]</span>
+                            <span className="chara-viewer-name">[{row.trainedChara.viewerName}]</span>
                         )}
                     </div>
                 </div>

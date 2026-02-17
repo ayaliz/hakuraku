@@ -23,8 +23,19 @@ export default defineConfig({
     plugins: [react(), serveGzRaw()],
     base: '/hakuraku/',
     optimizeDeps: {
-        // 'events' polyfill for react-bootstrap-table-next (not auto-provided by Vite 5)
-        include: ['events', 'react-bootstrap-table-next'],
+        include: ['events'],
+    },
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    echarts: ['echarts', 'echarts-for-react'],
+                    sqljs: ['sql.js'],
+                    codemirror: ['@uiw/react-codemirror', '@codemirror/lang-sql', '@codemirror/theme-one-dark'],
+                    markdown: ['react-markdown', 'rehype-katex', 'remark-gfm', 'remark-math', 'katex'],
+                },
+            },
+        },
     },
 });
 

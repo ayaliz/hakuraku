@@ -1,0 +1,84 @@
+/* Help/info icon inline with toggle labels */
+.toggle-info-icon {
+    margin-left: 5px;
+    cursor: help;
+    border-bottom: 1px dotted #aaa;
+}
+
+/* Keyboard key display */
+.kbd-key {
+    background: #444;
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.85em;
+    border: 1px solid #555;
+}
+
+/* ClipMaker container */
+.clip-maker {
+    background-color: #222;
+    border: 1px solid #444;
+    border-radius: 6px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+/* ClipMaker inputs (compact form controls) */
+.clip-maker-input {
+    padding: 4px 8px;
+    height: auto;
+    font-size: 0.85rem;
+}
+
+/* ClipMaker labels */
+.clip-maker-label {
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+/* InfoHover trigger button */
+.replay-info-btn {
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(2px);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: help;
+    user-select: none;
+    white-space: nowrap;
+}
+
+/* InfoHover 'i' badge inside button */
+.replay-info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1px solid #444;
+    margin-right: 6px;
+    font-size: 12px;
+    line-height: 1;
+}
+
+/* Frame input (inline editable number) */
+.frame-input-inline {
+    width: 60px;
+    background-color: #333;
+    color: #fff;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 0 4px;
+    font-size: inherit;
+}
+
+/* Clickable frame number display */
+.frame-number-clickable {
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}

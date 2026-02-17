@@ -1,8 +1,9 @@
 import pako from "pako";
-import {Card, Chara, RaceInstance, SingleModeRank, Skill, SupportCard, TextData, UMDatabase} from './data_pb';
+import { create, fromBinary } from "@bufbuild/protobuf";
+import {Card, Chara, RaceInstance, SingleModeRank, Skill, SupportCard, TextData, UMDatabase, UMDatabaseSchema} from './data_pb';
 
 class _UMDatabaseWrapper {
-    umdb: UMDatabase = new UMDatabase();
+    umdb: UMDatabase = create(UMDatabaseSchema);
     charas: Record<number, Chara> = {};
     cards: Record<number, Card> = {};
     supportCards: Record<number, SupportCard> = {};
@@ -16,7 +17,7 @@ class _UMDatabaseWrapper {
         return fetch(import.meta.env.BASE_URL + 'data/umdb.binarypb.gz', {cache: 'no-cache'})
             .then(response => response.arrayBuffer())
             .then(response => {
-                this.umdb = UMDatabase.fromBinary(pako.inflate(new Uint8Array(response)));
+                this.umdb = fromBinary(UMDatabaseSchema, pako.inflate(new Uint8Array(response)));
 
                 this.umdb.chara.forEach((chara) => this.charas[chara.id!] = chara);
                 this.umdb.card.forEach((card) => this.cards[card.id!] = card);

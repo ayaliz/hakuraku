@@ -57,7 +57,7 @@ const RaceUploadZone: React.FC<RaceUploadZoneProps> = ({ onFilesSelected, isProc
                 onChange={handleFileChange}
             />
             <div
-                className={`upload-zone ${isDragOver ? "drag-over" : ""}`}
+                className={`multirace-upload-zone ${isDragOver ? "drag-over" : ""}`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}

@@ -14,6 +14,21 @@ export type Veteran = {
     running_style: number;
     nickname_id: number;
     wins: number;
+    speed: number;
+    stamina: number;
+    pow: number;
+    guts: number;
+    wiz: number;
+    proper_distance_short: number;
+    proper_distance_mile: number;
+    proper_distance_middle: number;
+    proper_distance_long: number;
+    proper_ground_turf: number;
+    proper_ground_dirt: number;
+    proper_running_style_nige: number;
+    proper_running_style_senko: number;
+    proper_running_style_sashi: number;
+    proper_running_style_oikomi: number;
     skill_array: Array<{
         skill_id: number;
         level: number;
@@ -75,5 +90,18 @@ export type UniquesFilter = BaseFilter;
 export type RacesFilter = BaseFilter;
 export type SkillsFilter = BaseFilter;
 
-export type SortOption = 'none' | 'blues' | 'total_common' | 'total_skills' | 'legacy_common' | 'legacy_skills';
+export type SortOption = 'none' | 'blues' | 'total_common' | 'total_skills' | 'legacy_common' | 'legacy_skills' | 'date';
 export type SortDirection = 'asc' | 'desc';
+
+export type SparkSearch = { name: string; stars: number; includeParents: boolean };
+
+export type OptimizerConfig = {
+    bluesWeight: number;
+    aptWeight: number;
+    uniqueWeight: number;
+    skillWeight: number;
+    scenarioWeight: number;
+    highValueSkills: number[];
+    highValueSkillBonus: number;
+    scenarioSparks: string[];
+};

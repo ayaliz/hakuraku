@@ -104,16 +104,26 @@ export interface CanvasOverlayParams {
     yMaxWithHeadroom: number;
 }
 
+export type HorseHoverEntry = {
+    idx: number;
+    cx: number; cy: number;
+    speed: number; accel: number;
+    hp: number; maxHp: number;
+    distance: number; lanePosition: number;
+    startDelay: number;
+};
+
 export function useCanvasOverlay(
     echartsRef: RefObject<any>,
     canvasRef: RefObject<HTMLCanvasElement | null>,
     params: CanvasOverlayParams
-): { tick: (time: number) => void; interpolatedFrameRef: MutableRefObject<InterpolatedFrame>; xAxisRef: MutableRefObject<{ min: number; max: number }> } {
+): { tick: (time: number) => void; interpolatedFrameRef: MutableRefObject<InterpolatedFrame>; xAxisRef: MutableRefObject<{ min: number; max: number }>; horseHoverDataRef: MutableRefObject<HorseHoverEntry[]> } {
     const paramsRef = useRef<CanvasOverlayParams>(params);
     useEffect(() => { paramsRef.current = params; });
 
     const latestTimeRef = useRef(0);
     const redrawRef = useRef<() => void>(() => {});
+    const horseHoverDataRef = useRef<HorseHoverEntry[]>([]);
 
     const interpolatedFrameRef = useRef<InterpolatedFrame>({
         frameIndex: 0,
@@ -221,6 +231,7 @@ export function useCanvasOverlay(
 
         const yMax = p.yMaxWithHeadroom;
 
+        const hoverEntries: HorseHoverEntry[] = [];
         Object.entries(p.displayNames).forEach(([iStr, name]) => {
             if (p.legendSelection && p.legendSelection[name] === false) return;
             const idx = +iStr;
@@ -232,6 +243,17 @@ export function useCanvasOverlay(
             const iconUrl = getCharaIcon(info?.chara_id) ?? "";
             const cx = xToPixel(hf.distance ?? 0, xMin, xMax, w);
             const cy = yToPixel(hf.lanePosition ?? 0, yMax, h);
+
+            hoverEntries.push({
+                idx, cx, cy,
+                speed: hf.speed ?? 0,
+                accel: accByIdx[idx] ?? 0,
+                hp: hf.hp ?? 0,
+                maxHp: p.maxHpByIdx[idx] ?? 0,
+                distance: hf.distance ?? 0,
+                lanePosition: hf.lanePosition ?? 0,
+                startDelay: p.startDelayByIdx[idx] ?? 0,
+            });
 
             if (iconUrl) {
                 ctx.beginPath();
@@ -313,6 +335,7 @@ export function useCanvasOverlay(
                 }
             }
         });
+        horseHoverDataRef.current = hoverEntries;
 
         if (p.toggles.skills) {
             Object.entries(p.displayNames).forEach(([iStr, name]) => {
@@ -406,5 +429,5 @@ export function useCanvasOverlay(
 
     useEffect(() => { redrawRef.current = () => tick(latestTimeRef.current); }, [tick]);
 
-    return { tick, interpolatedFrameRef, xAxisRef };
+    return { tick, interpolatedFrameRef, xAxisRef, horseHoverDataRef };
 }

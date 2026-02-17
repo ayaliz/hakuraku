@@ -1,5 +1,6 @@
 import { Veteran, BaseFilter, SortOption, SortDirection } from "./types";
 import { aggregateFactors, getFactorCategory } from "../../data/VeteransHelper";
+import { getCardName } from "./VeteransUIHelper";
 
 
 export const matchesFilter = (veteran: Veteran, filter: BaseFilter, categoryId: number): boolean => {
@@ -29,6 +30,7 @@ export const calculateSortScore = (veteran: Veteran, sortMode: SortOption): numb
         case 'total_skills': return sumStars(f => f.category === 5);
         case 'legacy_common': return sumStars(f => (f.category === 4 || f.category === 5) && f.isGold);
         case 'legacy_skills': return sumStars(f => f.category === 5 && f.isGold);
+        case 'date': return new Date(veteran.create_time).getTime();
         case 'none': default: return 0;
     }
 };
@@ -70,13 +72,20 @@ export const applyFiltersAndSort = (
     },
     config: any,
     sort: SortOption,
-    direction: SortDirection
+    direction: SortDirection,
+    nameSearch?: string
 ): Veteran[] => {
     let result = veterans;
+
+    if (nameSearch && nameSearch.trim()) {
+        const query = nameSearch.trim().toLowerCase();
+        result = result.filter(v => getCardName(v.card_id).toLowerCase().includes(query));
+    }
+
     const hasFilters = Object.values(filters).some(arr => arr.length > 0);
 
     if (hasFilters) {
-        result = veterans.filter(veteran =>
+        result = result.filter(veteran =>
             filters.blues.every(f => matchesFilter(veteran, f, config.blues.categoryId)) &&
             filters.aptitude.every(f => matchesFilter(veteran, f, config.aptitude.categoryId)) &&
             filters.uniques.every(f => matchesFilter(veteran, f, config.uniques.categoryId)) &&

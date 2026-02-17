@@ -1,13 +1,14 @@
 import React from 'react';
 import { Form, Button } from 'react-bootstrap';
 
-export type SortOption = 
+export type SortOption =
     | 'none'
-    | 'blues' 
-    | 'total_common' 
-    | 'total_skills' 
-    | 'legacy_common' 
-    | 'legacy_skills';
+    | 'blues'
+    | 'total_common'
+    | 'total_skills'
+    | 'legacy_common'
+    | 'legacy_skills'
+    | 'date';
 
 export type SortDirection = 'asc' | 'desc';
 
@@ -45,6 +46,7 @@ const VeteransSorter: React.FC<VeteransSorterProps> = ({
                 <option value="total_skills">Total Skills Stars</option>
                 <option value="legacy_common">Legacy Common Stars</option>
                 <option value="legacy_skills">Legacy Skills Stars</option>
+                <option value="date">Created Date</option>
             </Form.Control>
             <Button 
                 variant="outline-secondary" 

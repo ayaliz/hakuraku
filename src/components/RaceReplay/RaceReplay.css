@@ -82,3 +82,23 @@
     text-decoration: underline;
     text-decoration-style: dotted;
 }
+
+/* Hover tooltip shown when mousing over a character on the replay canvas */
+.replay-horse-tooltip {
+    position: absolute;
+    background: rgba(30, 30, 30, 0.92);
+    color: #eee;
+    border: 1px solid #555;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    line-height: 1.6;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 20;
+}
+
+.replay-horse-tooltip-name {
+    font-weight: 700;
+    margin-bottom: 2px;
+}

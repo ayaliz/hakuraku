@@ -1,8 +1,9 @@
-import React from "react";
-import { Badge, Card } from "react-bootstrap";
+import React, { useState } from "react";
+import { Badge, Card, Collapse, Button } from "react-bootstrap";
 import { Veteran } from "./types";
 import { aggregateFactors, getFactorCategory } from "../../data/VeteransHelper";
 import { getCardName, formatCardName, getCharaImageUrl, getFactorColor } from "./VeteransUIHelper";
+import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 
 interface VeteranCardProps {
     veteran: Veteran;
@@ -10,6 +11,8 @@ interface VeteranCardProps {
 }
 
 const VeteranCard: React.FC<VeteranCardProps> = ({ veteran, config }) => {
+    const [showRaces, setShowRaces] = useState(false);
+
     const parent1 = veteran.succession_chara_array.find(p => p.position_id === 10);
     const parent2 = veteran.succession_chara_array.find(p => p.position_id === 20);
     const aggregated = aggregateFactors(veteran);
@@ -59,14 +62,15 @@ const VeteranCard: React.FC<VeteranCardProps> = ({ veteran, config }) => {
                     </div>
 
                     <div className="flex-grow-1">
-                        <div className="mb-3">
+                        {/* Factor badges */}
+                        <div className="mb-2">
                             {aggregated.length === 0 ? (
                                 <small className="text-muted">No factors</small>
                             ) : (
                                 [1, 2, 3, 4, 5].map(catId => {
                                     const group = aggregated.filter(f => getFactorCategory(f.factorId) === catId);
                                     if (group.length === 0) return null;
-                                    
+
                                     return (
                                         <div key={catId} className="mb-1">
                                             {group.map((factor, idx) => (
@@ -87,6 +91,32 @@ const VeteranCard: React.FC<VeteranCardProps> = ({ veteran, config }) => {
                                 })
                             )}
                         </div>
+
+                        {/* Race wins collapsible */}
+                        {veteran.win_saddle_id_array && veteran.win_saddle_id_array.length > 0 && (
+                            <div className="mb-1">
+                                <Button
+                                    variant="outline-secondary"
+                                    size="sm"
+                                    onClick={() => setShowRaces(s => !s)}
+                                    style={{ fontSize: '0.75rem', padding: '0 6px' }}
+                                >
+                                    Race Wins ({veteran.win_saddle_id_array.length}) {showRaces ? '▲' : '▼'}
+                                </Button>
+                                <Collapse in={showRaces}>
+                                    <div className="mt-1">
+                                        {veteran.win_saddle_id_array.map((id, i) => {
+                                            const race = UMDatabaseWrapper.raceInstances[id];
+                                            return (
+                                                <div key={i} style={{ fontSize: '0.8rem' }}>
+                                                    {race?.name ?? `Race ${id}`}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </Collapse>
+                            </div>
+                        )}
                     </div>
                 </div>
             </Card.Body>

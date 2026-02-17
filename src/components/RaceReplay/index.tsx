@@ -146,7 +146,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
 
     const yMaxWithHeadroom = maxLanePosition + 3;
 
-    const { tick, interpolatedFrameRef, xAxisRef } = useCanvasOverlay(echartsRef, canvasRef, {
+    const { tick, interpolatedFrameRef, xAxisRef, horseHoverDataRef } = useCanvasOverlay(echartsRef, canvasRef, {
         frames,
         displayNames,
         horseInfoByIdx,
@@ -459,6 +459,8 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         },
     ];
 
+    const [hoveredHorse, setHoveredHorse] = useState<{ idx: number; x: number; y: number; containerW: number } | null>(null);
+
     const [isEditingFrame, setIsEditingFrame] = useState(false);
     const [tempFrameInput, setTempFrameInput] = useState("");
 
@@ -669,7 +671,25 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                 </div>
             )}
 
-            <div style={{ position: "relative", height: "500px" }}>
+            <div
+                style={{ position: "relative", height: "500px" }}
+                onMouseMove={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const mx = e.clientX - rect.left;
+                    const my = e.clientY - rect.top;
+                    const containerW = e.currentTarget.offsetWidth;
+                    const HIT_R2 = 32 * 32;
+                    let nearest: { idx: number; x: number; y: number; containerW: number } | null = null;
+                    let nearestD2 = HIT_R2;
+                    for (const entry of horseHoverDataRef.current) {
+                        const dx = mx - entry.cx, dy = my - entry.cy;
+                        const d2 = dx * dx + dy * dy;
+                        if (d2 < nearestD2) { nearestD2 = d2; nearest = { idx: entry.idx, x: mx, y: my, containerW }; }
+                    }
+                    setHoveredHorse(nearest);
+                }}
+                onMouseLeave={() => setHoveredHorse(null)}
+            >
                 <EChartsReactCore
                     ref={echartsRef}
                     echarts={echarts}
@@ -684,6 +704,31 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                     ref={canvasRef}
                     style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none" }}
                 />
+                {hoveredHorse !== null && (() => {
+                    const entry = horseHoverDataRef.current.find(e => e.idx === hoveredHorse.idx);
+                    if (!entry) return null;
+                    const name = displayNames[hoveredHorse.idx] ?? "";
+                    const speed = (entry.speed / 100).toFixed(2);
+                    const accelV = entry.accel / 100;
+                    const accelStr = (accelV > 0 ? "+" : "") + accelV.toFixed(2);
+                    const maxHp = entry.maxHp;
+                    const hp = entry.hp;
+                    const hpStr = maxHp > 0 ? `HP: ${Math.round(hp)}/${Math.round(maxHp)} (${((hp / maxHp) * 100).toFixed(1)}%)` : null;
+                    const tipY = Math.max(hoveredHorse.y - 8, 4);
+                    const flipLeft = hoveredHorse.x > hoveredHorse.containerW / 2;
+                    const tipStyle = flipLeft
+                        ? { right: hoveredHorse.containerW - hoveredHorse.x + 12, top: tipY }
+                        : { left: hoveredHorse.x + 12, top: tipY };
+                    return (
+                        <div className="replay-horse-tooltip" style={tipStyle}>
+                            {name && <div className="replay-horse-tooltip-name">{name}</div>}
+                            <div>Dist: {entry.distance.toFixed(1)} m &nbsp; Lane: {Math.round(entry.lanePosition)}</div>
+                            <div>Speed: {speed} m/s &nbsp; Accel: {accelStr} m/s²</div>
+                            {hpStr && <div>{hpStr}</div>}
+                            {entry.startDelay > 0 && <div>Start delay: {entry.startDelay.toFixed(5)}</div>}
+                        </div>
+                    );
+                })()}
             </div>
 
             <div className="d-flex align-items-center justify-content-between mt-2">

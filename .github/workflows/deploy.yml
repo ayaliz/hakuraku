@@ -30,7 +30,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
-          artifact_name: github-pages
+          name: github-pages
 
   deploy:
     needs: build

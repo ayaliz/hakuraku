@@ -1,5 +1,5 @@
 import UMDatabaseWrapper from "../data/UMDatabaseWrapper";
-import { Veteran } from "../pages/VeteransPage/types"; 
+import { Veteran, OptimizerConfig } from "../pages/VeteransPage/types";
 
 export type FactorItem = {
     name: string;
@@ -75,4 +75,36 @@ export const aggregateFactors = (veteran: Veteran): FactorItem[] => {
         if (b.level !== a.level) return b.level - a.level;
         return a.name.localeCompare(b.name);
     });
+};
+
+export const GRADE_MAP: Record<number, string> = {
+    1: 'G', 2: 'F', 3: 'E', 4: 'D', 5: 'C', 6: 'B', 7: 'A', 8: 'S'
+};
+
+export const gradeFromValue = (v: number): string => GRADE_MAP[v] ?? 'G';
+
+export const calculateOptimizerScore = (veteran: Veteran, config: OptimizerConfig): number => {
+    const factors = aggregateFactors(veteran);
+
+    const bluesStars = factors.filter(f => f.category === 1 && f.isGold).reduce((s, f) => s + f.level, 0);
+    const aptStars = factors.filter(f => f.category === 2 && f.isGold).reduce((s, f) => s + f.level, 0);
+    const uniqueStars = factors.filter(f => f.category === 3 && f.isGold).reduce((s, f) => s + f.level, 0);
+    const skillStars = factors.filter(f => f.category === 5 && f.isGold).reduce((s, f) => s + f.level, 0);
+
+    const skillIds = new Set(veteran.skill_array.map(s => s.skill_id));
+    const highValueSkillCount = config.highValueSkills.filter(id => skillIds.has(id)).length;
+
+    // Sum star levels of gold factors whose names match a configured scenario spark
+    const scenarioStars = factors
+        .filter(f => f.isGold && config.scenarioSparks.some(spark => f.name.toLowerCase().includes(spark.toLowerCase())))
+        .reduce((s, f) => s + f.level, 0);
+
+    return (
+        bluesStars * config.bluesWeight +
+        aptStars * config.aptWeight +
+        uniqueStars * config.uniqueWeight +
+        skillStars * config.skillWeight +
+        scenarioStars * config.scenarioWeight +
+        highValueSkillCount * config.highValueSkillBonus
+    );
 };

@@ -13,7 +13,7 @@ class _UMDatabaseWrapper {
     textData: Record<number, Record<number, TextData>> = {};
 
     initialize() {
-        return fetch(process.env.PUBLIC_URL + '/data/umdb.binarypb.gz', {cache: 'no-cache'})
+        return fetch(import.meta.env.BASE_URL + 'data/umdb.binarypb.gz', {cache: 'no-cache'})
             .then(response => response.arrayBuffer())
             .then(response => {
                 this.umdb = UMDatabase.fromBinary(pako.inflate(new Uint8Array(response)));

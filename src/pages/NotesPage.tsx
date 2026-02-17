@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useHistory, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -48,7 +48,7 @@ function NoteCard({ entry, onClick }: { entry: NoteEntry; onClick: () => void })
 
 export default function NotesPage() {
     const { noteId } = useParams<{ noteId?: string }>();
-    const history = useHistory();
+    const navigate = useNavigate();
     const [notes, setNotes] = useState<NoteEntry[]>([]);
     const [selected, setSelected] = useState<NoteEntry | null>(null);
     const [markdown, setMarkdown] = useState('');
@@ -57,7 +57,7 @@ export default function NotesPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch(process.env.PUBLIC_URL + '/notes/manifest.json')
+        fetch(import.meta.env.BASE_URL + 'notes/manifest.json')
             .then(r => {
                 if (!r.ok) throw new Error(`Failed to load manifest: ${r.status}`);
                 return r.json();
@@ -80,8 +80,8 @@ export default function NotesPage() {
     function openNote(entry: NoteEntry, pushHistory = true) {
         setSelected(entry);
         setMdLoading(true);
-        if (pushHistory) history.push(`/notes/${entry.id}`);
-        fetch(process.env.PUBLIC_URL + '/notes/' + entry.filename)
+        if (pushHistory) navigate(`/notes/${entry.id}`);
+        fetch(import.meta.env.BASE_URL + 'notes/' + entry.filename)
             .then(r => {
                 if (!r.ok) throw new Error(`Failed to load note: ${r.status}`);
                 return r.text();
@@ -99,7 +99,7 @@ export default function NotesPage() {
     function backToList() {
         setSelected(null);
         setMarkdown('');
-        history.push('/notes');
+        navigate('/notes');
     }
 
     if (loading) {
@@ -152,7 +152,7 @@ export default function NotesPage() {
                                 strong: ({ children }) => <strong style={{ color: 'var(--haku-text-primary)' }}>{children}</strong>,
                                 a: ({ href, children }) => {
                                     const resolved = href?.startsWith('attachments/')
-                                        ? `${process.env.PUBLIC_URL}/notes/${href}`
+                                        ? `${import.meta.env.BASE_URL}notes/${href}`
                                         : href;
                                     return <a href={resolved} target="_blank" rel="noreferrer" style={{ color: 'var(--haku-accent)' }}>{children}</a>;
                                 },

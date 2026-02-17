@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Col, Form } from "react-bootstrap";
+import { Button, Col, Form, Row } from "react-bootstrap";
 import RaceDataPresenter from "../components/RaceDataPresenter_old";
 import { RaceSimulateData } from "../data/race_data_pb";
 import { deserializeFromBase64 } from "../data/RaceDataParser";
@@ -101,6 +101,7 @@ export default class RaceDataPageOld extends React.Component<{}, RaceDataPageSta
     }
 
     parse() {
+        if (!this.state.raceScenarioInput.trim()) return;
         this.setState({ parsedRaceData: deserializeFromBase64(this.state.raceScenarioInput.trim()) });
         try {
             this.setState({ parsedHorseInfo: JSON.parse(this.state.raceHorseInfoInput) });
@@ -286,7 +287,7 @@ export default class RaceDataPageOld extends React.Component<{}, RaceDataPageSta
             />
 
             <Form>
-                <Form.Row>
+                <Row>
                     <Form.Group as={Col}>
                         <Form.Label>
                             [Optional] <code>race_start_info.race_horse_data</code> (for single
@@ -297,15 +298,15 @@ export default class RaceDataPageOld extends React.Component<{}, RaceDataPageSta
                             value={this.state.raceHorseInfoInput}
                             onChange={e => this.setState({ raceHorseInfoInput: e.target.value })} />
                     </Form.Group>
-                </Form.Row>
-                <Form.Row>
+                </Row>
+                <Row>
                     <Form.Group as={Col}>
                         <Form.Label>[Required] <code>race_scenario</code></Form.Label>
                         <Form.Control as="textarea" rows={3}
                             value={this.state.raceScenarioInput}
                             onChange={e => this.setState({ raceScenarioInput: e.target.value })} />
                     </Form.Group>
-                </Form.Row>
+                </Row>
 
                 <Button variant="primary" onClick={() => this.parse()}>
                     Parse
@@ -324,7 +325,7 @@ export default class RaceDataPageOld extends React.Component<{}, RaceDataPageSta
                     Share Anonymously
                 </Button>
                 {shareStatus === 'shared' && <ShareLinkBox shareUrl={shareUrl} />}
-                {shareError && <span className="ml-2 text-danger">{shareError}</span>}
+                {shareError && <span className="ms-2 text-danger">{shareError}</span>}
             </Form>
 
             <hr />

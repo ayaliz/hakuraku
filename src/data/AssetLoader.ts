@@ -2,7 +2,7 @@ class AssetLoaderClass {
     async initialize(): Promise<void> {}
 
     getAssetUrl(key: string): string {
-        return `${process.env.PUBLIC_URL}/assets/${key}`;
+        return `${import.meta.env.BASE_URL}assets/${key}`;
     }
 
     getCharaIcon(charaId: number): string {

@@ -23,11 +23,9 @@ export default function ShareLinkBox(props: ShareLinkBoxProps) {
                 onClick={handleCopy}
                 style={{cursor: 'pointer'}}
             />
-            <InputGroup.Append>
-                <Button variant={copied ? "success" : "outline-secondary"} onClick={handleCopy}>
-                    {copied ? "Copied!" : "Copy"}
-                </Button>
-            </InputGroup.Append>
+            <Button variant={copied ? "success" : "outline-secondary"} onClick={handleCopy}>
+                {copied ? "Copied!" : "Copy"}
+            </Button>
         </InputGroup>
     );
 }

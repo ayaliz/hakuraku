@@ -43,7 +43,7 @@ const ActiveFiltersList: React.FC<ActiveFiltersListProps> = ({ filters, config, 
                         return (
                             <Badge
                                 key={filter.id}
-                                variant="info"
+                                bg="info"
                                 className="mb-2"
                                 style={{ 
                                     fontSize: '0.9rem', 

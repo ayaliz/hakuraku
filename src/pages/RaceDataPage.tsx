@@ -461,7 +461,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Share-Secret': process.env.REACT_APP_SHARE_SECRET ?? '',
+                    'X-Share-Secret': import.meta.env.VITE_SHARE_SECRET ?? '',
                 },
                 body: content,
             });

@@ -19,7 +19,8 @@ export default function FilesSelector(props: FilesSelectorProps) {
 
     return <Form>
         <Form.Group>
-            <Form.File label="Select the packets captured by CarrotJuicer here..." custom multiple
+            <Form.Label>Select the packets captured by CarrotJuicer here...</Form.Label>
+            <Form.Control type="file" multiple
                        onChange={(e: ChangeEvent<HTMLInputElement>) => onSelectedFilesChange(e)}/>
             <Form.Text muted>
                 <>

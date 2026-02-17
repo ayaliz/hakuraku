@@ -1,9 +1,25 @@
 /* src/dark-mode.css */
 
-/* =============================================
-   Design Tokens
-   ============================================= */
 :root {
+  --bs-body-color: #f0f2f5;
+  --bs-body-color-rgb: 240, 242, 245;
+  --bs-body-bg: #1a1d21;
+  --bs-secondary-color: #9ba3b0;
+  --bs-emphasis-color: #f0f2f5;
+  --bs-border-color: rgba(75, 85, 99, 0.35);
+  --bs-secondary-bg: #343a40;
+  --bs-tertiary-bg: #343a40;
+  --bs-card-color: #f0f2f5;
+  --bs-card-bg: #2a2f36;
+  --bs-card-border-color: rgba(75, 85, 99, 0.35);
+  --bs-table-color: #f0f2f5;
+  --bs-table-bg: transparent;
+  --bs-table-border-color: rgba(75, 85, 99, 0.3);
+  --bs-table-striped-bg: rgba(255, 255, 255, 0.03);
+  --bs-table-striped-color: #f0f2f5;
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.05);
+  --bs-table-hover-color: #f0f2f5;
+
   --haku-bg-0: #1a1d21;
   --haku-bg-1: #212529;
   --haku-bg-2: #2a2f36;
@@ -22,9 +38,6 @@
   --haku-transition: 0.18s ease;
 }
 
-/* =============================================
-   Base
-   ============================================= */
 body {
   background-color: var(--haku-bg-0);
   color: var(--haku-text-primary);
@@ -36,7 +49,66 @@ body {
 }
 
 .table {
+  --bs-table-color: var(--haku-text-primary);
+  --bs-table-bg: transparent;
+  --bs-table-border-color: rgba(75, 85, 99, 0.3);
+  --bs-table-striped-bg: rgba(255, 255, 255, 0.03);
+  --bs-table-striped-color: var(--haku-text-primary);
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.05);
+  --bs-table-hover-color: var(--haku-text-primary);
   color: var(--haku-text-primary);
+}
+
+.tooltip {
+  --bs-tooltip-color: var(--haku-text-primary);
+  --bs-tooltip-bg: var(--haku-bg-3);
+}
+
+.popover {
+  --bs-popover-bg: var(--haku-bg-2);
+  --bs-popover-border-color: var(--haku-border);
+  --bs-popover-header-bg: var(--haku-bg-3);
+  --bs-popover-header-color: var(--haku-text-primary);
+  --bs-popover-body-color: var(--haku-text-primary);
+}
+
+.nav-tabs {
+  --bs-nav-tabs-border-color: var(--haku-border);
+  --bs-nav-tabs-link-hover-border-color: var(--haku-border) var(--haku-border) transparent;
+  --bs-nav-tabs-link-active-color: var(--haku-text-primary);
+  --bs-nav-tabs-link-active-bg: var(--haku-bg-2);
+  --bs-nav-tabs-link-active-border-color: var(--haku-border) var(--haku-border) var(--haku-bg-2);
+}
+
+.nav-tabs .nav-link {
+  color: var(--haku-text-secondary);
+}
+
+.nav-tabs .nav-link:hover,
+.nav-tabs .nav-link:focus {
+  color: var(--haku-text-primary);
+}
+
+.dropdown-menu {
+  --bs-dropdown-bg: var(--haku-bg-2);
+  --bs-dropdown-border-color: var(--haku-border);
+  --bs-dropdown-color: var(--haku-text-primary);
+  --bs-dropdown-link-color: var(--haku-text-primary);
+  --bs-dropdown-link-hover-color: var(--haku-text-primary);
+  --bs-dropdown-link-hover-bg: rgba(255, 255, 255, 0.07);
+  --bs-dropdown-link-active-color: var(--haku-text-primary);
+  --bs-dropdown-link-active-bg: var(--haku-accent);
+  --bs-dropdown-link-disabled-color: var(--haku-text-muted);
+  --bs-dropdown-divider-bg: var(--haku-border);
+  --bs-dropdown-header-color: var(--haku-text-muted);
+}
+
+.modal {
+  --bs-modal-bg: var(--haku-bg-2);
+  --bs-modal-color: var(--haku-text-primary);
+  --bs-modal-border-color: var(--haku-border);
+  --bs-modal-header-border-color: var(--haku-border);
+  --bs-modal-footer-border-color: var(--haku-border);
 }
 
 .table-bordered, .table-bordered td, .table-bordered th {
@@ -66,14 +138,30 @@ body {
   color: var(--haku-text-primary);
 }
 
+.form-select {
+  background-color: var(--haku-bg-3);
+  color: var(--haku-text-primary);
+  border-color: rgba(75, 85, 99, 0.5);
+}
+
+.form-select:focus {
+  background-color: var(--haku-bg-3);
+  color: var(--haku-text-primary);
+  border-color: var(--haku-accent);
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.input-group-text {
+  --bs-input-group-addon-color: var(--haku-text-primary);
+  --bs-input-group-addon-bg: var(--haku-bg-3);
+  --bs-input-group-addon-border-color: rgba(75, 85, 99, 0.5);
+}
+
 .list-group-item {
   background-color: var(--haku-bg-3);
   border-color: var(--haku-border);
 }
 
-/* =============================================
-   Navbar
-   ============================================= */
 .haku-nav {
   background: var(--haku-bg-1) !important;
   border-bottom: 2px solid transparent;
@@ -100,9 +188,6 @@ body {
   color: var(--haku-text-primary) !important;
 }
 
-/* =============================================
-   Page Header
-   ============================================= */
 .page-header {
   padding: 28px 0 20px;
   border-bottom: 1px solid var(--haku-border);
@@ -121,9 +206,6 @@ body {
   margin: 0;
 }
 
-/* =============================================
-   Action Bar
-   ============================================= */
 .action-bar {
   display: flex;
   gap: 8px;
@@ -136,9 +218,6 @@ body {
   margin-bottom: 16px;
 }
 
-/* =============================================
-   Upload Zone
-   ============================================= */
 .upload-zone {
   border: 2px dashed var(--haku-border-accent);
   border-radius: var(--haku-radius-lg);
@@ -167,9 +246,6 @@ body {
   font-size: 0.95rem;
 }
 
-/* =============================================
-   Haku Table (unchanged)
-   ============================================= */
 .haku-table {
   border-collapse: collapse;
 }
@@ -199,7 +275,6 @@ body {
   border-color: rgba(75, 85, 99, 0.3) !important;
 }
 
-/* Table list sidebar row hover (MasterData) */
 .table-row-hover:hover {
   background: rgba(99, 102, 241, 0.12);
   border-radius: 3px;

@@ -7,7 +7,7 @@ class GameDataLoaderClass {
         if (this.data) return;
 
         const response = await fetch(
-            process.env.PUBLIC_URL + "/data/gamedata.bin.gz",
+            import.meta.env.BASE_URL + "data/gamedata.bin.gz",
             { cache: "no-cache" }
         );
         const buffer = await response.arrayBuffer();

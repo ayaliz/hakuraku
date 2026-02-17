@@ -94,9 +94,9 @@ function SqlBrowserTab() {
         setError(null);
         try {
             const SQL = await initSqlJs({
-                locateFile: () => process.env.PUBLIC_URL + '/sql-wasm.wasm',
+                locateFile: () => import.meta.env.BASE_URL + 'sql-wasm.wasm',
             });
-            const resp = await fetch(process.env.PUBLIC_URL + '/data/masterdata/master.mdb.gz');
+            const resp = await fetch(import.meta.env.BASE_URL + 'data/masterdata/master.mdb.gz');
             if (!resp.ok) throw new Error(`Failed to fetch master.mdb.gz: ${resp.status}`);
             const compressed = new Uint8Array(await resp.arrayBuffer());
             const decompressed = pako.inflate(compressed);
@@ -271,7 +271,7 @@ function SqlBrowserTab() {
                         {' '}
                         <input
                             type="text"
-                            className="form-control d-inline-block ml-1"
+                            className="form-control d-inline-block ms-1"
                             placeholder="Filter rows..."
                             value={filterText}
                             onChange={(e) => setFilterText(e.target.value)}
@@ -332,7 +332,7 @@ function SqlBrowserTab() {
                                         <span
                                             key={t}
                                             onClick={() => handleTableClick(t)}
-                                            className="badge badge-secondary mr-1"
+                                            className="badge text-bg-secondary me-1"
                                             style={{ cursor: 'pointer' }}
                                         >
                                             {t}
@@ -358,7 +358,7 @@ function VersionHistoryTab() {
     const [collapsedTables, setCollapsedTables] = useState<Set<string>>(new Set());
 
     useEffect(() => {
-        fetch(process.env.PUBLIC_URL + '/data/masterdata/versions.json')
+        fetch(import.meta.env.BASE_URL + 'data/masterdata/versions.json')
             .then((r) => {
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 return r.json();
@@ -379,7 +379,7 @@ function VersionHistoryTab() {
         setDiffLoading(true);
         setCollapsedTables(new Set());
         try {
-            const resp = await fetch(process.env.PUBLIC_URL + `/data/masterdata/diffs/${short_hash}.json.gz`);
+            const resp = await fetch(import.meta.env.BASE_URL + `data/masterdata/diffs/${short_hash}.json.gz`);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const compressed = new Uint8Array(await resp.arrayBuffer());
             const text = pako.inflate(compressed, { to: 'string' });
@@ -414,15 +414,15 @@ function VersionHistoryTab() {
                             {' '}
                             <span className="text-muted">{v.date}</span>
                             {v.summary && (
-                                <span className="ml-2">
-                                    <span className="badge badge-success ml-1">+{v.summary.added}</span>
-                                    <span className="badge badge-danger ml-1">-{v.summary.removed}</span>
-                                    <span className="badge badge-warning ml-1">~{v.summary.modified}</span>
-                                    <span className="badge badge-secondary ml-1">{v.summary.tables_changed} tables</span>
+                                <span className="ms-2">
+                                    <span className="badge text-bg-success ms-1">+{v.summary.added}</span>
+                                    <span className="badge text-bg-danger ms-1">-{v.summary.removed}</span>
+                                    <span className="badge text-bg-warning ms-1">~{v.summary.modified}</span>
+                                    <span className="badge text-bg-secondary ms-1">{v.summary.tables_changed} tables</span>
                                 </span>
                             )}
                             {!v.previous_hash && (
-                                <span className="badge badge-info ml-2">Initial version</span>
+                                <span className="badge text-bg-info ms-2">Initial version</span>
                             )}
                         </div>
                         {v.summary && (
@@ -476,10 +476,10 @@ function DiffViewer({ diff, collapsedTables, onToggleTable }: DiffViewerProps) {
                         >
                             <strong>{tableName}</strong>
                             <span>
-                                {addedCount > 0 && <span className="badge badge-success ml-1">+{addedCount}</span>}
-                                {removedCount > 0 && <span className="badge badge-danger ml-1">-{removedCount}</span>}
-                                {modifiedCount > 0 && <span className="badge badge-warning ml-1">~{modifiedCount}</span>}
-                                <span className="ml-2">{collapsed ? '▶' : '▼'}</span>
+                                {addedCount > 0 && <span className="badge text-bg-success ms-1">+{addedCount}</span>}
+                                {removedCount > 0 && <span className="badge text-bg-danger ms-1">-{removedCount}</span>}
+                                {modifiedCount > 0 && <span className="badge text-bg-warning ms-1">~{modifiedCount}</span>}
+                                <span className="ms-2">{collapsed ? '▶' : '▼'}</span>
                             </span>
                         </div>
                         {!collapsed && (
@@ -494,24 +494,24 @@ function DiffViewer({ diff, collapsedTables, onToggleTable }: DiffViewerProps) {
                                     <tbody>
                                         {td.added.map((row, i) => (
                                             <tr key={`add-${i}`} style={{ backgroundColor: 'rgba(40,167,69,0.2)' }}>
-                                                <td><span className="badge badge-success">added</span></td>
+                                                <td><span className="badge text-bg-success">added</span></td>
                                                 {row.map((cell, ci) => <td key={ci}>{cell === null ? <em>NULL</em> : String(cell)}</td>)}
                                             </tr>
                                         ))}
                                         {td.removed.map((row, i) => (
                                             <tr key={`rem-${i}`} style={{ backgroundColor: 'rgba(220,53,69,0.2)' }}>
-                                                <td><span className="badge badge-danger">removed</span></td>
+                                                <td><span className="badge text-bg-danger">removed</span></td>
                                                 {row.map((cell, ci) => <td key={ci}>{cell === null ? <em>NULL</em> : String(cell)}</td>)}
                                             </tr>
                                         ))}
                                         {td.modified.map((mod, i) => (
                                             <React.Fragment key={`mod-${i}`}>
                                                 <tr style={{ backgroundColor: 'rgba(255,193,7,0.15)' }}>
-                                                    <td><span className="badge badge-warning">before</span></td>
+                                                    <td><span className="badge text-bg-warning">before</span></td>
                                                     {mod.before.map((cell, ci) => <td key={ci}>{cell === null ? <em>NULL</em> : String(cell)}</td>)}
                                                 </tr>
                                                 <tr style={{ backgroundColor: 'rgba(255,193,7,0.25)' }}>
-                                                    <td><span className="badge badge-warning">after</span></td>
+                                                    <td><span className="badge text-bg-warning">after</span></td>
                                                     {mod.after.map((cell, ci) => <td key={ci}>{cell === null ? <em>NULL</em> : String(cell)}</td>)}
                                                 </tr>
                                             </React.Fragment>
@@ -530,7 +530,7 @@ function DiffViewer({ diff, collapsedTables, onToggleTable }: DiffViewerProps) {
 export default function MasterDataPage() {
     return (
         <Container className="mt-4">
-            <Tabs defaultActiveKey="browser" id="masterdata-tabs">
+            <Tabs defaultActiveKey="browser" id="masterdata-tabs" transition={false}>
                 <Tab eventKey="browser" title="Table Browser">
                     <SqlBrowserTab />
                 </Tab>

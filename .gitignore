@@ -25,6 +25,8 @@ yarn-debug.log*
 yarn-error.log*
 
 __pycache__/
+umdb/*.py
+umdb/*.pyi
 /assets/
 /*.bat
 /scripts

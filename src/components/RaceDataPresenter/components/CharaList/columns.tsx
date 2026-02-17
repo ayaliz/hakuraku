@@ -147,20 +147,24 @@ export const charaTableColumns: CharaColumnDef[] = [
         cellClassName: 'chara-name-cell',
         renderCell: (row) => {
             const rankInfo = getRankIcon(row.trainedChara.rankScore);
+            const charaThumb = AssetLoader.getCharaThumb(row.trainedChara.cardId);
             return row.chara ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <img
                         src={rankInfo.icon}
                         alt={rankInfo.name}
-                        title={`${rankInfo.name} (${row.trainedChara.rankScore})`}
+                        title={String(row.trainedChara.rankScore)}
                         style={{ height: 20, width: 'auto' }}
                     />
-                    <img
-                        src={AssetLoader.getCharaThumb(row.trainedChara.cardId) ?? ""}
-                        alt={UMDatabaseWrapper.cards[row.trainedChara.cardId]?.name ?? String(row.trainedChara.cardId)}
-                        title={UMDatabaseWrapper.cards[row.trainedChara.cardId]?.name ?? String(row.trainedChara.cardId)}
-                        style={{ height: 40, width: 'auto', objectFit: 'contain' }}
-                    />
+                    {charaThumb && (
+                        <img
+                            src={charaThumb}
+                            alt={UMDatabaseWrapper.cards[row.trainedChara.cardId]?.name ?? String(row.trainedChara.cardId)}
+                            title={UMDatabaseWrapper.cards[row.trainedChara.cardId]?.name ?? String(row.trainedChara.cardId)}
+                            style={{ height: 40, width: 'auto', objectFit: 'contain' }}
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                    )}
                     <div>
                         <span className="chara-name-primary">{row.chara.name}</span>
                         {row.trainedChara.viewerName && (

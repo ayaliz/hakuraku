@@ -1,6 +1,5 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { Container, Nav, Navbar, Spinner } from "react-bootstrap";
-import 'react-bootstrap-typeahead/css/Typeahead.css';
 import { HashRouter, Link, Route, Routes } from "react-router-dom";
 import './App.css';
 import './dark-mode.css';

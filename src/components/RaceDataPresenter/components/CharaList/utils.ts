@@ -2,7 +2,7 @@ import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import AssetLoader from "../../../../data/AssetLoader";
 import { AggregatedFactor, ParentEntry } from "./types";
 
-export const getFactorCategory = (factorId: number): number => {
+const getFactorCategory = (factorId: number): number => {
     const idStr = String(factorId);
     const length = idStr.length;
 

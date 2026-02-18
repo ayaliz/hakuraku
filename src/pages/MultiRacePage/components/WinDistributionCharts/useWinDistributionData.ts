@@ -5,7 +5,7 @@ import { StrategyPieSlice, PieSlice, PerformanceMetrics } from "./types";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 
 export const useWinDistributionData = (
-    characterStats: CharacterStats[],
+    _characterStats: CharacterStats[],
     strategyStats: StrategyStats[],
     allHorses: HorseEntry[]
 ) => {
@@ -313,7 +313,7 @@ export const useWinDistributionData = (
             slices.sort((a, b) => b.value - a.value);
 
             if (othersCount > 0) {
-                const tooltipLines = othersDetails.sort((a, b) => 0).slice(0, 15);
+                const tooltipLines = othersDetails.sort(() => 0).slice(0, 15);
                 if (othersDetails.length > 15) {
                     tooltipLines.push(`...and ${othersDetails.length - 15} more`);
                 }

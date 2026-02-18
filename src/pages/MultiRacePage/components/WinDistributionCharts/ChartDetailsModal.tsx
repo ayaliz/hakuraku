@@ -16,7 +16,7 @@ const ChartDetailsModal: React.FC<ChartDetailsModalProps> = ({
     onClose,
     title,
     data,
-    unit = "wins",
+    unit: _unit = "wins",
 }) => {
     if (!isOpen) return null;
 

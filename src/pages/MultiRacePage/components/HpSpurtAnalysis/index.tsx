@@ -8,7 +8,7 @@ interface Props {
     courseId?: number;
 }
 
-export const HpSpurtAnalysis: React.FC<Props> = ({ stats, courseId }) => {
+const HpSpurtAnalysis: React.FC<Props> = ({ stats, courseId }) => {
     return (
         <div className="hp-analysis-wrapper">
             {stats.length === 0 ? (

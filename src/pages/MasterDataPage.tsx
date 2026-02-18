@@ -365,7 +365,7 @@ function VersionHistoryTab() {
     const [scrollToTable] = useState<string | null>(tableParam);
 
     useEffect(() => {
-        fetch(import.meta.env.BASE_URL + 'data/masterdata/versions.json')
+        fetch(import.meta.env.BASE_URL + 'data/masterdata/versions.json', { cache: 'no-cache' })
             .then((r) => {
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 return r.json();

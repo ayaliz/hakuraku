@@ -21,7 +21,7 @@ type InlineFilterSelectorState = {
 };
 
 export default class InlineFilterSelector extends React.Component<InlineFilterSelectorProps, InlineFilterSelectorState> {
-    private inputRef: React.RefObject<HTMLInputElement>;
+    private inputRef: React.RefObject<HTMLInputElement | null>;
 
     constructor(props: InlineFilterSelectorProps) {
         super(props);

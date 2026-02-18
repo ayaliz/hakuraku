@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file data.proto.
  */
 export const file_data: GenFile = /*@__PURE__*/
-  fileDesc("CgpkYXRhLnByb3RvEghoYWt1cmFrdSL8AgoKVU1EYXRhYmFzZRIPCgd2ZXJzaW9uGAEgASgJEh4KBWNoYXJhGAIgAygLMg8uaGFrdXJha3UuQ2hhcmESHAoEY2FyZBgJIAMoCzIOLmhha3VyYWt1LkNhcmQSKwoMc3VwcG9ydF9jYXJkGAsgAygLMhUuaGFrdXJha3UuU3VwcG9ydENhcmQSLQoNcmFjZV9pbnN0YW5jZRgEIAMoCzIWLmhha3VyYWt1LlJhY2VJbnN0YW5jZRIeCgVza2lsbBgHIAMoCzIPLmhha3VyYWt1LlNraWxsEiUKCXRleHRfZGF0YRgMIAMoCzISLmhha3VyYWt1LlRleHREYXRhEkgKHHNpbmdsZV9tb2RlX3NraWxsX25lZWRfcG9pbnQYDSADKAsyIi5oYWt1cmFrdS5TaW5nbGVNb2RlU2tpbGxOZWVkUG9pbnQSMgoQc2luZ2xlX21vZGVfcmFuaxgOIAMoCzIYLmhha3VyYWt1LlNpbmdsZU1vZGVSYW5rIjQKBUNoYXJhEgoKAmlkGAEgASgFEgwKBG5hbWUYAiABKAkSEQoJY2FzdF9uYW1lGAMgASgJIiAKBENhcmQSCgoCaWQYASABKAUSDAoEbmFtZRgCIAEoCSI5CgtTdXBwb3J0Q2FyZBIKCgJpZBgBIAEoBRIMCgRuYW1lGAIgASgJEhAKCGNoYXJhX2lkGAMgASgFIq0BCgxSYWNlSW5zdGFuY2USCgoCaWQYASABKAUSDAoEbmFtZRgCIAEoCRIQCghkaXN0YW5jZRgDIAEoBRI2Cgtncm91bmRfdHlwZRgEIAEoDjIhLmhha3VyYWt1LlJhY2VJbnN0YW5jZS5Hcm91bmRUeXBlIjkKCkdyb3VuZFR5cGUSFwoTVU5LTk9XTl9HUk9VTkRfVFlQRRAAEggKBFRVUkYQARIICgRESVJUEAIiVgoFU2tpbGwSCgoCaWQYASABKAUSDAoEbmFtZRgCIAEoCRITCgtncmFkZV92YWx1ZRgDIAEoERIOCgZ0YWdfaWQYBCADKAkSDgoGcmFyaXR5GAUgASgFIkUKCFRleHREYXRhEgoKAmlkGAEgASgFEhAKCGNhdGVnb3J5GAIgASgFEg0KBWluZGV4GAMgASgFEgwKBHRleHQYBCABKAkiggEKGFNpbmdsZU1vZGVTa2lsbE5lZWRQb2ludBIKCgJpZBgBIAEoBRIYChBuZWVkX3NraWxsX3BvaW50GAIgASgFEhMKC3N0YXR1c190eXBlGAMgASgFEhQKDHN0YXR1c192YWx1ZRgEIAEoBRIVCg1zb2x2YWJsZV90eXBlGAUgASgFIkIKDlNpbmdsZU1vZGVSYW5rEgoKAmlkGAEgASgFEhEKCW1pbl92YWx1ZRgCIAEoBRIRCgltYXhfdmFsdWUYAyABKAU");
+  fileDesc("CgpkYXRhLnByb3RvEghoYWt1cmFrdSL/AwoKVU1EYXRhYmFzZRIPCgd2ZXJzaW9uGAEgASgJEh4KBWNoYXJhGAIgAygLMg8uaGFrdXJha3UuQ2hhcmESHAoEY2FyZBgJIAMoCzIOLmhha3VyYWt1LkNhcmQSKwoMc3VwcG9ydF9jYXJkGAsgAygLMhUuaGFrdXJha3UuU3VwcG9ydENhcmQSLQoNcmFjZV9pbnN0YW5jZRgEIAMoCzIWLmhha3VyYWt1LlJhY2VJbnN0YW5jZRIeCgVza2lsbBgHIAMoCzIPLmhha3VyYWt1LlNraWxsEiUKCXRleHRfZGF0YRgMIAMoCzISLmhha3VyYWt1LlRleHREYXRhEkgKHHNpbmdsZV9tb2RlX3NraWxsX25lZWRfcG9pbnQYDSADKAsyIi5oYWt1cmFrdS5TaW5nbGVNb2RlU2tpbGxOZWVkUG9pbnQSMgoQc2luZ2xlX21vZGVfcmFuaxgOIAMoCzIYLmhha3VyYWt1LlNpbmdsZU1vZGVSYW5rEjkKE3N1Y2Nlc3Npb25fcmVsYXRpb24YDyADKAsyHC5oYWt1cmFrdS5TdWNjZXNzaW9uUmVsYXRpb24SRgoac3VjY2Vzc2lvbl9yZWxhdGlvbl9tZW1iZXIYECADKAsyIi5oYWt1cmFrdS5TdWNjZXNzaW9uUmVsYXRpb25NZW1iZXIiNAoFQ2hhcmESCgoCaWQYASABKAUSDAoEbmFtZRgCIAEoCRIRCgljYXN0X25hbWUYAyABKAkiIAoEQ2FyZBIKCgJpZBgBIAEoBRIMCgRuYW1lGAIgASgJIjkKC1N1cHBvcnRDYXJkEgoKAmlkGAEgASgFEgwKBG5hbWUYAiABKAkSEAoIY2hhcmFfaWQYAyABKAUirQEKDFJhY2VJbnN0YW5jZRIKCgJpZBgBIAEoBRIMCgRuYW1lGAIgASgJEhAKCGRpc3RhbmNlGAMgASgFEjYKC2dyb3VuZF90eXBlGAQgASgOMiEuaGFrdXJha3UuUmFjZUluc3RhbmNlLkdyb3VuZFR5cGUiOQoKR3JvdW5kVHlwZRIXChNVTktOT1dOX0dST1VORF9UWVBFEAASCAoEVFVSRhABEggKBERJUlQQAiJWCgVTa2lsbBIKCgJpZBgBIAEoBRIMCgRuYW1lGAIgASgJEhMKC2dyYWRlX3ZhbHVlGAMgASgREg4KBnRhZ19pZBgEIAMoCRIOCgZyYXJpdHkYBSABKAUiRQoIVGV4dERhdGESCgoCaWQYASABKAUSEAoIY2F0ZWdvcnkYAiABKAUSDQoFaW5kZXgYAyABKAUSDAoEdGV4dBgEIAEoCSKCAQoYU2luZ2xlTW9kZVNraWxsTmVlZFBvaW50EgoKAmlkGAEgASgFEhgKEG5lZWRfc2tpbGxfcG9pbnQYAiABKAUSEwoLc3RhdHVzX3R5cGUYAyABKAUSFAoMc3RhdHVzX3ZhbHVlGAQgASgFEhUKDXNvbHZhYmxlX3R5cGUYBSABKAUiQgoOU2luZ2xlTW9kZVJhbmsSCgoCaWQYASABKAUSEQoJbWluX3ZhbHVlGAIgASgFEhEKCW1heF92YWx1ZRgDIAEoBSJDChJTdWNjZXNzaW9uUmVsYXRpb24SFQoNcmVsYXRpb25fdHlwZRgBIAEoBRIWCg5yZWxhdGlvbl9wb2ludBgCIAEoBSJPChhTdWNjZXNzaW9uUmVsYXRpb25NZW1iZXISCgoCaWQYASABKAUSFQoNcmVsYXRpb25fdHlwZRgCIAEoBRIQCghjaGFyYV9pZBgDIAEoBQ");
 
 /**
  * @generated from message hakuraku.UMDatabase
@@ -60,6 +60,16 @@ export type UMDatabase = Message<"hakuraku.UMDatabase"> & {
    * @generated from field: repeated hakuraku.SingleModeRank single_mode_rank = 14;
    */
   singleModeRank: SingleModeRank[];
+
+  /**
+   * @generated from field: repeated hakuraku.SuccessionRelation succession_relation = 15;
+   */
+  successionRelation: SuccessionRelation[];
+
+  /**
+   * @generated from field: repeated hakuraku.SuccessionRelationMember succession_relation_member = 16;
+   */
+  successionRelationMember: SuccessionRelationMember[];
 };
 
 /**
@@ -362,4 +372,53 @@ export type SingleModeRank = Message<"hakuraku.SingleModeRank"> & {
  */
 export const SingleModeRankSchema: GenMessage<SingleModeRank> = /*@__PURE__*/
   messageDesc(file_data, 8);
+
+/**
+ * @generated from message hakuraku.SuccessionRelation
+ */
+export type SuccessionRelation = Message<"hakuraku.SuccessionRelation"> & {
+  /**
+   * @generated from field: optional int32 relation_type = 1;
+   */
+  relationType: number;
+
+  /**
+   * @generated from field: optional int32 relation_point = 2;
+   */
+  relationPoint: number;
+};
+
+/**
+ * Describes the message hakuraku.SuccessionRelation.
+ * Use `create(SuccessionRelationSchema)` to create a new message.
+ */
+export const SuccessionRelationSchema: GenMessage<SuccessionRelation> = /*@__PURE__*/
+  messageDesc(file_data, 9);
+
+/**
+ * @generated from message hakuraku.SuccessionRelationMember
+ */
+export type SuccessionRelationMember = Message<"hakuraku.SuccessionRelationMember"> & {
+  /**
+   * @generated from field: optional int32 id = 1;
+   */
+  id: number;
+
+  /**
+   * @generated from field: optional int32 relation_type = 2;
+   */
+  relationType: number;
+
+  /**
+   * @generated from field: optional int32 chara_id = 3;
+   */
+  charaId: number;
+};
+
+/**
+ * Describes the message hakuraku.SuccessionRelationMember.
+ * Use `create(SuccessionRelationMemberSchema)` to create a new message.
+ */
+export const SuccessionRelationMemberSchema: GenMessage<SuccessionRelationMember> = /*@__PURE__*/
+  messageDesc(file_data, 10);
 

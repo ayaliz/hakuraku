@@ -15,7 +15,7 @@ import {
 import * as echarts from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { Button, Form, OverlayTrigger, Tooltip } from "react-bootstrap";
-import type { MarkLine1DDataItemOption } from "echarts/types/src/component/marker/MarkLineModel";
+type MarkLine1DDataItemOption = { xAxis?: number | string; name?: string; label?: object; lineStyle?: object };
 
 import { RaceReplayProps } from "./RaceReplay.types";
 import "./RaceReplay.css";
@@ -528,7 +528,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                             <Form.Control
                                 as="select"
                                 value={selectedTrackId ?? ""}
-                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedTrackId(e.target.value)}
+                                onChange={(e) => setSelectedTrackId(e.target.value)}
                                 style={{ width: "auto", maxWidth: 320 }}
                             >
                                 {availableTracks.map((t) => (<option key={t.id} value={t.id}>{t.name}</option>))}

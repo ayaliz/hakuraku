@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { MarkLine1DDataItemOption } from "echarts/types/src/component/marker/MarkLineModel";
+type MarkLine1DDataItemOption = { xAxis?: number | string; name?: string; label?: object; lineStyle?: object };
 import GameDataLoader from "../../../data/GameDataLoader";
 import { clampRange } from "../RaceReplay.utils";
 import { SLOPE_UP_FILL, SLOPE_DOWN_FILL, SLOPE_DIAG_LINE, SLOPE_HALF_RATIO } from "../RaceReplay.constants";

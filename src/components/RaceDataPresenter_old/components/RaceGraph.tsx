@@ -18,8 +18,8 @@ import {
 import * as echarts from "echarts/core";
 import { ComposeOption } from "echarts/core";
 import { SVGRenderer } from "echarts/renderers";
-import type { MarkArea2DDataItemOption } from "echarts/types/src/component/marker/MarkAreaModel";
-import type { MarkLine1DDataItemOption } from "echarts/types/src/component/marker/MarkLineModel";
+type MarkLine1DDataItemOption = { xAxis?: number | string; name?: string; label?: object; lineStyle?: object };
+type MarkArea2DDataItemOption = [{ name?: string; xAxis?: number; itemStyle?: object }, { xAxis?: number }];
 import _ from "lodash";
 import {
     RaceSimulateData,

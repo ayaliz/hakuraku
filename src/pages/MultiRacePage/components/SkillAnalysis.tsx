@@ -1,6 +1,10 @@
 import React, { useState, useMemo } from "react";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import { SkillStats, SkillActivationPoint, CharacterStats, StrategyStats, HorseEntry } from "../types";
+import { CharaHpSpurtStats } from "./HpSpurtAnalysis/types";
+import AssetLoader from "../../../data/AssetLoader";
+import UMDatabaseWrapper from "../../../data/UMDatabaseWrapper";
+import PortraitSelect, { PortraitSelectOption } from "./PortraitSelect";
 
 interface SkillAnalysisProps {
     skillStats: Map<number, SkillStats>;
@@ -9,6 +13,7 @@ interface SkillAnalysisProps {
     characterStats: CharacterStats[];
     strategyStats: StrategyStats[];
     allHorses: HorseEntry[];
+    ownCharas?: CharaHpSpurtStats[];
 }
 
 type SortKey = "skillName" | "timesActivated" | "learnedByHorses" | "uniqueRaces" | "winRate" | "avgFinishPosition" | "normalizedActivations" | "meanDistance" | "medianDistance";
@@ -21,12 +26,78 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
     characterStats,
     strategyStats,
     allHorses,
+    ownCharas,
 }) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedStrategy, setSelectedStrategy] = useState<string>("all");
-    const [selectedCharaId, setSelectedCharaId] = useState<string>("all");
+    const [selectedCharaFilter, setSelectedCharaFilter] = useState<string>("all");
+    const [selectedOwnCharaFilter, setSelectedOwnCharaFilter] = useState<string>("all");
     const [minDist, setMinDist] = useState<string>("");
     const [maxDist, setMaxDist] = useState<string>("");
+
+    const allCharaDropdownOptions = useMemo((): PortraitSelectOption[] => {
+        const cardsByChara = new Map<number, { name: string; cardIds: Set<number> }>();
+        allHorses.forEach(h => {
+            if (!cardsByChara.has(h.charaId)) cardsByChara.set(h.charaId, { name: h.charaName, cardIds: new Set() });
+            cardsByChara.get(h.charaId)!.cardIds.add(h.cardId);
+        });
+        const sorted = Array.from(cardsByChara.entries()).sort(([, a], [, b]) => a.name.localeCompare(b.name));
+        const options: PortraitSelectOption[] = [];
+        sorted.forEach(([charaId, { name, cardIds }]) => {
+            const cardIdArr = Array.from(cardIds);
+            if (cardIdArr.length === 1) {
+                options.push({ value: `chara:${charaId}`, label: name, portrait: AssetLoader.getCharaThumb(cardIdArr[0]) ?? undefined });
+            } else {
+                options.push({ value: `chara:${charaId}`, label: `${name} (All)` });
+                cardIdArr.forEach(cardId => {
+                    const cardName = UMDatabaseWrapper.cards[cardId]?.name ?? name;
+                    options.push({ value: `card:${charaId}:${cardId}`, label: cardName, portrait: AssetLoader.getCharaThumb(cardId) ?? undefined, indent: true });
+                });
+            }
+        });
+        return options;
+    }, [allHorses]);
+
+    const ownCharaDropdownOptions = useMemo((): PortraitSelectOption[] => {
+        if (!ownCharas || ownCharas.length === 0) return [];
+        const grouped = new Map<number, CharaHpSpurtStats[]>();
+        ownCharas.forEach(c => {
+            if (!grouped.has(c.charaId)) grouped.set(c.charaId, []);
+            grouped.get(c.charaId)!.push(c);
+        });
+        const options: PortraitSelectOption[] = [];
+        grouped.forEach((versions, charaId) => {
+            if (versions.length === 1) {
+                options.push({ label: versions[0].charaName, value: `unique:${versions[0].uniqueId}`, portrait: AssetLoader.getCharaThumb(versions[0].cardId) ?? undefined });
+            } else {
+                options.push({ label: `${versions[0].charaName} (All)`, value: `chara:${charaId}` });
+                versions.forEach(v => {
+                    options.push({ label: `${v.charaName} (${v.trainedChara.rankScore})`, value: `unique:${v.uniqueId}`, portrait: AssetLoader.getCharaThumb(v.cardId) ?? undefined, indent: true });
+                });
+            }
+        });
+        return options;
+    }, [ownCharas]);
+
+    const ownCharaHorseKeys = useMemo(() => {
+        if (selectedOwnCharaFilter === "all" || !ownCharas) return null;
+        let relevantStats: CharaHpSpurtStats[] = [];
+        if (selectedOwnCharaFilter.startsWith("unique:")) {
+            const uid = selectedOwnCharaFilter.slice(7);
+            const stat = ownCharas.find(c => c.uniqueId === uid);
+            if (stat) relevantStats = [stat];
+        } else if (selectedOwnCharaFilter.startsWith("chara:")) {
+            const cid = Number(selectedOwnCharaFilter.slice(6));
+            relevantStats = ownCharas.filter(c => c.charaId === cid);
+        }
+        const keys = new Set<string>();
+        relevantStats.forEach(stat => {
+            stat.sourceRuns.forEach(({ race, horseFrameOrder }) => {
+                keys.add(`${race.id}_${horseFrameOrder}`);
+            });
+        });
+        return keys;
+    }, [ownCharas, selectedOwnCharaFilter]);
     const [expandedSkillId, setExpandedSkillId] = useState<number | null>(null);
     const [sortKey, setSortKey] = useState<SortKey>("timesActivated");
     const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -53,15 +124,23 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
     const filteredHorses = useMemo(() => {
         return allHorses.filter(h => {
             const matchesStrategy = selectedStrategy === "all" || h.strategy === Number(selectedStrategy);
-            const matchesChara = selectedCharaId === "all" || h.charaId === Number(selectedCharaId);
-            return matchesStrategy && matchesChara;
+            let matchesChara = true;
+            if (selectedCharaFilter.startsWith("chara:")) {
+                matchesChara = h.charaId === Number(selectedCharaFilter.slice(6));
+            } else if (selectedCharaFilter.startsWith("card:")) {
+                const parts = selectedCharaFilter.split(":");
+                matchesChara = h.charaId === Number(parts[1]) && h.cardId === Number(parts[2]);
+            }
+            const matchesOwnChara = ownCharaHorseKeys === null
+                || ownCharaHorseKeys.has(`${h.raceId}_${h.frameOrder}`);
+            return matchesStrategy && matchesChara && matchesOwnChara;
         });
-    }, [allHorses, selectedStrategy, selectedCharaId]);
+    }, [allHorses, selectedStrategy, selectedCharaFilter, ownCharaHorseKeys]);
 
     // Recalculate skill stats based on filtered horses
     const activeSkillStats = useMemo(() => {
         // If no filters active, use original stats (optimization)
-        if (selectedStrategy === "all" && selectedCharaId === "all" && minDist === "" && maxDist === "") {
+        if (selectedStrategy === "all" && selectedCharaFilter === "all" && ownCharaHorseKeys === null && minDist === "" && maxDist === "") {
             return Array.from(skillStats.values());
         }
 
@@ -154,7 +233,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
         });
 
         return filteredStats;
-    }, [skillStats, skillActivations, filteredHorses, selectedStrategy, selectedCharaId, minDist, maxDist]);
+    }, [skillStats, skillActivations, filteredHorses, selectedStrategy, selectedCharaFilter, ownCharaHorseKeys, minDist, maxDist]);
 
     const filteredSkills = useMemo(() => {
         const query = searchQuery.toLowerCase().trim();
@@ -218,7 +297,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
 
         let activations = baseActivations;
         // Always filter if we have any active filters
-        if (selectedStrategy !== "all" || selectedCharaId !== "all" || minDist !== "" || maxDist !== "") {
+        if (selectedStrategy !== "all" || selectedCharaFilter !== "all" || ownCharaHorseKeys !== null || minDist !== "" || maxDist !== "") {
             const validHorseKeys = new Set(filteredHorses.map(h => `${h.raceId}_${h.frameOrder}`));
             activations = baseActivations.filter(p =>
                 validHorseKeys.has(`${p.raceId}_${p.horseFrameOrder}`) &&
@@ -359,19 +438,21 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                     ))}
                 </select>
 
-                <select
-                    className="skill-search-input"
-                    style={{ width: "auto", marginLeft: "10px", paddingRight: "30px" }}
-                    value={selectedCharaId}
-                    onChange={e => setSelectedCharaId(e.target.value)}
-                >
-                    <option value="all">All Characters</option>
-                    {characterStats
-                        .sort((a, b) => a.charaName.localeCompare(b.charaName))
-                        .map(c => (
-                            <option key={c.charaId} value={c.charaId}>{c.charaName}</option>
-                        ))}
-                </select>
+                <PortraitSelect
+                    value={selectedCharaFilter}
+                    defaultLabel="All Characters"
+                    options={allCharaDropdownOptions}
+                    onChange={setSelectedCharaFilter}
+                />
+
+                {ownCharaDropdownOptions.length > 0 && (
+                    <PortraitSelect
+                        value={selectedOwnCharaFilter}
+                        defaultLabel="Own Characters"
+                        options={ownCharaDropdownOptions}
+                        onChange={setSelectedOwnCharaFilter}
+                    />
+                )}
 
                 <div style={{ display: "inline-flex", alignItems: "center", marginLeft: "10px" }}>
                     <input

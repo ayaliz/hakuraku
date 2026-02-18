@@ -1,5 +1,5 @@
 import { Veteran, BaseFilter, SortOption, SortDirection } from "./types";
-import { aggregateFactors, getFactorCategory } from "../../data/VeteransHelper";
+import { aggregateFactors, getFactorCategory, calculateAffinity } from "../../data/VeteransHelper";
 import { getCardName } from "./VeteransUIHelper";
 
 
@@ -17,7 +17,7 @@ export const matchesFilter = (veteran: Veteran, filter: BaseFilter, categoryId: 
     }
 };
 
-export const calculateSortScore = (veteran: Veteran, sortMode: SortOption): number => {
+export const calculateSortScore = (veteran: Veteran, sortMode: SortOption, affinityCharaId?: number | null): number => {
     const aggregated = aggregateFactors(veteran);
     
     const sumStars = (condition: (f: typeof aggregated[0]) => boolean) => {
@@ -31,6 +31,7 @@ export const calculateSortScore = (veteran: Veteran, sortMode: SortOption): numb
         case 'legacy_common': return sumStars(f => (f.category === 4 || f.category === 5) && f.isGold);
         case 'legacy_skills': return sumStars(f => f.category === 5 && f.isGold);
         case 'date': return new Date(veteran.create_time).getTime();
+        case 'affinity': return affinityCharaId ? calculateAffinity(veteran, affinityCharaId) : 0;
         case 'none': default: return 0;
     }
 };
@@ -73,9 +74,14 @@ export const applyFiltersAndSort = (
     config: any,
     sort: SortOption,
     direction: SortDirection,
-    nameSearch?: string
+    nameSearch?: string,
+    affinityCharaId?: number | null,
 ): Veteran[] => {
     let result = veterans;
+
+    if (affinityCharaId) {
+        result = result.filter(v => Math.floor(v.card_id / 100) !== affinityCharaId);
+    }
 
     if (nameSearch && nameSearch.trim()) {
         const query = nameSearch.trim().toLowerCase();
@@ -96,8 +102,8 @@ export const applyFiltersAndSort = (
 
     if (sort !== 'none') {
         result.sort((a, b) => {
-            const scoreA = calculateSortScore(a, sort);
-            const scoreB = calculateSortScore(b, sort);
+            const scoreA = calculateSortScore(a, sort, affinityCharaId);
+            const scoreB = calculateSortScore(b, sort, affinityCharaId);
             if (scoreB !== scoreA) {
                 return direction === 'desc' ? scoreB - scoreA : scoreA - scoreB;
             }

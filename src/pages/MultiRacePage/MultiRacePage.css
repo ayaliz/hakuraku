@@ -4,46 +4,6 @@
     padding: 20px 0;
 }
 
-/* Upload Zone */
-.multirace-upload-zone {
-    border: 2px dashed #4a5568;
-    border-radius: 12px;
-    padding: 40px 20px;
-    text-align: center;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    transition: all 0.3s ease;
-    cursor: pointer;
-    margin-bottom: 20px;
-}
-
-.multirace-upload-zone:hover {
-    border-color: #667eea;
-    background: linear-gradient(135deg, #1e1e3f 0%, #1a2a4f 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
-}
-
-.multirace-upload-zone.drag-over {
-    border-color: #667eea;
-    background: linear-gradient(135deg, #252550 0%, #1e3560 100%);
-}
-
-.upload-icon {
-    font-size: 48px;
-    margin-bottom: 15px;
-    color: #667eea;
-}
-
-.upload-text {
-    color: #a0aec0;
-    font-size: 16px;
-    margin-bottom: 10px;
-}
-
-.upload-subtext {
-    color: #718096;
-    font-size: 13px;
-}
 
 /* Race List */
 .race-list-container {
@@ -548,6 +508,21 @@
     border: 2px solid #1a1a2e;
 }
 
+/* Section containers & headings */
+.hp-spurt-analysis-section {
+    margin-bottom: 30px;
+}
+
+.section-heading {
+    color: #e2e8f0;
+    margin-bottom: 15px;
+}
+
+.multirace-error-list {
+    margin-bottom: 0;
+    margin-top: 8px;
+}
+
 /* Skill Analysis Section within track tabs */
 .skill-analysis-section {
     margin-top: 25px;
@@ -581,6 +556,102 @@
 
 .skill-table-expandable .heatmap-row:hover {
     background: rgba(102, 126, 234, 0.08);
+}
+
+.portrait-select {
+    position: relative;
+    display: inline-block;
+    margin-left: 10px;
+    vertical-align: middle;
+}
+
+.portrait-select-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
+    background: #1a202c;
+    border: 1px solid #4a5568;
+    border-radius: 8px;
+    color: #e2e8f0;
+    cursor: pointer;
+    font-size: 14px;
+    min-width: 140px;
+    user-select: none;
+    transition: border-color 0.15s ease;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.portrait-select-trigger:hover {
+    border-color: #667eea;
+}
+
+.portrait-select-img {
+    height: 28px;
+    width: 28px;
+    object-fit: contain;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.portrait-select-img-placeholder {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.portrait-select-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.portrait-select-arrow {
+    color: #718096;
+    font-size: 0.75em;
+    flex-shrink: 0;
+    margin-left: 4px;
+}
+
+.portrait-select-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 100%;
+    max-height: 320px;
+    overflow-y: auto;
+    background: #1a202c;
+    border: 1px solid #4a5568;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+}
+
+.portrait-select-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    color: #d1d5db;
+    font-size: 14px;
+    transition: background 0.1s ease;
+    white-space: nowrap;
+}
+
+.portrait-select-option:hover {
+    background: rgba(102, 126, 234, 0.15);
+}
+
+.portrait-select-option.is-selected {
+    background: rgba(102, 126, 234, 0.2);
+    color: #a5b4fc;
+}
+
+.portrait-select-option.is-indent {
+    padding-left: 22px;
 }
 
 /* Inline heatmap container */

@@ -15165,6 +15165,936 @@
       "text": "[Stone-Piercing Blue] Grass Wonder"
     },
     {
+      "id": 111,
+      "category": 111,
+      "index": 1,
+      "text": "Classic Triple Crown"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 2,
+      "text": "Senior Autumn Triple Crown"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 3,
+      "text": "Triple Tiara"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 4,
+      "text": "Senior Spring Triple Crown"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 5,
+      "text": "Tenno Sweep"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 6,
+      "text": "Dual Grand Prix"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 7,
+      "text": "Dual Miles"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 8,
+      "text": "Dual Sprints"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 9,
+      "text": "Dual Dirts"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 10,
+      "text": "Arima Kinen"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 11,
+      "text": "Japan C."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 12,
+      "text": "Japanese Derby"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 13,
+      "text": "Tenno Sho (Spring)"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 14,
+      "text": "Takarazuka Kinen"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 15,
+      "text": "Tenno Sho (Autumn)"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 16,
+      "text": "Kikuka Sho"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 17,
+      "text": "Osaka Hai"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 18,
+      "text": "Satsuki Sho"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 19,
+      "text": "Japanese Oaks"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 20,
+      "text": "Takamatsunomiya Kinen"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 21,
+      "text": "Yasuda Kinen"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 22,
+      "text": "Sprinters S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 23,
+      "text": "Mile Ch."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 24,
+      "text": "Oka Sho"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 25,
+      "text": "Victoria Mile"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 26,
+      "text": "Queen Elizabeth II Cup"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 27,
+      "text": "NHK Mile C."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 28,
+      "text": "Shuka Sho"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 29,
+      "text": "Champions C."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 30,
+      "text": "February S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 31,
+      "text": "JBC Classic"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 32,
+      "text": "Tokyo Daishoten"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 33,
+      "text": "Asahi Hai F.S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 34,
+      "text": "Hopeful S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 35,
+      "text": "Hanshin J.F."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 36,
+      "text": "Teio Sho"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 37,
+      "text": "JBC Sprint"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 38,
+      "text": "J.D. Derby"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 39,
+      "text": "JBC L. Classic"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 40,
+      "text": "Nikkei Shinshun Hai"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 41,
+      "text": "Tokai S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 42,
+      "text": "American JCC"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 43,
+      "text": "Kyoto Kinen"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 44,
+      "text": "Nakayama Kinen"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 45,
+      "text": "Yayoi Sho"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 46,
+      "text": "Kinko Sho"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 47,
+      "text": "Fillies' Revue"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 48,
+      "text": "Hanshin Daishoten"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 49,
+      "text": "Spring S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 50,
+      "text": "Nikkei Sho"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 51,
+      "text": "Hanshin Umamusume S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 52,
+      "text": "New Zealand T."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 53,
+      "text": "Yomiuri Milers C."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 54,
+      "text": "Flora S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 55,
+      "text": "Aoba Sho"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 56,
+      "text": "Kyoto Shimbun Hai"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 57,
+      "text": "Keio Hai Spring C."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 58,
+      "text": "Meguro Kinen"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 59,
+      "text": "Sapporo Kinen"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 60,
+      "text": "Centaur S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 61,
+      "text": "Rose S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 62,
+      "text": "St. Lite Kinen"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 63,
+      "text": "Kobe Shimbun Hai"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 64,
+      "text": "All Comers"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 65,
+      "text": "Mainichi Okan"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 66,
+      "text": "Kyoto Daishoten"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 67,
+      "text": "Fuchu Umamusume S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 68,
+      "text": "Swan S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 69,
+      "text": "Keio Hai Junior S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 70,
+      "text": "Copa Republica Argentina"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 71,
+      "text": "Daily Hai Junior S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 72,
+      "text": "Stayers S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 73,
+      "text": "Hanshin C."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 74,
+      "text": "Kyoto Kimpai"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 75,
+      "text": "Nakayama Kimpai"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 76,
+      "text": "Shinzan Kinen"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 77,
+      "text": "Fairy S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 78,
+      "text": "Aichi Hai"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 79,
+      "text": "Keisei Hai"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 80,
+      "text": "Silk Road S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 81,
+      "text": "Negishi S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 82,
+      "text": "Kisaragi Sho"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 83,
+      "text": "Tokyo Shimbun Hai"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 84,
+      "text": "Queen C."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 85,
+      "text": "Kyodo News Hai"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 86,
+      "text": "Kyoto Umamusume S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 87,
+      "text": "Diamond S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 88,
+      "text": "Kokura Daishoten"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 89,
+      "text": "Arlington C."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 90,
+      "text": "Hankyu Hai"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 91,
+      "text": "Tulip Sho"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 92,
+      "text": "Ocean S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 93,
+      "text": "Nakayama Umamusume S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 94,
+      "text": "Falcon S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 95,
+      "text": "Flower C."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 96,
+      "text": "Mainichi Hai"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 97,
+      "text": "March S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 98,
+      "text": "Lord Derby C.T."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 99,
+      "text": "Antares S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 100,
+      "text": "Fukushima Umamusume S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 101,
+      "text": "Niigata Daishoten"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 102,
+      "text": "Heian S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 103,
+      "text": "Naruo Kinen"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 104,
+      "text": "Mermaid S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 105,
+      "text": "Epsom C."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 106,
+      "text": "Unicorn S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 107,
+      "text": "Hakodate Sprint S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 108,
+      "text": "CBC Sho"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 109,
+      "text": "Radio Nikkei Sho"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 110,
+      "text": "Procyon S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 111,
+      "text": "Tanabata Sho"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 112,
+      "text": "Hakodate Kinen"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 113,
+      "text": "Chukyo Kinen"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 114,
+      "text": "Hakodate Junior S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 115,
+      "text": "Ibis Summer D."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 116,
+      "text": "Queen S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 117,
+      "text": "Kokura Kinen"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 118,
+      "text": "Leopard S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 119,
+      "text": "Sekiya Kinen"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 120,
+      "text": "Elm S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 121,
+      "text": "Kitakyushu Kinen"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 122,
+      "text": "Niigata Junior S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 123,
+      "text": "Keeneland C."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 124,
+      "text": "Sapporo Junior S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 125,
+      "text": "Kokura Junior S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 126,
+      "text": "Niigata Kinen"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 127,
+      "text": "Shion S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 128,
+      "text": "Keisei Hai A.H."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 129,
+      "text": "Sirius S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 130,
+      "text": "Saudi Arabia R.C."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 131,
+      "text": "Fuji S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 132,
+      "text": "Artemis S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 133,
+      "text": "Fantasy S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 134,
+      "text": "Miyako S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 135,
+      "text": "Musashino S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 136,
+      "text": "Fukushima Kinen"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 137,
+      "text": "Tokyo Sports Hai Junior S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 138,
+      "text": "Kyoto Junior S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 139,
+      "text": "Keihan Hai"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 140,
+      "text": "Challenge C."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 141,
+      "text": "Chunichi Shimbun Hai"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 142,
+      "text": "Capella S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 143,
+      "text": "Turquoise S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 144,
+      "text": "Classic Triple Crown"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 145,
+      "text": "Senior Spring Triple Crown"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 146,
+      "text": "Dual Grand Prix"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 147,
+      "text": "Takarazuka Kinen"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 148,
+      "text": "Kikuka Sho"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 149,
+      "text": "Spring S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 150,
+      "text": "Aoi S."
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 151,
+      "text": "Senior Spring Triple Crown"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 152,
+      "text": "Tenno Sweep"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 153,
+      "text": "Tenno Sho (Spring)"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 154,
+      "text": "Classic Triple Crown"
+    },
+    {
+      "id": 111,
+      "category": 111,
+      "index": 155,
+      "text": "Satsuki Sho"
+    },
+    {
       "id": 147,
       "category": 147,
       "index": 101,
@@ -24394,6 +25324,9926 @@
       "id": 98,
       "minValue": 71400,
       "maxValue": 99999
+    }
+  ],
+  "successionRelation": [
+    {
+      "relationType": 101,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 102,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 103,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 104,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 105,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 106,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 107,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 201,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 202,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 203,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 204,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 301,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 302,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 303,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 304,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 305,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 306,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 307,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 308,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 309,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 310,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 311,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 312,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 313,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 314,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 315,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 316,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 317,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 318,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 319,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 320,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 321,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 322,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 323,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 324,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 401,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 402,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 403,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 404,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 501,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 502,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 503,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 504,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 505,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 506,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 507,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 508,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 509,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 510,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 511,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 512,
+      "relationPoint": 2
+    },
+    {
+      "relationType": 2001,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2002,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2003,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2101,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2102,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2103,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2104,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2105,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2106,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2107,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2201,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2202,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2301,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2302,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2303,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2401,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2402,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2403,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2404,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2405,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2406,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2407,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2408,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2409,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2501,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2502,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2503,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2504,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2505,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2506,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2507,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2508,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2509,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2510,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2511,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2512,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2513,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2514,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2515,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2516,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2517,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2518,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2519,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2520,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2521,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2522,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2523,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2524,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2525,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2526,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2527,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2528,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2529,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2530,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2531,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2601,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2602,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2603,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2604,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2701,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2702,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2703,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2704,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2705,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2706,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2801,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2802,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2803,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2804,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2805,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2806,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2807,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2808,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2809,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2810,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2811,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2812,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2813,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2814,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2815,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2816,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2817,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 2901,
+      "relationPoint": 7
+    },
+    {
+      "relationType": 2902,
+      "relationPoint": 7
+    },
+    {
+      "relationType": 2903,
+      "relationPoint": 7
+    },
+    {
+      "relationType": 2904,
+      "relationPoint": 7
+    },
+    {
+      "relationType": 3001,
+      "relationPoint": 7
+    },
+    {
+      "relationType": 3002,
+      "relationPoint": 7
+    },
+    {
+      "relationType": 3003,
+      "relationPoint": 7
+    },
+    {
+      "relationType": 3004,
+      "relationPoint": 7
+    },
+    {
+      "relationType": 3101,
+      "relationPoint": 7
+    },
+    {
+      "relationType": 3102,
+      "relationPoint": 7
+    },
+    {
+      "relationType": 3201,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 3202,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 3203,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 3204,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 3205,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 3206,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 5001,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 5002,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7000,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7001,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7002,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7003,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7004,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7005,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7006,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7007,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7008,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7009,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7010,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7011,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7012,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7013,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7014,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7015,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7016,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7017,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7018,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7019,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7020,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7021,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7022,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7023,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7024,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7025,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7026,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 7027,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8001,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8002,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8003,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8004,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8005,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8006,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8007,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8008,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8009,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8010,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8011,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8012,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8013,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8014,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8015,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8016,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8017,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8018,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8019,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8020,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8021,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8022,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8023,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8024,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8025,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8026,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8027,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8028,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8029,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8030,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8031,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8032,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8033,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8034,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8035,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8036,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8037,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8038,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8039,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8040,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8041,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8042,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8043,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8044,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8045,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8046,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8047,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8048,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8049,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8050,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8051,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8052,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8053,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8054,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8055,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8056,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8057,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8058,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8059,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8060,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8061,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8062,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8063,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8064,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8065,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8066,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8067,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8068,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8069,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8070,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8071,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8072,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8073,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8074,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8075,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8076,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8077,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8078,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8079,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8080,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8081,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8082,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8083,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8084,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8085,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8086,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8087,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8088,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8089,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8090,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8091,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8092,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8093,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8094,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8095,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8096,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8097,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8098,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8099,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8100,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8101,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8102,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8103,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8104,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8105,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8106,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8107,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8108,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8109,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8110,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8111,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8112,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8113,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8114,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8115,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8116,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8117,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8118,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8119,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8120,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8121,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8122,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8123,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8124,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8125,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8126,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8127,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8128,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8129,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8130,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8131,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8132,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8133,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8134,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8135,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8136,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8137,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8138,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8139,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8140,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8141,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8142,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8143,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8144,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8145,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8146,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8147,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8148,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8149,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8150,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8151,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8152,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8153,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8154,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8155,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8156,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8157,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8158,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8159,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8160,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8161,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8162,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8163,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8164,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8165,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8166,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8167,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8168,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8169,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8170,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8171,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8172,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8173,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8174,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8175,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8176,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8177,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8178,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8179,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8180,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8181,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8182,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8183,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8184,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8185,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8186,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8187,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8188,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8189,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8190,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8191,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8192,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8193,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8194,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8195,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8196,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8197,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8198,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8199,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8200,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8201,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8202,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8203,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8204,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8205,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8206,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8207,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8208,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8209,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8210,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8211,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8212,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8213,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8214,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8215,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8216,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8217,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8218,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8219,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8220,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8221,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8222,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8223,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8224,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8225,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8226,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8227,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8228,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8229,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8230,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8231,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8232,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8233,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8234,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8235,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8236,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8237,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8238,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8239,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8240,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8241,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8242,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8243,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8244,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8245,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8246,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8247,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8248,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8249,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8250,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8251,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8252,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8253,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8254,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8255,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8256,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8257,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8258,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8259,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8260,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8261,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8262,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8263,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8264,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8265,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8266,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8267,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8268,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8269,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8270,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8271,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8272,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8273,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8274,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8275,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8276,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8277,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8278,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8279,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8280,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8281,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8282,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8283,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8284,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8285,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8286,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8287,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8288,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8289,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8290,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8291,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8292,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8293,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8294,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8295,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8296,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8297,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8298,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8299,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8300,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8301,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8302,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8303,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8304,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8305,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8306,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8307,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8308,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8309,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8310,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8311,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8312,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8313,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8314,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8315,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8316,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8317,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8318,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8319,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8320,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8321,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8322,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8323,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8324,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8325,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8326,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8327,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8328,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8329,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8330,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8331,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8332,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8333,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8334,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8335,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8336,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8337,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8338,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8339,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8340,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8341,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8342,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8343,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8344,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8345,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8346,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8347,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8348,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8349,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8350,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8351,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8352,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8353,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8354,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8355,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8356,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8357,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8358,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8359,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8360,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8361,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8362,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8363,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8364,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8365,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8366,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8367,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8368,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8369,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8370,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8371,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8372,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8373,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8374,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8375,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8376,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8377,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8378,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8379,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8380,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8381,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8382,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8383,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8384,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8385,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8386,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8387,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8388,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8389,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8390,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8391,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8392,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8393,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8394,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8395,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8396,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8397,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8398,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8399,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8400,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8401,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8402,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8403,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8404,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8405,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8406,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8407,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8408,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8409,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8410,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8411,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8412,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8413,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8414,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8415,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8416,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8417,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8418,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8419,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8420,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8421,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8422,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8423,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8424,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8425,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8426,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8427,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8428,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8429,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8430,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8431,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8432,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8433,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8434,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8435,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8436,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8437,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8438,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8439,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8440,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8441,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8442,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8443,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8444,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8445,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8446,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8447,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8448,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8449,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8450,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8451,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8452,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8453,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8454,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8455,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8456,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8457,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8458,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8459,
+      "relationPoint": 1
+    },
+    {
+      "relationType": 8460,
+      "relationPoint": 1
+    }
+  ],
+  "successionRelationMember": [
+    {
+      "id": 1,
+      "relationType": 101,
+      "charaId": 1024
+    },
+    {
+      "id": 7,
+      "relationType": 102,
+      "charaId": 1003
+    },
+    {
+      "id": 8,
+      "relationType": 102,
+      "charaId": 1008
+    },
+    {
+      "id": 9,
+      "relationType": 102,
+      "charaId": 1009
+    },
+    {
+      "id": 10,
+      "relationType": 102,
+      "charaId": 1013
+    },
+    {
+      "id": 11,
+      "relationType": 102,
+      "charaId": 1019
+    },
+    {
+      "id": 12,
+      "relationType": 102,
+      "charaId": 1038
+    },
+    {
+      "id": 14,
+      "relationType": 103,
+      "charaId": 1011
+    },
+    {
+      "id": 15,
+      "relationType": 103,
+      "charaId": 1014
+    },
+    {
+      "id": 16,
+      "relationType": 103,
+      "charaId": 1020
+    },
+    {
+      "id": 17,
+      "relationType": 103,
+      "charaId": 1052
+    },
+    {
+      "id": 18,
+      "relationType": 103,
+      "charaId": 1001
+    },
+    {
+      "id": 19,
+      "relationType": 103,
+      "charaId": 1015
+    },
+    {
+      "id": 20,
+      "relationType": 103,
+      "charaId": 1028
+    },
+    {
+      "id": 21,
+      "relationType": 103,
+      "charaId": 1039
+    },
+    {
+      "id": 22,
+      "relationType": 103,
+      "charaId": 1058
+    },
+    {
+      "id": 23,
+      "relationType": 103,
+      "charaId": 1060
+    },
+    {
+      "id": 24,
+      "relationType": 103,
+      "charaId": 1061
+    },
+    {
+      "id": 25,
+      "relationType": 104,
+      "charaId": 1010
+    },
+    {
+      "id": 26,
+      "relationType": 104,
+      "charaId": 1025
+    },
+    {
+      "id": 27,
+      "relationType": 104,
+      "charaId": 1030
+    },
+    {
+      "id": 28,
+      "relationType": 104,
+      "charaId": 1041
+    },
+    {
+      "id": 30,
+      "relationType": 104,
+      "charaId": 1059
+    },
+    {
+      "id": 31,
+      "relationType": 104,
+      "charaId": 1002
+    },
+    {
+      "id": 32,
+      "relationType": 104,
+      "charaId": 1022
+    },
+    {
+      "id": 33,
+      "relationType": 104,
+      "charaId": 1026
+    },
+    {
+      "id": 34,
+      "relationType": 104,
+      "charaId": 1032
+    },
+    {
+      "id": 36,
+      "relationType": 104,
+      "charaId": 1040
+    },
+    {
+      "id": 37,
+      "relationType": 104,
+      "charaId": 1048
+    },
+    {
+      "id": 38,
+      "relationType": 104,
+      "charaId": 1056
+    },
+    {
+      "id": 39,
+      "relationType": 105,
+      "charaId": 1012
+    },
+    {
+      "id": 40,
+      "relationType": 105,
+      "charaId": 1027
+    },
+    {
+      "id": 43,
+      "relationType": 105,
+      "charaId": 1005
+    },
+    {
+      "id": 44,
+      "relationType": 105,
+      "charaId": 1007
+    },
+    {
+      "id": 45,
+      "relationType": 105,
+      "charaId": 1016
+    },
+    {
+      "id": 46,
+      "relationType": 105,
+      "charaId": 1018
+    },
+    {
+      "id": 47,
+      "relationType": 105,
+      "charaId": 1023
+    },
+    {
+      "id": 49,
+      "relationType": 105,
+      "charaId": 1035
+    },
+    {
+      "id": 50,
+      "relationType": 105,
+      "charaId": 1037
+    },
+    {
+      "id": 51,
+      "relationType": 105,
+      "charaId": 1046
+    },
+    {
+      "id": 52,
+      "relationType": 105,
+      "charaId": 1050
+    },
+    {
+      "id": 54,
+      "relationType": 106,
+      "charaId": 1004
+    },
+    {
+      "id": 55,
+      "relationType": 106,
+      "charaId": 1017
+    },
+    {
+      "id": 57,
+      "relationType": 106,
+      "charaId": 1006
+    },
+    {
+      "id": 58,
+      "relationType": 106,
+      "charaId": 1021
+    },
+    {
+      "id": 60,
+      "relationType": 106,
+      "charaId": 1045
+    },
+    {
+      "id": 62,
+      "relationType": 201,
+      "charaId": 1010
+    },
+    {
+      "id": 63,
+      "relationType": 201,
+      "charaId": 1011
+    },
+    {
+      "id": 64,
+      "relationType": 201,
+      "charaId": 1012
+    },
+    {
+      "id": 65,
+      "relationType": 201,
+      "charaId": 1014
+    },
+    {
+      "id": 66,
+      "relationType": 201,
+      "charaId": 1017
+    },
+    {
+      "id": 67,
+      "relationType": 201,
+      "charaId": 1020
+    },
+    {
+      "id": 68,
+      "relationType": 201,
+      "charaId": 1025
+    },
+    {
+      "id": 69,
+      "relationType": 201,
+      "charaId": 1027
+    },
+    {
+      "id": 71,
+      "relationType": 201,
+      "charaId": 1030
+    },
+    {
+      "id": 74,
+      "relationType": 201,
+      "charaId": 1041
+    },
+    {
+      "id": 79,
+      "relationType": 201,
+      "charaId": 1059
+    },
+    {
+      "id": 80,
+      "relationType": 202,
+      "charaId": 1001
+    },
+    {
+      "id": 81,
+      "relationType": 202,
+      "charaId": 1002
+    },
+    {
+      "id": 82,
+      "relationType": 202,
+      "charaId": 1003
+    },
+    {
+      "id": 83,
+      "relationType": 202,
+      "charaId": 1005
+    },
+    {
+      "id": 84,
+      "relationType": 202,
+      "charaId": 1006
+    },
+    {
+      "id": 85,
+      "relationType": 202,
+      "charaId": 1007
+    },
+    {
+      "id": 86,
+      "relationType": 202,
+      "charaId": 1008
+    },
+    {
+      "id": 87,
+      "relationType": 202,
+      "charaId": 1009
+    },
+    {
+      "id": 88,
+      "relationType": 202,
+      "charaId": 1013
+    },
+    {
+      "id": 89,
+      "relationType": 202,
+      "charaId": 1015
+    },
+    {
+      "id": 90,
+      "relationType": 202,
+      "charaId": 1016
+    },
+    {
+      "id": 91,
+      "relationType": 202,
+      "charaId": 1018
+    },
+    {
+      "id": 92,
+      "relationType": 202,
+      "charaId": 1019
+    },
+    {
+      "id": 93,
+      "relationType": 202,
+      "charaId": 1021
+    },
+    {
+      "id": 94,
+      "relationType": 202,
+      "charaId": 1022
+    },
+    {
+      "id": 95,
+      "relationType": 202,
+      "charaId": 1023
+    },
+    {
+      "id": 96,
+      "relationType": 202,
+      "charaId": 1024
+    },
+    {
+      "id": 97,
+      "relationType": 202,
+      "charaId": 1026
+    },
+    {
+      "id": 98,
+      "relationType": 202,
+      "charaId": 1028
+    },
+    {
+      "id": 99,
+      "relationType": 202,
+      "charaId": 1032
+    },
+    {
+      "id": 101,
+      "relationType": 202,
+      "charaId": 1035
+    },
+    {
+      "id": 103,
+      "relationType": 202,
+      "charaId": 1037
+    },
+    {
+      "id": 104,
+      "relationType": 202,
+      "charaId": 1038
+    },
+    {
+      "id": 105,
+      "relationType": 202,
+      "charaId": 1039
+    },
+    {
+      "id": 106,
+      "relationType": 202,
+      "charaId": 1040
+    },
+    {
+      "id": 109,
+      "relationType": 202,
+      "charaId": 1045
+    },
+    {
+      "id": 110,
+      "relationType": 202,
+      "charaId": 1046
+    },
+    {
+      "id": 111,
+      "relationType": 202,
+      "charaId": 1048
+    },
+    {
+      "id": 112,
+      "relationType": 202,
+      "charaId": 1050
+    },
+    {
+      "id": 117,
+      "relationType": 202,
+      "charaId": 1056
+    },
+    {
+      "id": 118,
+      "relationType": 202,
+      "charaId": 1058
+    },
+    {
+      "id": 119,
+      "relationType": 202,
+      "charaId": 1060
+    },
+    {
+      "id": 120,
+      "relationType": 202,
+      "charaId": 1061
+    },
+    {
+      "id": 121,
+      "relationType": 203,
+      "charaId": 1004
+    },
+    {
+      "id": 122,
+      "relationType": 202,
+      "charaId": 1052
+    },
+    {
+      "id": 123,
+      "relationType": 301,
+      "charaId": 1001
+    },
+    {
+      "id": 124,
+      "relationType": 301,
+      "charaId": 1002
+    },
+    {
+      "id": 125,
+      "relationType": 302,
+      "charaId": 1006
+    },
+    {
+      "id": 126,
+      "relationType": 302,
+      "charaId": 1021
+    },
+    {
+      "id": 127,
+      "relationType": 303,
+      "charaId": 1008
+    },
+    {
+      "id": 128,
+      "relationType": 303,
+      "charaId": 1009
+    },
+    {
+      "id": 129,
+      "relationType": 304,
+      "charaId": 1010
+    },
+    {
+      "id": 130,
+      "relationType": 304,
+      "charaId": 1059
+    },
+    {
+      "id": 131,
+      "relationType": 305,
+      "charaId": 1011
+    },
+    {
+      "id": 132,
+      "relationType": 305,
+      "charaId": 1014
+    },
+    {
+      "id": 133,
+      "relationType": 306,
+      "charaId": 1015
+    },
+    {
+      "id": 134,
+      "relationType": 306,
+      "charaId": 1023
+    },
+    {
+      "id": 135,
+      "relationType": 307,
+      "charaId": 1018
+    },
+    {
+      "id": 136,
+      "relationType": 307,
+      "charaId": 1022
+    },
+    {
+      "id": 137,
+      "relationType": 308,
+      "charaId": 1024
+    },
+    {
+      "id": 138,
+      "relationType": 308,
+      "charaId": 1003
+    },
+    {
+      "id": 139,
+      "relationType": 309,
+      "charaId": 1025
+    },
+    {
+      "id": 141,
+      "relationType": 310,
+      "charaId": 1026
+    },
+    {
+      "id": 143,
+      "relationType": 311,
+      "charaId": 1027
+    },
+    {
+      "id": 145,
+      "relationType": 312,
+      "charaId": 1028
+    },
+    {
+      "id": 147,
+      "relationType": 313,
+      "charaId": 1030
+    },
+    {
+      "id": 149,
+      "relationType": 314,
+      "charaId": 1032
+    },
+    {
+      "id": 150,
+      "relationType": 314,
+      "charaId": 1019
+    },
+    {
+      "id": 152,
+      "relationType": 315,
+      "charaId": 1038
+    },
+    {
+      "id": 153,
+      "relationType": 316,
+      "charaId": 1035
+    },
+    {
+      "id": 154,
+      "relationType": 316,
+      "charaId": 1048
+    },
+    {
+      "id": 156,
+      "relationType": 317,
+      "charaId": 1058
+    },
+    {
+      "id": 157,
+      "relationType": 318,
+      "charaId": 1037
+    },
+    {
+      "id": 158,
+      "relationType": 318,
+      "charaId": 1046
+    },
+    {
+      "id": 159,
+      "relationType": 319,
+      "charaId": 1039
+    },
+    {
+      "id": 161,
+      "relationType": 320,
+      "charaId": 1040
+    },
+    {
+      "id": 163,
+      "relationType": 321,
+      "charaId": 1045
+    },
+    {
+      "id": 164,
+      "relationType": 321,
+      "charaId": 1050
+    },
+    {
+      "id": 165,
+      "relationType": 322,
+      "charaId": 1052
+    },
+    {
+      "id": 166,
+      "relationType": 322,
+      "charaId": 1061
+    },
+    {
+      "id": 168,
+      "relationType": 323,
+      "charaId": 1060
+    },
+    {
+      "id": 169,
+      "relationType": 401,
+      "charaId": 1001
+    },
+    {
+      "id": 170,
+      "relationType": 401,
+      "charaId": 1011
+    },
+    {
+      "id": 171,
+      "relationType": 401,
+      "charaId": 1014
+    },
+    {
+      "id": 172,
+      "relationType": 401,
+      "charaId": 1020
+    },
+    {
+      "id": 173,
+      "relationType": 401,
+      "charaId": 1061
+    },
+    {
+      "id": 174,
+      "relationType": 402,
+      "charaId": 1002
+    },
+    {
+      "id": 175,
+      "relationType": 402,
+      "charaId": 1041
+    },
+    {
+      "id": 176,
+      "relationType": 402,
+      "charaId": 1010
+    },
+    {
+      "id": 177,
+      "relationType": 402,
+      "charaId": 1056
+    },
+    {
+      "id": 178,
+      "relationType": 403,
+      "charaId": 1003
+    },
+    {
+      "id": 179,
+      "relationType": 403,
+      "charaId": 1008
+    },
+    {
+      "id": 180,
+      "relationType": 403,
+      "charaId": 1009
+    },
+    {
+      "id": 181,
+      "relationType": 403,
+      "charaId": 1013
+    },
+    {
+      "id": 182,
+      "relationType": 404,
+      "charaId": 1023
+    },
+    {
+      "id": 183,
+      "relationType": 404,
+      "charaId": 1050
+    },
+    {
+      "id": 184,
+      "relationType": 404,
+      "charaId": 1035
+    },
+    {
+      "id": 185,
+      "relationType": 501,
+      "charaId": 1017
+    },
+    {
+      "id": 186,
+      "relationType": 501,
+      "charaId": 1018
+    },
+    {
+      "id": 187,
+      "relationType": 501,
+      "charaId": 1016
+    },
+    {
+      "id": 188,
+      "relationType": 502,
+      "charaId": 1001
+    },
+    {
+      "id": 189,
+      "relationType": 502,
+      "charaId": 1011
+    },
+    {
+      "id": 190,
+      "relationType": 502,
+      "charaId": 1014
+    },
+    {
+      "id": 191,
+      "relationType": 502,
+      "charaId": 1020
+    },
+    {
+      "id": 192,
+      "relationType": 503,
+      "charaId": 1013
+    },
+    {
+      "id": 193,
+      "relationType": 503,
+      "charaId": 1027
+    },
+    {
+      "id": 194,
+      "relationType": 503,
+      "charaId": 1059
+    },
+    {
+      "id": 195,
+      "relationType": 504,
+      "charaId": 1061
+    },
+    {
+      "id": 196,
+      "relationType": 504,
+      "charaId": 1013
+    },
+    {
+      "id": 197,
+      "relationType": 504,
+      "charaId": 1022
+    },
+    {
+      "id": 198,
+      "relationType": 505,
+      "charaId": 1012
+    },
+    {
+      "id": 199,
+      "relationType": 505,
+      "charaId": 1005
+    },
+    {
+      "id": 200,
+      "relationType": 506,
+      "charaId": 1006
+    },
+    {
+      "id": 201,
+      "relationType": 506,
+      "charaId": 1021
+    },
+    {
+      "id": 202,
+      "relationType": 506,
+      "charaId": 1045
+    },
+    {
+      "id": 204,
+      "relationType": 507,
+      "charaId": 1023
+    },
+    {
+      "id": 205,
+      "relationType": 507,
+      "charaId": 1050
+    },
+    {
+      "id": 206,
+      "relationType": 507,
+      "charaId": 1035
+    },
+    {
+      "id": 207,
+      "relationType": 2001,
+      "charaId": 1002
+    },
+    {
+      "id": 208,
+      "relationType": 2001,
+      "charaId": 1001
+    },
+    {
+      "id": 209,
+      "relationType": 2001,
+      "charaId": 1005
+    },
+    {
+      "id": 210,
+      "relationType": 2001,
+      "charaId": 1025
+    },
+    {
+      "id": 212,
+      "relationType": 2001,
+      "charaId": 1032
+    },
+    {
+      "id": 213,
+      "relationType": 2002,
+      "charaId": 1018
+    },
+    {
+      "id": 214,
+      "relationType": 2002,
+      "charaId": 1035
+    },
+    {
+      "id": 215,
+      "relationType": 2003,
+      "charaId": 1041
+    },
+    {
+      "id": 217,
+      "relationType": 2101,
+      "charaId": 1007
+    },
+    {
+      "id": 218,
+      "relationType": 2101,
+      "charaId": 1009
+    },
+    {
+      "id": 219,
+      "relationType": 2101,
+      "charaId": 1046
+    },
+    {
+      "id": 220,
+      "relationType": 2102,
+      "charaId": 1001
+    },
+    {
+      "id": 221,
+      "relationType": 2102,
+      "charaId": 1035
+    },
+    {
+      "id": 222,
+      "relationType": 2103,
+      "charaId": 1011
+    },
+    {
+      "id": 223,
+      "relationType": 2103,
+      "charaId": 1024
+    },
+    {
+      "id": 224,
+      "relationType": 2104,
+      "charaId": 1015
+    },
+    {
+      "id": 225,
+      "relationType": 2104,
+      "charaId": 1024
+    },
+    {
+      "id": 227,
+      "relationType": 2105,
+      "charaId": 1040
+    },
+    {
+      "id": 228,
+      "relationType": 2106,
+      "charaId": 1018
+    },
+    {
+      "id": 229,
+      "relationType": 2106,
+      "charaId": 1009
+    },
+    {
+      "id": 230,
+      "relationType": 2106,
+      "charaId": 1041
+    },
+    {
+      "id": 231,
+      "relationType": 2107,
+      "charaId": 1032
+    },
+    {
+      "id": 233,
+      "relationType": 2201,
+      "charaId": 1017
+    },
+    {
+      "id": 234,
+      "relationType": 2201,
+      "charaId": 1003
+    },
+    {
+      "id": 235,
+      "relationType": 2301,
+      "charaId": 1001
+    },
+    {
+      "id": 236,
+      "relationType": 2301,
+      "charaId": 1004
+    },
+    {
+      "id": 237,
+      "relationType": 2302,
+      "charaId": 1004
+    },
+    {
+      "id": 238,
+      "relationType": 2302,
+      "charaId": 1035
+    },
+    {
+      "id": 239,
+      "relationType": 2303,
+      "charaId": 1013
+    },
+    {
+      "id": 240,
+      "relationType": 2303,
+      "charaId": 1007
+    },
+    {
+      "id": 241,
+      "relationType": 2601,
+      "charaId": 1001
+    },
+    {
+      "id": 242,
+      "relationType": 2601,
+      "charaId": 1002
+    },
+    {
+      "id": 243,
+      "relationType": 2601,
+      "charaId": 1003
+    },
+    {
+      "id": 244,
+      "relationType": 2601,
+      "charaId": 1004
+    },
+    {
+      "id": 245,
+      "relationType": 2601,
+      "charaId": 1005
+    },
+    {
+      "id": 246,
+      "relationType": 2601,
+      "charaId": 1006
+    },
+    {
+      "id": 247,
+      "relationType": 2601,
+      "charaId": 1007
+    },
+    {
+      "id": 248,
+      "relationType": 2601,
+      "charaId": 1010
+    },
+    {
+      "id": 249,
+      "relationType": 2601,
+      "charaId": 1011
+    },
+    {
+      "id": 250,
+      "relationType": 2601,
+      "charaId": 1013
+    },
+    {
+      "id": 251,
+      "relationType": 2601,
+      "charaId": 1014
+    },
+    {
+      "id": 252,
+      "relationType": 2601,
+      "charaId": 1015
+    },
+    {
+      "id": 253,
+      "relationType": 2601,
+      "charaId": 1016
+    },
+    {
+      "id": 254,
+      "relationType": 2601,
+      "charaId": 1017
+    },
+    {
+      "id": 255,
+      "relationType": 2601,
+      "charaId": 1019
+    },
+    {
+      "id": 256,
+      "relationType": 2601,
+      "charaId": 1020
+    },
+    {
+      "id": 257,
+      "relationType": 2601,
+      "charaId": 1021
+    },
+    {
+      "id": 258,
+      "relationType": 2601,
+      "charaId": 1023
+    },
+    {
+      "id": 259,
+      "relationType": 2601,
+      "charaId": 1024
+    },
+    {
+      "id": 260,
+      "relationType": 2601,
+      "charaId": 1025
+    },
+    {
+      "id": 261,
+      "relationType": 2601,
+      "charaId": 1026
+    },
+    {
+      "id": 262,
+      "relationType": 2601,
+      "charaId": 1027
+    },
+    {
+      "id": 263,
+      "relationType": 2601,
+      "charaId": 1028
+    },
+    {
+      "id": 264,
+      "relationType": 2601,
+      "charaId": 1030
+    },
+    {
+      "id": 266,
+      "relationType": 2601,
+      "charaId": 1032
+    },
+    {
+      "id": 269,
+      "relationType": 2601,
+      "charaId": 1035
+    },
+    {
+      "id": 271,
+      "relationType": 2601,
+      "charaId": 1037
+    },
+    {
+      "id": 272,
+      "relationType": 2601,
+      "charaId": 1040
+    },
+    {
+      "id": 273,
+      "relationType": 2601,
+      "charaId": 1041
+    },
+    {
+      "id": 275,
+      "relationType": 2601,
+      "charaId": 1045
+    },
+    {
+      "id": 276,
+      "relationType": 2601,
+      "charaId": 1046
+    },
+    {
+      "id": 278,
+      "relationType": 2601,
+      "charaId": 1048
+    },
+    {
+      "id": 280,
+      "relationType": 2601,
+      "charaId": 1050
+    },
+    {
+      "id": 284,
+      "relationType": 2601,
+      "charaId": 1056
+    },
+    {
+      "id": 286,
+      "relationType": 2601,
+      "charaId": 1058
+    },
+    {
+      "id": 287,
+      "relationType": 2601,
+      "charaId": 1060
+    },
+    {
+      "id": 288,
+      "relationType": 2601,
+      "charaId": 1061
+    },
+    {
+      "id": 289,
+      "relationType": 2602,
+      "charaId": 1008
+    },
+    {
+      "id": 290,
+      "relationType": 2602,
+      "charaId": 1009
+    },
+    {
+      "id": 291,
+      "relationType": 2602,
+      "charaId": 1012
+    },
+    {
+      "id": 292,
+      "relationType": 2602,
+      "charaId": 1018
+    },
+    {
+      "id": 293,
+      "relationType": 2602,
+      "charaId": 1022
+    },
+    {
+      "id": 295,
+      "relationType": 2602,
+      "charaId": 1038
+    },
+    {
+      "id": 296,
+      "relationType": 2602,
+      "charaId": 1039
+    },
+    {
+      "id": 300,
+      "relationType": 2602,
+      "charaId": 1052
+    },
+    {
+      "id": 301,
+      "relationType": 2602,
+      "charaId": 1059
+    },
+    {
+      "id": 302,
+      "relationType": 7000,
+      "charaId": 1002
+    },
+    {
+      "id": 303,
+      "relationType": 7000,
+      "charaId": 1014
+    },
+    {
+      "id": 304,
+      "relationType": 7001,
+      "charaId": 1002
+    },
+    {
+      "id": 305,
+      "relationType": 7001,
+      "charaId": 1018
+    },
+    {
+      "id": 306,
+      "relationType": 7002,
+      "charaId": 1002
+    },
+    {
+      "id": 307,
+      "relationType": 7002,
+      "charaId": 1056
+    },
+    {
+      "id": 308,
+      "relationType": 7003,
+      "charaId": 1001
+    },
+    {
+      "id": 309,
+      "relationType": 7003,
+      "charaId": 1011
+    },
+    {
+      "id": 310,
+      "relationType": 7004,
+      "charaId": 1001
+    },
+    {
+      "id": 311,
+      "relationType": 7004,
+      "charaId": 1014
+    },
+    {
+      "id": 312,
+      "relationType": 7005,
+      "charaId": 1001
+    },
+    {
+      "id": 313,
+      "relationType": 7005,
+      "charaId": 1015
+    },
+    {
+      "id": 314,
+      "relationType": 7006,
+      "charaId": 1001
+    },
+    {
+      "id": 315,
+      "relationType": 7006,
+      "charaId": 1020
+    },
+    {
+      "id": 316,
+      "relationType": 7007,
+      "charaId": 1001
+    },
+    {
+      "id": 317,
+      "relationType": 7007,
+      "charaId": 1061
+    },
+    {
+      "id": 318,
+      "relationType": 7008,
+      "charaId": 1003
+    },
+    {
+      "id": 319,
+      "relationType": 7008,
+      "charaId": 1013
+    },
+    {
+      "id": 320,
+      "relationType": 7009,
+      "charaId": 1006
+    },
+    {
+      "id": 321,
+      "relationType": 7009,
+      "charaId": 1021
+    },
+    {
+      "id": 322,
+      "relationType": 7010,
+      "charaId": 1006
+    },
+    {
+      "id": 323,
+      "relationType": 7010,
+      "charaId": 1027
+    },
+    {
+      "id": 324,
+      "relationType": 7011,
+      "charaId": 1006
+    },
+    {
+      "id": 325,
+      "relationType": 7011,
+      "charaId": 1045
+    },
+    {
+      "id": 326,
+      "relationType": 7012,
+      "charaId": 1008
+    },
+    {
+      "id": 327,
+      "relationType": 7012,
+      "charaId": 1009
+    },
+    {
+      "id": 328,
+      "relationType": 7013,
+      "charaId": 1011
+    },
+    {
+      "id": 329,
+      "relationType": 7013,
+      "charaId": 1002
+    },
+    {
+      "id": 330,
+      "relationType": 7014,
+      "charaId": 1012
+    },
+    {
+      "id": 332,
+      "relationType": 7015,
+      "charaId": 1012
+    },
+    {
+      "id": 333,
+      "relationType": 7015,
+      "charaId": 1002
+    },
+    {
+      "id": 334,
+      "relationType": 7016,
+      "charaId": 1013
+    },
+    {
+      "id": 335,
+      "relationType": 7016,
+      "charaId": 1007
+    },
+    {
+      "id": 336,
+      "relationType": 7017,
+      "charaId": 1021
+    },
+    {
+      "id": 337,
+      "relationType": 7017,
+      "charaId": 1045
+    },
+    {
+      "id": 338,
+      "relationType": 7018,
+      "charaId": 1023
+    },
+    {
+      "id": 339,
+      "relationType": 7018,
+      "charaId": 1035
+    },
+    {
+      "id": 340,
+      "relationType": 7019,
+      "charaId": 1023
+    },
+    {
+      "id": 341,
+      "relationType": 7019,
+      "charaId": 1050
+    },
+    {
+      "id": 342,
+      "relationType": 7020,
+      "charaId": 1027
+    },
+    {
+      "id": 344,
+      "relationType": 7021,
+      "charaId": 1035
+    },
+    {
+      "id": 345,
+      "relationType": 7021,
+      "charaId": 1050
+    },
+    {
+      "id": 346,
+      "relationType": 7022,
+      "charaId": 1060
+    },
+    {
+      "id": 347,
+      "relationType": 7022,
+      "charaId": 1003
+    },
+    {
+      "id": 348,
+      "relationType": 7023,
+      "charaId": 1061
+    },
+    {
+      "id": 349,
+      "relationType": 7023,
+      "charaId": 1011
+    },
+    {
+      "id": 350,
+      "relationType": 7024,
+      "charaId": 1061
+    },
+    {
+      "id": 351,
+      "relationType": 7024,
+      "charaId": 1020
+    },
+    {
+      "id": 352,
+      "relationType": 2701,
+      "charaId": 1006
+    },
+    {
+      "id": 353,
+      "relationType": 2701,
+      "charaId": 1037
+    },
+    {
+      "id": 354,
+      "relationType": 2702,
+      "charaId": 1015
+    },
+    {
+      "id": 355,
+      "relationType": 2702,
+      "charaId": 1017
+    },
+    {
+      "id": 356,
+      "relationType": 2703,
+      "charaId": 1023
+    },
+    {
+      "id": 358,
+      "relationType": 2704,
+      "charaId": 1025
+    },
+    {
+      "id": 359,
+      "relationType": 2704,
+      "charaId": 1030
+    },
+    {
+      "id": 360,
+      "relationType": 2705,
+      "charaId": 1008
+    },
+    {
+      "id": 361,
+      "relationType": 2705,
+      "charaId": 1046
+    },
+    {
+      "id": 362,
+      "relationType": 2706,
+      "charaId": 1007
+    },
+    {
+      "id": 363,
+      "relationType": 2706,
+      "charaId": 1060
+    },
+    {
+      "id": 364,
+      "relationType": 2801,
+      "charaId": 1021
+    },
+    {
+      "id": 366,
+      "relationType": 2801,
+      "charaId": 1040
+    },
+    {
+      "id": 367,
+      "relationType": 2802,
+      "charaId": 1006
+    },
+    {
+      "id": 368,
+      "relationType": 2802,
+      "charaId": 1045
+    },
+    {
+      "id": 370,
+      "relationType": 2803,
+      "charaId": 1013
+    },
+    {
+      "id": 371,
+      "relationType": 2803,
+      "charaId": 1027
+    },
+    {
+      "id": 373,
+      "relationType": 2804,
+      "charaId": 1003
+    },
+    {
+      "id": 374,
+      "relationType": 2804,
+      "charaId": 1060
+    },
+    {
+      "id": 375,
+      "relationType": 2805,
+      "charaId": 1026
+    },
+    {
+      "id": 376,
+      "relationType": 2805,
+      "charaId": 1030
+    },
+    {
+      "id": 377,
+      "relationType": 2805,
+      "charaId": 1041
+    },
+    {
+      "id": 379,
+      "relationType": 2806,
+      "charaId": 1023
+    },
+    {
+      "id": 381,
+      "relationType": 2806,
+      "charaId": 1035
+    },
+    {
+      "id": 382,
+      "relationType": 2806,
+      "charaId": 1050
+    },
+    {
+      "id": 383,
+      "relationType": 2807,
+      "charaId": 1012
+    },
+    {
+      "id": 384,
+      "relationType": 2807,
+      "charaId": 1016
+    },
+    {
+      "id": 386,
+      "relationType": 2808,
+      "charaId": 1005
+    },
+    {
+      "id": 387,
+      "relationType": 2808,
+      "charaId": 1024
+    },
+    {
+      "id": 388,
+      "relationType": 2808,
+      "charaId": 1028
+    },
+    {
+      "id": 390,
+      "relationType": 2809,
+      "charaId": 1018
+    },
+    {
+      "id": 392,
+      "relationType": 2810,
+      "charaId": 1002
+    },
+    {
+      "id": 393,
+      "relationType": 2810,
+      "charaId": 1010
+    },
+    {
+      "id": 395,
+      "relationType": 2810,
+      "charaId": 1056
+    },
+    {
+      "id": 396,
+      "relationType": 2810,
+      "charaId": 1059
+    },
+    {
+      "id": 397,
+      "relationType": 2811,
+      "charaId": 1001
+    },
+    {
+      "id": 398,
+      "relationType": 2811,
+      "charaId": 1011
+    },
+    {
+      "id": 399,
+      "relationType": 2811,
+      "charaId": 1014
+    },
+    {
+      "id": 400,
+      "relationType": 2811,
+      "charaId": 1020
+    },
+    {
+      "id": 401,
+      "relationType": 2811,
+      "charaId": 1061
+    },
+    {
+      "id": 402,
+      "relationType": 2812,
+      "charaId": 1015
+    },
+    {
+      "id": 404,
+      "relationType": 2812,
+      "charaId": 1052
+    },
+    {
+      "id": 405,
+      "relationType": 2812,
+      "charaId": 1058
+    },
+    {
+      "id": 406,
+      "relationType": 2813,
+      "charaId": 1019
+    },
+    {
+      "id": 408,
+      "relationType": 2814,
+      "charaId": 1025
+    },
+    {
+      "id": 409,
+      "relationType": 2814,
+      "charaId": 1032
+    },
+    {
+      "id": 410,
+      "relationType": 2815,
+      "charaId": 1008
+    },
+    {
+      "id": 411,
+      "relationType": 2815,
+      "charaId": 1009
+    },
+    {
+      "id": 412,
+      "relationType": 2816,
+      "charaId": 1048
+    },
+    {
+      "id": 414,
+      "relationType": 2817,
+      "charaId": 1037
+    },
+    {
+      "id": 415,
+      "relationType": 2817,
+      "charaId": 1038
+    },
+    {
+      "id": 416,
+      "relationType": 2901,
+      "charaId": 1002
+    },
+    {
+      "id": 417,
+      "relationType": 2901,
+      "charaId": 1004
+    },
+    {
+      "id": 418,
+      "relationType": 2901,
+      "charaId": 1020
+    },
+    {
+      "id": 419,
+      "relationType": 2901,
+      "charaId": 1024
+    },
+    {
+      "id": 420,
+      "relationType": 2901,
+      "charaId": 1026
+    },
+    {
+      "id": 422,
+      "relationType": 2901,
+      "charaId": 1046
+    },
+    {
+      "id": 423,
+      "relationType": 2902,
+      "charaId": 1003
+    },
+    {
+      "id": 424,
+      "relationType": 2902,
+      "charaId": 1005
+    },
+    {
+      "id": 425,
+      "relationType": 2902,
+      "charaId": 1009
+    },
+    {
+      "id": 426,
+      "relationType": 2902,
+      "charaId": 1010
+    },
+    {
+      "id": 427,
+      "relationType": 2902,
+      "charaId": 1013
+    },
+    {
+      "id": 428,
+      "relationType": 2902,
+      "charaId": 1014
+    },
+    {
+      "id": 429,
+      "relationType": 2902,
+      "charaId": 1015
+    },
+    {
+      "id": 430,
+      "relationType": 2902,
+      "charaId": 1017
+    },
+    {
+      "id": 431,
+      "relationType": 2902,
+      "charaId": 1018
+    },
+    {
+      "id": 432,
+      "relationType": 2902,
+      "charaId": 1019
+    },
+    {
+      "id": 433,
+      "relationType": 2902,
+      "charaId": 1022
+    },
+    {
+      "id": 434,
+      "relationType": 2902,
+      "charaId": 1023
+    },
+    {
+      "id": 435,
+      "relationType": 2902,
+      "charaId": 1028
+    },
+    {
+      "id": 437,
+      "relationType": 2902,
+      "charaId": 1030
+    },
+    {
+      "id": 438,
+      "relationType": 2902,
+      "charaId": 1038
+    },
+    {
+      "id": 439,
+      "relationType": 2902,
+      "charaId": 1040
+    },
+    {
+      "id": 440,
+      "relationType": 2902,
+      "charaId": 1041
+    },
+    {
+      "id": 442,
+      "relationType": 2902,
+      "charaId": 1045
+    },
+    {
+      "id": 444,
+      "relationType": 2902,
+      "charaId": 1048
+    },
+    {
+      "id": 447,
+      "relationType": 2902,
+      "charaId": 1058
+    },
+    {
+      "id": 448,
+      "relationType": 2903,
+      "charaId": 1001
+    },
+    {
+      "id": 449,
+      "relationType": 2903,
+      "charaId": 1006
+    },
+    {
+      "id": 450,
+      "relationType": 2903,
+      "charaId": 1008
+    },
+    {
+      "id": 451,
+      "relationType": 2903,
+      "charaId": 1011
+    },
+    {
+      "id": 452,
+      "relationType": 2903,
+      "charaId": 1016
+    },
+    {
+      "id": 453,
+      "relationType": 2903,
+      "charaId": 1025
+    },
+    {
+      "id": 454,
+      "relationType": 2903,
+      "charaId": 1027
+    },
+    {
+      "id": 455,
+      "relationType": 2903,
+      "charaId": 1032
+    },
+    {
+      "id": 457,
+      "relationType": 2903,
+      "charaId": 1035
+    },
+    {
+      "id": 458,
+      "relationType": 2903,
+      "charaId": 1037
+    },
+    {
+      "id": 459,
+      "relationType": 2903,
+      "charaId": 1039
+    },
+    {
+      "id": 464,
+      "relationType": 2903,
+      "charaId": 1056
+    },
+    {
+      "id": 465,
+      "relationType": 2903,
+      "charaId": 1059
+    },
+    {
+      "id": 466,
+      "relationType": 2903,
+      "charaId": 1060
+    },
+    {
+      "id": 467,
+      "relationType": 2903,
+      "charaId": 1061
+    },
+    {
+      "id": 468,
+      "relationType": 2904,
+      "charaId": 1007
+    },
+    {
+      "id": 469,
+      "relationType": 2904,
+      "charaId": 1012
+    },
+    {
+      "id": 470,
+      "relationType": 2904,
+      "charaId": 1021
+    },
+    {
+      "id": 474,
+      "relationType": 2904,
+      "charaId": 1050
+    },
+    {
+      "id": 475,
+      "relationType": 2904,
+      "charaId": 1052
+    },
+    {
+      "id": 477,
+      "relationType": 3001,
+      "charaId": 1004
+    },
+    {
+      "id": 478,
+      "relationType": 3001,
+      "charaId": 1010
+    },
+    {
+      "id": 479,
+      "relationType": 3001,
+      "charaId": 1041
+    },
+    {
+      "id": 480,
+      "relationType": 3001,
+      "charaId": 1052
+    },
+    {
+      "id": 481,
+      "relationType": 3001,
+      "charaId": 1061
+    },
+    {
+      "id": 482,
+      "relationType": 3001,
+      "charaId": 1026
+    },
+    {
+      "id": 483,
+      "relationType": 3001,
+      "charaId": 1028
+    },
+    {
+      "id": 484,
+      "relationType": 3001,
+      "charaId": 1038
+    },
+    {
+      "id": 489,
+      "relationType": 3002,
+      "charaId": 1004
+    },
+    {
+      "id": 490,
+      "relationType": 3002,
+      "charaId": 1005
+    },
+    {
+      "id": 491,
+      "relationType": 3002,
+      "charaId": 1006
+    },
+    {
+      "id": 492,
+      "relationType": 3002,
+      "charaId": 1008
+    },
+    {
+      "id": 493,
+      "relationType": 3002,
+      "charaId": 1009
+    },
+    {
+      "id": 494,
+      "relationType": 3002,
+      "charaId": 1010
+    },
+    {
+      "id": 495,
+      "relationType": 3002,
+      "charaId": 1011
+    },
+    {
+      "id": 496,
+      "relationType": 3002,
+      "charaId": 1014
+    },
+    {
+      "id": 497,
+      "relationType": 3002,
+      "charaId": 1040
+    },
+    {
+      "id": 498,
+      "relationType": 3002,
+      "charaId": 1019
+    },
+    {
+      "id": 499,
+      "relationType": 3002,
+      "charaId": 1026
+    },
+    {
+      "id": 502,
+      "relationType": 3002,
+      "charaId": 1039
+    },
+    {
+      "id": 505,
+      "relationType": 3002,
+      "charaId": 1046
+    },
+    {
+      "id": 508,
+      "relationType": 3002,
+      "charaId": 1059
+    },
+    {
+      "id": 509,
+      "relationType": 3003,
+      "charaId": 1001
+    },
+    {
+      "id": 510,
+      "relationType": 3003,
+      "charaId": 1002
+    },
+    {
+      "id": 511,
+      "relationType": 3003,
+      "charaId": 1003
+    },
+    {
+      "id": 512,
+      "relationType": 3003,
+      "charaId": 1006
+    },
+    {
+      "id": 513,
+      "relationType": 3003,
+      "charaId": 1007
+    },
+    {
+      "id": 514,
+      "relationType": 3003,
+      "charaId": 1008
+    },
+    {
+      "id": 515,
+      "relationType": 3003,
+      "charaId": 1009
+    },
+    {
+      "id": 516,
+      "relationType": 3003,
+      "charaId": 1011
+    },
+    {
+      "id": 517,
+      "relationType": 3003,
+      "charaId": 1012
+    },
+    {
+      "id": 518,
+      "relationType": 3003,
+      "charaId": 1013
+    },
+    {
+      "id": 519,
+      "relationType": 3003,
+      "charaId": 1014
+    },
+    {
+      "id": 520,
+      "relationType": 3003,
+      "charaId": 1015
+    },
+    {
+      "id": 521,
+      "relationType": 3003,
+      "charaId": 1017
+    },
+    {
+      "id": 522,
+      "relationType": 3003,
+      "charaId": 1018
+    },
+    {
+      "id": 523,
+      "relationType": 3003,
+      "charaId": 1020
+    },
+    {
+      "id": 524,
+      "relationType": 3003,
+      "charaId": 1024
+    },
+    {
+      "id": 525,
+      "relationType": 3003,
+      "charaId": 1027
+    },
+    {
+      "id": 526,
+      "relationType": 3003,
+      "charaId": 1030
+    },
+    {
+      "id": 527,
+      "relationType": 3003,
+      "charaId": 1032
+    },
+    {
+      "id": 528,
+      "relationType": 3003,
+      "charaId": 1035
+    },
+    {
+      "id": 529,
+      "relationType": 3003,
+      "charaId": 1045
+    },
+    {
+      "id": 530,
+      "relationType": 3003,
+      "charaId": 1056
+    },
+    {
+      "id": 531,
+      "relationType": 3003,
+      "charaId": 1060
+    },
+    {
+      "id": 532,
+      "relationType": 3003,
+      "charaId": 1016
+    },
+    {
+      "id": 533,
+      "relationType": 3003,
+      "charaId": 1019
+    },
+    {
+      "id": 534,
+      "relationType": 3003,
+      "charaId": 1021
+    },
+    {
+      "id": 535,
+      "relationType": 3003,
+      "charaId": 1022
+    },
+    {
+      "id": 536,
+      "relationType": 3003,
+      "charaId": 1023
+    },
+    {
+      "id": 537,
+      "relationType": 3003,
+      "charaId": 1026
+    },
+    {
+      "id": 543,
+      "relationType": 3003,
+      "charaId": 1037
+    },
+    {
+      "id": 544,
+      "relationType": 3003,
+      "charaId": 1039
+    },
+    {
+      "id": 546,
+      "relationType": 3003,
+      "charaId": 1046
+    },
+    {
+      "id": 548,
+      "relationType": 3003,
+      "charaId": 1048
+    },
+    {
+      "id": 550,
+      "relationType": 3003,
+      "charaId": 1050
+    },
+    {
+      "id": 553,
+      "relationType": 3003,
+      "charaId": 1058
+    },
+    {
+      "id": 554,
+      "relationType": 3003,
+      "charaId": 1059
+    },
+    {
+      "id": 555,
+      "relationType": 3004,
+      "charaId": 1001
+    },
+    {
+      "id": 556,
+      "relationType": 3004,
+      "charaId": 1007
+    },
+    {
+      "id": 557,
+      "relationType": 3004,
+      "charaId": 1013
+    },
+    {
+      "id": 558,
+      "relationType": 3004,
+      "charaId": 1015
+    },
+    {
+      "id": 559,
+      "relationType": 3004,
+      "charaId": 1017
+    },
+    {
+      "id": 560,
+      "relationType": 3004,
+      "charaId": 1020
+    },
+    {
+      "id": 561,
+      "relationType": 3004,
+      "charaId": 1024
+    },
+    {
+      "id": 562,
+      "relationType": 3004,
+      "charaId": 1030
+    },
+    {
+      "id": 563,
+      "relationType": 3004,
+      "charaId": 1045
+    },
+    {
+      "id": 564,
+      "relationType": 3004,
+      "charaId": 1060
+    },
+    {
+      "id": 565,
+      "relationType": 3004,
+      "charaId": 1016
+    },
+    {
+      "id": 566,
+      "relationType": 3004,
+      "charaId": 1021
+    },
+    {
+      "id": 567,
+      "relationType": 3004,
+      "charaId": 1023
+    },
+    {
+      "id": 568,
+      "relationType": 3004,
+      "charaId": 1025
+    },
+    {
+      "id": 570,
+      "relationType": 3101,
+      "charaId": 1001
+    },
+    {
+      "id": 571,
+      "relationType": 3101,
+      "charaId": 1002
+    },
+    {
+      "id": 572,
+      "relationType": 3101,
+      "charaId": 1003
+    },
+    {
+      "id": 573,
+      "relationType": 3101,
+      "charaId": 1004
+    },
+    {
+      "id": 574,
+      "relationType": 3101,
+      "charaId": 1005
+    },
+    {
+      "id": 575,
+      "relationType": 3101,
+      "charaId": 1006
+    },
+    {
+      "id": 576,
+      "relationType": 3101,
+      "charaId": 1007
+    },
+    {
+      "id": 577,
+      "relationType": 3101,
+      "charaId": 1008
+    },
+    {
+      "id": 578,
+      "relationType": 3101,
+      "charaId": 1009
+    },
+    {
+      "id": 579,
+      "relationType": 3101,
+      "charaId": 1010
+    },
+    {
+      "id": 580,
+      "relationType": 3101,
+      "charaId": 1011
+    },
+    {
+      "id": 581,
+      "relationType": 3101,
+      "charaId": 1012
+    },
+    {
+      "id": 582,
+      "relationType": 3101,
+      "charaId": 1013
+    },
+    {
+      "id": 583,
+      "relationType": 3101,
+      "charaId": 1014
+    },
+    {
+      "id": 584,
+      "relationType": 3101,
+      "charaId": 1015
+    },
+    {
+      "id": 585,
+      "relationType": 3101,
+      "charaId": 1017
+    },
+    {
+      "id": 586,
+      "relationType": 3101,
+      "charaId": 1018
+    },
+    {
+      "id": 587,
+      "relationType": 3101,
+      "charaId": 1020
+    },
+    {
+      "id": 588,
+      "relationType": 3101,
+      "charaId": 1024
+    },
+    {
+      "id": 589,
+      "relationType": 3101,
+      "charaId": 1027
+    },
+    {
+      "id": 590,
+      "relationType": 3101,
+      "charaId": 1030
+    },
+    {
+      "id": 591,
+      "relationType": 3101,
+      "charaId": 1032
+    },
+    {
+      "id": 592,
+      "relationType": 3101,
+      "charaId": 1035
+    },
+    {
+      "id": 593,
+      "relationType": 3101,
+      "charaId": 1040
+    },
+    {
+      "id": 594,
+      "relationType": 3101,
+      "charaId": 1041
+    },
+    {
+      "id": 595,
+      "relationType": 3101,
+      "charaId": 1045
+    },
+    {
+      "id": 596,
+      "relationType": 3101,
+      "charaId": 1056
+    },
+    {
+      "id": 597,
+      "relationType": 3101,
+      "charaId": 1060
+    },
+    {
+      "id": 598,
+      "relationType": 3101,
+      "charaId": 1061
+    },
+    {
+      "id": 599,
+      "relationType": 3101,
+      "charaId": 1016
+    },
+    {
+      "id": 600,
+      "relationType": 3101,
+      "charaId": 1019
+    },
+    {
+      "id": 601,
+      "relationType": 3101,
+      "charaId": 1021
+    },
+    {
+      "id": 602,
+      "relationType": 3101,
+      "charaId": 1022
+    },
+    {
+      "id": 603,
+      "relationType": 3101,
+      "charaId": 1023
+    },
+    {
+      "id": 604,
+      "relationType": 3101,
+      "charaId": 1025
+    },
+    {
+      "id": 605,
+      "relationType": 3101,
+      "charaId": 1026
+    },
+    {
+      "id": 606,
+      "relationType": 3101,
+      "charaId": 1028
+    },
+    {
+      "id": 612,
+      "relationType": 3101,
+      "charaId": 1037
+    },
+    {
+      "id": 613,
+      "relationType": 3101,
+      "charaId": 1038
+    },
+    {
+      "id": 614,
+      "relationType": 3101,
+      "charaId": 1039
+    },
+    {
+      "id": 618,
+      "relationType": 3101,
+      "charaId": 1048
+    },
+    {
+      "id": 620,
+      "relationType": 3101,
+      "charaId": 1050
+    },
+    {
+      "id": 626,
+      "relationType": 3101,
+      "charaId": 1058
+    },
+    {
+      "id": 627,
+      "relationType": 3101,
+      "charaId": 1059
+    },
+    {
+      "id": 628,
+      "relationType": 3102,
+      "charaId": 1052
+    },
+    {
+      "id": 629,
+      "relationType": 3102,
+      "charaId": 1019
+    },
+    {
+      "id": 632,
+      "relationType": 3102,
+      "charaId": 1046
+    },
+    {
+      "id": 633,
+      "relationType": 2523,
+      "charaId": 1003
+    },
+    {
+      "id": 634,
+      "relationType": 2523,
+      "charaId": 1006
+    },
+    {
+      "id": 635,
+      "relationType": 2523,
+      "charaId": 1007
+    },
+    {
+      "id": 636,
+      "relationType": 2523,
+      "charaId": 1009
+    },
+    {
+      "id": 637,
+      "relationType": 2523,
+      "charaId": 1011
+    },
+    {
+      "id": 638,
+      "relationType": 2523,
+      "charaId": 1015
+    },
+    {
+      "id": 639,
+      "relationType": 2523,
+      "charaId": 1016
+    },
+    {
+      "id": 640,
+      "relationType": 2523,
+      "charaId": 1024
+    },
+    {
+      "id": 641,
+      "relationType": 2523,
+      "charaId": 1025
+    },
+    {
+      "id": 644,
+      "relationType": 2523,
+      "charaId": 1017
+    },
+    {
+      "id": 645,
+      "relationType": 2509,
+      "charaId": 1018
+    },
+    {
+      "id": 646,
+      "relationType": 2509,
+      "charaId": 1039
+    },
+    {
+      "id": 647,
+      "relationType": 2509,
+      "charaId": 1059
+    },
+    {
+      "id": 648,
+      "relationType": 2512,
+      "charaId": 1002
+    },
+    {
+      "id": 649,
+      "relationType": 2512,
+      "charaId": 1007
+    },
+    {
+      "id": 650,
+      "relationType": 2512,
+      "charaId": 1011
+    },
+    {
+      "id": 651,
+      "relationType": 2512,
+      "charaId": 1013
+    },
+    {
+      "id": 652,
+      "relationType": 2512,
+      "charaId": 1015
+    },
+    {
+      "id": 653,
+      "relationType": 2512,
+      "charaId": 1021
+    },
+    {
+      "id": 654,
+      "relationType": 2512,
+      "charaId": 1023
+    },
+    {
+      "id": 655,
+      "relationType": 2512,
+      "charaId": 1024
+    },
+    {
+      "id": 656,
+      "relationType": 2512,
+      "charaId": 1027
+    },
+    {
+      "id": 661,
+      "relationType": 2512,
+      "charaId": 1058
+    },
+    {
+      "id": 662,
+      "relationType": 2510,
+      "charaId": 1001
+    },
+    {
+      "id": 663,
+      "relationType": 2510,
+      "charaId": 1003
+    },
+    {
+      "id": 664,
+      "relationType": 2510,
+      "charaId": 1008
+    },
+    {
+      "id": 665,
+      "relationType": 2510,
+      "charaId": 1016
+    },
+    {
+      "id": 666,
+      "relationType": 2510,
+      "charaId": 1026
+    },
+    {
+      "id": 669,
+      "relationType": 2510,
+      "charaId": 1035
+    },
+    {
+      "id": 670,
+      "relationType": 2510,
+      "charaId": 1037
+    },
+    {
+      "id": 671,
+      "relationType": 2510,
+      "charaId": 1017
+    },
+    {
+      "id": 673,
+      "relationType": 2530,
+      "charaId": 1046
+    },
+    {
+      "id": 674,
+      "relationType": 2506,
+      "charaId": 1001
+    },
+    {
+      "id": 675,
+      "relationType": 2506,
+      "charaId": 1007
+    },
+    {
+      "id": 676,
+      "relationType": 2506,
+      "charaId": 1013
+    },
+    {
+      "id": 677,
+      "relationType": 2506,
+      "charaId": 1015
+    },
+    {
+      "id": 678,
+      "relationType": 2506,
+      "charaId": 1021
+    },
+    {
+      "id": 679,
+      "relationType": 2506,
+      "charaId": 1023
+    },
+    {
+      "id": 680,
+      "relationType": 2506,
+      "charaId": 1024
+    },
+    {
+      "id": 681,
+      "relationType": 2506,
+      "charaId": 1025
+    },
+    {
+      "id": 682,
+      "relationType": 2506,
+      "charaId": 1030
+    },
+    {
+      "id": 684,
+      "relationType": 2506,
+      "charaId": 1045
+    },
+    {
+      "id": 685,
+      "relationType": 2506,
+      "charaId": 1017
+    },
+    {
+      "id": 686,
+      "relationType": 2516,
+      "charaId": 1001
+    },
+    {
+      "id": 687,
+      "relationType": 2516,
+      "charaId": 1008
+    },
+    {
+      "id": 688,
+      "relationType": 2516,
+      "charaId": 1015
+    },
+    {
+      "id": 689,
+      "relationType": 2516,
+      "charaId": 1018
+    },
+    {
+      "id": 690,
+      "relationType": 2516,
+      "charaId": 1019
+    },
+    {
+      "id": 691,
+      "relationType": 2516,
+      "charaId": 1021
+    },
+    {
+      "id": 692,
+      "relationType": 2516,
+      "charaId": 1037
+    },
+    {
+      "id": 693,
+      "relationType": 2516,
+      "charaId": 1045
+    },
+    {
+      "id": 695,
+      "relationType": 2516,
+      "charaId": 1048
+    },
+    {
+      "id": 697,
+      "relationType": 2525,
+      "charaId": 1046
+    },
+    {
+      "id": 698,
+      "relationType": 2522,
+      "charaId": 1005
+    },
+    {
+      "id": 699,
+      "relationType": 2522,
+      "charaId": 1011
+    },
+    {
+      "id": 700,
+      "relationType": 2522,
+      "charaId": 1016
+    },
+    {
+      "id": 701,
+      "relationType": 2522,
+      "charaId": 1026
+    },
+    {
+      "id": 703,
+      "relationType": 2522,
+      "charaId": 1004
+    },
+    {
+      "id": 704,
+      "relationType": 2531,
+      "charaId": 1046
+    },
+    {
+      "id": 705,
+      "relationType": 2514,
+      "charaId": 1009
+    },
+    {
+      "id": 706,
+      "relationType": 2514,
+      "charaId": 1022
+    },
+    {
+      "id": 707,
+      "relationType": 2514,
+      "charaId": 1039
+    },
+    {
+      "id": 709,
+      "relationType": 2514,
+      "charaId": 1059
+    },
+    {
+      "id": 710,
+      "relationType": 2505,
+      "charaId": 1003
+    },
+    {
+      "id": 711,
+      "relationType": 2505,
+      "charaId": 1007
+    },
+    {
+      "id": 712,
+      "relationType": 2505,
+      "charaId": 1015
+    },
+    {
+      "id": 713,
+      "relationType": 2505,
+      "charaId": 1016
+    },
+    {
+      "id": 714,
+      "relationType": 2505,
+      "charaId": 1020
+    },
+    {
+      "id": 715,
+      "relationType": 2505,
+      "charaId": 1026
+    },
+    {
+      "id": 716,
+      "relationType": 2505,
+      "charaId": 1032
+    },
+    {
+      "id": 718,
+      "relationType": 2505,
+      "charaId": 1050
+    },
+    {
+      "id": 719,
+      "relationType": 2505,
+      "charaId": 1017
+    },
+    {
+      "id": 721,
+      "relationType": 2504,
+      "charaId": 1009
+    },
+    {
+      "id": 723,
+      "relationType": 2521,
+      "charaId": 1008
+    },
+    {
+      "id": 724,
+      "relationType": 2521,
+      "charaId": 1012
+    },
+    {
+      "id": 726,
+      "relationType": 2521,
+      "charaId": 1059
+    },
+    {
+      "id": 727,
+      "relationType": 2502,
+      "charaId": 1038
+    },
+    {
+      "id": 728,
+      "relationType": 2502,
+      "charaId": 1061
+    },
+    {
+      "id": 729,
+      "relationType": 2515,
+      "charaId": 1007
+    },
+    {
+      "id": 730,
+      "relationType": 2515,
+      "charaId": 1013
+    },
+    {
+      "id": 731,
+      "relationType": 2515,
+      "charaId": 1016
+    },
+    {
+      "id": 732,
+      "relationType": 2515,
+      "charaId": 1020
+    },
+    {
+      "id": 733,
+      "relationType": 2515,
+      "charaId": 1023
+    },
+    {
+      "id": 734,
+      "relationType": 2515,
+      "charaId": 1024
+    },
+    {
+      "id": 735,
+      "relationType": 2515,
+      "charaId": 1025
+    },
+    {
+      "id": 736,
+      "relationType": 2515,
+      "charaId": 1030
+    },
+    {
+      "id": 738,
+      "relationType": 2515,
+      "charaId": 1045
+    },
+    {
+      "id": 739,
+      "relationType": 2515,
+      "charaId": 1056
+    },
+    {
+      "id": 740,
+      "relationType": 2515,
+      "charaId": 1017
+    },
+    {
+      "id": 742,
+      "relationType": 2511,
+      "charaId": 1006
+    },
+    {
+      "id": 743,
+      "relationType": 2511,
+      "charaId": 1008
+    },
+    {
+      "id": 744,
+      "relationType": 2511,
+      "charaId": 1010
+    },
+    {
+      "id": 745,
+      "relationType": 2511,
+      "charaId": 1019
+    },
+    {
+      "id": 747,
+      "relationType": 2518,
+      "charaId": 1006
+    },
+    {
+      "id": 748,
+      "relationType": 2518,
+      "charaId": 1010
+    },
+    {
+      "id": 749,
+      "relationType": 2518,
+      "charaId": 1019
+    },
+    {
+      "id": 750,
+      "relationType": 2501,
+      "charaId": 1019
+    },
+    {
+      "id": 752,
+      "relationType": 2513,
+      "charaId": 1010
+    },
+    {
+      "id": 753,
+      "relationType": 2513,
+      "charaId": 1028
+    },
+    {
+      "id": 754,
+      "relationType": 2513,
+      "charaId": 1038
+    },
+    {
+      "id": 755,
+      "relationType": 2513,
+      "charaId": 1041
+    },
+    {
+      "id": 758,
+      "relationType": 2519,
+      "charaId": 1001
+    },
+    {
+      "id": 759,
+      "relationType": 2519,
+      "charaId": 1003
+    },
+    {
+      "id": 760,
+      "relationType": 2519,
+      "charaId": 1008
+    },
+    {
+      "id": 761,
+      "relationType": 2519,
+      "charaId": 1014
+    },
+    {
+      "id": 762,
+      "relationType": 2519,
+      "charaId": 1015
+    },
+    {
+      "id": 764,
+      "relationType": 2519,
+      "charaId": 1017
+    },
+    {
+      "id": 765,
+      "relationType": 2517,
+      "charaId": 1009
+    },
+    {
+      "id": 766,
+      "relationType": 2517,
+      "charaId": 1012
+    },
+    {
+      "id": 767,
+      "relationType": 2517,
+      "charaId": 1022
+    },
+    {
+      "id": 769,
+      "relationType": 2517,
+      "charaId": 1059
+    },
+    {
+      "id": 770,
+      "relationType": 2508,
+      "charaId": 1008
+    },
+    {
+      "id": 771,
+      "relationType": 2507,
+      "charaId": 1014
+    },
+    {
+      "id": 773,
+      "relationType": 2529,
+      "charaId": 1046
+    },
+    {
+      "id": 774,
+      "relationType": 3201,
+      "charaId": 1022
+    },
+    {
+      "id": 775,
+      "relationType": 3201,
+      "charaId": 1028
+    },
+    {
+      "id": 776,
+      "relationType": 3201,
+      "charaId": 1033
+    },
+    {
+      "id": 777,
+      "relationType": 3201,
+      "charaId": 1034
+    },
+    {
+      "id": 778,
+      "relationType": 3201,
+      "charaId": 1038
+    },
+    {
+      "id": 779,
+      "relationType": 3201,
+      "charaId": 1039
+    },
+    {
+      "id": 782,
+      "relationType": 3201,
+      "charaId": 1044
+    },
+    {
+      "id": 784,
+      "relationType": 3201,
+      "charaId": 1048
+    },
+    {
+      "id": 786,
+      "relationType": 3201,
+      "charaId": 1051
+    },
+    {
+      "id": 789,
+      "relationType": 3201,
+      "charaId": 1058
+    },
+    {
+      "id": 790,
+      "relationType": 3201,
+      "charaId": 1059
+    },
+    {
+      "id": 791,
+      "relationType": 3202,
+      "charaId": 1011
+    },
+    {
+      "id": 793,
+      "relationType": 3202,
+      "charaId": 1052
+    },
+    {
+      "id": 795,
+      "relationType": 3203,
+      "charaId": 1006
+    },
+    {
+      "id": 796,
+      "relationType": 3203,
+      "charaId": 1007
+    },
+    {
+      "id": 797,
+      "relationType": 3203,
+      "charaId": 1010
+    },
+    {
+      "id": 798,
+      "relationType": 3203,
+      "charaId": 1012
+    },
+    {
+      "id": 799,
+      "relationType": 3203,
+      "charaId": 1014
+    },
+    {
+      "id": 800,
+      "relationType": 3203,
+      "charaId": 1015
+    },
+    {
+      "id": 801,
+      "relationType": 3203,
+      "charaId": 1017
+    },
+    {
+      "id": 802,
+      "relationType": 3203,
+      "charaId": 1023
+    },
+    {
+      "id": 803,
+      "relationType": 3203,
+      "charaId": 1024
+    },
+    {
+      "id": 804,
+      "relationType": 3203,
+      "charaId": 1025
+    },
+    {
+      "id": 806,
+      "relationType": 3203,
+      "charaId": 1030
+    },
+    {
+      "id": 807,
+      "relationType": 3203,
+      "charaId": 1035
+    },
+    {
+      "id": 808,
+      "relationType": 3203,
+      "charaId": 1037
+    },
+    {
+      "id": 809,
+      "relationType": 3204,
+      "charaId": 1003
+    },
+    {
+      "id": 810,
+      "relationType": 3204,
+      "charaId": 1005
+    },
+    {
+      "id": 811,
+      "relationType": 3204,
+      "charaId": 1008
+    },
+    {
+      "id": 812,
+      "relationType": 3204,
+      "charaId": 1013
+    },
+    {
+      "id": 813,
+      "relationType": 3204,
+      "charaId": 1018
+    },
+    {
+      "id": 814,
+      "relationType": 3204,
+      "charaId": 1020
+    },
+    {
+      "id": 815,
+      "relationType": 3204,
+      "charaId": 1026
+    },
+    {
+      "id": 816,
+      "relationType": 3204,
+      "charaId": 1027
+    },
+    {
+      "id": 818,
+      "relationType": 3204,
+      "charaId": 1032
+    },
+    {
+      "id": 819,
+      "relationType": 3204,
+      "charaId": 1040
+    },
+    {
+      "id": 820,
+      "relationType": 3204,
+      "charaId": 1041
+    },
+    {
+      "id": 821,
+      "relationType": 3204,
+      "charaId": 1046
+    },
+    {
+      "id": 823,
+      "relationType": 3204,
+      "charaId": 1060
+    },
+    {
+      "id": 824,
+      "relationType": 3204,
+      "charaId": 1061
+    },
+    {
+      "id": 825,
+      "relationType": 3205,
+      "charaId": 1001
+    },
+    {
+      "id": 826,
+      "relationType": 3205,
+      "charaId": 1002
+    },
+    {
+      "id": 827,
+      "relationType": 3205,
+      "charaId": 1004
+    },
+    {
+      "id": 828,
+      "relationType": 3205,
+      "charaId": 1009
+    },
+    {
+      "id": 829,
+      "relationType": 3205,
+      "charaId": 1016
+    },
+    {
+      "id": 830,
+      "relationType": 3205,
+      "charaId": 1019
+    },
+    {
+      "id": 831,
+      "relationType": 3205,
+      "charaId": 1021
+    },
+    {
+      "id": 832,
+      "relationType": 3205,
+      "charaId": 1045
+    },
+    {
+      "id": 833,
+      "relationType": 3205,
+      "charaId": 1056
+    },
+    {
+      "id": 834,
+      "relationType": 3206,
+      "charaId": 1050
+    },
+    {
+      "id": 835,
+      "relationType": 8001,
+      "charaId": 1001
+    },
+    {
+      "id": 836,
+      "relationType": 8001,
+      "charaId": 1003
+    },
+    {
+      "id": 837,
+      "relationType": 8002,
+      "charaId": 1001
+    },
+    {
+      "id": 838,
+      "relationType": 8002,
+      "charaId": 1004
+    },
+    {
+      "id": 839,
+      "relationType": 8003,
+      "charaId": 1001
+    },
+    {
+      "id": 840,
+      "relationType": 8003,
+      "charaId": 1013
+    },
+    {
+      "id": 841,
+      "relationType": 8004,
+      "charaId": 1001
+    },
+    {
+      "id": 842,
+      "relationType": 8004,
+      "charaId": 1015
+    },
+    {
+      "id": 843,
+      "relationType": 8005,
+      "charaId": 1001
+    },
+    {
+      "id": 844,
+      "relationType": 8005,
+      "charaId": 1017
+    },
+    {
+      "id": 845,
+      "relationType": 8006,
+      "charaId": 1001
+    },
+    {
+      "id": 846,
+      "relationType": 8006,
+      "charaId": 1022
+    },
+    {
+      "id": 847,
+      "relationType": 8007,
+      "charaId": 1001
+    },
+    {
+      "id": 848,
+      "relationType": 8007,
+      "charaId": 1027
+    },
+    {
+      "id": 849,
+      "relationType": 8008,
+      "charaId": 1001
+    },
+    {
+      "id": 850,
+      "relationType": 8008,
+      "charaId": 1038
+    },
+    {
+      "id": 851,
+      "relationType": 8009,
+      "charaId": 1001
+    },
+    {
+      "id": 852,
+      "relationType": 8009,
+      "charaId": 1040
+    },
+    {
+      "id": 853,
+      "relationType": 8010,
+      "charaId": 1001
+    },
+    {
+      "id": 855,
+      "relationType": 8011,
+      "charaId": 1001
+    },
+    {
+      "id": 856,
+      "relationType": 8011,
+      "charaId": 1045
+    },
+    {
+      "id": 857,
+      "relationType": 8012,
+      "charaId": 1001
+    },
+    {
+      "id": 859,
+      "relationType": 8013,
+      "charaId": 1001
+    },
+    {
+      "id": 860,
+      "relationType": 8013,
+      "charaId": 1056
+    },
+    {
+      "id": 861,
+      "relationType": 8014,
+      "charaId": 1001
+    },
+    {
+      "id": 862,
+      "relationType": 8014,
+      "charaId": 1058
+    },
+    {
+      "id": 863,
+      "relationType": 8015,
+      "charaId": 1001
+    },
+    {
+      "id": 864,
+      "relationType": 8015,
+      "charaId": 1059
+    },
+    {
+      "id": 865,
+      "relationType": 8016,
+      "charaId": 1001
+    },
+    {
+      "id": 866,
+      "relationType": 8016,
+      "charaId": 1060
+    },
+    {
+      "id": 867,
+      "relationType": 8017,
+      "charaId": 1002
+    },
+    {
+      "id": 868,
+      "relationType": 8017,
+      "charaId": 1003
+    },
+    {
+      "id": 869,
+      "relationType": 8018,
+      "charaId": 1002
+    },
+    {
+      "id": 870,
+      "relationType": 8018,
+      "charaId": 1004
+    },
+    {
+      "id": 871,
+      "relationType": 8019,
+      "charaId": 1002
+    },
+    {
+      "id": 872,
+      "relationType": 8019,
+      "charaId": 1013
+    },
+    {
+      "id": 873,
+      "relationType": 8020,
+      "charaId": 1002
+    },
+    {
+      "id": 874,
+      "relationType": 8020,
+      "charaId": 1015
+    },
+    {
+      "id": 875,
+      "relationType": 8021,
+      "charaId": 1002
+    },
+    {
+      "id": 876,
+      "relationType": 8021,
+      "charaId": 1017
+    },
+    {
+      "id": 877,
+      "relationType": 8022,
+      "charaId": 1002
+    },
+    {
+      "id": 878,
+      "relationType": 8022,
+      "charaId": 1022
+    },
+    {
+      "id": 879,
+      "relationType": 8023,
+      "charaId": 1002
+    },
+    {
+      "id": 880,
+      "relationType": 8023,
+      "charaId": 1027
+    },
+    {
+      "id": 881,
+      "relationType": 8024,
+      "charaId": 1002
+    },
+    {
+      "id": 882,
+      "relationType": 8024,
+      "charaId": 1038
+    },
+    {
+      "id": 883,
+      "relationType": 8025,
+      "charaId": 1002
+    },
+    {
+      "id": 884,
+      "relationType": 8025,
+      "charaId": 1040
+    },
+    {
+      "id": 885,
+      "relationType": 8026,
+      "charaId": 1002
+    },
+    {
+      "id": 887,
+      "relationType": 8027,
+      "charaId": 1002
+    },
+    {
+      "id": 888,
+      "relationType": 8027,
+      "charaId": 1045
+    },
+    {
+      "id": 889,
+      "relationType": 8028,
+      "charaId": 1002
+    },
+    {
+      "id": 891,
+      "relationType": 8029,
+      "charaId": 1002
+    },
+    {
+      "id": 892,
+      "relationType": 8029,
+      "charaId": 1056
+    },
+    {
+      "id": 893,
+      "relationType": 8030,
+      "charaId": 1002
+    },
+    {
+      "id": 894,
+      "relationType": 8030,
+      "charaId": 1058
+    },
+    {
+      "id": 895,
+      "relationType": 8031,
+      "charaId": 1002
+    },
+    {
+      "id": 896,
+      "relationType": 8031,
+      "charaId": 1059
+    },
+    {
+      "id": 897,
+      "relationType": 8032,
+      "charaId": 1002
+    },
+    {
+      "id": 898,
+      "relationType": 8032,
+      "charaId": 1060
+    },
+    {
+      "id": 899,
+      "relationType": 8033,
+      "charaId": 1003
+    },
+    {
+      "id": 900,
+      "relationType": 8033,
+      "charaId": 1007
+    },
+    {
+      "id": 901,
+      "relationType": 8034,
+      "charaId": 1003
+    },
+    {
+      "id": 902,
+      "relationType": 8034,
+      "charaId": 1009
+    },
+    {
+      "id": 903,
+      "relationType": 8035,
+      "charaId": 1003
+    },
+    {
+      "id": 904,
+      "relationType": 8035,
+      "charaId": 1018
+    },
+    {
+      "id": 905,
+      "relationType": 8036,
+      "charaId": 1003
+    },
+    {
+      "id": 906,
+      "relationType": 8036,
+      "charaId": 1021
+    },
+    {
+      "id": 907,
+      "relationType": 8037,
+      "charaId": 1003
+    },
+    {
+      "id": 908,
+      "relationType": 8037,
+      "charaId": 1023
+    },
+    {
+      "id": 909,
+      "relationType": 8038,
+      "charaId": 1003
+    },
+    {
+      "id": 910,
+      "relationType": 8038,
+      "charaId": 1035
+    },
+    {
+      "id": 911,
+      "relationType": 8039,
+      "charaId": 1003
+    },
+    {
+      "id": 912,
+      "relationType": 8039,
+      "charaId": 1046
+    },
+    {
+      "id": 913,
+      "relationType": 8040,
+      "charaId": 1003
+    },
+    {
+      "id": 914,
+      "relationType": 8040,
+      "charaId": 1048
+    },
+    {
+      "id": 915,
+      "relationType": 8041,
+      "charaId": 1003
+    },
+    {
+      "id": 917,
+      "relationType": 8042,
+      "charaId": 1003
+    },
+    {
+      "id": 918,
+      "relationType": 8042,
+      "charaId": 1050
+    },
+    {
+      "id": 919,
+      "relationType": 8043,
+      "charaId": 1004
+    },
+    {
+      "id": 920,
+      "relationType": 8043,
+      "charaId": 1007
+    },
+    {
+      "id": 921,
+      "relationType": 8044,
+      "charaId": 1004
+    },
+    {
+      "id": 922,
+      "relationType": 8044,
+      "charaId": 1009
+    },
+    {
+      "id": 923,
+      "relationType": 8045,
+      "charaId": 1004
+    },
+    {
+      "id": 924,
+      "relationType": 8045,
+      "charaId": 1018
+    },
+    {
+      "id": 925,
+      "relationType": 8046,
+      "charaId": 1004
+    },
+    {
+      "id": 926,
+      "relationType": 8046,
+      "charaId": 1021
+    },
+    {
+      "id": 927,
+      "relationType": 8047,
+      "charaId": 1004
+    },
+    {
+      "id": 928,
+      "relationType": 8047,
+      "charaId": 1023
+    },
+    {
+      "id": 929,
+      "relationType": 8048,
+      "charaId": 1004
+    },
+    {
+      "id": 930,
+      "relationType": 8048,
+      "charaId": 1035
+    },
+    {
+      "id": 931,
+      "relationType": 8049,
+      "charaId": 1004
+    },
+    {
+      "id": 932,
+      "relationType": 8049,
+      "charaId": 1046
+    },
+    {
+      "id": 933,
+      "relationType": 8050,
+      "charaId": 1004
+    },
+    {
+      "id": 934,
+      "relationType": 8050,
+      "charaId": 1048
+    },
+    {
+      "id": 935,
+      "relationType": 8051,
+      "charaId": 1004
+    },
+    {
+      "id": 937,
+      "relationType": 8052,
+      "charaId": 1005
+    },
+    {
+      "id": 938,
+      "relationType": 8052,
+      "charaId": 1003
+    },
+    {
+      "id": 939,
+      "relationType": 8053,
+      "charaId": 1005
+    },
+    {
+      "id": 940,
+      "relationType": 8053,
+      "charaId": 1004
+    },
+    {
+      "id": 941,
+      "relationType": 8054,
+      "charaId": 1005
+    },
+    {
+      "id": 942,
+      "relationType": 8054,
+      "charaId": 1013
+    },
+    {
+      "id": 943,
+      "relationType": 8055,
+      "charaId": 1005
+    },
+    {
+      "id": 944,
+      "relationType": 8055,
+      "charaId": 1015
+    },
+    {
+      "id": 945,
+      "relationType": 8056,
+      "charaId": 1005
+    },
+    {
+      "id": 946,
+      "relationType": 8056,
+      "charaId": 1017
+    },
+    {
+      "id": 947,
+      "relationType": 8057,
+      "charaId": 1005
+    },
+    {
+      "id": 948,
+      "relationType": 8057,
+      "charaId": 1022
+    },
+    {
+      "id": 949,
+      "relationType": 8058,
+      "charaId": 1005
+    },
+    {
+      "id": 950,
+      "relationType": 8058,
+      "charaId": 1027
+    },
+    {
+      "id": 951,
+      "relationType": 8059,
+      "charaId": 1005
+    },
+    {
+      "id": 952,
+      "relationType": 8059,
+      "charaId": 1038
+    },
+    {
+      "id": 953,
+      "relationType": 8060,
+      "charaId": 1005
+    },
+    {
+      "id": 954,
+      "relationType": 8060,
+      "charaId": 1040
+    },
+    {
+      "id": 955,
+      "relationType": 8061,
+      "charaId": 1005
+    },
+    {
+      "id": 957,
+      "relationType": 8062,
+      "charaId": 1005
+    },
+    {
+      "id": 958,
+      "relationType": 8062,
+      "charaId": 1045
+    },
+    {
+      "id": 959,
+      "relationType": 8063,
+      "charaId": 1005
+    },
+    {
+      "id": 961,
+      "relationType": 8064,
+      "charaId": 1005
+    },
+    {
+      "id": 962,
+      "relationType": 8064,
+      "charaId": 1056
+    },
+    {
+      "id": 963,
+      "relationType": 8065,
+      "charaId": 1005
+    },
+    {
+      "id": 964,
+      "relationType": 8065,
+      "charaId": 1058
+    },
+    {
+      "id": 965,
+      "relationType": 8066,
+      "charaId": 1005
+    },
+    {
+      "id": 966,
+      "relationType": 8066,
+      "charaId": 1059
+    },
+    {
+      "id": 967,
+      "relationType": 8067,
+      "charaId": 1005
+    },
+    {
+      "id": 968,
+      "relationType": 8067,
+      "charaId": 1060
+    },
+    {
+      "id": 969,
+      "relationType": 8068,
+      "charaId": 1006
+    },
+    {
+      "id": 970,
+      "relationType": 8068,
+      "charaId": 1004
+    },
+    {
+      "id": 971,
+      "relationType": 8069,
+      "charaId": 1006
+    },
+    {
+      "id": 972,
+      "relationType": 8069,
+      "charaId": 1022
+    },
+    {
+      "id": 973,
+      "relationType": 8070,
+      "charaId": 1006
+    },
+    {
+      "id": 974,
+      "relationType": 8070,
+      "charaId": 1045
+    },
+    {
+      "id": 975,
+      "relationType": 8071,
+      "charaId": 1006
+    },
+    {
+      "id": 977,
+      "relationType": 8072,
+      "charaId": 1007
+    },
+    {
+      "id": 978,
+      "relationType": 8072,
+      "charaId": 1018
+    },
+    {
+      "id": 979,
+      "relationType": 8073,
+      "charaId": 1007
+    },
+    {
+      "id": 980,
+      "relationType": 8073,
+      "charaId": 1021
+    },
+    {
+      "id": 981,
+      "relationType": 8074,
+      "charaId": 1007
+    },
+    {
+      "id": 982,
+      "relationType": 8074,
+      "charaId": 1023
+    },
+    {
+      "id": 983,
+      "relationType": 8075,
+      "charaId": 1007
+    },
+    {
+      "id": 984,
+      "relationType": 8075,
+      "charaId": 1035
+    },
+    {
+      "id": 985,
+      "relationType": 8076,
+      "charaId": 1007
+    },
+    {
+      "id": 986,
+      "relationType": 8076,
+      "charaId": 1048
+    },
+    {
+      "id": 987,
+      "relationType": 8077,
+      "charaId": 1009
+    },
+    {
+      "id": 988,
+      "relationType": 8077,
+      "charaId": 1018
+    },
+    {
+      "id": 989,
+      "relationType": 8078,
+      "charaId": 1009
+    },
+    {
+      "id": 990,
+      "relationType": 8078,
+      "charaId": 1021
+    },
+    {
+      "id": 991,
+      "relationType": 8079,
+      "charaId": 1009
+    },
+    {
+      "id": 992,
+      "relationType": 8079,
+      "charaId": 1023
+    },
+    {
+      "id": 993,
+      "relationType": 8080,
+      "charaId": 1009
+    },
+    {
+      "id": 994,
+      "relationType": 8080,
+      "charaId": 1035
+    },
+    {
+      "id": 995,
+      "relationType": 8081,
+      "charaId": 1009
+    },
+    {
+      "id": 996,
+      "relationType": 8081,
+      "charaId": 1048
+    },
+    {
+      "id": 997,
+      "relationType": 8082,
+      "charaId": 1010
+    },
+    {
+      "id": 998,
+      "relationType": 8082,
+      "charaId": 1003
+    },
+    {
+      "id": 999,
+      "relationType": 8083,
+      "charaId": 1010
+    },
+    {
+      "id": 1000,
+      "relationType": 8083,
+      "charaId": 1004
+    },
+    {
+      "id": 1001,
+      "relationType": 8084,
+      "charaId": 1010
+    },
+    {
+      "id": 1002,
+      "relationType": 8084,
+      "charaId": 1013
+    },
+    {
+      "id": 1003,
+      "relationType": 8085,
+      "charaId": 1010
+    },
+    {
+      "id": 1004,
+      "relationType": 8085,
+      "charaId": 1015
+    },
+    {
+      "id": 1005,
+      "relationType": 8086,
+      "charaId": 1010
+    },
+    {
+      "id": 1006,
+      "relationType": 8086,
+      "charaId": 1017
+    },
+    {
+      "id": 1007,
+      "relationType": 8087,
+      "charaId": 1010
+    },
+    {
+      "id": 1008,
+      "relationType": 8087,
+      "charaId": 1022
+    },
+    {
+      "id": 1009,
+      "relationType": 8088,
+      "charaId": 1010
+    },
+    {
+      "id": 1010,
+      "relationType": 8088,
+      "charaId": 1027
+    },
+    {
+      "id": 1011,
+      "relationType": 8089,
+      "charaId": 1010
+    },
+    {
+      "id": 1012,
+      "relationType": 8089,
+      "charaId": 1038
+    },
+    {
+      "id": 1013,
+      "relationType": 8090,
+      "charaId": 1010
+    },
+    {
+      "id": 1014,
+      "relationType": 8090,
+      "charaId": 1040
+    },
+    {
+      "id": 1015,
+      "relationType": 8091,
+      "charaId": 1010
+    },
+    {
+      "id": 1017,
+      "relationType": 8092,
+      "charaId": 1010
+    },
+    {
+      "id": 1018,
+      "relationType": 8092,
+      "charaId": 1045
+    },
+    {
+      "id": 1019,
+      "relationType": 8093,
+      "charaId": 1010
+    },
+    {
+      "id": 1021,
+      "relationType": 8094,
+      "charaId": 1010
+    },
+    {
+      "id": 1022,
+      "relationType": 8094,
+      "charaId": 1056
+    },
+    {
+      "id": 1023,
+      "relationType": 8095,
+      "charaId": 1010
+    },
+    {
+      "id": 1024,
+      "relationType": 8095,
+      "charaId": 1058
+    },
+    {
+      "id": 1025,
+      "relationType": 8096,
+      "charaId": 1010
+    },
+    {
+      "id": 1026,
+      "relationType": 8096,
+      "charaId": 1059
+    },
+    {
+      "id": 1027,
+      "relationType": 8097,
+      "charaId": 1010
+    },
+    {
+      "id": 1028,
+      "relationType": 8097,
+      "charaId": 1060
+    },
+    {
+      "id": 1029,
+      "relationType": 8098,
+      "charaId": 1013
+    },
+    {
+      "id": 1030,
+      "relationType": 8098,
+      "charaId": 1007
+    },
+    {
+      "id": 1031,
+      "relationType": 8099,
+      "charaId": 1013
+    },
+    {
+      "id": 1032,
+      "relationType": 8099,
+      "charaId": 1009
+    },
+    {
+      "id": 1033,
+      "relationType": 8100,
+      "charaId": 1013
+    },
+    {
+      "id": 1034,
+      "relationType": 8100,
+      "charaId": 1018
+    },
+    {
+      "id": 1035,
+      "relationType": 8101,
+      "charaId": 1013
+    },
+    {
+      "id": 1036,
+      "relationType": 8101,
+      "charaId": 1021
+    },
+    {
+      "id": 1037,
+      "relationType": 8102,
+      "charaId": 1013
+    },
+    {
+      "id": 1038,
+      "relationType": 8102,
+      "charaId": 1023
+    },
+    {
+      "id": 1039,
+      "relationType": 8103,
+      "charaId": 1013
+    },
+    {
+      "id": 1040,
+      "relationType": 8103,
+      "charaId": 1035
+    },
+    {
+      "id": 1041,
+      "relationType": 8104,
+      "charaId": 1013
+    },
+    {
+      "id": 1042,
+      "relationType": 8104,
+      "charaId": 1046
+    },
+    {
+      "id": 1043,
+      "relationType": 8105,
+      "charaId": 1013
+    },
+    {
+      "id": 1044,
+      "relationType": 8105,
+      "charaId": 1048
+    },
+    {
+      "id": 1045,
+      "relationType": 8106,
+      "charaId": 1013
+    },
+    {
+      "id": 1047,
+      "relationType": 8107,
+      "charaId": 1013
+    },
+    {
+      "id": 1048,
+      "relationType": 8107,
+      "charaId": 1050
+    },
+    {
+      "id": 1049,
+      "relationType": 8108,
+      "charaId": 1014
+    },
+    {
+      "id": 1050,
+      "relationType": 8108,
+      "charaId": 1004
+    },
+    {
+      "id": 1051,
+      "relationType": 8109,
+      "charaId": 1014
+    },
+    {
+      "id": 1052,
+      "relationType": 8109,
+      "charaId": 1007
+    },
+    {
+      "id": 1053,
+      "relationType": 8110,
+      "charaId": 1014
+    },
+    {
+      "id": 1054,
+      "relationType": 8110,
+      "charaId": 1009
+    },
+    {
+      "id": 1055,
+      "relationType": 8111,
+      "charaId": 1014
+    },
+    {
+      "id": 1056,
+      "relationType": 8111,
+      "charaId": 1022
+    },
+    {
+      "id": 1057,
+      "relationType": 8112,
+      "charaId": 1014
+    },
+    {
+      "id": 1058,
+      "relationType": 8112,
+      "charaId": 1045
+    },
+    {
+      "id": 1059,
+      "relationType": 8113,
+      "charaId": 1014
+    },
+    {
+      "id": 1060,
+      "relationType": 8113,
+      "charaId": 1046
+    },
+    {
+      "id": 1061,
+      "relationType": 8114,
+      "charaId": 1014
+    },
+    {
+      "id": 1063,
+      "relationType": 8115,
+      "charaId": 1014
+    },
+    {
+      "id": 1065,
+      "relationType": 8116,
+      "charaId": 1015
+    },
+    {
+      "id": 1066,
+      "relationType": 8116,
+      "charaId": 1006
+    },
+    {
+      "id": 1067,
+      "relationType": 8117,
+      "charaId": 1015
+    },
+    {
+      "id": 1068,
+      "relationType": 8117,
+      "charaId": 1050
+    },
+    {
+      "id": 1069,
+      "relationType": 8118,
+      "charaId": 1016
+    },
+    {
+      "id": 1070,
+      "relationType": 8118,
+      "charaId": 1003
+    },
+    {
+      "id": 1071,
+      "relationType": 8119,
+      "charaId": 1016
+    },
+    {
+      "id": 1072,
+      "relationType": 8119,
+      "charaId": 1004
+    },
+    {
+      "id": 1073,
+      "relationType": 8120,
+      "charaId": 1016
+    },
+    {
+      "id": 1074,
+      "relationType": 8120,
+      "charaId": 1013
+    },
+    {
+      "id": 1075,
+      "relationType": 8121,
+      "charaId": 1016
+    },
+    {
+      "id": 1076,
+      "relationType": 8121,
+      "charaId": 1015
+    },
+    {
+      "id": 1077,
+      "relationType": 8122,
+      "charaId": 1016
+    },
+    {
+      "id": 1078,
+      "relationType": 8122,
+      "charaId": 1017
+    },
+    {
+      "id": 1079,
+      "relationType": 8123,
+      "charaId": 1016
+    },
+    {
+      "id": 1080,
+      "relationType": 8123,
+      "charaId": 1022
+    },
+    {
+      "id": 1081,
+      "relationType": 8124,
+      "charaId": 1016
+    },
+    {
+      "id": 1082,
+      "relationType": 8124,
+      "charaId": 1027
+    },
+    {
+      "id": 1083,
+      "relationType": 8125,
+      "charaId": 1016
+    },
+    {
+      "id": 1084,
+      "relationType": 8125,
+      "charaId": 1038
+    },
+    {
+      "id": 1085,
+      "relationType": 8126,
+      "charaId": 1016
+    },
+    {
+      "id": 1086,
+      "relationType": 8126,
+      "charaId": 1040
+    },
+    {
+      "id": 1087,
+      "relationType": 8127,
+      "charaId": 1016
+    },
+    {
+      "id": 1089,
+      "relationType": 8128,
+      "charaId": 1016
+    },
+    {
+      "id": 1090,
+      "relationType": 8128,
+      "charaId": 1045
+    },
+    {
+      "id": 1091,
+      "relationType": 8129,
+      "charaId": 1016
+    },
+    {
+      "id": 1093,
+      "relationType": 8130,
+      "charaId": 1016
+    },
+    {
+      "id": 1094,
+      "relationType": 8130,
+      "charaId": 1056
+    },
+    {
+      "id": 1095,
+      "relationType": 8131,
+      "charaId": 1016
+    },
+    {
+      "id": 1096,
+      "relationType": 8131,
+      "charaId": 1058
+    },
+    {
+      "id": 1097,
+      "relationType": 8132,
+      "charaId": 1016
+    },
+    {
+      "id": 1098,
+      "relationType": 8132,
+      "charaId": 1059
+    },
+    {
+      "id": 1099,
+      "relationType": 8133,
+      "charaId": 1016
+    },
+    {
+      "id": 1100,
+      "relationType": 8133,
+      "charaId": 1060
+    },
+    {
+      "id": 1101,
+      "relationType": 8134,
+      "charaId": 1017
+    },
+    {
+      "id": 1102,
+      "relationType": 8134,
+      "charaId": 1007
+    },
+    {
+      "id": 1103,
+      "relationType": 8135,
+      "charaId": 1017
+    },
+    {
+      "id": 1104,
+      "relationType": 8135,
+      "charaId": 1009
+    },
+    {
+      "id": 1105,
+      "relationType": 8136,
+      "charaId": 1017
+    },
+    {
+      "id": 1106,
+      "relationType": 8136,
+      "charaId": 1018
+    },
+    {
+      "id": 1107,
+      "relationType": 8137,
+      "charaId": 1017
+    },
+    {
+      "id": 1108,
+      "relationType": 8137,
+      "charaId": 1021
+    },
+    {
+      "id": 1109,
+      "relationType": 8138,
+      "charaId": 1017
+    },
+    {
+      "id": 1110,
+      "relationType": 8138,
+      "charaId": 1023
+    },
+    {
+      "id": 1111,
+      "relationType": 8139,
+      "charaId": 1017
+    },
+    {
+      "id": 1112,
+      "relationType": 8139,
+      "charaId": 1035
+    },
+    {
+      "id": 1113,
+      "relationType": 8140,
+      "charaId": 1017
+    },
+    {
+      "id": 1114,
+      "relationType": 8140,
+      "charaId": 1046
+    },
+    {
+      "id": 1115,
+      "relationType": 8141,
+      "charaId": 1017
+    },
+    {
+      "id": 1116,
+      "relationType": 8141,
+      "charaId": 1048
+    },
+    {
+      "id": 1117,
+      "relationType": 8142,
+      "charaId": 1017
+    },
+    {
+      "id": 1119,
+      "relationType": 8143,
+      "charaId": 1017
+    },
+    {
+      "id": 1120,
+      "relationType": 8143,
+      "charaId": 1050
+    },
+    {
+      "id": 1121,
+      "relationType": 8144,
+      "charaId": 1019
+    },
+    {
+      "id": 1122,
+      "relationType": 8144,
+      "charaId": 1004
+    },
+    {
+      "id": 1123,
+      "relationType": 8145,
+      "charaId": 1019
+    },
+    {
+      "id": 1124,
+      "relationType": 8145,
+      "charaId": 1007
+    },
+    {
+      "id": 1125,
+      "relationType": 8146,
+      "charaId": 1019
+    },
+    {
+      "id": 1126,
+      "relationType": 8146,
+      "charaId": 1009
+    },
+    {
+      "id": 1127,
+      "relationType": 8147,
+      "charaId": 1019
+    },
+    {
+      "id": 1128,
+      "relationType": 8147,
+      "charaId": 1022
+    },
+    {
+      "id": 1129,
+      "relationType": 8148,
+      "charaId": 1019
+    },
+    {
+      "id": 1130,
+      "relationType": 8148,
+      "charaId": 1045
+    },
+    {
+      "id": 1131,
+      "relationType": 8149,
+      "charaId": 1019
+    },
+    {
+      "id": 1132,
+      "relationType": 8149,
+      "charaId": 1046
+    },
+    {
+      "id": 1133,
+      "relationType": 8150,
+      "charaId": 1019
+    },
+    {
+      "id": 1135,
+      "relationType": 8151,
+      "charaId": 1019
+    },
+    {
+      "id": 1137,
+      "relationType": 8152,
+      "charaId": 1020
+    },
+    {
+      "id": 1138,
+      "relationType": 8152,
+      "charaId": 1004
+    },
+    {
+      "id": 1139,
+      "relationType": 8153,
+      "charaId": 1020
+    },
+    {
+      "id": 1140,
+      "relationType": 8153,
+      "charaId": 1015
+    },
+    {
+      "id": 1141,
+      "relationType": 8154,
+      "charaId": 1020
+    },
+    {
+      "id": 1142,
+      "relationType": 8154,
+      "charaId": 1027
+    },
+    {
+      "id": 1143,
+      "relationType": 8155,
+      "charaId": 1020
+    },
+    {
+      "id": 1144,
+      "relationType": 8155,
+      "charaId": 1038
+    },
+    {
+      "id": 1145,
+      "relationType": 8156,
+      "charaId": 1020
+    },
+    {
+      "id": 1146,
+      "relationType": 8156,
+      "charaId": 1040
+    },
+    {
+      "id": 1147,
+      "relationType": 8157,
+      "charaId": 1020
+    },
+    {
+      "id": 1149,
+      "relationType": 8158,
+      "charaId": 1020
+    },
+    {
+      "id": 1150,
+      "relationType": 8158,
+      "charaId": 1045
+    },
+    {
+      "id": 1151,
+      "relationType": 8159,
+      "charaId": 1020
+    },
+    {
+      "id": 1152,
+      "relationType": 8159,
+      "charaId": 1058
+    },
+    {
+      "id": 1153,
+      "relationType": 8160,
+      "charaId": 1020
+    },
+    {
+      "id": 1154,
+      "relationType": 8160,
+      "charaId": 1059
+    },
+    {
+      "id": 1155,
+      "relationType": 8161,
+      "charaId": 1020
+    },
+    {
+      "id": 1156,
+      "relationType": 8161,
+      "charaId": 1060
+    },
+    {
+      "id": 1157,
+      "relationType": 8162,
+      "charaId": 1025
+    },
+    {
+      "id": 1158,
+      "relationType": 8162,
+      "charaId": 1003
+    },
+    {
+      "id": 1159,
+      "relationType": 8163,
+      "charaId": 1025
+    },
+    {
+      "id": 1160,
+      "relationType": 8163,
+      "charaId": 1004
+    },
+    {
+      "id": 1161,
+      "relationType": 8164,
+      "charaId": 1025
+    },
+    {
+      "id": 1162,
+      "relationType": 8164,
+      "charaId": 1013
+    },
+    {
+      "id": 1163,
+      "relationType": 8165,
+      "charaId": 1025
+    },
+    {
+      "id": 1164,
+      "relationType": 8165,
+      "charaId": 1015
+    },
+    {
+      "id": 1165,
+      "relationType": 8166,
+      "charaId": 1025
+    },
+    {
+      "id": 1166,
+      "relationType": 8166,
+      "charaId": 1017
+    },
+    {
+      "id": 1167,
+      "relationType": 8167,
+      "charaId": 1025
+    },
+    {
+      "id": 1168,
+      "relationType": 8167,
+      "charaId": 1022
+    },
+    {
+      "id": 1169,
+      "relationType": 8168,
+      "charaId": 1025
+    },
+    {
+      "id": 1170,
+      "relationType": 8168,
+      "charaId": 1027
+    },
+    {
+      "id": 1171,
+      "relationType": 8169,
+      "charaId": 1025
+    },
+    {
+      "id": 1172,
+      "relationType": 8169,
+      "charaId": 1038
+    },
+    {
+      "id": 1173,
+      "relationType": 8170,
+      "charaId": 1025
+    },
+    {
+      "id": 1174,
+      "relationType": 8170,
+      "charaId": 1040
+    },
+    {
+      "id": 1175,
+      "relationType": 8171,
+      "charaId": 1025
+    },
+    {
+      "id": 1177,
+      "relationType": 8172,
+      "charaId": 1025
+    },
+    {
+      "id": 1178,
+      "relationType": 8172,
+      "charaId": 1045
+    },
+    {
+      "id": 1179,
+      "relationType": 8173,
+      "charaId": 1025
+    },
+    {
+      "id": 1181,
+      "relationType": 8174,
+      "charaId": 1025
+    },
+    {
+      "id": 1182,
+      "relationType": 8174,
+      "charaId": 1056
+    },
+    {
+      "id": 1183,
+      "relationType": 8175,
+      "charaId": 1025
+    },
+    {
+      "id": 1184,
+      "relationType": 8175,
+      "charaId": 1058
+    },
+    {
+      "id": 1185,
+      "relationType": 8176,
+      "charaId": 1025
+    },
+    {
+      "id": 1186,
+      "relationType": 8176,
+      "charaId": 1059
+    },
+    {
+      "id": 1187,
+      "relationType": 8177,
+      "charaId": 1025
+    },
+    {
+      "id": 1188,
+      "relationType": 8177,
+      "charaId": 1060
+    },
+    {
+      "id": 1189,
+      "relationType": 8178,
+      "charaId": 1027
+    },
+    {
+      "id": 1190,
+      "relationType": 8178,
+      "charaId": 1006
+    },
+    {
+      "id": 1191,
+      "relationType": 8179,
+      "charaId": 1027
+    },
+    {
+      "id": 1192,
+      "relationType": 8179,
+      "charaId": 1050
+    },
+    {
+      "id": 1193,
+      "relationType": 8180,
+      "charaId": 1028
+    },
+    {
+      "id": 1194,
+      "relationType": 8180,
+      "charaId": 1004
+    },
+    {
+      "id": 1195,
+      "relationType": 8181,
+      "charaId": 1028
+    },
+    {
+      "id": 1196,
+      "relationType": 8181,
+      "charaId": 1007
+    },
+    {
+      "id": 1197,
+      "relationType": 8182,
+      "charaId": 1028
+    },
+    {
+      "id": 1198,
+      "relationType": 8182,
+      "charaId": 1009
+    },
+    {
+      "id": 1199,
+      "relationType": 8183,
+      "charaId": 1028
+    },
+    {
+      "id": 1200,
+      "relationType": 8183,
+      "charaId": 1022
+    },
+    {
+      "id": 1201,
+      "relationType": 8184,
+      "charaId": 1028
+    },
+    {
+      "id": 1202,
+      "relationType": 8184,
+      "charaId": 1045
+    },
+    {
+      "id": 1203,
+      "relationType": 8185,
+      "charaId": 1028
+    },
+    {
+      "id": 1204,
+      "relationType": 8185,
+      "charaId": 1046
+    },
+    {
+      "id": 1205,
+      "relationType": 8186,
+      "charaId": 1028
+    },
+    {
+      "id": 1207,
+      "relationType": 8187,
+      "charaId": 1028
+    },
+    {
+      "id": 1210,
+      "relationType": 8188,
+      "charaId": 1004
+    },
+    {
+      "id": 1212,
+      "relationType": 8189,
+      "charaId": 1015
+    },
+    {
+      "id": 1214,
+      "relationType": 8190,
+      "charaId": 1018
+    },
+    {
+      "id": 1216,
+      "relationType": 8191,
+      "charaId": 1021
+    },
+    {
+      "id": 1218,
+      "relationType": 8192,
+      "charaId": 1023
+    },
+    {
+      "id": 1220,
+      "relationType": 8193,
+      "charaId": 1027
+    },
+    {
+      "id": 1222,
+      "relationType": 8194,
+      "charaId": 1035
+    },
+    {
+      "id": 1224,
+      "relationType": 8195,
+      "charaId": 1038
+    },
+    {
+      "id": 1226,
+      "relationType": 8196,
+      "charaId": 1040
+    },
+    {
+      "id": 1230,
+      "relationType": 8198,
+      "charaId": 1045
+    },
+    {
+      "id": 1232,
+      "relationType": 8199,
+      "charaId": 1048
+    },
+    {
+      "id": 1234,
+      "relationType": 8200,
+      "charaId": 1058
+    },
+    {
+      "id": 1236,
+      "relationType": 8201,
+      "charaId": 1059
+    },
+    {
+      "id": 1238,
+      "relationType": 8202,
+      "charaId": 1060
+    },
+    {
+      "id": 1239,
+      "relationType": 8203,
+      "charaId": 1030
+    },
+    {
+      "id": 1240,
+      "relationType": 8203,
+      "charaId": 1003
+    },
+    {
+      "id": 1241,
+      "relationType": 8204,
+      "charaId": 1030
+    },
+    {
+      "id": 1242,
+      "relationType": 8204,
+      "charaId": 1004
+    },
+    {
+      "id": 1243,
+      "relationType": 8205,
+      "charaId": 1030
+    },
+    {
+      "id": 1244,
+      "relationType": 8205,
+      "charaId": 1013
+    },
+    {
+      "id": 1245,
+      "relationType": 8206,
+      "charaId": 1030
+    },
+    {
+      "id": 1246,
+      "relationType": 8206,
+      "charaId": 1015
+    },
+    {
+      "id": 1247,
+      "relationType": 8207,
+      "charaId": 1030
+    },
+    {
+      "id": 1248,
+      "relationType": 8207,
+      "charaId": 1017
+    },
+    {
+      "id": 1249,
+      "relationType": 8208,
+      "charaId": 1030
+    },
+    {
+      "id": 1250,
+      "relationType": 8208,
+      "charaId": 1022
+    },
+    {
+      "id": 1251,
+      "relationType": 8209,
+      "charaId": 1030
+    },
+    {
+      "id": 1252,
+      "relationType": 8209,
+      "charaId": 1027
+    },
+    {
+      "id": 1253,
+      "relationType": 8210,
+      "charaId": 1030
+    },
+    {
+      "id": 1254,
+      "relationType": 8210,
+      "charaId": 1038
+    },
+    {
+      "id": 1255,
+      "relationType": 8211,
+      "charaId": 1030
+    },
+    {
+      "id": 1256,
+      "relationType": 8211,
+      "charaId": 1040
+    },
+    {
+      "id": 1257,
+      "relationType": 8212,
+      "charaId": 1030
+    },
+    {
+      "id": 1259,
+      "relationType": 8213,
+      "charaId": 1030
+    },
+    {
+      "id": 1260,
+      "relationType": 8213,
+      "charaId": 1045
+    },
+    {
+      "id": 1261,
+      "relationType": 8214,
+      "charaId": 1030
+    },
+    {
+      "id": 1263,
+      "relationType": 8215,
+      "charaId": 1030
+    },
+    {
+      "id": 1264,
+      "relationType": 8215,
+      "charaId": 1056
+    },
+    {
+      "id": 1265,
+      "relationType": 8216,
+      "charaId": 1030
+    },
+    {
+      "id": 1266,
+      "relationType": 8216,
+      "charaId": 1058
+    },
+    {
+      "id": 1267,
+      "relationType": 8217,
+      "charaId": 1030
+    },
+    {
+      "id": 1268,
+      "relationType": 8217,
+      "charaId": 1059
+    },
+    {
+      "id": 1269,
+      "relationType": 8218,
+      "charaId": 1030
+    },
+    {
+      "id": 1270,
+      "relationType": 8218,
+      "charaId": 1060
+    },
+    {
+      "id": 1271,
+      "relationType": 8219,
+      "charaId": 1032
+    },
+    {
+      "id": 1272,
+      "relationType": 8219,
+      "charaId": 1003
+    },
+    {
+      "id": 1273,
+      "relationType": 8220,
+      "charaId": 1032
+    },
+    {
+      "id": 1274,
+      "relationType": 8220,
+      "charaId": 1004
+    },
+    {
+      "id": 1275,
+      "relationType": 8221,
+      "charaId": 1032
+    },
+    {
+      "id": 1276,
+      "relationType": 8221,
+      "charaId": 1013
+    },
+    {
+      "id": 1277,
+      "relationType": 8222,
+      "charaId": 1032
+    },
+    {
+      "id": 1278,
+      "relationType": 8222,
+      "charaId": 1015
+    },
+    {
+      "id": 1279,
+      "relationType": 8223,
+      "charaId": 1032
+    },
+    {
+      "id": 1280,
+      "relationType": 8223,
+      "charaId": 1017
+    },
+    {
+      "id": 1281,
+      "relationType": 8224,
+      "charaId": 1032
+    },
+    {
+      "id": 1282,
+      "relationType": 8224,
+      "charaId": 1022
+    },
+    {
+      "id": 1283,
+      "relationType": 8225,
+      "charaId": 1032
+    },
+    {
+      "id": 1284,
+      "relationType": 8225,
+      "charaId": 1027
+    },
+    {
+      "id": 1285,
+      "relationType": 8226,
+      "charaId": 1032
+    },
+    {
+      "id": 1286,
+      "relationType": 8226,
+      "charaId": 1038
+    },
+    {
+      "id": 1287,
+      "relationType": 8227,
+      "charaId": 1032
+    },
+    {
+      "id": 1288,
+      "relationType": 8227,
+      "charaId": 1040
+    },
+    {
+      "id": 1289,
+      "relationType": 8228,
+      "charaId": 1032
+    },
+    {
+      "id": 1291,
+      "relationType": 8229,
+      "charaId": 1032
+    },
+    {
+      "id": 1292,
+      "relationType": 8229,
+      "charaId": 1045
+    },
+    {
+      "id": 1293,
+      "relationType": 8230,
+      "charaId": 1032
+    },
+    {
+      "id": 1295,
+      "relationType": 8231,
+      "charaId": 1032
+    },
+    {
+      "id": 1296,
+      "relationType": 8231,
+      "charaId": 1056
+    },
+    {
+      "id": 1297,
+      "relationType": 8232,
+      "charaId": 1032
+    },
+    {
+      "id": 1298,
+      "relationType": 8232,
+      "charaId": 1058
+    },
+    {
+      "id": 1299,
+      "relationType": 8233,
+      "charaId": 1032
+    },
+    {
+      "id": 1300,
+      "relationType": 8233,
+      "charaId": 1059
+    },
+    {
+      "id": 1301,
+      "relationType": 8234,
+      "charaId": 1032
+    },
+    {
+      "id": 1302,
+      "relationType": 8234,
+      "charaId": 1060
+    },
+    {
+      "id": 1304,
+      "relationType": 8235,
+      "charaId": 1003
+    },
+    {
+      "id": 1306,
+      "relationType": 8236,
+      "charaId": 1004
+    },
+    {
+      "id": 1308,
+      "relationType": 8237,
+      "charaId": 1013
+    },
+    {
+      "id": 1310,
+      "relationType": 8238,
+      "charaId": 1015
+    },
+    {
+      "id": 1312,
+      "relationType": 8239,
+      "charaId": 1017
+    },
+    {
+      "id": 1314,
+      "relationType": 8240,
+      "charaId": 1022
+    },
+    {
+      "id": 1316,
+      "relationType": 8241,
+      "charaId": 1027
+    },
+    {
+      "id": 1318,
+      "relationType": 8242,
+      "charaId": 1038
+    },
+    {
+      "id": 1320,
+      "relationType": 8243,
+      "charaId": 1040
+    },
+    {
+      "id": 1324,
+      "relationType": 8245,
+      "charaId": 1045
+    },
+    {
+      "id": 1328,
+      "relationType": 8247,
+      "charaId": 1056
+    },
+    {
+      "id": 1330,
+      "relationType": 8248,
+      "charaId": 1058
+    },
+    {
+      "id": 1332,
+      "relationType": 8249,
+      "charaId": 1059
+    },
+    {
+      "id": 1334,
+      "relationType": 8250,
+      "charaId": 1060
+    },
+    {
+      "id": 1336,
+      "relationType": 8251,
+      "charaId": 1003
+    },
+    {
+      "id": 1338,
+      "relationType": 8252,
+      "charaId": 1004
+    },
+    {
+      "id": 1340,
+      "relationType": 8253,
+      "charaId": 1013
+    },
+    {
+      "id": 1342,
+      "relationType": 8254,
+      "charaId": 1015
+    },
+    {
+      "id": 1344,
+      "relationType": 8255,
+      "charaId": 1017
+    },
+    {
+      "id": 1346,
+      "relationType": 8256,
+      "charaId": 1022
+    },
+    {
+      "id": 1348,
+      "relationType": 8257,
+      "charaId": 1027
+    },
+    {
+      "id": 1350,
+      "relationType": 8258,
+      "charaId": 1038
+    },
+    {
+      "id": 1352,
+      "relationType": 8259,
+      "charaId": 1040
+    },
+    {
+      "id": 1356,
+      "relationType": 8261,
+      "charaId": 1045
+    },
+    {
+      "id": 1360,
+      "relationType": 8263,
+      "charaId": 1056
+    },
+    {
+      "id": 1362,
+      "relationType": 8264,
+      "charaId": 1058
+    },
+    {
+      "id": 1364,
+      "relationType": 8265,
+      "charaId": 1059
+    },
+    {
+      "id": 1366,
+      "relationType": 8266,
+      "charaId": 1060
+    },
+    {
+      "id": 1367,
+      "relationType": 8267,
+      "charaId": 1037
+    },
+    {
+      "id": 1368,
+      "relationType": 8267,
+      "charaId": 1004
+    },
+    {
+      "id": 1369,
+      "relationType": 8268,
+      "charaId": 1037
+    },
+    {
+      "id": 1370,
+      "relationType": 8268,
+      "charaId": 1007
+    },
+    {
+      "id": 1371,
+      "relationType": 8269,
+      "charaId": 1037
+    },
+    {
+      "id": 1372,
+      "relationType": 8269,
+      "charaId": 1009
+    },
+    {
+      "id": 1373,
+      "relationType": 8270,
+      "charaId": 1037
+    },
+    {
+      "id": 1374,
+      "relationType": 8270,
+      "charaId": 1022
+    },
+    {
+      "id": 1375,
+      "relationType": 8271,
+      "charaId": 1037
+    },
+    {
+      "id": 1376,
+      "relationType": 8271,
+      "charaId": 1045
+    },
+    {
+      "id": 1378,
+      "relationType": 8272,
+      "charaId": 1046
+    },
+    {
+      "id": 1379,
+      "relationType": 8273,
+      "charaId": 1037
+    },
+    {
+      "id": 1381,
+      "relationType": 8274,
+      "charaId": 1037
+    },
+    {
+      "id": 1383,
+      "relationType": 8275,
+      "charaId": 1038
+    },
+    {
+      "id": 1384,
+      "relationType": 8275,
+      "charaId": 1006
+    },
+    {
+      "id": 1385,
+      "relationType": 8276,
+      "charaId": 1038
+    },
+    {
+      "id": 1386,
+      "relationType": 8276,
+      "charaId": 1050
+    },
+    {
+      "id": 1387,
+      "relationType": 8277,
+      "charaId": 1039
+    },
+    {
+      "id": 1388,
+      "relationType": 8277,
+      "charaId": 1003
+    },
+    {
+      "id": 1389,
+      "relationType": 8278,
+      "charaId": 1039
+    },
+    {
+      "id": 1390,
+      "relationType": 8278,
+      "charaId": 1007
+    },
+    {
+      "id": 1391,
+      "relationType": 8279,
+      "charaId": 1039
+    },
+    {
+      "id": 1392,
+      "relationType": 8279,
+      "charaId": 1009
+    },
+    {
+      "id": 1393,
+      "relationType": 8280,
+      "charaId": 1039
+    },
+    {
+      "id": 1394,
+      "relationType": 8280,
+      "charaId": 1013
+    },
+    {
+      "id": 1395,
+      "relationType": 8281,
+      "charaId": 1039
+    },
+    {
+      "id": 1396,
+      "relationType": 8281,
+      "charaId": 1017
+    },
+    {
+      "id": 1397,
+      "relationType": 8282,
+      "charaId": 1039
+    },
+    {
+      "id": 1398,
+      "relationType": 8282,
+      "charaId": 1046
+    },
+    {
+      "id": 1399,
+      "relationType": 8283,
+      "charaId": 1039
+    },
+    {
+      "id": 1401,
+      "relationType": 8284,
+      "charaId": 1039
+    },
+    {
+      "id": 1402,
+      "relationType": 8284,
+      "charaId": 1050
+    },
+    {
+      "id": 1403,
+      "relationType": 8285,
+      "charaId": 1040
+    },
+    {
+      "id": 1404,
+      "relationType": 8285,
+      "charaId": 1006
+    },
+    {
+      "id": 1405,
+      "relationType": 8286,
+      "charaId": 1040
+    },
+    {
+      "id": 1406,
+      "relationType": 8286,
+      "charaId": 1050
+    },
+    {
+      "id": 1407,
+      "relationType": 8287,
+      "charaId": 1041
+    },
+    {
+      "id": 1408,
+      "relationType": 8287,
+      "charaId": 1004
+    },
+    {
+      "id": 1409,
+      "relationType": 8288,
+      "charaId": 1041
+    },
+    {
+      "id": 1410,
+      "relationType": 8288,
+      "charaId": 1015
+    },
+    {
+      "id": 1411,
+      "relationType": 8289,
+      "charaId": 1041
+    },
+    {
+      "id": 1412,
+      "relationType": 8289,
+      "charaId": 1018
+    },
+    {
+      "id": 1413,
+      "relationType": 8290,
+      "charaId": 1041
+    },
+    {
+      "id": 1414,
+      "relationType": 8290,
+      "charaId": 1021
+    },
+    {
+      "id": 1415,
+      "relationType": 8291,
+      "charaId": 1041
+    },
+    {
+      "id": 1416,
+      "relationType": 8291,
+      "charaId": 1023
+    },
+    {
+      "id": 1417,
+      "relationType": 8292,
+      "charaId": 1041
+    },
+    {
+      "id": 1418,
+      "relationType": 8292,
+      "charaId": 1027
+    },
+    {
+      "id": 1419,
+      "relationType": 8293,
+      "charaId": 1041
+    },
+    {
+      "id": 1420,
+      "relationType": 8293,
+      "charaId": 1035
+    },
+    {
+      "id": 1421,
+      "relationType": 8294,
+      "charaId": 1041
+    },
+    {
+      "id": 1422,
+      "relationType": 8294,
+      "charaId": 1038
+    },
+    {
+      "id": 1423,
+      "relationType": 8295,
+      "charaId": 1041
+    },
+    {
+      "id": 1424,
+      "relationType": 8295,
+      "charaId": 1040
+    },
+    {
+      "id": 1425,
+      "relationType": 8296,
+      "charaId": 1041
+    },
+    {
+      "id": 1427,
+      "relationType": 8297,
+      "charaId": 1041
+    },
+    {
+      "id": 1428,
+      "relationType": 8297,
+      "charaId": 1045
+    },
+    {
+      "id": 1429,
+      "relationType": 8298,
+      "charaId": 1041
+    },
+    {
+      "id": 1430,
+      "relationType": 8298,
+      "charaId": 1048
+    },
+    {
+      "id": 1431,
+      "relationType": 8299,
+      "charaId": 1041
+    },
+    {
+      "id": 1432,
+      "relationType": 8299,
+      "charaId": 1058
+    },
+    {
+      "id": 1433,
+      "relationType": 8300,
+      "charaId": 1041
+    },
+    {
+      "id": 1434,
+      "relationType": 8300,
+      "charaId": 1059
+    },
+    {
+      "id": 1435,
+      "relationType": 8301,
+      "charaId": 1041
+    },
+    {
+      "id": 1436,
+      "relationType": 8301,
+      "charaId": 1060
+    },
+    {
+      "id": 1438,
+      "relationType": 8302,
+      "charaId": 1004
+    },
+    {
+      "id": 1440,
+      "relationType": 8303,
+      "charaId": 1007
+    },
+    {
+      "id": 1442,
+      "relationType": 8304,
+      "charaId": 1009
+    },
+    {
+      "id": 1444,
+      "relationType": 8305,
+      "charaId": 1022
+    },
+    {
+      "id": 1446,
+      "relationType": 8306,
+      "charaId": 1045
+    },
+    {
+      "id": 1448,
+      "relationType": 8307,
+      "charaId": 1046
+    },
+    {
+      "id": 1454,
+      "relationType": 8310,
+      "charaId": 1006
+    },
+    {
+      "id": 1456,
+      "relationType": 8311,
+      "charaId": 1050
+    },
+    {
+      "id": 1458,
+      "relationType": 8312,
+      "charaId": 1004
+    },
+    {
+      "id": 1460,
+      "relationType": 8313,
+      "charaId": 1007
+    },
+    {
+      "id": 1462,
+      "relationType": 8314,
+      "charaId": 1009
+    },
+    {
+      "id": 1464,
+      "relationType": 8315,
+      "charaId": 1022
+    },
+    {
+      "id": 1466,
+      "relationType": 8316,
+      "charaId": 1045
+    },
+    {
+      "id": 1468,
+      "relationType": 8317,
+      "charaId": 1046
+    },
+    {
+      "id": 1473,
+      "relationType": 8320,
+      "charaId": 1045
+    },
+    {
+      "id": 1474,
+      "relationType": 8320,
+      "charaId": 1007
+    },
+    {
+      "id": 1475,
+      "relationType": 8321,
+      "charaId": 1045
+    },
+    {
+      "id": 1476,
+      "relationType": 8321,
+      "charaId": 1009
+    },
+    {
+      "id": 1477,
+      "relationType": 8322,
+      "charaId": 1045
+    },
+    {
+      "id": 1478,
+      "relationType": 8322,
+      "charaId": 1018
+    },
+    {
+      "id": 1479,
+      "relationType": 8323,
+      "charaId": 1045
+    },
+    {
+      "id": 1480,
+      "relationType": 8323,
+      "charaId": 1021
+    },
+    {
+      "id": 1481,
+      "relationType": 8324,
+      "charaId": 1045
+    },
+    {
+      "id": 1482,
+      "relationType": 8324,
+      "charaId": 1023
+    },
+    {
+      "id": 1483,
+      "relationType": 8325,
+      "charaId": 1045
+    },
+    {
+      "id": 1484,
+      "relationType": 8325,
+      "charaId": 1035
+    },
+    {
+      "id": 1485,
+      "relationType": 8326,
+      "charaId": 1045
+    },
+    {
+      "id": 1486,
+      "relationType": 8326,
+      "charaId": 1046
+    },
+    {
+      "id": 1487,
+      "relationType": 8327,
+      "charaId": 1045
+    },
+    {
+      "id": 1488,
+      "relationType": 8327,
+      "charaId": 1048
+    },
+    {
+      "id": 1489,
+      "relationType": 8328,
+      "charaId": 1045
+    },
+    {
+      "id": 1491,
+      "relationType": 8329,
+      "charaId": 1046
+    },
+    {
+      "id": 1492,
+      "relationType": 8329,
+      "charaId": 1018
+    },
+    {
+      "id": 1493,
+      "relationType": 8330,
+      "charaId": 1046
+    },
+    {
+      "id": 1494,
+      "relationType": 8330,
+      "charaId": 1021
+    },
+    {
+      "id": 1495,
+      "relationType": 8331,
+      "charaId": 1046
+    },
+    {
+      "id": 1496,
+      "relationType": 8331,
+      "charaId": 1023
+    },
+    {
+      "id": 1497,
+      "relationType": 8332,
+      "charaId": 1046
+    },
+    {
+      "id": 1498,
+      "relationType": 8332,
+      "charaId": 1035
+    },
+    {
+      "id": 1499,
+      "relationType": 8333,
+      "charaId": 1046
+    },
+    {
+      "id": 1500,
+      "relationType": 8333,
+      "charaId": 1048
+    },
+    {
+      "id": 1502,
+      "relationType": 8334,
+      "charaId": 1003
+    },
+    {
+      "id": 1504,
+      "relationType": 8335,
+      "charaId": 1004
+    },
+    {
+      "id": 1506,
+      "relationType": 8336,
+      "charaId": 1013
+    },
+    {
+      "id": 1508,
+      "relationType": 8337,
+      "charaId": 1015
+    },
+    {
+      "id": 1510,
+      "relationType": 8338,
+      "charaId": 1017
+    },
+    {
+      "id": 1512,
+      "relationType": 8339,
+      "charaId": 1022
+    },
+    {
+      "id": 1514,
+      "relationType": 8340,
+      "charaId": 1027
+    },
+    {
+      "id": 1516,
+      "relationType": 8341,
+      "charaId": 1038
+    },
+    {
+      "id": 1518,
+      "relationType": 8342,
+      "charaId": 1040
+    },
+    {
+      "id": 1522,
+      "relationType": 8344,
+      "charaId": 1045
+    },
+    {
+      "id": 1526,
+      "relationType": 8346,
+      "charaId": 1056
+    },
+    {
+      "id": 1528,
+      "relationType": 8347,
+      "charaId": 1058
+    },
+    {
+      "id": 1530,
+      "relationType": 8348,
+      "charaId": 1059
+    },
+    {
+      "id": 1532,
+      "relationType": 8349,
+      "charaId": 1060
+    },
+    {
+      "id": 1534,
+      "relationType": 8350,
+      "charaId": 1018
+    },
+    {
+      "id": 1536,
+      "relationType": 8351,
+      "charaId": 1021
+    },
+    {
+      "id": 1538,
+      "relationType": 8352,
+      "charaId": 1023
+    },
+    {
+      "id": 1540,
+      "relationType": 8353,
+      "charaId": 1035
+    },
+    {
+      "id": 1542,
+      "relationType": 8354,
+      "charaId": 1048
+    },
+    {
+      "id": 1543,
+      "relationType": 8355,
+      "charaId": 1050
+    },
+    {
+      "id": 1544,
+      "relationType": 8355,
+      "charaId": 1004
+    },
+    {
+      "id": 1545,
+      "relationType": 8356,
+      "charaId": 1050
+    },
+    {
+      "id": 1546,
+      "relationType": 8356,
+      "charaId": 1045
+    },
+    {
+      "id": 1548,
+      "relationType": 8357,
+      "charaId": 1012
+    },
+    {
+      "id": 1550,
+      "relationType": 8358,
+      "charaId": 1015
+    },
+    {
+      "id": 1552,
+      "relationType": 8359,
+      "charaId": 1027
+    },
+    {
+      "id": 1556,
+      "relationType": 8361,
+      "charaId": 1038
+    },
+    {
+      "id": 1558,
+      "relationType": 8362,
+      "charaId": 1039
+    },
+    {
+      "id": 1560,
+      "relationType": 8363,
+      "charaId": 1040
+    },
+    {
+      "id": 1564,
+      "relationType": 8365,
+      "charaId": 1050
+    },
+    {
+      "id": 1566,
+      "relationType": 8366,
+      "charaId": 1052
+    },
+    {
+      "id": 1570,
+      "relationType": 8368,
+      "charaId": 1058
+    },
+    {
+      "id": 1572,
+      "relationType": 8369,
+      "charaId": 1059
+    },
+    {
+      "id": 1574,
+      "relationType": 8370,
+      "charaId": 1060
+    },
+    {
+      "id": 1576,
+      "relationType": 8371,
+      "charaId": 1061
+    },
+    {
+      "id": 1577,
+      "relationType": 8372,
+      "charaId": 1052
+    },
+    {
+      "id": 1578,
+      "relationType": 8372,
+      "charaId": 1003
+    },
+    {
+      "id": 1579,
+      "relationType": 8373,
+      "charaId": 1052
+    },
+    {
+      "id": 1580,
+      "relationType": 8373,
+      "charaId": 1007
+    },
+    {
+      "id": 1581,
+      "relationType": 8374,
+      "charaId": 1052
+    },
+    {
+      "id": 1582,
+      "relationType": 8374,
+      "charaId": 1009
+    },
+    {
+      "id": 1583,
+      "relationType": 8375,
+      "charaId": 1052
+    },
+    {
+      "id": 1584,
+      "relationType": 8375,
+      "charaId": 1013
+    },
+    {
+      "id": 1585,
+      "relationType": 8376,
+      "charaId": 1052
+    },
+    {
+      "id": 1586,
+      "relationType": 8376,
+      "charaId": 1017
+    },
+    {
+      "id": 1587,
+      "relationType": 8377,
+      "charaId": 1052
+    },
+    {
+      "id": 1588,
+      "relationType": 8377,
+      "charaId": 1046
+    },
+    {
+      "id": 1589,
+      "relationType": 8378,
+      "charaId": 1052
+    },
+    {
+      "id": 1591,
+      "relationType": 8379,
+      "charaId": 1052
+    },
+    {
+      "id": 1592,
+      "relationType": 8379,
+      "charaId": 1050
+    },
+    {
+      "id": 1594,
+      "relationType": 8380,
+      "charaId": 1003
+    },
+    {
+      "id": 1596,
+      "relationType": 8381,
+      "charaId": 1004
+    },
+    {
+      "id": 1598,
+      "relationType": 8382,
+      "charaId": 1013
+    },
+    {
+      "id": 1600,
+      "relationType": 8383,
+      "charaId": 1015
+    },
+    {
+      "id": 1602,
+      "relationType": 8384,
+      "charaId": 1017
+    },
+    {
+      "id": 1604,
+      "relationType": 8385,
+      "charaId": 1022
+    },
+    {
+      "id": 1606,
+      "relationType": 8386,
+      "charaId": 1027
+    },
+    {
+      "id": 1608,
+      "relationType": 8387,
+      "charaId": 1038
+    },
+    {
+      "id": 1610,
+      "relationType": 8388,
+      "charaId": 1040
+    },
+    {
+      "id": 1614,
+      "relationType": 8390,
+      "charaId": 1045
+    },
+    {
+      "id": 1618,
+      "relationType": 8392,
+      "charaId": 1056
+    },
+    {
+      "id": 1620,
+      "relationType": 8393,
+      "charaId": 1058
+    },
+    {
+      "id": 1622,
+      "relationType": 8394,
+      "charaId": 1059
+    },
+    {
+      "id": 1624,
+      "relationType": 8395,
+      "charaId": 1060
+    },
+    {
+      "id": 1625,
+      "relationType": 8396,
+      "charaId": 1056
+    },
+    {
+      "id": 1626,
+      "relationType": 8396,
+      "charaId": 1004
+    },
+    {
+      "id": 1627,
+      "relationType": 8397,
+      "charaId": 1056
+    },
+    {
+      "id": 1628,
+      "relationType": 8397,
+      "charaId": 1045
+    },
+    {
+      "id": 1630,
+      "relationType": 8398,
+      "charaId": 1004
+    },
+    {
+      "id": 1632,
+      "relationType": 8399,
+      "charaId": 1015
+    },
+    {
+      "id": 1634,
+      "relationType": 8400,
+      "charaId": 1018
+    },
+    {
+      "id": 1636,
+      "relationType": 8401,
+      "charaId": 1021
+    },
+    {
+      "id": 1638,
+      "relationType": 8402,
+      "charaId": 1023
+    },
+    {
+      "id": 1640,
+      "relationType": 8403,
+      "charaId": 1027
+    },
+    {
+      "id": 1642,
+      "relationType": 8404,
+      "charaId": 1035
+    },
+    {
+      "id": 1644,
+      "relationType": 8405,
+      "charaId": 1038
+    },
+    {
+      "id": 1646,
+      "relationType": 8406,
+      "charaId": 1040
+    },
+    {
+      "id": 1650,
+      "relationType": 8408,
+      "charaId": 1045
+    },
+    {
+      "id": 1652,
+      "relationType": 8409,
+      "charaId": 1048
+    },
+    {
+      "id": 1654,
+      "relationType": 8410,
+      "charaId": 1058
+    },
+    {
+      "id": 1656,
+      "relationType": 8411,
+      "charaId": 1059
+    },
+    {
+      "id": 1658,
+      "relationType": 8412,
+      "charaId": 1060
+    },
+    {
+      "id": 1659,
+      "relationType": 8413,
+      "charaId": 1058
+    },
+    {
+      "id": 1660,
+      "relationType": 8413,
+      "charaId": 1006
+    },
+    {
+      "id": 1661,
+      "relationType": 8414,
+      "charaId": 1058
+    },
+    {
+      "id": 1662,
+      "relationType": 8414,
+      "charaId": 1050
+    },
+    {
+      "id": 1663,
+      "relationType": 8415,
+      "charaId": 1059
+    },
+    {
+      "id": 1664,
+      "relationType": 8415,
+      "charaId": 1006
+    },
+    {
+      "id": 1665,
+      "relationType": 8416,
+      "charaId": 1059
+    },
+    {
+      "id": 1666,
+      "relationType": 8416,
+      "charaId": 1050
+    },
+    {
+      "id": 1667,
+      "relationType": 8417,
+      "charaId": 1060
+    },
+    {
+      "id": 1668,
+      "relationType": 8417,
+      "charaId": 1006
+    },
+    {
+      "id": 1669,
+      "relationType": 8418,
+      "charaId": 1060
+    },
+    {
+      "id": 1670,
+      "relationType": 8418,
+      "charaId": 1050
+    },
+    {
+      "id": 1671,
+      "relationType": 8419,
+      "charaId": 1061
+    },
+    {
+      "id": 1672,
+      "relationType": 8419,
+      "charaId": 1003
+    },
+    {
+      "id": 1673,
+      "relationType": 8420,
+      "charaId": 1061
+    },
+    {
+      "id": 1674,
+      "relationType": 8420,
+      "charaId": 1007
+    },
+    {
+      "id": 1675,
+      "relationType": 8421,
+      "charaId": 1061
+    },
+    {
+      "id": 1676,
+      "relationType": 8421,
+      "charaId": 1009
+    },
+    {
+      "id": 1677,
+      "relationType": 8422,
+      "charaId": 1061
+    },
+    {
+      "id": 1678,
+      "relationType": 8422,
+      "charaId": 1013
+    },
+    {
+      "id": 1679,
+      "relationType": 8423,
+      "charaId": 1061
+    },
+    {
+      "id": 1680,
+      "relationType": 8423,
+      "charaId": 1017
+    },
+    {
+      "id": 1681,
+      "relationType": 8424,
+      "charaId": 1061
+    },
+    {
+      "id": 1682,
+      "relationType": 8424,
+      "charaId": 1046
+    },
+    {
+      "id": 1683,
+      "relationType": 8425,
+      "charaId": 1061
+    },
+    {
+      "id": 1685,
+      "relationType": 8426,
+      "charaId": 1061
+    },
+    {
+      "id": 1686,
+      "relationType": 8426,
+      "charaId": 1050
+    },
+    {
+      "id": 1687,
+      "relationType": 508,
+      "charaId": 1030
+    },
+    {
+      "id": 1688,
+      "relationType": 508,
+      "charaId": 1052
+    },
+    {
+      "id": 1689,
+      "relationType": 509,
+      "charaId": 1041
+    },
+    {
+      "id": 1690,
+      "relationType": 509,
+      "charaId": 1052
+    },
+    {
+      "id": 1691,
+      "relationType": 2401,
+      "charaId": 1004
+    },
+    {
+      "id": 1692,
+      "relationType": 2402,
+      "charaId": 1017
+    },
+    {
+      "id": 1693,
+      "relationType": 2403,
+      "charaId": 1006
+    },
+    {
+      "id": 1694,
+      "relationType": 2403,
+      "charaId": 1045
+    },
+    {
+      "id": 1695,
+      "relationType": 2404,
+      "charaId": 1003
+    },
+    {
+      "id": 1696,
+      "relationType": 2404,
+      "charaId": 1013
+    },
+    {
+      "id": 1697,
+      "relationType": 2404,
+      "charaId": 1027
+    },
+    {
+      "id": 1698,
+      "relationType": 2404,
+      "charaId": 1030
+    },
+    {
+      "id": 1699,
+      "relationType": 2404,
+      "charaId": 1041
+    },
+    {
+      "id": 1700,
+      "relationType": 2404,
+      "charaId": 1060
+    },
+    {
+      "id": 1701,
+      "relationType": 2405,
+      "charaId": 1024
+    },
+    {
+      "id": 1702,
+      "relationType": 2405,
+      "charaId": 1035
+    },
+    {
+      "id": 1703,
+      "relationType": 2406,
+      "charaId": 1001
+    },
+    {
+      "id": 1704,
+      "relationType": 2406,
+      "charaId": 1002
+    },
+    {
+      "id": 1705,
+      "relationType": 2406,
+      "charaId": 1010
+    },
+    {
+      "id": 1706,
+      "relationType": 2406,
+      "charaId": 1011
+    },
+    {
+      "id": 1707,
+      "relationType": 2406,
+      "charaId": 1014
+    },
+    {
+      "id": 1708,
+      "relationType": 2406,
+      "charaId": 1018
+    },
+    {
+      "id": 1709,
+      "relationType": 2406,
+      "charaId": 1056
+    },
+    {
+      "id": 1710,
+      "relationType": 2406,
+      "charaId": 1061
+    },
+    {
+      "id": 1711,
+      "relationType": 2407,
+      "charaId": 1032
+    },
+    {
+      "id": 1712,
+      "relationType": 2407,
+      "charaId": 1052
+    },
+    {
+      "id": 1713,
+      "relationType": 2409,
+      "charaId": 1008
+    },
+    {
+      "id": 1714,
+      "relationType": 2409,
+      "charaId": 1009
+    },
+    {
+      "id": 1715,
+      "relationType": 2603,
+      "charaId": 1001
+    },
+    {
+      "id": 1716,
+      "relationType": 2603,
+      "charaId": 1002
+    },
+    {
+      "id": 1717,
+      "relationType": 2603,
+      "charaId": 1006
+    },
+    {
+      "id": 1718,
+      "relationType": 2603,
+      "charaId": 1007
+    },
+    {
+      "id": 1719,
+      "relationType": 2603,
+      "charaId": 1013
+    },
+    {
+      "id": 1720,
+      "relationType": 2603,
+      "charaId": 1024
+    },
+    {
+      "id": 1721,
+      "relationType": 2603,
+      "charaId": 1027
+    },
+    {
+      "id": 1722,
+      "relationType": 2603,
+      "charaId": 1035
+    },
+    {
+      "id": 1723,
+      "relationType": 2603,
+      "charaId": 1041
+    },
+    {
+      "id": 1724,
+      "relationType": 2603,
+      "charaId": 1045
+    },
+    {
+      "id": 1725,
+      "relationType": 2603,
+      "charaId": 1052
+    },
+    {
+      "id": 1726,
+      "relationType": 2603,
+      "charaId": 1056
+    },
+    {
+      "id": 1727,
+      "relationType": 2603,
+      "charaId": 1060
+    },
+    {
+      "id": 1728,
+      "relationType": 2604,
+      "charaId": 1003
+    },
+    {
+      "id": 1729,
+      "relationType": 2604,
+      "charaId": 1004
+    },
+    {
+      "id": 1730,
+      "relationType": 2604,
+      "charaId": 1008
+    },
+    {
+      "id": 1731,
+      "relationType": 2604,
+      "charaId": 1009
+    },
+    {
+      "id": 1732,
+      "relationType": 2604,
+      "charaId": 1010
+    },
+    {
+      "id": 1733,
+      "relationType": 2604,
+      "charaId": 1011
+    },
+    {
+      "id": 1734,
+      "relationType": 2604,
+      "charaId": 1014
+    },
+    {
+      "id": 1735,
+      "relationType": 2604,
+      "charaId": 1017
+    },
+    {
+      "id": 1736,
+      "relationType": 2604,
+      "charaId": 1018
+    },
+    {
+      "id": 1737,
+      "relationType": 2604,
+      "charaId": 1030
+    },
+    {
+      "id": 1738,
+      "relationType": 2604,
+      "charaId": 1032
+    },
+    {
+      "id": 1739,
+      "relationType": 2604,
+      "charaId": 1061
+    },
+    {
+      "id": 1740,
+      "relationType": 510,
+      "charaId": 1001
+    },
+    {
+      "id": 1741,
+      "relationType": 510,
+      "charaId": 1052
+    },
+    {
+      "id": 1742,
+      "relationType": 104,
+      "charaId": 1069
+    },
+    {
+      "id": 1743,
+      "relationType": 201,
+      "charaId": 1069
+    },
+    {
+      "id": 1744,
+      "relationType": 324,
+      "charaId": 1069
+    },
+    {
+      "id": 1746,
+      "relationType": 511,
+      "charaId": 1041
+    },
+    {
+      "id": 1747,
+      "relationType": 511,
+      "charaId": 1069
+    },
+    {
+      "id": 1749,
+      "relationType": 512,
+      "charaId": 1069
+    },
+    {
+      "id": 1750,
+      "relationType": 512,
+      "charaId": 1028
+    },
+    {
+      "id": 1751,
+      "relationType": 2202,
+      "charaId": 1004
+    },
+    {
+      "id": 1752,
+      "relationType": 2202,
+      "charaId": 1069
+    },
+    {
+      "id": 1753,
+      "relationType": 7025,
+      "charaId": 1069
+    },
+    {
+      "id": 1756,
+      "relationType": 7026,
+      "charaId": 1069
+    },
+    {
+      "id": 1759,
+      "relationType": 2802,
+      "charaId": 1069
+    },
+    {
+      "id": 1762,
+      "relationType": 2902,
+      "charaId": 1069
+    },
+    {
+      "id": 1763,
+      "relationType": 3002,
+      "charaId": 1069
+    },
+    {
+      "id": 1764,
+      "relationType": 3003,
+      "charaId": 1069
+    },
+    {
+      "id": 1766,
+      "relationType": 2510,
+      "charaId": 1069
+    },
+    {
+      "id": 1767,
+      "relationType": 2522,
+      "charaId": 1069
+    },
+    {
+      "id": 1768,
+      "relationType": 3202,
+      "charaId": 1069
+    },
+    {
+      "id": 1769,
+      "relationType": 8427,
+      "charaId": 1069
+    },
+    {
+      "id": 1770,
+      "relationType": 8427,
+      "charaId": 1018
+    },
+    {
+      "id": 1771,
+      "relationType": 8428,
+      "charaId": 1069
+    },
+    {
+      "id": 1772,
+      "relationType": 8428,
+      "charaId": 1021
+    },
+    {
+      "id": 1773,
+      "relationType": 8429,
+      "charaId": 1069
+    },
+    {
+      "id": 1774,
+      "relationType": 8429,
+      "charaId": 1023
+    },
+    {
+      "id": 1775,
+      "relationType": 8430,
+      "charaId": 1069
+    },
+    {
+      "id": 1776,
+      "relationType": 8430,
+      "charaId": 1035
+    },
+    {
+      "id": 1777,
+      "relationType": 8431,
+      "charaId": 1069
+    },
+    {
+      "id": 1778,
+      "relationType": 8431,
+      "charaId": 1048
+    },
+    {
+      "id": 1779,
+      "relationType": 8432,
+      "charaId": 1069
+    },
+    {
+      "id": 1780,
+      "relationType": 8432,
+      "charaId": 1007
+    },
+    {
+      "id": 1781,
+      "relationType": 8433,
+      "charaId": 1069
+    },
+    {
+      "id": 1782,
+      "relationType": 8433,
+      "charaId": 1009
+    },
+    {
+      "id": 1783,
+      "relationType": 8434,
+      "charaId": 1069
+    },
+    {
+      "id": 1784,
+      "relationType": 8434,
+      "charaId": 1046
+    },
+    {
+      "id": 1785,
+      "relationType": 8435,
+      "charaId": 1069
+    },
+    {
+      "id": 1787,
+      "relationType": 8436,
+      "charaId": 1069
+    },
+    {
+      "id": 1788,
+      "relationType": 8436,
+      "charaId": 1006
+    },
+    {
+      "id": 1789,
+      "relationType": 8437,
+      "charaId": 1069
+    },
+    {
+      "id": 1790,
+      "relationType": 8437,
+      "charaId": 1050
+    },
+    {
+      "id": 1791,
+      "relationType": 8438,
+      "charaId": 1069
+    },
+    {
+      "id": 1792,
+      "relationType": 8438,
+      "charaId": 1020
+    },
+    {
+      "id": 1793,
+      "relationType": 8439,
+      "charaId": 1069
+    },
+    {
+      "id": 1794,
+      "relationType": 8439,
+      "charaId": 1056
+    },
+    {
+      "id": 1795,
+      "relationType": 8440,
+      "charaId": 1069
+    },
+    {
+      "id": 1797,
+      "relationType": 8441,
+      "charaId": 1069
+    },
+    {
+      "id": 1798,
+      "relationType": 8441,
+      "charaId": 1041
+    },
+    {
+      "id": 1799,
+      "relationType": 8442,
+      "charaId": 1069
+    },
+    {
+      "id": 1801,
+      "relationType": 8443,
+      "charaId": 1069
+    },
+    {
+      "id": 1802,
+      "relationType": 8443,
+      "charaId": 1001
+    },
+    {
+      "id": 1803,
+      "relationType": 8444,
+      "charaId": 1069
+    },
+    {
+      "id": 1804,
+      "relationType": 8444,
+      "charaId": 1002
+    },
+    {
+      "id": 1805,
+      "relationType": 8445,
+      "charaId": 1069
+    },
+    {
+      "id": 1806,
+      "relationType": 8445,
+      "charaId": 1005
+    },
+    {
+      "id": 1807,
+      "relationType": 8446,
+      "charaId": 1069
+    },
+    {
+      "id": 1808,
+      "relationType": 8446,
+      "charaId": 1010
+    },
+    {
+      "id": 1809,
+      "relationType": 8447,
+      "charaId": 1069
+    },
+    {
+      "id": 1810,
+      "relationType": 8447,
+      "charaId": 1016
+    },
+    {
+      "id": 1811,
+      "relationType": 8448,
+      "charaId": 1069
+    },
+    {
+      "id": 1812,
+      "relationType": 8448,
+      "charaId": 1025
+    },
+    {
+      "id": 1813,
+      "relationType": 8449,
+      "charaId": 1069
+    },
+    {
+      "id": 1814,
+      "relationType": 8449,
+      "charaId": 1030
+    },
+    {
+      "id": 1815,
+      "relationType": 8450,
+      "charaId": 1069
+    },
+    {
+      "id": 1816,
+      "relationType": 8450,
+      "charaId": 1032
+    },
+    {
+      "id": 1817,
+      "relationType": 8451,
+      "charaId": 1069
+    },
+    {
+      "id": 1819,
+      "relationType": 8452,
+      "charaId": 1069
+    },
+    {
+      "id": 1821,
+      "relationType": 8453,
+      "charaId": 1069
+    },
+    {
+      "id": 1823,
+      "relationType": 8454,
+      "charaId": 1069
+    },
+    {
+      "id": 1825,
+      "relationType": 8455,
+      "charaId": 1069
+    },
+    {
+      "id": 1826,
+      "relationType": 8455,
+      "charaId": 1014
+    },
+    {
+      "id": 1827,
+      "relationType": 8456,
+      "charaId": 1069
+    },
+    {
+      "id": 1828,
+      "relationType": 8456,
+      "charaId": 1019
+    },
+    {
+      "id": 1829,
+      "relationType": 8457,
+      "charaId": 1069
+    },
+    {
+      "id": 1830,
+      "relationType": 8457,
+      "charaId": 1028
+    },
+    {
+      "id": 1831,
+      "relationType": 8458,
+      "charaId": 1069
+    },
+    {
+      "id": 1832,
+      "relationType": 8458,
+      "charaId": 1037
+    },
+    {
+      "id": 1833,
+      "relationType": 8459,
+      "charaId": 1069
+    },
+    {
+      "id": 1835,
+      "relationType": 8460,
+      "charaId": 1069
+    },
+    {
+      "id": 1837,
+      "relationType": 2403,
+      "charaId": 1069
+    },
+    {
+      "id": 1838,
+      "relationType": 2604,
+      "charaId": 1069
+    },
+    {
+      "id": 2296,
+      "relationType": 3101,
+      "charaId": 1069
+    },
+    {
+      "id": 2513,
+      "relationType": 2601,
+      "charaId": 1069
     }
   ]
 }

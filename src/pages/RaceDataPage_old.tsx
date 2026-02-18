@@ -24,7 +24,7 @@ type RaceDataPageState = {
 };
 
 export default class RaceDataPageOld extends React.Component<{}, RaceDataPageState> {
-    private fileInputRef: React.RefObject<HTMLInputElement>;
+    private fileInputRef: React.RefObject<HTMLInputElement | null>;
 
     constructor(props: {}) {
         super(props);

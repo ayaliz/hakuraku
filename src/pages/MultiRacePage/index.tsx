@@ -9,6 +9,8 @@ import RaceListPanel from "./components/RaceListPanel";
 import WinDistributionCharts from "./components/WinDistributionCharts";
 import SkillAnalysis from "./components/SkillAnalysis";
 import HpSpurtAnalysis from "./components/HpSpurtAnalysis";
+import { computeHpSpurtStats } from "./components/HpSpurtAnalysis/processData";
+import { CharaHpSpurtStats } from "./components/HpSpurtAnalysis/types";
 
 // Group races by track
 interface TrackGroup {
@@ -16,6 +18,7 @@ interface TrackGroup {
     trackLabel: string;
     races: ParsedRace[];
     stats: AggregatedStats;
+    hpSpurtStats: CharaHpSpurtStats[];
 }
 
 const MultiRacePage: React.FC = () => {
@@ -93,6 +96,7 @@ const MultiRacePage: React.FC = () => {
                 trackLabel: getTrackLabel(courseId),
                 races: trackRaces,
                 stats: aggregateStats(trackRaces),
+                hpSpurtStats: computeHpSpurtStats(trackRaces, undefined, true, undefined, true),
             }))
             .sort((a, b) => b.races.length - a.races.length); // Sort by number of races descending
 
@@ -119,7 +123,7 @@ const MultiRacePage: React.FC = () => {
             {errors.length > 0 && (
                 <Alert variant="warning" dismissible onClose={() => setErrors([])}>
                     <strong>Some files could not be processed:</strong>
-                    <ul style={{ marginBottom: 0, marginTop: "8px" }}>
+                    <ul className="multirace-error-list">
                         {errors.slice(0, 5).map((err, i) => (
                             <li key={i}>{err}</li>
                         ))}
@@ -161,11 +165,11 @@ const MultiRacePage: React.FC = () => {
                             <Tab.Content>
                                 {trackGroups.map((group) => (
                                     <Tab.Pane key={group.courseId} eventKey={`track-${group.courseId}`} transition={false}>
-                                        <div className="hp-spurt-analysis-section" style={{ marginBottom: '30px' }}>
-                                            <h4 style={{ color: "#e2e8f0", marginBottom: "15px" }}>
+                                        <div className="hp-spurt-analysis-section">
+                                            <h4 className="section-heading">
                                                 Personal character analysis
                                             </h4>
-                                            <HpSpurtAnalysis races={group.races} />
+                                            <HpSpurtAnalysis stats={group.hpSpurtStats} courseId={group.courseId} />
                                         </div>
 
                                         <WinDistributionCharts
@@ -175,7 +179,7 @@ const MultiRacePage: React.FC = () => {
                                         />
 
                                         <div className="skill-analysis-section">
-                                            <h4 style={{ color: "#e2e8f0", marginBottom: "15px" }}>
+                                            <h4 className="section-heading">
                                                 Skill Analysis
                                             </h4>
                                             <SkillAnalysis
@@ -185,6 +189,7 @@ const MultiRacePage: React.FC = () => {
                                                 characterStats={group.stats.characterStats}
                                                 strategyStats={group.stats.strategyStats}
                                                 allHorses={group.stats.allHorses}
+                                                ownCharas={group.hpSpurtStats}
                                             />
                                         </div>
                                     </Tab.Pane>

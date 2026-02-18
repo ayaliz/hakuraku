@@ -8,7 +8,8 @@ export type SortOption =
     | 'total_skills'
     | 'legacy_common'
     | 'legacy_skills'
-    | 'date';
+    | 'date'
+    | 'affinity';
 
 export type SortDirection = 'asc' | 'desc';
 
@@ -17,13 +18,15 @@ interface VeteransSorterProps {
     sortDirection: SortDirection;
     onSortChange: (sort: SortOption) => void;
     onDirectionToggle: () => void;
+    affinityCharaId?: number | null;
 }
 
-const VeteransSorter: React.FC<VeteransSorterProps> = ({ 
-    activeSort, 
-    sortDirection, 
-    onSortChange, 
-    onDirectionToggle 
+const VeteransSorter: React.FC<VeteransSorterProps> = ({
+    activeSort,
+    sortDirection,
+    onSortChange,
+    onDirectionToggle,
+    affinityCharaId,
 }) => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         onSortChange(e.target.value as SortOption);
@@ -47,6 +50,9 @@ const VeteransSorter: React.FC<VeteransSorterProps> = ({
                 <option value="legacy_common">Legacy Common Stars</option>
                 <option value="legacy_skills">Legacy Skills Stars</option>
                 <option value="date">Created Date</option>
+                <option value="affinity" disabled={!affinityCharaId}>
+                    Affinity{!affinityCharaId ? ' (select a character first)' : ''}
+                </option>
             </Form.Control>
             <Button 
                 variant="outline-secondary" 

@@ -4,8 +4,8 @@ export function useRafPlayer(start: number, end: number, onFrame?: (time: number
     const [isPlaying, setIsPlaying] = useState(false);
     const [time, setTime] = useState(start);
     const [playbackRate, setPlaybackRate] = useState(1);
-    const raf = useRef<number>();
-    const last = useRef<number>();
+    const raf = useRef<number | undefined>(undefined);
+    const last = useRef<number | undefined>(undefined);
     const tRef = useRef(start);
     const sRef = useRef(start), eRef = useRef(end), pRef = useRef(false), rRef = useRef(1);
     const onFrameRef = useRef(onFrame);

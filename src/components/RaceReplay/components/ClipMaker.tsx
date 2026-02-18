@@ -85,7 +85,7 @@ const ClipMaker: React.FC<ClipMakerProps> = ({
                     as="select"
                     size="sm"
                     value={fps}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFps(Number(e.target.value))}
+                    onChange={(e) => setFps(Number(e.target.value))}
                     className="clip-maker-input"
                     style={{ width: "auto" }}
                     title="Frame Rate"

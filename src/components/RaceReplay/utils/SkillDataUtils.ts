@@ -1,12 +1,12 @@
 
 import GameDataLoader from "../../../data/GameDataLoader";
 
-export type SkillEffect = {
+type SkillEffect = {
     type: number;
     value: number;
 };
 
-export type SkillDef = {
+type SkillDef = {
     id: number;
     condition_groups: {
         effects: SkillEffect[];

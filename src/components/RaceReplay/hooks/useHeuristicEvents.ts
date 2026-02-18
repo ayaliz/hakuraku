@@ -12,7 +12,7 @@ export function useHeuristicEvents(
     passiveStatModifiers: Record<number, any>,
     skillActivations: Record<number, any[]>,
     otherEvents: Record<number, any[]>,
-    consumptionRateByIdx: Record<number, number>,
+    _consumptionRateByIdx: Record<number, number>,
     lastSpurtStartDistances: Record<number, number>,
     detectedCourseId?: number
 ): Record<number, HeuristicEvent[]> {

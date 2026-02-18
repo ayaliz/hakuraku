@@ -23,7 +23,6 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
     skillStats,
     skillActivations,
     avgRaceDistance,
-    characterStats,
     strategyStats,
     allHorses,
     ownCharas,

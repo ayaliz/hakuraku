@@ -1,5 +1,4 @@
 import { RaceSimulateData } from "../../data/race_data_pb";
-import { STACK_BASE_PX, STACK_GAP_PX } from "./RaceReplay.constants";
 import AssetLoader from "../../data/AssetLoader";
 
 export const clamp = (x: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, x));
@@ -19,11 +18,6 @@ export const labelStyle = (offsetY: number, backgroundColor = "#fff") => ({
     color: "#000",
     fontSize: 12,
 });
-
-export function stackLabels(baseOffset = STACK_BASE_PX, gap = STACK_GAP_PX, backgroundColor?: string) {
-    let n = 0;
-    return (text: string, overrideColor?: string) => ({ ...labelStyle(baseOffset + n++ * gap, overrideColor || backgroundColor), formatter: text });
-}
 
 export function mixWithWhite(hex: string, ratio: number) {
     const r = parseInt(hex.slice(1, 3), 16);

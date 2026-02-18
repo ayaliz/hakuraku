@@ -30,7 +30,7 @@ function getSkillsJsonMap() {
 }
 
 // Get track info from course ID
-export function getTrackInfo(courseId: number | undefined): { label: string; id: number; length: number } | null {
+function getTrackInfo(courseId: number | undefined): { label: string; id: number; length: number } | null {
     if (!courseId) return null;
     const track = GameDataLoader.racetracks.pageProps.racetrackFilterData.find((t: any) => t.id === courseId);
     if (!track) return null;
@@ -45,7 +45,7 @@ export function getTrackLabel(courseId: number | undefined): string {
 }
 
 // Get the official track distance from course ID
-export function getTrackDistance(courseId: number | undefined): number | null {
+function getTrackDistance(courseId: number | undefined): number | null {
     const info = getTrackInfo(courseId);
     return info ? info.length : null;
 }
@@ -61,7 +61,7 @@ export function getCourseAptitudeFilters(courseId: number | undefined): { ground
     return { ground, distance };
 }
 
-export function calculateRaceDistance(raceData: RaceSimulateData): number {
+function calculateRaceDistance(raceData: RaceSimulateData): number {
     let maxDist = 0;
     for (const frame of raceData.frame ?? []) {
         for (const hf of frame.horseFrame ?? []) {
@@ -190,7 +190,7 @@ function parseNewFormat(json: any, fileName: string, id: string): ParsedRace | {
     }
 }
 
-export function extractHorseEntries(race: ParsedRace): HorseEntry[] {
+function extractHorseEntries(race: ParsedRace): HorseEntry[] {
     const entries: HorseEntry[] = [];
 
     race.horseInfo.forEach((data, index) => {
@@ -251,7 +251,7 @@ export function extractHorseEntries(race: ParsedRace): HorseEntry[] {
     return entries;
 }
 
-export function extractSkillActivations(race: ParsedRace): Map<number, SkillActivationPoint[]> {
+function extractSkillActivations(race: ParsedRace): Map<number, SkillActivationPoint[]> {
     const activations = new Map<number, SkillActivationPoint[]>();
 
     // Pre-build a lookup for frame times to distances per horse

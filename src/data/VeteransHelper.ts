@@ -1,7 +1,7 @@
 import UMDatabaseWrapper from "../data/UMDatabaseWrapper";
 import { Veteran, OptimizerConfig } from "../pages/VeteransPage/types";
 
-export type FactorItem = {
+type FactorItem = {
     name: string;
     level: number;
     isGold: boolean;
@@ -21,7 +21,7 @@ export const getFactorCategory = (factorId: number): number => {
     return 5; 
 };
 
-export const formatFactor = (factorId: number): { name: string; level: number } | null => {
+const formatFactor = (factorId: number): { name: string; level: number } | null => {
     const level = factorId % 100;
     const textData = UMDatabaseWrapper.getTextData(147, factorId);
 
@@ -77,14 +77,8 @@ export const aggregateFactors = (veteran: Veteran): FactorItem[] => {
     });
 };
 
-export const GRADE_MAP: Record<number, string> = {
-    1: 'G', 2: 'F', 3: 'E', 4: 'D', 5: 'C', 6: 'B', 7: 'A', 8: 'S'
-};
-
-export const gradeFromValue = (v: number): string => GRADE_MAP[v] ?? 'G';
-
-export type RaceBonusEntry = { saddleId: number; name: string; bonus: number };
-export type RaceBonusResult = { entries: RaceBonusEntry[]; total: number };
+type RaceBonusEntry = { saddleId: number; name: string; bonus: number };
+type RaceBonusResult = { entries: RaceBonusEntry[]; total: number };
 
 export const calculateRaceBonus = (veteran: Veteran): RaceBonusResult => {
     const gp1 = veteran.succession_chara_array.find(p => p.position_id === 10);

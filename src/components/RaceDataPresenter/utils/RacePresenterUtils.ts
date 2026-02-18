@@ -39,7 +39,7 @@ export function getColorForSpurtDelay(delay: number): string {
     }
 }
 
-export function bisectFrameIndex(frames: RaceSimulateData["frame"], t: number) {
+function bisectFrameIndex(frames: RaceSimulateData["frame"], t: number) {
     if (!frames.length) return 0;
     const last = frames.length - 1;
     if (t <= (frames[0].time ?? 0)) return 0;

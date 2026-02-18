@@ -6,7 +6,7 @@ import { filterCharaSkills } from "../../../data/RaceDataUtils";
 import GameDataLoader from "../../../data/GameDataLoader";
 
 
-export type HpOutcome = { type: 'died', distance: number, deficit: number, startHp: number }
+type HpOutcome ={ type: 'died', distance: number, deficit: number, startHp: number }
     | { type: 'survived', hp: number, startHp: number };
 
 export function computeOtherEvents(

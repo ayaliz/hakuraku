@@ -31,13 +31,6 @@ export type HorseEntry = {
     isPlayer: boolean;
 };
 
-export type PlayerTeamMember = {
-    horseIndex: number;
-}; // Adding simple type for parsing context if needed, but mainly updating HorseEntry and ParsedRace
-
-// Update ParsedRace in the same file (requires separate chunk or manual update if far apart)
-// Actually ParsedRace is lines 3-11. I will update that first.
-
 export type CharacterStats = {
     charaId: number;
     charaName: string;

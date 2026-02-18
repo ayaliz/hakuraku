@@ -46,7 +46,6 @@ import {
     buildCourseLabelItems,
     buildMarkLines,
     noTooltipScatter,
-    buildPositionKeepSeries,
     ECOption,
 } from "./utils/chartBuilders";
 import GameDataLoader from "../../data/GameDataLoader";

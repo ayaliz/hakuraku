@@ -73,7 +73,7 @@ function drawOverlayBox(ctx: CanvasRenderingContext2D, x: number, y: number, tex
     ctx.fillText(text, x + SPEED_BOX_WIDTH / 2, y + SPEED_BOX_HEIGHT / 2);
 }
 
-export interface CanvasOverlayParams {
+interface CanvasOverlayParams {
     frames: any[];
     displayNames: Record<number, string>;
     horseInfoByIdx: Record<number, any>;
@@ -104,7 +104,7 @@ export interface CanvasOverlayParams {
     yMaxWithHeadroom: number;
 }
 
-export type HorseHoverEntry = {
+type HorseHoverEntry = {
     idx: number;
     cx: number; cy: number;
     speed: number; accel: number;
@@ -347,8 +347,6 @@ export function useCanvasOverlay(
                 const info = p.horseInfoByIdx[idx] ?? {};
                 const teamColor = teamColorFor(idx, info, p.trainerColors);
                 const bgColor = mixWithWhite(teamColor, 0.9);
-                const iconUrl = getCharaIcon(info?.chara_id) ?? "";
-                const baseSize = iconUrl ? ICON_SIZE : DOT_SIZE;
                 const cx = xToPixel(hf.distance ?? 0, xMin, xMax, w);
                 const cy = yToPixel(hf.lanePosition ?? 0, yMax, h);
 

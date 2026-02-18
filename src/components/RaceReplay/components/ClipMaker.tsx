@@ -14,7 +14,7 @@ interface ClipMakerProps {
 const ClipMaker: React.FC<ClipMakerProps> = ({
     minTime,
     maxTime,
-    currentTime,
+    currentTime: _currentTime,
     onExport,
     isExporting,
 }) => {

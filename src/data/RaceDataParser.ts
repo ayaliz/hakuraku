@@ -136,4 +136,4 @@ function deserializeFromBase64(input: string) {
     return deserialize(pako.inflate(Uint8Array.from(atob(input), c => c.charCodeAt(0))));
 }
 
-export {deserialize, deserializeFromBase64};
+export {deserializeFromBase64};

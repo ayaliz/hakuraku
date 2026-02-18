@@ -51,7 +51,7 @@ function getStyleMoodIcons() {
 }
 
 // Column definition interface for CharaTable
-export interface CharaColumnDef {
+interface CharaColumnDef {
     key: string;
     header: React.ReactNode;
     cellClassName?: string;

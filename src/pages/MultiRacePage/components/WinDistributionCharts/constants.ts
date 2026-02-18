@@ -13,13 +13,6 @@ export const STRATEGY_NAMES: Record<number, string> = {
     4: "End Closer",
 };
 
-export const STRATEGY_NAMES_SHORT: Record<number, string> = {
-    1: "F",
-    2: "P",
-    3: "L",
-    4: "E",
-};
-
 // Unique colors for characters
 export const CHARACTER_COLORS = [
     "#667eea", "#764ba2", "#48bb78", "#ed8936", "#e53e3e",

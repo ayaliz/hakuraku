@@ -3,7 +3,7 @@ import { aggregateFactors, getFactorCategory, calculateAffinity } from "../../da
 import { getCardName } from "./VeteransUIHelper";
 
 
-export const matchesFilter = (veteran: Veteran, filter: BaseFilter, categoryId: number): boolean => {
+const matchesFilter = (veteran: Veteran, filter: BaseFilter, categoryId: number): boolean => {
     const aggregated = aggregateFactors(veteran);
     const relevantFactors = aggregated.filter(f => getFactorCategory(f.factorId) === categoryId);
     const matchingFactors = relevantFactors.filter(f => f.name === filter.stat);
@@ -17,7 +17,7 @@ export const matchesFilter = (veteran: Veteran, filter: BaseFilter, categoryId: 
     }
 };
 
-export const calculateSortScore = (veteran: Veteran, sortMode: SortOption, affinityCharaId?: number | null): number => {
+const calculateSortScore = (veteran: Veteran, sortMode: SortOption, affinityCharaId?: number | null): number => {
     const aggregated = aggregateFactors(veteran);
     
     const sumStars = (condition: (f: typeof aggregated[0]) => boolean) => {

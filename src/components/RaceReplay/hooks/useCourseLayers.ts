@@ -40,7 +40,7 @@ export function useCourseLayers(selectedTrackId: string | null, goalInX: number,
 }
 
 export function slopeRenderItemFactory(yMaxWithHeadroom: number) {
-    return (params: any, api: any) => {
+    return (_params: any, api: any) => {
         const start = api.value(0) as number, end = api.value(1) as number, dir = api.value(2) as 1 | -1;
         const yTopVal = yMaxWithHeadroom * SLOPE_HALF_RATIO;
         const pBL = api.coord([start, 0]), pBR = api.coord([end, 0]), pTLh = api.coord([start, yTopVal]), pTRh = api.coord([end, yTopVal]);

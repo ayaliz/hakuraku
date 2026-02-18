@@ -2,15 +2,15 @@
 
 # dependencies
 /node_modules
-/.pnp
-.pnp.js
+
+# yarn
+.yarn/install-state.gz
 
 # testing
 /coverage
 /update
 
 # production
-/build
 /dist
 
 # misc
@@ -27,6 +27,4 @@ yarn-error.log*
 __pycache__/
 umdb/*.py
 umdb/*.pyi
-/assets/
 /*.bat
-/scripts

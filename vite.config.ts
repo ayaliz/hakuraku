@@ -22,9 +22,6 @@ const serveGzRaw = (): Plugin => ({
 export default defineConfig({
     plugins: [react(), serveGzRaw()],
     base: '/hakuraku/',
-    optimizeDeps: {
-        include: ['events'],
-    },
     build: {
         rollupOptions: {
             output: {

@@ -1,4 +1,3 @@
-import React, { Fragment } from "react";
 import { Table } from "react-bootstrap";
 import { TrainedCharaData } from "../data/TrainedCharaData";
 import * as UMDatabaseUtils from "../data/UMDatabaseUtils";

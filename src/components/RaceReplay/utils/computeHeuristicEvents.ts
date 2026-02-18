@@ -13,13 +13,13 @@ export type HeuristicEvent = {
 // Based on game formula: courseFactor = 1 + (courseLength - 1000) * 0.0008
 type PositionKeepRange = { min: number; max: number };
 const POSITION_KEEP_RANGES: Record<number, (courseFactor: number) => PositionKeepRange> = {
-    [RaceSimulateHorseResultData_RunningStyle.NIGE]: (cf) => ({ min: 0, max: 3.0 }), // Front runner
+    [RaceSimulateHorseResultData_RunningStyle.NIGE]: (_cf) => ({ min: 0, max: 3.0 }), // Front runner
     [RaceSimulateHorseResultData_RunningStyle.SENKO]: (cf) => ({ min: 3.0, max: 5.0 * cf }), // Leader
     [RaceSimulateHorseResultData_RunningStyle.SASHI]: (cf) => ({ min: 6.5 * cf, max: 7.0 * cf }), // Betweener
     [RaceSimulateHorseResultData_RunningStyle.OIKOMI]: (cf) => ({ min: 7.5 * cf, max: 8.0 * cf }), // Chaser
 };
 
-export type ComputeHeuristicEventsParams = {
+type ComputeHeuristicEventsParams = {
     frames: any[];
     goalInX: number;
     trainedCharaByIdx: Record<number, TrainedCharaData>;

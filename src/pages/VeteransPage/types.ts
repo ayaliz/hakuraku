@@ -93,8 +93,6 @@ export type SkillsFilter = BaseFilter;
 export type SortOption = 'none' | 'blues' | 'total_common' | 'total_skills' | 'legacy_common' | 'legacy_skills' | 'date' | 'affinity';
 export type SortDirection = 'asc' | 'desc';
 
-export type SparkSearch = { name: string; stars: number; includeParents: boolean };
-
 export type OptimizerConfig = {
     bluesWeight: number;
     aptWeight: number;

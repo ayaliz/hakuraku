@@ -1,7 +1,7 @@
 import GameDataLoader from "../../../data/GameDataLoader";
 import { RaceSimulateHorseResultData_RunningStyle } from "../../../data/race_data_pb";
 
-export type SpeedCalculationParams = {
+type SpeedCalculationParams = {
     courseDistance: number;
     courseId?: number;
     currentDistance: number;
@@ -30,7 +30,7 @@ export type SpeedCalculationParams = {
     isDownhillMode?: boolean;
 };
 
-export type TargetSpeedResult = {
+type TargetSpeedResult = {
     min: number;
     max: number;
     base: number;
@@ -77,7 +77,7 @@ export function adjustStat(stat: number, mood: number, bonus: number = 0): numbe
     return val * moodMod + bonus;
 }
 
-export function getTrackStatThresholdModifier(courseId: number, stats: { speed: number, stamina: number, power: number, guts: number, wisdom: number }, mood: number): number {
+function getTrackStatThresholdModifier(courseId: number, stats: { speed: number, stamina: number, power: number, guts: number, wisdom: number }, mood: number): number {
     if (!courseId) return 1.0;
     const trackInfo = GameDataLoader.racetracks.pageProps.racetrackFilterData.find((t: any) => t.id === courseId);
     if (!trackInfo || !trackInfo.statThresholds || trackInfo.statThresholds.length === 0) return 1.0;

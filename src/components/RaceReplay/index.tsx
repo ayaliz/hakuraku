@@ -701,7 +701,6 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                     option={options}
                     style={{ height: "500px", width: "100%" }}
                     notMerge={true}
-                    lazyUpdate={true}
                     theme="dark"
                     onEvents={onEvents}
                 />

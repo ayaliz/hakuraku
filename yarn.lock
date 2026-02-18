@@ -851,11 +851,6 @@
     "@types/babel__core" "^7.20.5"
     react-refresh "^0.18.0"
 
-"@ygoe/msgpack@^1.0.3":
-  version "1.0.3"
-  resolved "https://registry.npmjs.org/@ygoe/msgpack/-/msgpack-1.0.3.tgz"
-  integrity sha512-Sjp0O/sNgOJxTOO1c2Zuu7nsHRIGu2iGPYyhUedKKbcHyUl73jbCaomEFJZHNb/6i94B+ZNZHVnFgpo0ENSXxQ==
-
 bail@^2.0.0:
   version "2.0.2"
   resolved "https://registry.npmjs.org/bail/-/bail-2.0.2.tgz"

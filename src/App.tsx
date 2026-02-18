@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useState, Component, ErrorInfo } from 'react';
 import { Container, Nav, Navbar, Spinner } from "react-bootstrap";
 import { HashRouter, Link, Route, Routes } from "react-router-dom";
 import './App.css';
@@ -21,6 +21,22 @@ function lazyWithReload<T extends React.ComponentType<any>>(
             return new Promise<{ default: T }>(() => {});
         })
     );
+}
+
+// Catches render errors and reloads once (e.g. echarts "t is not a constructor" on shared links).
+class ReloadOnError extends Component<{ children: React.ReactNode }, { crashed: boolean }> {
+    state = { crashed: false };
+    static getDerivedStateFromError() { return { crashed: true }; }
+    componentDidCatch(_error: Error, _info: ErrorInfo) {
+        const key = 'render-error-reload';
+        if (!sessionStorage.getItem(key)) {
+            sessionStorage.setItem(key, '1');
+            window.location.reload();
+        }
+    }
+    render() {
+        return this.state.crashed ? null : this.props.children;
+    }
 }
 
 const RaceDataPage    = lazyWithReload(() => import("./pages/RaceDataPage"),    "RaceDataPage");
@@ -72,7 +88,7 @@ export default function App() {
             <Suspense fallback={<div className="p-4 text-center"><Spinner animation="border" /></div>}>
                 <Routes>
                     <Route path="/veterans" element={<VeteransPage />} />
-                    <Route path="/racedata" element={<RaceDataPage />} />
+                    <Route path="/racedata" element={<ReloadOnError><RaceDataPage /></ReloadOnError>} />
                     <Route path="/multirace" element={<MultiRacePage />} />
                     <Route path="/setup" element={<SetupGuidePage />} />
                     <Route path="/masterdata" element={<MasterDataPage />} />

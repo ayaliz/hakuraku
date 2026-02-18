@@ -173,6 +173,11 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         if (frames.length > 0) tick(frames[0].time ?? 0);
     }, [frames, tick]);
 
+    useEffect(() => {
+        if (!isPlaying) tick(renderTime);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [toggles, legendSelection]);
+
     const { straights, corners, straightsFinal, cornersFinal, segMarkers, slopeTriangles } = useCourseLayers(selectedTrackId, goalInX, yMaxWithHeadroom);
 
     const raceMarkers = useMemo(() => { const td = selectedTrackId ? (GameDataLoader.courseData as Record<string, any>)[selectedTrackId] : undefined; return buildMarkLines(goalInX, raceData, displayNames, segMarkers, td); }, [goalInX, raceData, displayNames, segMarkers, selectedTrackId]);

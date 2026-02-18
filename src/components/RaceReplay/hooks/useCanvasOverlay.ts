@@ -119,7 +119,7 @@ export function useCanvasOverlay(
     params: CanvasOverlayParams
 ): { tick: (time: number) => void; interpolatedFrameRef: MutableRefObject<InterpolatedFrame>; xAxisRef: MutableRefObject<{ min: number; max: number }>; horseHoverDataRef: MutableRefObject<HorseHoverEntry[]> } {
     const paramsRef = useRef<CanvasOverlayParams>(params);
-    useEffect(() => { paramsRef.current = params; });
+    paramsRef.current = params;
 
     const latestTimeRef = useRef(0);
     const redrawRef = useRef<() => void>(() => {});

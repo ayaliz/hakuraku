@@ -9027,11 +9027,30 @@
       "rarity": 5
     },
     {
+      "id": 110261,
+      "name": "Operation Cacao",
+      "gradeValue": 340,
+      "tagId": [
+        "401",
+        "402"
+      ],
+      "rarity": 5
+    },
+    {
       "id": 110301,
       "name": "Every Rose Has Its Fangs",
       "gradeValue": 340,
       "tagId": [
         "402"
+      ],
+      "rarity": 5
+    },
+    {
+      "id": 110371,
+      "name": "Guten Appetit ♪",
+      "gradeValue": 340,
+      "tagId": [
+        "401"
       ],
       "rarity": 5
     },
@@ -11299,6 +11318,16 @@
       "rarity": 1
     },
     {
+      "id": 201103,
+      "name": "Flash Forward",
+      "gradeValue": 508,
+      "tagId": [
+        "203",
+        "401"
+      ],
+      "rarity": 2
+    },
+    {
       "id": 201111,
       "name": "Medium Corners ◎",
       "gradeValue": 262,
@@ -12529,6 +12558,28 @@
       "rarity": 1
     },
     {
+      "id": 202041,
+      "name": "In High Spirits",
+      "gradeValue": 508,
+      "tagId": [
+        "201",
+        "302",
+        "401"
+      ],
+      "rarity": 2
+    },
+    {
+      "id": 202042,
+      "name": "Light as a Feather",
+      "gradeValue": 217,
+      "tagId": [
+        "201",
+        "302",
+        "401"
+      ],
+      "rarity": 1
+    },
+    {
       "id": 202051,
       "name": "Runaway",
       "gradeValue": 370,
@@ -13288,11 +13339,30 @@
       "rarity": 1
     },
     {
+      "id": 910261,
+      "name": "Operation Cacao",
+      "gradeValue": 180,
+      "tagId": [
+        "401",
+        "402"
+      ],
+      "rarity": 1
+    },
+    {
       "id": 910301,
       "name": "Every Rose Has Its Fangs",
       "gradeValue": 180,
       "tagId": [
         "402"
+      ],
+      "rarity": 1
+    },
+    {
+      "id": 910371,
+      "name": "Guten Appetit ♪",
+      "gradeValue": 180,
+      "tagId": [
+        "401"
       ],
       "rarity": 1
     },
@@ -14621,6 +14691,21 @@
       "id": 30080,
       "name": "[This Might Sting!] Sasami Anshinzawa",
       "charaId": 9005
+    },
+    {
+      "id": 30082,
+      "name": "[Little Cupcakes, Big Emotions] Nishino Flower",
+      "charaId": 1051
+    },
+    {
+      "id": 30083,
+      "name": "[Super! Sonic! Flower Power!] Sakura Bakushin O",
+      "charaId": 1041
+    },
+    {
+      "id": 30084,
+      "name": "[My Way] Tosen Jordan",
+      "charaId": 1048
     }
   ],
   "textData": [
@@ -23476,6 +23561,13 @@
       "solvableType": 0
     },
     {
+      "id": 201103,
+      "needSkillPoint": 150,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
       "id": 201111,
       "needSkillPoint": 110,
       "statusType": 0,
@@ -24309,6 +24401,20 @@
       "solvableType": 0
     },
     {
+      "id": 202041,
+      "needSkillPoint": 160,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
+      "id": 202042,
+      "needSkillPoint": 160,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
       "id": 202051,
       "needSkillPoint": 200,
       "statusType": 0,
@@ -24799,7 +24905,21 @@
       "solvableType": 0
     },
     {
+      "id": 910261,
+      "needSkillPoint": 200,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
       "id": 910301,
+      "needSkillPoint": 200,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
+      "id": 910371,
       "needSkillPoint": 200,
       "statusType": 0,
       "statusValue": 0,

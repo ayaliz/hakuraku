@@ -6,13 +6,30 @@ import './dark-mode.css';
 import UMDatabaseWrapper from './data/UMDatabaseWrapper';
 import GameDataLoader from './data/GameDataLoader';
 
-const RaceDataPage    = lazy(() => import("./pages/RaceDataPage"));
-const MultiRacePage   = lazy(() => import("./pages/MultiRacePage"));
-const RaceDataPageOld = lazy(() => import("./pages/RaceDataPage_old"));
-const MasterDataPage  = lazy(() => import("./pages/MasterDataPage"));
-const NotesPage       = lazy(() => import("./pages/NotesPage"));
-const SetupGuidePage  = lazy(() => import("./pages/SetupGuidePage"));
-const VeteransPage    = lazy(() => import("./pages/VeteransPage"));
+// Wraps lazy() to auto-reload once on chunk load failure (stale deploy hash mismatch).
+function lazyWithReload<T extends React.ComponentType<any>>(
+    factory: () => Promise<{ default: T }>,
+    name: string
+) {
+    return lazy(() =>
+        factory().catch(() => {
+            const key = `chunk-reload:${name}`;
+            if (!sessionStorage.getItem(key)) {
+                sessionStorage.setItem(key, '1');
+                window.location.reload();
+            }
+            return new Promise<{ default: T }>(() => {});
+        })
+    );
+}
+
+const RaceDataPage    = lazyWithReload(() => import("./pages/RaceDataPage"),    "RaceDataPage");
+const MultiRacePage   = lazyWithReload(() => import("./pages/MultiRacePage"),   "MultiRacePage");
+const RaceDataPageOld = lazyWithReload(() => import("./pages/RaceDataPage_old"),"RaceDataPageOld");
+const MasterDataPage  = lazyWithReload(() => import("./pages/MasterDataPage"),  "MasterDataPage");
+const NotesPage       = lazyWithReload(() => import("./pages/NotesPage"),       "NotesPage");
+const SetupGuidePage  = lazyWithReload(() => import("./pages/SetupGuidePage"),  "SetupGuidePage");
+const VeteransPage    = lazyWithReload(() => import("./pages/VeteransPage"),    "VeteransPage");
 
 
 export default function App() {

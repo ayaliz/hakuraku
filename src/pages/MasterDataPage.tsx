@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Alert, Button, ButtonGroup, Col, Container, Dropdown, Row, Spinner, Tab, Tabs } from 'react-bootstrap';
 import pako from 'pako';
 import initSqlJs, { Database, QueryExecResult } from 'sql.js';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import CodeMirror from '@uiw/react-codemirror';
 import { sql as sqlLang, SQLite } from '@codemirror/lang-sql';
 import { oneDark } from '@codemirror/theme-one-dark';
@@ -349,6 +349,12 @@ function SqlBrowserTab() {
 }
 
 function VersionHistoryTab() {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const urlParams = new URLSearchParams(location.search);
+    const diffParam = urlParams.get('diff');
+    const tableParam = urlParams.get('table');
+
     const [versions, setVersions] = useState<VersionEntry[] | null>(null);
     const [versionsError, setVersionsError] = useState<string | null>(null);
     const [selectedDiff, setSelectedDiff] = useState<string | null>(null);
@@ -356,6 +362,7 @@ function VersionHistoryTab() {
     const [diffLoading, setDiffLoading] = useState(false);
     const [diffError, setDiffError] = useState<string | null>(null);
     const [collapsedTables, setCollapsedTables] = useState<Set<string>>(new Set());
+    const [scrollToTable] = useState<string | null>(tableParam);
 
     useEffect(() => {
         fetch(import.meta.env.BASE_URL + 'data/masterdata/versions.json')
@@ -367,12 +374,7 @@ function VersionHistoryTab() {
             .catch((e) => setVersionsError(String(e)));
     }, []);
 
-    const loadDiff = async (short_hash: string) => {
-        if (selectedDiff === short_hash) {
-            setSelectedDiff(null);
-            setDiffData(null);
-            return;
-        }
+    const fetchDiff = async (short_hash: string) => {
         setSelectedDiff(short_hash);
         setDiffData(null);
         setDiffError(null);
@@ -391,6 +393,26 @@ function VersionHistoryTab() {
         }
     };
 
+    // Auto-load diff specified in URL on initial mount
+    const autoLoaded = useRef(false);
+    useEffect(() => {
+        if (!versions || !diffParam || autoLoaded.current) return;
+        autoLoaded.current = true;
+        const version = versions.find(v => v.short_hash === diffParam && v.summary);
+        if (version) fetchDiff(diffParam);
+    }, [versions]);
+
+    const loadDiff = async (short_hash: string) => {
+        if (selectedDiff === short_hash) {
+            setSelectedDiff(null);
+            setDiffData(null);
+            navigate({ search: '' }, { replace: true });
+            return;
+        }
+        navigate({ search: '?' + new URLSearchParams({ diff: short_hash }).toString() }, { replace: true });
+        await fetchDiff(short_hash);
+    };
+
     const toggleTable = (name: string) => {
         setCollapsedTables((prev) => {
             const next = new Set(prev);
@@ -398,6 +420,15 @@ function VersionHistoryTab() {
             else next.add(name);
             return next;
         });
+    };
+
+    const linkTable = (tableName: string) => {
+        if (!selectedDiff) return;
+        const search = '?' + new URLSearchParams({ diff: selectedDiff, table: tableName }).toString();
+        navigate({ search }, { replace: true });
+        const hashBase = window.location.hash.split('?')[0];
+        const fullUrl = window.location.origin + window.location.pathname + hashBase + search;
+        navigator.clipboard.writeText(fullUrl);
     };
 
     if (versionsError) return <Alert variant="danger" className="mt-3">{versionsError}</Alert>;
@@ -441,7 +472,13 @@ function VersionHistoryTab() {
                             {diffLoading && <><Spinner animation="border" size="sm" /> Loading diff...</>}
                             {diffError && <Alert variant="danger">{diffError}</Alert>}
                             {diffData && (
-                                <DiffViewer diff={diffData} collapsedTables={collapsedTables} onToggleTable={toggleTable} />
+                                <DiffViewer
+                                    diff={diffData}
+                                    collapsedTables={collapsedTables}
+                                    onToggleTable={toggleTable}
+                                    scrollToTable={scrollToTable}
+                                    onLinkTable={linkTable}
+                                />
                             )}
                         </div>
                     )}
@@ -455,10 +492,28 @@ interface DiffViewerProps {
     diff: DiffData;
     collapsedTables: Set<string>;
     onToggleTable: (name: string) => void;
+    scrollToTable?: string | null;
+    onLinkTable: (tableName: string) => void;
 }
 
-function DiffViewer({ diff, collapsedTables, onToggleTable }: DiffViewerProps) {
+function DiffViewer({ diff, collapsedTables, onToggleTable, scrollToTable, onLinkTable }: DiffViewerProps) {
     const tableNames = Object.keys(diff.tables).sort();
+    const tableRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+    const [copiedTable, setCopiedTable] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!scrollToTable) return;
+        const el = tableRefs.current.get(scrollToTable);
+        if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    }, [scrollToTable]);
+
+    const handleLinkTable = (e: React.MouseEvent, tableName: string) => {
+        e.stopPropagation();
+        onLinkTable(tableName);
+        setCopiedTable(tableName);
+        setTimeout(() => setCopiedTable(null), 2000);
+    };
+
     return (
         <div>
             {tableNames.map((tableName) => {
@@ -468,13 +523,28 @@ function DiffViewer({ diff, collapsedTables, onToggleTable }: DiffViewerProps) {
                 const removedCount = td.removed.length;
                 const modifiedCount = td.modified.length;
                 return (
-                    <div key={tableName} className="mb-2" style={{ border: '1px solid #555', borderRadius: 4 }}>
+                    <div
+                        key={tableName}
+                        className="mb-2"
+                        style={{ border: scrollToTable === tableName ? '1px solid #888' : '1px solid #555', borderRadius: 4 }}
+                        ref={el => { if (el) tableRefs.current.set(tableName, el); else tableRefs.current.delete(tableName); }}
+                    >
                         <div
                             className="p-2 d-flex align-items-center justify-content-between"
                             style={{ cursor: 'pointer', backgroundColor: '#2a2a2a' }}
                             onClick={() => onToggleTable(tableName)}
                         >
-                            <strong>{tableName}</strong>
+                            <span className="d-flex align-items-center gap-2">
+                                <strong>{tableName}</strong>
+                                <span
+                                    role="button"
+                                    onClick={(e) => handleLinkTable(e, tableName)}
+                                    title="Copy link to this table"
+                                    style={{ opacity: copiedTable === tableName ? 1 : 0.4, fontSize: '0.75rem', userSelect: 'none', color: copiedTable === tableName ? '#69db7c' : undefined }}
+                                >
+                                    {copiedTable === tableName ? '✓' : '#'}
+                                </span>
+                            </span>
                             <span>
                                 {addedCount > 0 && <span className="badge text-bg-success ms-1">+{addedCount}</span>}
                                 {removedCount > 0 && <span className="badge text-bg-danger ms-1">-{removedCount}</span>}
@@ -505,16 +575,22 @@ function DiffViewer({ diff, collapsedTables, onToggleTable }: DiffViewerProps) {
                                             </tr>
                                         ))}
                                         {td.modified.map((mod, i) => (
-                                            <React.Fragment key={`mod-${i}`}>
-                                                <tr style={{ backgroundColor: 'rgba(255,193,7,0.15)' }}>
-                                                    <td><span className="badge text-bg-warning">before</span></td>
-                                                    {mod.before.map((cell, ci) => <td key={ci}>{cell === null ? <em>NULL</em> : String(cell)}</td>)}
-                                                </tr>
-                                                <tr style={{ backgroundColor: 'rgba(255,193,7,0.25)' }}>
-                                                    <td><span className="badge text-bg-warning">after</span></td>
-                                                    {mod.after.map((cell, ci) => <td key={ci}>{cell === null ? <em>NULL</em> : String(cell)}</td>)}
-                                                </tr>
-                                            </React.Fragment>
+                                            <tr key={`mod-${i}`} style={{ backgroundColor: 'rgba(255,193,7,0.15)' }}>
+                                                <td><span className="badge text-bg-warning">~</span></td>
+                                                {mod.before.map((beforeCell, ci) => {
+                                                    const afterCell = mod.after[ci];
+                                                    const changed = beforeCell !== afterCell;
+                                                    const val = (v: any) => v === null ? <em>NULL</em> : String(v);
+                                                    if (!changed) return <td key={ci} style={{ color: '#777' }}>{val(beforeCell)}</td>;
+                                                    return (
+                                                        <td key={ci}>
+                                                            <span style={{ color: '#ff6b6b', textDecoration: 'line-through' }}>{val(beforeCell)}</span>
+                                                            {' → '}
+                                                            <span style={{ color: '#69db7c' }}>{val(afterCell)}</span>
+                                                        </td>
+                                                    );
+                                                })}
+                                            </tr>
                                         ))}
                                     </tbody>
                                 </table>
@@ -528,9 +604,11 @@ function DiffViewer({ diff, collapsedTables, onToggleTable }: DiffViewerProps) {
 }
 
 export default function MasterDataPage() {
+    const location = useLocation();
+    const defaultTab = new URLSearchParams(location.search).has('diff') ? 'history' : 'browser';
     return (
         <Container className="mt-4">
-            <Tabs defaultActiveKey="browser" id="masterdata-tabs" transition={false}>
+            <Tabs defaultActiveKey={defaultTab} id="masterdata-tabs" transition={false}>
                 <Tab eventKey="browser" title="Table Browser">
                     <SqlBrowserTab />
                 </Tab>

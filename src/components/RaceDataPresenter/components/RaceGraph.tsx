@@ -2,6 +2,7 @@ import React from "react";
 import EChartsReactCore from "echarts-for-react/lib/core";
 import { LineChart, LineSeriesOption } from "echarts/charts";
 import {
+	AxisPointerComponent,
     DataZoomComponentOption,
     DataZoomSliderComponent,
     GridComponent,
@@ -34,7 +35,7 @@ import UMDatabaseWrapper from "../../../data/UMDatabaseWrapper";
 import { otherRaceEventLabels } from "../utils/RacePresenterUtils";
 
 echarts.use([
-    LineChart, TooltipComponent, GridComponent, MarkLineComponent, MarkAreaComponent, LegendComponent, SVGRenderer, DataZoomSliderComponent,
+    LineChart, TooltipComponent, GridComponent, MarkLineComponent, MarkAreaComponent, LegendComponent, SVGRenderer, DataZoomSliderComponent, AxisPointerComponent,
 ]);
 
 type ECOption = ComposeOption<

@@ -1,43 +1,50 @@
-import pako from "pako";
 import { Veteran } from "./types";
 
-export function encodeVeterans(veterans: Veteran[]): string {
-    const json = JSON.stringify(veterans);
-    const compressed = pako.deflate(json);
-    // Use chunked fromCharCode to avoid stack overflow on large arrays
-    let binary = '';
-    const chunk = 8192;
-    for (let i = 0; i < compressed.length; i += chunk) {
-        binary += String.fromCharCode(...compressed.subarray(i, i + chunk));
-    }
-    return btoa(binary);
+const WORKER_URL = 'https://cors-proxy.ayaliz.workers.dev';
+
+function stripVeteran(v: Veteran) {
+    return {
+        card_id: v.card_id,
+        rank_score: v.rank_score,
+        create_time: v.create_time,
+        factor_id_array: v.factor_id_array,
+        win_saddle_id_array: v.win_saddle_id_array ?? [],
+        skill_array: (v.skill_array ?? []).map(s => ({ skill_id: s.skill_id })),
+        succession_chara_array: (v.succession_chara_array ?? []).map(p => ({
+            position_id: p.position_id,
+            card_id: p.card_id,
+            factor_id_array: p.factor_id_array,
+            win_saddle_id_array: p.win_saddle_id_array ?? [],
+        })),
+    };
 }
 
-export function decodeVeterans(encoded: string): Veteran[] {
-    const binary = atob(encoded);
-    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
-    const json = pako.inflate(bytes, { to: 'string' });
-    return JSON.parse(json);
+export function buildShareBody(veterans: Veteran[]): string {
+    return JSON.stringify(veterans.map(stripVeteran));
 }
 
-export function getVeteransFromUrl(): Veteran[] | null {
-    const hash = window.location.hash;
-    const match = hash.match(/[#&]v=([^&]*)/);
-    if (!match) return null;
-    try {
-        return decodeVeterans(match[1]);
-    } catch {
-        return null;
-    }
+export async function uploadVeteransToWorker(body: string): Promise<string> {
+    const res = await fetch(`${WORKER_URL}/share`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Share-Secret': import.meta.env.VITE_SHARE_SECRET ?? '',
+        },
+        body,
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const { key } = await res.json();
+    return `${window.location.origin}${window.location.pathname}#/veterans?kv=${key}`;
 }
 
-export function setVeteransInUrl(veterans: Veteran[]): void {
-    const encoded = encodeVeterans(veterans);
-    window.location.hash = `v=${encoded}`;
+export async function fetchVeteransFromWorker(key: string): Promise<Veteran[]> {
+    const res = await fetch(`${WORKER_URL}/share/${key}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json() as Promise<Veteran[]>;
 }
 
-export async function copyRosterToClipboard(veterans: Veteran[]): Promise<void> {
-    const encoded = encodeVeterans(veterans);
-    const url = `${window.location.origin}${window.location.pathname}#v=${encoded}`;
-    await navigator.clipboard.writeText(url);
+export function getKvKeyFromUrl(): string | null {
+    const parts = window.location.hash.split('?');
+    if (parts.length < 2) return null;
+    return new URLSearchParams(parts[1]).get('kv');
 }

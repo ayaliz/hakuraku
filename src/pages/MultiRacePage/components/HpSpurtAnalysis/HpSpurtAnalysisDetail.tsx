@@ -1,25 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Table, ProgressBar } from 'react-bootstrap';
 import { CharaHpSpurtStats } from './types';
 import UMDatabaseWrapper from '../../../../data/UMDatabaseWrapper';
 import './HpSpurtAnalysis.css';
 import HpDistributionModal from './HpDistributionModal';
 import CharaProperLabels from "../../../../components/CharaProperLabels";
-import AssetLoader from "../../../../data/AssetLoader";
-
-let _statIcons: Record<string, string> | null = null;
-function getStatIcons() {
-    if (!_statIcons) {
-        _statIcons = {
-            speed: AssetLoader.getStatIcon("speed") ?? "",
-            stamina: AssetLoader.getStatIcon("stamina") ?? "",
-            power: AssetLoader.getStatIcon("power") ?? "",
-            guts: AssetLoader.getStatIcon("guts") ?? "",
-            wit: AssetLoader.getStatIcon("wit") ?? "",
-        };
-    }
-    return _statIcons;
-}
+import { getCourseAptitudeFilters } from "../../utils";
 
 const getMeanMedian = (data: number[]) => {
     if (data.length === 0) return { mean: 0, median: 0 };
@@ -31,7 +17,25 @@ const getMeanMedian = (data: number[]) => {
     return { mean, median };
 };
 
-const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) => {
+const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats; courseId?: number }> = ({ stat, courseId }) => {
+    const aptitudeFilters = getCourseAptitudeFilters(courseId);
+
+    const dominantRunningStyle = useMemo(() => {
+        const counts: Record<number, number> = {};
+        stat.sourceRuns.forEach(({ race, horseFrameOrder }) => {
+            const horseData = race.horseInfo.find(
+                (h, idx) => ((h['frame_order'] ?? (idx + 1)) - 1) === horseFrameOrder
+            );
+            const raw = horseData?.running_style;
+            const style = (raw === 1 || raw === 2 || raw === 3 || raw === 4) ? raw : 1;
+            counts[style] = (counts[style] ?? 0) + 1;
+        });
+        let best = 1, bestCount = 0;
+        for (const [s, c] of Object.entries(counts)) {
+            if (c > bestCount) { bestCount = c; best = Number(s); }
+        }
+        return best;
+    }, [stat.sourceRuns]);
     // 1. Calculate Aggregates
     const fullSpurtRate = stat.totalRuns > 0 ? (stat.hpOutcomesFullSpurt.length / stat.totalRuns) * 100 : 0;
     const survivalRate = stat.totalRuns > 0 ? (stat.survivalCount / stat.totalRuns) * 100 : 0;
@@ -60,20 +64,17 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) 
 
 
     const StatCard = ({ title, value, subValue, progress, variant }: { title: string, value: React.ReactNode, subValue?: string, progress?: number, variant?: string }) => (
-        <div className="stat-card" style={{ padding: '15px', borderRadius: '8px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <div style={{ color: '#a0aec0', fontSize: '0.85em', textTransform: 'uppercase', marginBottom: '5px', fontWeight: 600 }}>{title}</div>
-            <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: '#e2e8f0' }}>{value}</div>
-            {subValue && <div style={{ color: '#718096', fontSize: '0.9em' }}>{subValue}</div>}
+        <div className="stat-card detail-stat-card">
+            <div className="dsc-title">{title}</div>
+            <div className="dsc-value">{value}</div>
+            {subValue && <div className="dsc-subvalue">{subValue}</div>}
             {progress !== undefined && (
-                <div style={{ marginTop: '10px' }}>
-                    <ProgressBar now={progress} variant={variant || getProgVariant(progress)} style={{ height: '6px', backgroundColor: '#4a5568' }} />
+                <div className="dsc-progress">
+                    <ProgressBar now={progress} variant={variant || getProgVariant(progress)} />
                 </div>
             )}
         </div>
     );
-
-    const iconStyle: React.CSSProperties = { width: 16, height: 16, marginRight: 2, verticalAlign: 'middle' };
-    const statStyle: React.CSSProperties = { marginRight: 12, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', color: '#e2e8f0', fontSize: '0.9em' };
 
     return (
         <div className="analysis-detail-container">
@@ -85,34 +86,22 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) 
             />
 
 
-            <div className="d-flex justify-content-between align-items-start mb-4">
-                <div className="d-flex align-items-center">
-                    <CharaProperLabels chara={stat.trainedChara} />
-                    <div style={{ marginLeft: '20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <div style={{ display: 'flex' }}>
-                            <span style={statStyle} title="Speed"><img src={getStatIcons().speed} alt="Speed" style={iconStyle} />{stat.stats.speed}</span>
-                            <span style={statStyle} title="Stamina"><img src={getStatIcons().stamina} alt="Stamina" style={iconStyle} />{stat.stats.stamina}</span>
-                            <span style={statStyle} title="Power"><img src={getStatIcons().power} alt="Power" style={iconStyle} />{stat.stats.pow}</span>
-                            <span style={statStyle} title="Guts"><img src={getStatIcons().guts} alt="Guts" style={iconStyle} />{stat.stats.guts}</span>
-                            <span style={statStyle} title="Wisdom"><img src={getStatIcons().wit} alt="Wisdom" style={iconStyle} />{stat.stats.wiz}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-
-            <div className="row mb-4">
-                <div className="col-md-3 col-6 mb-3 mb-md-0">
-                    <div onClick={() => openModal('All Runs', allHpOutcomes)} style={{ cursor: 'pointer' }}>
+            <div className="detail-top-section">
+                <CharaProperLabels
+                    chara={stat.trainedChara}
+                    groundFilter={aptitudeFilters?.ground}
+                    distanceFilter={aptitudeFilters?.distance}
+                    runningStyleFilter={dominantRunningStyle}
+                />
+                <div className="detail-stat-cards">
+                    <div className="detail-stat-card-clickable" onClick={() => openModal('All Runs', allHpOutcomes)}>
                         <StatCard
                             title="Total Runs"
                             value={stat.totalRuns}
                             subValue={`Win Rate: ${((stat.wins / stat.totalRuns) * 100).toFixed(1)}%`}
                         />
                     </div>
-                </div>
-                <div className="col-md-3 col-6 mb-3 mb-md-0">
-                    <div onClick={() => openModal('Full Spurt Runs', stat.hpOutcomesFullSpurt)} style={{ cursor: 'pointer' }}>
+                    <div className="detail-stat-card-clickable" onClick={() => openModal('Full Spurt Runs', stat.hpOutcomesFullSpurt)}>
                         <StatCard
                             title="Full Spurt Rate"
                             value={`${fullSpurtRate.toFixed(1)}%`}
@@ -120,9 +109,7 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) 
                             progress={fullSpurtRate}
                         />
                     </div>
-                </div>
-                <div className="col-md-3 col-6">
-                    <div onClick={() => openModal('Survivor Runs', allHpOutcomes.filter(h => h > 0))} style={{ cursor: 'pointer' }}>
+                    <div className="detail-stat-card-clickable" onClick={() => openModal('Survivor Runs', allHpOutcomes.filter(h => h > 0))}>
                         <StatCard
                             title="Survival Rate"
                             value={`${survivalRate.toFixed(1)}%`}
@@ -130,19 +117,19 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) 
                             progress={survivalRate}
                         />
                     </div>
-                </div>
-                <div className="col-md-3 col-6">
-                    <StatCard
-                        title="Avg Final HP"
-                        value={<span style={{ color: meanHp >= 0 ? '#4ade80' : '#f87171' }}>{meanHp > 0 ? '+' : ''}{meanHp.toFixed(0)}</span>}
-                        subValue={`Median: ${medianHp.toFixed(0)}`}
-                        variant={meanHp >= 0 ? 'success' : 'danger'}
-                        progress={Math.min(Math.abs(meanHp) / 200 * 100, 100)}
-                    />
+                    <div>
+                        <StatCard
+                            title="Avg Final HP"
+                            value={<span style={{ color: meanHp >= 0 ? '#4ade80' : '#f87171' }}>{meanHp > 0 ? '+' : ''}{meanHp.toFixed(0)}</span>}
+                            subValue={`Median: ${medianHp.toFixed(0)}`}
+                            variant={meanHp >= 0 ? 'success' : 'danger'}
+                            progress={Math.min(Math.abs(meanHp) / 200 * 100, 100)}
+                        />
+                    </div>
                 </div>
             </div>
 
-            {stat.recoveryStats && Object.keys(stat.recoveryStats).length > 0 ? (
+            {stat.recoveryStats && Object.keys(stat.recoveryStats).length > 0 && (
                 <div style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
                     <div style={{ padding: '15px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(30, 41, 59, 0.6)' }}>
                         <h5 style={{ margin: 0, color: '#e2e8f0', fontSize: '1rem' }}>Recovery Skill Analysis</h5>
@@ -228,12 +215,7 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) 
                         </tbody>
                     </Table>
                 </div>
-            ) : (
-                <div className="text-muted text-center p-4" style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '8px', marginBottom: '20px' }}>
-                    No recovery skills found or analyzed.
-                </div>
-            )
-            }
+            )}
 
 
             <div style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>

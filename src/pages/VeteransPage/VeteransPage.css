@@ -1,0 +1,365 @@
+.vet-card {
+  display: flex;
+  flex-direction: row;
+  background: var(--haku-bg-2);
+  border: 1px solid var(--haku-border);
+  border-left: 3px solid var(--haku-border-accent);
+  border-radius: var(--haku-radius);
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: box-shadow var(--haku-transition);
+}
+
+.vet-card:hover {
+  box-shadow: var(--haku-shadow-lg);
+}
+
+.vet-portrait-col {
+  flex-shrink: 0;
+  width: 116px;
+  background: rgba(0, 0, 0, 0.18);
+  border-right: 1px solid var(--haku-border);
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.vet-portrait-img {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  display: block;
+}
+
+.vet-parents-row {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  margin-top: 8px;
+  justify-content: center;
+}
+
+.vet-parent-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.vet-parent-img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  display: block;
+}
+
+.vet-parent-name {
+  font-size: 0.62rem;
+  color: var(--haku-text-muted);
+  max-width: 56px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  display: block;
+}
+
+.vet-content-col {
+  flex: 1;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.vet-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.vet-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--haku-text-primary);
+  line-height: 1.3;
+}
+
+.vet-meta-badges {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.vet-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--haku-text-secondary);
+  white-space: nowrap;
+}
+
+.vet-badge.rating {
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--haku-text-primary);
+}
+
+.vet-badge.affinity {
+  background: rgba(102, 126, 234, 0.15);
+  border-color: rgba(102, 126, 234, 0.35);
+  color: var(--haku-accent);
+}
+
+.factor-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.factor-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.factor-group-label {
+  min-width: 52px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding-top: 3px;
+  flex-shrink: 0;
+}
+
+.factor-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.factor-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  line-height: 1.6;
+}
+
+.factor-pill.gold {
+  background: rgba(255, 215, 0, 0.08);
+  border-color: rgba(255, 215, 0, 0.25);
+}
+
+.factor-pill .pill-stars {
+  letter-spacing: -1px;
+}
+
+.race-wins-section {
+  margin-top: 4px;
+}
+
+.race-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 1px solid var(--haku-border);
+  color: var(--haku-text-secondary);
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background var(--haku-transition);
+  font-family: inherit;
+}
+
+.race-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.race-names-list {
+  margin-top: 6px;
+  padding-left: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 12px;
+  row-gap: 4px;
+}
+
+.race-name-item {
+  font-size: 0.77rem;
+  color: var(--haku-text-secondary);
+}
+
+.vet-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.vet-grid .vet-card {
+  margin-bottom: 0;
+}
+
+@media (max-width: 860px) {
+  .vet-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.toolbar-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.toolbar-filters {
+  display: flex;
+  align-items: center;
+}
+
+.toolbar-filters .btn {
+  white-space: nowrap;
+}
+
+.toolbar-row-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.vet-count-sort-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--haku-border);
+}
+
+.vet-rank-icon {
+  height: 18px;
+  width: auto;
+  margin-right: 4px;
+}
+
+.vet-no-factors {
+  font-size: 0.8rem;
+  color: var(--haku-text-muted);
+}
+
+.race-affinity-accent {
+  color: var(--haku-accent);
+}
+
+.vet-page-container {
+  padding-top: 20px;
+}
+
+.vet-search-input {
+  max-width: 260px;
+}
+
+.vet-count-label {
+  color: var(--haku-text-muted);
+  font-size: 0.88rem;
+}
+
+.affinity-description {
+  font-size: 0.85rem;
+}
+
+.affinity-search-input {
+  max-width: 240px;
+}
+
+.affinity-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--haku-border);
+  border-radius: var(--haku-radius);
+}
+
+.affinity-list-item {
+  padding: 4px 10px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--haku-border);
+  font-size: 0.85rem;
+}
+
+.affinity-list-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.affinity-list-item.selected {
+  background: rgba(13, 110, 253, 0.2);
+}
+
+.opt-label {
+  font-size: 0.8rem;
+}
+
+.opt-label-bold {
+  font-weight: bold;
+  font-size: 0.85rem;
+}
+
+.opt-skills-scroll {
+  max-height: 160px;
+  overflow-y: auto;
+  border: 1px solid var(--haku-border);
+  border-radius: var(--haku-radius);
+  padding: 6px;
+}
+
+.opt-checkbox {
+  font-size: 0.8rem;
+}
+
+.opt-results {
+  overflow-x: auto;
+}
+
+.opt-table {
+  font-size: 0.85rem;
+}
+
+.opt-cell-nowrap {
+  white-space: nowrap;
+}
+
+.opt-char-img {
+  height: 24px;
+  width: 24px;
+  object-fit: contain;
+  margin-right: 6px;
+}
+
+.opt-rank-icon {
+  height: 16px;
+  width: auto;
+  margin-right: 4px;
+}

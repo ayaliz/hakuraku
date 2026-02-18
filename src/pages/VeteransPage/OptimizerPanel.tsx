@@ -1,8 +1,10 @@
 import React, { useState } from "react";
-import { Accordion, Badge, Button, Form, Table } from "react-bootstrap";
+import { Accordion, Button, Form, Table } from "react-bootstrap";
+import './VeteransPage.css';
 import { Veteran, OptimizerConfig } from "./types";
-import { aggregateFactors, calculateOptimizerScore } from "../../data/VeteransHelper";
-import { getCardName, formatCardName } from "./VeteransUIHelper";
+import { aggregateFactors, calculateOptimizerScore, calculateRaceBonus } from "../../data/VeteransHelper";
+import { getCardName, formatCardName, getCharaImageUrl } from "./VeteransUIHelper";
+import { getRankIcon } from "../../components/RaceDataPresenter/components/CharaList/rankUtils";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 
 interface OptimizerPanelProps {
@@ -17,34 +19,35 @@ const DEFAULT_CONFIG: OptimizerConfig = {
     scenarioWeight: 10,
     highValueSkills: [],
     highValueSkillBonus: 20,
-    scenarioSparks: [],
 };
+
+type FactorSummary = { name: string; level: number };
 
 type TransferResult = {
     veteran: Veteran;
     score: number;
-    bluesStars: number;
-    aptStars: number;
+    bluesFactors: FactorSummary[];
+    aptFactors: FactorSummary[];
     uniqueStars: number;
     skillStars: number;
+    skillFactors: FactorSummary[];
+    scenarioFactors: FactorSummary[];
+    raceBonus: number;
 };
+
+const stars = (n: number) => '★'.repeat(n);
+const factorCell = (items: FactorSummary[]) =>
+    items.length === 0 ? '—' : items.map(f => `${f.name} ${stars(f.level)}`).join(', ');
 
 const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ veterans }) => {
     const [config, setConfig] = useState<OptimizerConfig>(DEFAULT_CONFIG);
     const [results, setResults] = useState<TransferResult[] | null>(null);
-    const [sparkInput, setSparkInput] = useState('');
     const [skillSearch, setSkillSearch] = useState('');
 
     const allSkillIds = React.useMemo(() => {
         const ids = new Set<number>();
         veterans.forEach(v => v.skill_array?.forEach(s => ids.add(s.skill_id)));
         return Array.from(ids).sort((a, b) => a - b);
-    }, [veterans]);
-
-    const allFactorNames = React.useMemo(() => {
-        const names = new Set<string>();
-        veterans.forEach(v => aggregateFactors(v).forEach(f => names.add(f.name)));
-        return Array.from(names).sort();
     }, [veterans]);
 
     const filteredSkillIds = React.useMemo(() => {
@@ -64,34 +67,23 @@ const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ veterans }) => {
         });
     };
 
-    const addSparkSuggestion = (name: string) => {
-        if (!config.scenarioSparks.includes(name)) {
-            updateConfig({ scenarioSparks: [...config.scenarioSparks, name] });
-        }
-        setSparkInput('');
-    };
-
-    const removeScenarioSpark = (name: string) => {
-        updateConfig({ scenarioSparks: config.scenarioSparks.filter(s => s !== name) });
-    };
-
     const calculate = () => {
         const scored = veterans.map(v => {
             const factors = aggregateFactors(v);
-            const bluesStars = factors.filter(f => f.category === 1 && f.isGold).reduce((s, f) => s + f.level, 0);
-            const aptStars = factors.filter(f => f.category === 2 && f.isGold).reduce((s, f) => s + f.level, 0);
+            const bluesFactors = factors.filter(f => f.category === 1 && f.isGold).map(f => ({ name: f.name, level: f.level }));
+            const aptFactors = factors.filter(f => f.category === 2 && f.isGold).map(f => ({ name: f.name, level: f.level }));
             const uniqueStars = factors.filter(f => f.category === 3 && f.isGold).reduce((s, f) => s + f.level, 0);
-            const skillStars = factors.filter(f => f.category === 5 && f.isGold).reduce((s, f) => s + f.level, 0);
+            const goldSkills = factors.filter(f => f.category === 5 && f.isGold);
+            const skillStars = goldSkills.reduce((s, f) => s + f.level, 0);
+            const skillFactors = goldSkills.map(f => ({ name: f.name, level: f.level }));
+            const scenarioFactors = factors.filter(f => f.isGold && f.category === 4 && String(f.factorId).startsWith('3')).map(f => ({ name: f.name, level: f.level }));
             const score = calculateOptimizerScore(v, config);
-            return { veteran: v, score, bluesStars, aptStars, uniqueStars, skillStars };
+            const raceBonus = calculateRaceBonus(v).total;
+            return { veteran: v, score, bluesFactors, aptFactors, uniqueStars, skillStars, skillFactors, scenarioFactors, raceBonus };
         });
         scored.sort((a, b) => a.score - b.score);
         setResults(scored);
     };
-
-    const sparkSuggestions = sparkInput.trim()
-        ? allFactorNames.filter(n => n.toLowerCase().includes(sparkInput.toLowerCase()) && !config.scenarioSparks.includes(n)).slice(0, 8)
-        : [];
 
     return (
         <Accordion className="mb-4">
@@ -100,15 +92,15 @@ const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ veterans }) => {
                 <Accordion.Body>
                     <div className="row g-3 mb-3">
                         {([
-                            ['Blues weight (pts/★)', 'bluesWeight'],
-                            ['Aptitude weight (pts/★)', 'aptWeight'],
-                            ['Unique weight (pts/★)', 'uniqueWeight'],
-                            ['Skill spark weight (pts/★)', 'skillWeight'],
-                            ['Scenario spark weight (pts/★)', 'scenarioWeight'],
-                            ['Important skill bonus (pts)', 'highValueSkillBonus'],
+                            ['Blues weight (score/★)', 'bluesWeight'],
+                            ['Aptitude weight (score/★)', 'aptWeight'],
+                            ['Unique weight (score/★)', 'uniqueWeight'],
+                            ['Skill spark weight (score/★)', 'skillWeight'],
+                            ['Scenario spark weight (score/★)', 'scenarioWeight'],
+                            ['Important skill bonus (score)', 'highValueSkillBonus'],
                         ] as [string, keyof OptimizerConfig][]).map(([label, key]) => (
                             <div key={key} className="col-sm-6 col-md-4 col-lg-3">
-                                <Form.Label style={{ fontSize: '0.8rem' }}>{label}</Form.Label>
+                                <Form.Label className="opt-label">{label}</Form.Label>
                                 <Form.Control
                                     type="number"
                                     size="sm"
@@ -120,7 +112,7 @@ const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ veterans }) => {
                     </div>
 
                     <div className="mb-3">
-                        <Form.Label style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>Important skills</Form.Label>
+                        <Form.Label className="opt-label-bold">Important skills</Form.Label>
                         <Form.Control
                             size="sm"
                             placeholder="Search skills..."
@@ -128,7 +120,7 @@ const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ veterans }) => {
                             onChange={e => setSkillSearch(e.target.value)}
                             className="mb-1"
                         />
-                        <div style={{ maxHeight: 160, overflowY: 'auto', border: '1px solid #444', borderRadius: 4, padding: 6 }}>
+                        <div className="opt-skills-scroll">
                             {filteredSkillIds.map(id => (
                                 <Form.Check
                                     key={id}
@@ -137,59 +129,11 @@ const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ veterans }) => {
                                     label={UMDatabaseWrapper.skillName(id)}
                                     checked={config.highValueSkills.includes(id)}
                                     onChange={() => toggleSkill(id)}
-                                    style={{ fontSize: '0.8rem' }}
+                                    className="opt-checkbox"
                                 />
                             ))}
                             {allSkillIds.length === 0 && <small className="text-muted">No skills found in loaded veterans.</small>}
                             {allSkillIds.length > 0 && filteredSkillIds.length === 0 && <small className="text-muted">No skills match search.</small>}
-                        </div>
-                    </div>
-
-                    <div className="mb-3">
-                        <Form.Label style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>Scenario sparks</Form.Label>
-                        <div className="d-flex flex-wrap gap-1 mb-1">
-                            {config.scenarioSparks.map(s => (
-                                <Badge
-                                    key={s}
-                                    bg="info"
-                                    style={{ cursor: 'pointer', fontSize: '0.8rem' }}
-                                    onClick={() => removeScenarioSpark(s)}
-                                    title="Click to remove"
-                                >
-                                    {s} ✕
-                                </Badge>
-                            ))}
-                        </div>
-                        <div style={{ position: 'relative' }}>
-                            <Form.Control
-                                size="sm"
-                                placeholder="Type to search factor names..."
-                                value={sparkInput}
-                                onChange={e => setSparkInput(e.target.value)}
-                                onKeyDown={e => {
-                                    if (e.key === 'Enter' && sparkInput.trim()) {
-                                        addSparkSuggestion(sparkInput.trim());
-                                    }
-                                }}
-                            />
-                            {sparkSuggestions.length > 0 && (
-                                <div style={{
-                                    position: 'absolute', zIndex: 10, background: '#222', border: '1px solid #555',
-                                    borderRadius: 4, width: '100%', maxHeight: 160, overflowY: 'auto'
-                                }}>
-                                    {sparkSuggestions.map(s => (
-                                        <div
-                                            key={s}
-                                            style={{ padding: '4px 8px', cursor: 'pointer', fontSize: '0.85rem' }}
-                                            onClick={() => addSparkSuggestion(s)}
-                                            onMouseEnter={e => (e.currentTarget.style.background = '#333')}
-                                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                                        >
-                                            {s}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
                         </div>
                     </div>
 
@@ -198,27 +142,34 @@ const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ veterans }) => {
                     </Button>
 
                     {results && (
-                        <div className="mt-3" style={{ overflowX: 'auto' }}>
-                            <Table striped bordered hover size="sm" style={{ fontSize: '0.85rem' }}>
+                        <div className="mt-3 opt-results">
+                            <Table striped bordered hover size="sm" className="opt-table">
                                 <thead>
                                     <tr>
                                         <th>Character</th>
-                                        <th>Score</th>
-                                        <th>Blues★</th>
-                                        <th>Apt★</th>
+                                        <th>Rating</th>
+                                        <th>Blues</th>
+                                        <th>Aptitude</th>
                                         <th>Unique★</th>
                                         <th>Skill★</th>
+                                        <th>Scenario★</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {results.map((r, i) => (
                                         <tr key={i}>
-                                            <td>{formatCardName(getCardName(r.veteran.card_id))}</td>
-                                            <td>{r.score}</td>
-                                            <td>{r.bluesStars}</td>
-                                            <td>{r.aptStars}</td>
-                                            <td>{r.uniqueStars}</td>
-                                            <td>{r.skillStars}</td>
+                                            <td className="opt-cell-nowrap">
+                                                <img src={getCharaImageUrl(r.veteran.card_id)} alt="" className="opt-char-img" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                                {formatCardName(getCardName(r.veteran.card_id))}
+                                            </td>
+                                            <td className="opt-cell-nowrap">
+                                                {(() => { const ri = getRankIcon(r.veteran.rank_score); return <><img src={ri.icon} alt={ri.name} className="opt-rank-icon" />{r.veteran.rank_score.toLocaleString()}</>; })()}
+                                            </td>
+                                            <td>{factorCell(r.bluesFactors)}</td>
+                                            <td>{factorCell(r.aptFactors)}</td>
+                                            <td>{r.uniqueStars || '—'}</td>
+                                            <td title={factorCell(r.skillFactors)} style={{ cursor: r.skillStars ? 'help' : undefined }}>{r.skillStars || '—'}</td>
+                                            <td>{factorCell(r.scenarioFactors)}</td>
                                         </tr>
                                     ))}
                                 </tbody>

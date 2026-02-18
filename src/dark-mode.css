@@ -246,6 +246,12 @@ body {
   font-size: 0.95rem;
 }
 
+.upload-zone .upload-sublabel {
+  color: var(--haku-text-muted);
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
 .haku-table {
   border-collapse: collapse;
 }

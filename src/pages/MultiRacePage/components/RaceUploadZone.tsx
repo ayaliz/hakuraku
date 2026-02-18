@@ -57,7 +57,7 @@ const RaceUploadZone: React.FC<RaceUploadZoneProps> = ({ onFilesSelected, isProc
                 onChange={handleFileChange}
             />
             <div
-                className={`multirace-upload-zone ${isDragOver ? "drag-over" : ""}`}
+                className={`upload-zone${isDragOver ? " drag-over" : ""}`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
@@ -66,17 +66,17 @@ const RaceUploadZone: React.FC<RaceUploadZoneProps> = ({ onFilesSelected, isProc
                 {isProcessing ? (
                     <>
                         <Spinner animation="border" variant="primary" />
-                        <div className="upload-text" style={{ marginTop: "15px" }}>
+                        <div className="upload-label" style={{ marginTop: "15px" }}>
                             Processing files...
                         </div>
                     </>
                 ) : (
                     <>
                         <div className="upload-icon">📂</div>
-                        <div className="upload-text">
+                        <div className="upload-label">
                             Drop race JSON files here or click to browse
                         </div>
-                        <div className="upload-subtext">
+                        <div className="upload-sublabel">
                             Select multiple files to analyze races together
                         </div>
                     </>

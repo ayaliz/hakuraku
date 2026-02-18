@@ -74,6 +74,64 @@
     border-color: rgba(255, 255, 255, 0.04);
 }
 
+/* Detail top section: aptitude table + stat cards side by side */
+.detail-top-section {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 16px;
+}
+
+.detail-stat-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    flex: 1;
+    align-content: start;
+}
+
+.detail-stat-card-clickable {
+    cursor: pointer;
+    height: 100%;
+}
+
+.detail-stat-card {
+    padding: 10px 12px;
+    border-radius: 8px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.dsc-title {
+    color: #a0aec0;
+    font-size: 0.72em;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+    font-weight: 600;
+}
+
+.dsc-value {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #e2e8f0;
+}
+
+.dsc-subvalue {
+    color: #718096;
+    font-size: 0.82em;
+}
+
+.dsc-progress {
+    margin-top: 6px;
+}
+
+.detail-stat-card .progress {
+    height: 6px;
+    background-color: #4a5568;
+}
+
 /* Detail View Styling */
 .analysis-detail-container {
     padding: 24px;
@@ -94,6 +152,126 @@
 .stat-card:hover {
     transform: translateY(-2px);
     background: rgba(30, 41, 59, 0.8) !important;
+}
+
+/* Stat icon used in stats cell */
+.stat-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 2px;
+}
+
+/* Stat label wrapper (icon + value inline) */
+.stat-label-item {
+    margin-right: 8px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+}
+
+.stat-sp-item {
+    cursor: help;
+}
+
+/* Table column widths & header behaviour */
+.hp-col-expand {
+    width: 30px;
+}
+
+.hp-sortable-th {
+    cursor: pointer;
+    user-select: none;
+}
+
+.hp-sort-indicator {
+    margin-left: 4px;
+    font-size: 0.8em;
+}
+
+/* Expand / collapse cell */
+.hp-expand-td {
+    text-align: center;
+}
+
+.hp-expand-chevron {
+    display: inline-block;
+    transform: rotate(-90deg);
+    transition: transform 0.2s;
+}
+
+.hp-expand-chevron.is-expanded {
+    transform: rotate(0deg);
+}
+
+.hp-expanded-td {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 0 !important;
+}
+
+/* Character cell */
+.hp-chara-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.hp-chara-name {
+    font-weight: 600;
+}
+
+.hp-chara-portrait {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+}
+
+/* Score cell */
+.hp-score-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.hp-rank-icon {
+    height: 20px;
+    width: auto;
+}
+
+/* Centred columns (Score, Win Rate, Top 3 %, Runs) */
+.hp-col-center {
+    text-align: center;
+}
+
+/* Rate display */
+.hp-rate-value {
+    font-weight: bold;
+}
+
+.hp-rate-count {
+    font-weight: normal;
+    font-size: 0.9em;
+}
+
+/* Progress bar layout */
+.hp-progress-container {
+    display: flex;
+    align-items: center;
+}
+
+.hp-progress-bar {
+    flex-grow: 1;
+    margin-right: 8px;
+}
+
+.hp-progress-value {
+    min-width: 45px;
+    text-align: right;
+    font-weight: bold;
+}
+
+.hp-analysis-table .progress {
+    height: 8px;
 }
 
 /* Inner tables */

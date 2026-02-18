@@ -1,18 +1,14 @@
-import React, { useMemo } from 'react';
-import { ParsedRace } from '../../types';
-import { computeHpSpurtStats } from './processData';
+import React from 'react';
+import { CharaHpSpurtStats } from './types';
 import './HpSpurtAnalysis.css';
 import HpSpurtTable from './HpSpurtTable';
 
 interface Props {
-    races: ParsedRace[];
+    stats: CharaHpSpurtStats[];
+    courseId?: number;
 }
 
-export const HpSpurtAnalysis: React.FC<Props> = ({ races }) => {
-    const stats = useMemo(() => {
-        return computeHpSpurtStats(races, undefined, true, undefined, true);
-    }, [races]);
-
+export const HpSpurtAnalysis: React.FC<Props> = ({ stats, courseId }) => {
     return (
         <div className="hp-analysis-wrapper">
             {stats.length === 0 ? (
@@ -20,7 +16,7 @@ export const HpSpurtAnalysis: React.FC<Props> = ({ races }) => {
                     No user characters found in the loaded races.
                 </div>
             ) : (
-                <HpSpurtTable stats={stats} />
+                <HpSpurtTable stats={stats} courseId={courseId} />
             )}
         </div>
     );

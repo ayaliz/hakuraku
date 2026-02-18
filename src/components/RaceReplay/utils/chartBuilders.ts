@@ -11,7 +11,7 @@ import {
     GraphicComponentOption,
 } from "echarts/components";
 import { ComposeOption } from "echarts/core";
-import type { MarkLine1DDataItemOption } from "echarts/types/src/component/marker/MarkLineModel";
+type MarkLine1DDataItemOption = { xAxis?: number | string; name?: string; label?: object; lineStyle?: object };
 import { RaceSimulateData } from "../../../data/race_data_pb";
 import {
     DEFAULT_TEAM_PALETTE,

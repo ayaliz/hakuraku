@@ -29,7 +29,7 @@ type RaceDataPageState = {
 };
 
 export default class RaceDataPage extends React.Component<{}, RaceDataPageState> {
-    private fileInputRef: React.RefObject<HTMLInputElement>;
+    private fileInputRef: React.RefObject<HTMLInputElement | null>;
 
     constructor(props: {}) {
         super(props);
@@ -533,7 +533,7 @@ export default class RaceDataPage extends React.Component<{}, RaceDataPageState>
                     onDragLeave={this.handleDragLeave}
                     onDrop={this.handleDrop}
                 >
-                    <div className="upload-icon">&#9650;</div>
+                    <div className="upload-icon">📂</div>
                     <div className="upload-label">Drop a .json race file here, or click to browse</div>
                 </div>
             ) : (

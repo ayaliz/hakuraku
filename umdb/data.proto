@@ -17,6 +17,9 @@ message UMDatabase {
     repeated SingleModeSkillNeedPoint single_mode_skill_need_point = 13;
 
     repeated SingleModeRank single_mode_rank = 14;
+
+    repeated SuccessionRelation succession_relation = 15;
+    repeated SuccessionRelationMember succession_relation_member = 16;
 }
 
 message Chara {
@@ -103,4 +106,15 @@ message SingleModeRank {
     optional int32 id = 1;
     optional int32 min_value = 2;
     optional int32 max_value = 3;
+}
+
+message SuccessionRelation {
+    optional int32 relation_type = 1;
+    optional int32 relation_point = 2;
+}
+
+message SuccessionRelationMember {
+    optional int32 id = 1;
+    optional int32 relation_type = 2;
+    optional int32 chara_id = 3;
 }

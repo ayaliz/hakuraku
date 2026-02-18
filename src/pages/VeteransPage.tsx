@@ -1,5 +1,6 @@
 import React from "react";
-import { Alert, Button, Container, Form, InputGroup, Modal } from "react-bootstrap";
+import './VeteransPage/VeteransPage.css';
+import { Alert, Button, Container, Form, InputGroup } from "react-bootstrap";
 import { Veteran, BaseFilter, BluesFilter, AptitudeFilter, UniquesFilter, RacesFilter, SkillsFilter } from "./VeteransPage/types";
 import { SelectorType } from "./VeteransPage/InlineFilterSelector";
 import VeteransSorter, { SortOption, SortDirection } from "./VeteransPage/VeteransSorter";
@@ -8,13 +9,16 @@ import VeteranCard from "./VeteransPage/VeteranCard";
 import FilterToolbar from "./VeteransPage/FilterToolbar";
 import ActiveFiltersList from "./VeteransPage/ActiveFiltersList";
 import OptimizerPanel from "./VeteransPage/OptimizerPanel";
+import AffinitySelector from "./VeteransPage/AffinitySelector";
 import { applyFiltersAndSort, getAvailableStats } from "./VeteransPage/VeteransLogic";
-import { getVeteransFromUrl, copyRosterToClipboard, decodeVeterans } from "./VeteransPage/UrlSharing";
+import { getKvKeyFromUrl, buildShareBody, uploadVeteransToWorker, fetchVeteransFromWorker } from "./VeteransPage/UrlSharing";
 
 type VeteransPageState = {
     veterans: Veteran[];
     error: string;
     successMessage: string;
+    sharing: boolean;
+    shareCache: Record<string, string>;
 
     bluesFilters: BluesFilter[];
     aptitudeFilters: AptitudeFilter[];
@@ -32,9 +36,8 @@ type VeteransPageState = {
     sortDirection: SortDirection;
 
     nameSearch: string;
+    affinityCharaId: number | null;
 
-    showImportModal: boolean;
-    importText: string;
 };
 
 const FILTER_CONFIG = {
@@ -51,24 +54,21 @@ export default class VeteransPage extends React.Component<{}, VeteransPageState>
     constructor(props: {}) {
         super(props);
         this.state = {
-            veterans: [], error: '', successMessage: '',
+            veterans: [], error: '', successMessage: '', sharing: false, shareCache: {},
             bluesFilters: [], aptitudeFilters: [], uniquesFilters: [], racesFilters: [], skillsFilters: [],
             showBluesSelector: false, showAptitudeSelector: false, showUniquesSelector: false, showRacesSelector: false, showSkillsSelector: false,
             activeSort: 'none', sortDirection: 'desc',
-            nameSearch: '',
-            showImportModal: false, importText: '',
+            nameSearch: '', affinityCharaId: null,
         };
         this.fileInputRef = React.createRef();
     }
 
     componentDidMount() {
-        try {
-            const fromUrl = getVeteransFromUrl();
-            if (fromUrl && fromUrl.length > 0) {
-                this.setState({ veterans: fromUrl });
-            }
-        } catch {
-            // ignore URL parse errors on mount
+        const kvKey = getKvKeyFromUrl();
+        if (kvKey) {
+            fetchVeteransFromWorker(kvKey)
+                .then(veterans => this.setState({ veterans }))
+                .catch(err => this.setState({ error: `Failed to load shared roster: ${err.message}` }));
         }
     }
 
@@ -99,28 +99,25 @@ export default class VeteransPage extends React.Component<{}, VeteransPageState>
     };
 
     handleExportUrl = async () => {
-        const { veterans } = this.state;
+        const { veterans, shareCache } = this.state;
         if (!veterans.length) return;
-        try {
-            await copyRosterToClipboard(veterans);
-            this.setState({ successMessage: 'Roster URL copied to clipboard!' });
+        const body = buildShareBody(veterans);
+        const hash = body.length + ':' + [...body].reduce((h, c) => (Math.imul(31, h) + c.charCodeAt(0)) | 0, 0).toString(36);
+        const cachedUrl = shareCache[hash];
+        if (cachedUrl) {
+            await navigator.clipboard.writeText(cachedUrl);
+            this.setState({ successMessage: 'Share link copied to clipboard!' });
             setTimeout(() => this.setState({ successMessage: '' }), 3000);
-        } catch {
-            this.setState({ error: 'Failed to copy to clipboard.' });
+            return;
         }
-    };
-
-    handleImportFromUrl = () => {
-        const { importText } = this.state;
+        this.setState({ sharing: true });
         try {
-            // Accept either a full URL or just the encoded payload
-            const match = importText.match(/[#&]v=([^&\s]*)/);
-            const encoded = match ? match[1] : importText.trim();
-            const veterans = decodeVeterans(encoded);
-            if (!Array.isArray(veterans) || veterans.length === 0) throw new Error("Empty or invalid roster");
-            this.setState({ veterans, error: '', showImportModal: false, importText: '' });
-        } catch (err) {
-            this.setState({ error: `Import failed: ${err}` });
+            const url = await uploadVeteransToWorker(body);
+            await navigator.clipboard.writeText(url);
+            this.setState(p => ({ sharing: false, successMessage: 'Share link copied to clipboard!', shareCache: { ...p.shareCache, [hash]: url } }));
+            setTimeout(() => this.setState({ successMessage: '' }), 3000);
+        } catch (err: any) {
+            this.setState({ sharing: false, error: `Export failed: ${err.message}` });
         }
     };
 
@@ -158,7 +155,7 @@ export default class VeteransPage extends React.Component<{}, VeteransPageState>
     };
 
     render() {
-        const { veterans, activeSort, sortDirection, error, successMessage, nameSearch } = this.state;
+        const { veterans, activeSort, sortDirection, error, successMessage, sharing, nameSearch, affinityCharaId } = this.state;
 
         let displayVeterans: Veteran[] = [];
         let renderError = null;
@@ -174,7 +171,7 @@ export default class VeteransPage extends React.Component<{}, VeteransPageState>
                 };
                 displayVeterans = applyFiltersAndSort(
                     veterans, filters, FILTER_CONFIG, activeSort, sortDirection,
-                    nameSearch
+                    nameSearch, affinityCharaId
                 );
             } catch (e: any) {
                 console.error("Filter/Sort Logic Crashed", e);
@@ -191,40 +188,35 @@ export default class VeteransPage extends React.Component<{}, VeteransPageState>
         };
 
         return (
-            <Container style={{ paddingTop: 20 }}>
-                <div className="mb-3" style={{ position: 'relative' }}>
-                    <div className="d-flex flex-wrap gap-2 mb-2 align-items-center">
-                        <Button variant="primary" onClick={this.handleUploadClick}>
-                            Upload JSON
-                        </Button>
-                        <Button variant="outline-secondary" onClick={this.handleExportUrl} disabled={!veterans.length}>
-                            Export URL
-                        </Button>
-                        <Button variant="outline-secondary" onClick={() => this.setState({ showImportModal: true, importText: '' })}>
-                            Import from URL
-                        </Button>
-                    </div>
+            <Container className="vet-page-container">
 
-                    <div className="mb-2">
-                        <InputGroup style={{ maxWidth: 320 }}>
-                            <Form.Control
-                                placeholder="Search by character name..."
-                                value={nameSearch}
-                                onChange={e => this.setState({ nameSearch: e.target.value })}
+                <div className="mb-3">
+                    <div className="toolbar-row">
+                        <div className="toolbar-filters">
+                            <FilterToolbar
+                                config={FILTER_CONFIG}
+                                visibilityState={visibilityState}
+                                onToggle={this.toggleSelector}
+                                onAddFilter={this.handleAddFilter}
+                                getAvailableStats={(catId) => getAvailableStats(veterans, catId)}
                             />
-                            {nameSearch && (
-                                <Button variant="outline-secondary" onClick={() => this.setState({ nameSearch: '' })}>✕</Button>
-                            )}
-                        </InputGroup>
+                            <InputGroup className="vet-search-input">
+                                <Form.Control
+                                    placeholder="Search by name..."
+                                    value={nameSearch}
+                                    onChange={e => this.setState({ nameSearch: e.target.value })}
+                                />
+                                {nameSearch && (
+                                    <Button variant="outline-secondary" onClick={() => this.setState({ nameSearch: '' })}>✕</Button>
+                                )}
+                            </InputGroup>
+                        </div>
+                        <div className="toolbar-row-actions">
+                            <Button variant="secondary" size="sm" onClick={this.handleExportUrl} disabled={!veterans.length || sharing}>
+                                {sharing ? 'Sharing...' : 'Share'}
+                            </Button>
+                        </div>
                     </div>
-
-                    <FilterToolbar
-                        config={FILTER_CONFIG}
-                        visibilityState={visibilityState}
-                        onToggle={this.toggleSelector}
-                        onAddFilter={this.handleAddFilter}
-                        getAvailableStats={(catId) => getAvailableStats(veterans, catId)}
-                    />
 
                     <input ref={this.fileInputRef} type="file" accept=".json" onChange={this.handleFileChange} style={{ display: 'none' }} />
                 </div>
@@ -255,54 +247,42 @@ export default class VeteransPage extends React.Component<{}, VeteransPageState>
                 )}
 
                 {!veterans.length && !error && !renderError && (
-                    <Alert variant="info">No veterans loaded. Upload a JSON file or import from URL to get started.</Alert>
+                    <div className="upload-zone" onClick={this.handleUploadClick}>
+                        <div className="upload-icon">📂</div>
+                        <div className="upload-label">No veterans loaded</div>
+                        <div className="upload-sublabel">Upload a JSON file or share link to get started</div>
+                    </div>
                 )}
 
                 {veterans.length > 0 && !renderError && (
                     <div>
-                        <div className="d-flex justify-content-between align-items-end mb-3">
-                            <div className="text-muted">Showing {displayVeterans.length} of {veterans.length} veterans</div>
+                        <div className="vet-count-sort-row">
+                            <span className="vet-count-label">
+                                Showing {displayVeterans.length} of {veterans.length} veterans
+                            </span>
                             <VeteransSorter
                                 activeSort={activeSort} sortDirection={sortDirection}
                                 onSortChange={(s) => this.setState({ activeSort: s })}
                                 onDirectionToggle={() => this.setState(p => ({ sortDirection: p.sortDirection === 'desc' ? 'asc' : 'desc' }))}
+                                affinityCharaId={affinityCharaId}
                             />
                         </div>
 
                         <OptimizerPanel veterans={veterans} />
+                        <AffinitySelector
+                            selectedCharaId={affinityCharaId}
+                            onSelect={(id) => this.setState({ affinityCharaId: id })}
+                        />
 
-                        {displayVeterans.map((veteran, index) => (
-                            <VeteranCard key={`${veteran.card_id}-${index}`} veteran={veteran} config={FILTER_CONFIG} />
-                        ))}
+                        <div className="vet-grid">
+                            {displayVeterans.map((veteran, index) => (
+                                <VeteranCard key={`${veteran.card_id}-${index}`} veteran={veteran} config={FILTER_CONFIG} affinityCharaId={affinityCharaId} />
+                            ))}
+                        </div>
                     </div>
                 )}
 
-                {/* Import from URL modal */}
-                <Modal
-                    show={this.state.showImportModal}
-                    onHide={() => this.setState({ showImportModal: false })}
-                    contentClassName="bg-dark text-light"
-                    animation={false}
-                >
-                    <Modal.Header closeButton className="bg-dark text-light border-secondary">
-                        <Modal.Title>Import Roster from URL</Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body className="bg-dark">
-                        <Form.Label>Paste a roster URL or encoded payload:</Form.Label>
-                        <Form.Control
-                            as="textarea"
-                            rows={4}
-                            className="bg-dark text-light"
-                            value={this.state.importText}
-                            onChange={e => this.setState({ importText: e.target.value })}
-                            placeholder="https://...#v=... or raw encoded string"
-                        />
-                    </Modal.Body>
-                    <Modal.Footer className="bg-dark border-secondary">
-                        <Button variant="secondary" onClick={() => this.setState({ showImportModal: false })}>Cancel</Button>
-                        <Button variant="primary" onClick={this.handleImportFromUrl} disabled={!this.state.importText.trim()}>Import</Button>
-                    </Modal.Footer>
-                </Modal>
+
             </Container>
         );
     }

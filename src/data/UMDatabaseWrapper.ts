@@ -12,6 +12,10 @@ class _UMDatabaseWrapper {
     skillNeedPoints: Record<number, number> = {};
     singleModeRanks: SingleModeRank[] = [];
     textData: Record<number, Record<number, TextData>> = {};
+    // chara_id -> set of relation_type values that character belongs to
+    charaRelationTypes: Record<number, Set<number>> = {};
+    // relation_type -> relation_point
+    relationPoints: Record<number, number> = {};
 
     initialize() {
         return fetch(import.meta.env.BASE_URL + 'data/umdb.binarypb.gz', {cache: 'no-cache'})
@@ -40,6 +44,17 @@ class _UMDatabaseWrapper {
                     this.textData[text.category!][text.index!] = text;
                 });
 
+                this.umdb.successionRelation.forEach((r) => {
+                    this.relationPoints[r.relationType!] = r.relationPoint!;
+                });
+
+                this.umdb.successionRelationMember.forEach((m) => {
+                    const charaId = m.charaId!;
+                    if (!this.charaRelationTypes[charaId]) {
+                        this.charaRelationTypes[charaId] = new Set();
+                    }
+                    this.charaRelationTypes[charaId].add(m.relationType!);
+                });
             });
     }
 

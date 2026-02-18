@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect, type MutableRefObject, type RefObject } from "react";
 import { bisectFrameIndex, clamp01, lerp, getCharaIcon, formatSigned, mixWithWhite } from "../RaceReplay.utils";
 import { buildPositionKeepSeries, teamColorFor } from "../utils/chartBuilders";
-import { getSkillDurationSecs, getActiveSpeedDebuff } from "../utils/SkillDataUtils";
+import { getSkillDurationSecs, getActiveSpeedDebuff, hasSkillEffect } from "../utils/SkillDataUtils";
 import { InterpolatedFrame } from "../RaceReplay.types";
 import { TrainedCharaData } from "../../../data/TrainedCharaData";
 import {
@@ -377,7 +377,7 @@ export function useCanvasOverlay(
                         const targetMask = s.param?.[4] ?? 0;
                         if ((targetMask & (1 << idx)) === 0) return false;
                         if ((p.skillActivations?.[idx] ?? []).some((self: any) => self === s)) return false;
-                        if (getActiveSpeedDebuff(s.param[1]) <= 0) return false;
+                        if (getActiveSpeedDebuff(s.param[1]) <= 0 && !hasSkillEffect(s.param[1], 9)) return false;
                         const dur = getSkillDurationSecs(s.param[1], p.goalInX);
                         return time >= s.time && time < s.time + dur && !EXCLUDE_SKILL_RE.test(s.name);
                     })

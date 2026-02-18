@@ -42,7 +42,7 @@ import { InterpolatedFrame } from "../RaceReplay.types";
 import { calculateTargetSpeed, getDistanceCategory } from "./speedCalculations";
 import { TrainedCharaData } from "../../../data/TrainedCharaData";
 
-import { getActiveSpeedModifier, getSkillBaseTime, getSkillDurationSecs, getActiveSpeedDebuff } from "./SkillDataUtils";
+import { getActiveSpeedModifier, getSkillBaseTime, getSkillDurationSecs, getActiveSpeedDebuff, hasSkillEffect } from "./SkillDataUtils";
 
 import AssetLoader from "../../../data/AssetLoader";
 
@@ -477,7 +477,7 @@ export function buildSkillLabels(
                 const targetMask = s.param?.[4] ?? 0;
                 if ((targetMask & (1 << i)) === 0) return false;
                 if ((skillActivations[i] ?? []).some(self => self === s)) return false;
-                if (getActiveSpeedDebuff(s.param[1]) <= 0) return false;
+                if (getActiveSpeedDebuff(s.param[1]) <= 0 && !hasSkillEffect(s.param[1], 9)) return false;
                 const dur = getSkillDurationSecs(s.param[1], goalInX);
                 return time >= s.time && time < s.time + dur && !EXCLUDE_SKILL_RE.test(s.name);
             })

@@ -650,6 +650,17 @@
   margin-bottom: 8px;
 }
 
+.aff-breakdown-side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+  align-items: flex-end;
+  font-size: 0.85rem;
+  color: var(--haku-text-secondary);
+  margin-right: 8px;
+}
+
 .aff-breakdown-item.total {
   color: var(--haku-accent);
 }
@@ -780,4 +791,87 @@
   border-radius: 50%;
   object-fit: cover;
   object-position: top center;
+}
+
+/* Spark Proc Modal inline styles extracted */
+
+.spark-proc-container {
+  margin-bottom: 20px;
+  background: var(--haku-bg-2);
+  border: 1px solid var(--haku-border);
+  border-radius: var(--haku-radius);
+  padding: 16px;
+}
+
+.spark-proc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.spark-proc-title {
+  font-size: 1.05rem;
+  margin: 0;
+  color: var(--haku-text-primary);
+}
+
+.spark-proc-toggles {
+  display: flex;
+  gap: 8px;
+}
+
+.spark-toggle-btn.active {
+  background: var(--haku-accent);
+  color: #fff;
+}
+
+.spark-proc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+}
+
+.spark-proc-card {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--haku-border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.spark-proc-factor-name {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.spark-proc-stats {
+  display: flex;
+  justify-content: space-between;
+  color: var(--haku-text-secondary);
+  font-size: 0.8rem;
+}
+
+.spark-proc-stat-strong {
+  color: var(--haku-text-primary);
+}
+
+.vet-portrait-self-aff {
+  color: var(--haku-accent);
+  font-size: 0.86rem;
+  font-weight: bold;
+  margin-bottom: 6px;
+  text-align: center;
+  line-height: 1;
+}
+
+.vet-parent-gp-aff {
+  color: var(--haku-accent);
+  font-size: 0.78rem;
+  font-weight: bold;
+  margin-top: -1px;
 }

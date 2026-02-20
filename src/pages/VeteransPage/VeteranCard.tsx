@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import './VeteransPage.css';
 import { Veteran } from "./types";
-import { aggregateFactors, getFactorCategory, calculateRaceBonus, calculateAffinity, calculatePairAffinity } from "../../data/VeteransHelper";
+import { aggregateFactors, getFactorCategory, calculateRaceBonus, calculateAffinity, calculatePairAffinity, calculateSparkChance } from "../../data/VeteransHelper";
 import { getCardName, formatCardName, getCharaImageUrl, getFactorColor } from "./VeteransUIHelper";
 import { getRankIcon } from "../../components/RaceDataPresenter/components/CharaList/rankUtils";
 
@@ -12,10 +12,10 @@ interface VeteranCardProps {
     legacyParent1?: Veteran | null;
     legacyParent2?: Veteran | null;
     onSelectForSlot?: (veteran: Veteran, slot: 'p1' | 'p2') => void;
+    treeAffinities?: Record<'self' | 'gp1' | 'gp2', number>;
 }
 
-
-const VeteranCard: React.FC<VeteranCardProps> = ({ veteran, config, affinityCharaId, legacyParent1, legacyParent2, onSelectForSlot }) => {
+const VeteranCard: React.FC<VeteranCardProps> = ({ veteran, config, affinityCharaId, legacyParent1, legacyParent2, onSelectForSlot, treeAffinities }) => {
     const [showRaces, setShowRaces] = useState(false);
 
     const parent1 = veteran.succession_chara_array.find(p => p.position_id === 10);
@@ -34,6 +34,11 @@ const VeteranCard: React.FC<VeteranCardProps> = ({ veteran, config, affinityChar
                     <img src={rankInfo.icon} alt={rankInfo.name} className="vet-rank-icon" />
                     {veteran.rank_score.toLocaleString()}
                 </div>
+                {treeAffinities && (
+                    <div className="vet-portrait-self-aff">
+                        {treeAffinities.self} Affinity
+                    </div>
+                )}
                 <img
                     className="vet-portrait-img"
                     src={getCharaImageUrl(veteran.card_id)}
@@ -46,13 +51,19 @@ const VeteranCard: React.FC<VeteranCardProps> = ({ veteran, config, affinityChar
                 <div className="vet-parents-row">
                     {[parent1, parent2].map((parent, i) =>
                         parent ? (
-                            <img
-                                key={i}
-                                className="vet-parent-img"
-                                src={getCharaImageUrl(parent.card_id)}
-                                alt={getCardName(parent.card_id)}
-                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                            />
+                            <div key={i} className="vet-parent-item">
+                                <img
+                                    className="vet-parent-img"
+                                    src={getCharaImageUrl(parent.card_id)}
+                                    alt={getCardName(parent.card_id)}
+                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                />
+                                {treeAffinities && (
+                                    <span className="vet-parent-gp-aff">
+                                        {i === 0 ? treeAffinities.gp1 : treeAffinities.gp2} Aff
+                                    </span>
+                                )}
+                            </div>
                         ) : null
                     )}
                 </div>
@@ -119,6 +130,12 @@ const VeteranCard: React.FC<VeteranCardProps> = ({ veteran, config, affinityChar
                                                 <span className="pill-stars">
                                                     {renderStars(factor.level, factor.isGold)}
                                                 </span>
+                                                {treeAffinities && (() => {
+                                                    const chance = calculateSparkChance(factor.category, factor.factorId, factor.level, treeAffinities[factor.sourceSlot]);
+                                                    return chance !== null ? (
+                                                        <span style={{ marginLeft: '3px', fontSize: '0.72rem', opacity: 0.85 }}>({chance.toFixed(2)}%)</span>
+                                                    ) : null;
+                                                })()}
                                             </span>
                                         ))}
                                     </div>

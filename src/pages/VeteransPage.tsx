@@ -30,6 +30,27 @@ export default function VeteransPage() {
     const [sharing, setSharing] = useState(false);
     const [shareCache, setShareCache] = useState<Record<string, string>>({});
 
+    const [trainerId, setTrainerId] = useState('');
+    const [loanLookupResult, setLoanLookupResult] = useState<string | null>(null);
+    const [loanLookupError, setLoanLookupError] = useState<string | null>(null);
+    const [loanLookupLoading, setLoanLookupLoading] = useState(false);
+
+    const handleLoanLookup = async () => {
+        if (!trainerId.trim()) return;
+        setLoanLookupResult(null);
+        setLoanLookupError(null);
+        setLoanLookupLoading(true);
+        try {
+            const res = await fetch(`https://uma.moe/api/v3/search?trainer_id=${encodeURIComponent(trainerId.trim())}`);
+            const text = await res.text();
+            setLoanLookupResult(text);
+        } catch (err: any) {
+            setLoanLookupError(String(err));
+        } finally {
+            setLoanLookupLoading(false);
+        }
+    };
+
     const [bluesFilters, setBluesFilters] = useState<BluesFilter[]>([]);
     const [aptitudeFilters, setAptitudeFilters] = useState<AptitudeFilter[]>([]);
     const [uniquesFilters, setUniquesFilters] = useState<UniquesFilter[]>([]);
@@ -231,6 +252,29 @@ export default function VeteransPage() {
                     {error || renderError}
                 </Alert>
             )}
+
+            <div className="mb-3">
+                <div style={{ fontWeight: 600, marginBottom: 6 }}>Loaned Character Lookup (test)</div>
+                <InputGroup style={{ maxWidth: 400 }}>
+                    <Form.Control
+                        placeholder="Trainer ID..."
+                        value={trainerId}
+                        onChange={e => setTrainerId(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleLoanLookup()}
+                    />
+                    <Button variant="outline-primary" onClick={handleLoanLookup} disabled={loanLookupLoading}>
+                        {loanLookupLoading ? 'Loading...' : 'Lookup'}
+                    </Button>
+                </InputGroup>
+                {loanLookupError && (
+                    <Alert variant="danger" className="mt-2">{loanLookupError}</Alert>
+                )}
+                {loanLookupResult !== null && (
+                    <pre style={{ marginTop: 8, fontSize: 12, maxHeight: 200, overflow: 'auto', background: 'var(--haku-bg-2)', padding: 8, borderRadius: 4 }}>
+                        {(() => { try { return JSON.stringify(JSON.parse(loanLookupResult), null, 2); } catch { return loanLookupResult; } })()}
+                    </pre>
+                )}
+            </div>
 
             {!veterans.length && !error && !renderError && (
                 <div className="upload-zone" onClick={() => fileInputRef.current?.click()}>

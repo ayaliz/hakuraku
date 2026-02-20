@@ -141,6 +141,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                     skillActivations={this.skillActivations(this.props.raceData)}
                     otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.state.activeCourseId, this.skillActivations(this.props.raceData))}
                     detectedCourseId={this.props.detectedCourseId}
+                    raceType={this.props.raceType}
                     onTrackChange={this.handleTrackChange}
                 />
             </div>

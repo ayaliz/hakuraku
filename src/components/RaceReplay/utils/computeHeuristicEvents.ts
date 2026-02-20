@@ -2,6 +2,39 @@ import { TrainedCharaData } from "../../../data/TrainedCharaData";
 import { calculateTargetSpeed, getDistanceCategory, calculateReferenceHpConsumption } from "./speedCalculations";
 import { getActiveSpeedModifier, getSkillBaseTime } from "./SkillDataUtils";
 import { RaceSimulateHorseResultData_RunningStyle } from "../../../data/race_data_pb";
+import {
+    SKILL_TIME_SCALE,
+    DOWNHILL_BONUS_BASE, DOWNHILL_BONUS_DIVISOR,
+    DOWNHILL_HP_RATIO_THRESHOLD, DOWNHILL_HP_RATIO_STRONG, DOWNHILL_HP_RATIO_PACE_DOWN,
+    PACE_UP_MULTIPLIER, OVERTAKE_MULTIPLIER, PACE_DOWN_MULTIPLIER,
+    TEMPTATION_MODE_RUSH_BOOST,
+} from "./raceConstants";
+
+// Event filtering
+const MIN_EVENT_DURATION = 0.1;            // Discard events shorter than this (seconds)
+
+// Position keep zone
+const POSITION_KEEP_END_RATIO = 10 / 24;  // PK zone ends at this fraction of course distance
+const COURSE_FACTOR_BASE_DIST = 1000;     // Reference distance for course factor formula
+const COURSE_FACTOR_MULTIPLIER = 0.0008;  // Per-meter scale: courseFactor = 1 + (dist - BASE) * MULTIPLIER
+
+// Mode detection thresholds
+const EARLY_RACE_TIME = 2.0;              // Seconds: defines the early-race period
+const PACE_TRIGGER_RATIO = 1.02;          // Speed must exceed reference × this to trigger Pace Up
+const PACE_TRIGGER_ACCEL = 0.2;           // Acceleration (m/s²) required as secondary pace-up trigger
+const SPEED_MATCH_TOLERANCE = 0.3;        // Tolerance (m/s) for matching a theoretical target speed
+const DOWNHILL_NORMAL_MATCH_TOL = 0.2;    // Tolerance for preferring normal over downhill target
+const PACE_EXIT_DECEL = -0.2;            // Deceleration that cancels a pace-up trigger
+const PACE_EXIT_SPEED_RATIO = 1.005;      // Speed must be below reference × this alongside decel for exit
+const EARLY_PACE_DOWN_SPEED_RATIO = 1.15; // Early race: pace down if below theoreticalPaceDown × this
+const PACE_DOWN_SPEED_THRESHOLD = 0.98;   // Speed below res.min × this → speed-based pace down indicator
+const PACE_DOWN_DECEL_THRESHOLD = -0.2;   // Deceleration level indicating pace down (with low speed)
+const PACE_DOWN_ACCEL_CEILING = 0.2;      // Max accel to enter pace down by speed alone
+const PACE_DOWN_SPEED_SOFT_RATIO = 1.06;  // Upper boundary of pace down territory
+const PACE_DOWN_ACCEL_LIMIT = 0.5;        // Max accel for HP-based pace down check
+const PACE_DOWN_EXIT_ACCEL = 0.2;         // Acceleration that forces pace down exit
+const PACE_DOWN_EXIT_SPEED_RATIO = 1.02;  // Speed ratio for pace down exit alongside acceleration
+const LEADER_PROXIMITY_EPSILON = 0.05;    // Distance (m) within which a horse is considered "at the front"
 
 export type HeuristicEvent = {
     time: number;
@@ -52,9 +85,9 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
     if (!frames || frames.length < 2 || goalInX <= 0) return events;
 
     const distanceCategory = getDistanceCategory(goalInX);
-    const positionKeepEnd = (10 / 24) * goalInX;
+    const positionKeepEnd = POSITION_KEEP_END_RATIO * goalInX;
 
-    const courseFactor = 1 + (goalInX - 1000) * 0.0008;
+    const courseFactor = 1 + (goalInX - COURSE_FACTOR_BASE_DIST) * COURSE_FACTOR_MULTIPLIER;
 
     const hasFrontRunner = Object.entries(trainedCharaByIdx).some(([idx, chara]) => {
         const i = +idx;
@@ -93,7 +126,7 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
         if (activeModes[i]) {
             const { type, startTime } = activeModes[i];
             const duration = time - startTime;
-            if (duration > 0.1) { // Filter blips
+            if (duration > MIN_EVENT_DURATION) {
                 if (!events[i]) events[i] = [];
                 events[i].push({ time: startTime, duration, name: type });
             }
@@ -106,7 +139,7 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
         if (activeDownhill[i]) {
             const { startTime } = activeDownhill[i];
             const duration = time - startTime;
-            if (duration > 0.1) {
+            if (duration > MIN_EVENT_DURATION) {
                 if (!events[i]) events[i] = [];
                 events[i].push({ time: startTime, duration, name: "Downhill Mode" });
             }
@@ -136,9 +169,9 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
             const hNext = nextFrame.horseFrame?.[i];
             if (!h || !hNext) continue;
 
-            if ((h.distance ?? 0) >= positionKeepEnd) {
+            const isPastPK = (h.distance ?? 0) >= positionKeepEnd;
+            if (isPastPK) {
                 closeMode(i, time);
-                continue;
             }
 
             const info = horseInfoByIdx[i] ?? {};
@@ -169,7 +202,7 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
                     const skillId = activation.param[1];
                     const baseTime = getSkillBaseTime(skillId);
                     if (baseTime > 0) {
-                        const duration = (baseTime / 10000) * (goalInX / 1000);
+                        const duration = (baseTime / SKILL_TIME_SCALE) * (goalInX / 1000);
                         if (time >= activation.time && time < activation.time + duration) {
                             activeSpeedBuff += getActiveSpeedModifier(skillId);
                         }
@@ -184,7 +217,7 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
             const tempMode = h.temptationMode ?? 0;
             if (tempMode > 0) {
                 isRushed = true;
-                if (tempMode === 4) rushedType = 2;
+                if (tempMode === TEMPTATION_MODE_RUSH_BOOST) rushedType = 2;
             }
             if (otherEvents && otherEvents[i]) {
                 otherEvents[i].forEach(evt => {
@@ -246,23 +279,23 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
             const hpConsumptionRatio = expected > 0 && rate > 0 ? rate / expected : 1;
 
             if (currentSlope < 0) {
-                downhillSpeedBonus = 0.3 + Math.abs(currentSlope) / 1000000;
+                downhillSpeedBonus = DOWNHILL_BONUS_BASE + Math.abs(currentSlope) / DOWNHILL_BONUS_DIVISOR;
 
-                if (expected > 0 && rate > 0 && hpConsumptionRatio < 0.8) {
-                    if (hpConsumptionRatio < 0.5) {
+                if (expected > 0 && rate > 0 && hpConsumptionRatio < DOWNHILL_HP_RATIO_THRESHOLD) {
+                    if (hpConsumptionRatio < DOWNHILL_HP_RATIO_STRONG) {
                         isDownhillMode = true;
                     } else {
                         const baseSpeedNoBuffs = res.base - activeSpeedBuff;
 
                         const targetDownhill = res.base + downhillSpeedBonus;
-                        const targetDownhillPaceUp = (baseSpeedNoBuffs * 1.04) + activeSpeedBuff + downhillSpeedBonus;
-                        const targetDownhillPaceDown = (baseSpeedNoBuffs * 0.915) + activeSpeedBuff + downhillSpeedBonus;
+                        const targetDownhillPaceUp = (baseSpeedNoBuffs * PACE_UP_MULTIPLIER) + activeSpeedBuff + downhillSpeedBonus;
+                        const targetDownhillPaceDown = (baseSpeedNoBuffs * PACE_DOWN_MULTIPLIER) + activeSpeedBuff + downhillSpeedBonus;
 
                         const candidates = [targetDownhill, targetDownhillPaceUp, targetDownhillPaceDown];
 
                         const targetNormal = res.base;
-                        const targetPaceUp = (baseSpeedNoBuffs * 1.04) + activeSpeedBuff;
-                        const targetPaceDown = (baseSpeedNoBuffs * 0.915) + activeSpeedBuff;
+                        const targetPaceUp = (baseSpeedNoBuffs * PACE_UP_MULTIPLIER) + activeSpeedBuff;
+                        const targetPaceDown = (baseSpeedNoBuffs * PACE_DOWN_MULTIPLIER) + activeSpeedBuff;
                         const nonDownhillCandidates = [targetNormal, targetPaceUp, targetPaceDown];
 
                         let minDiff = Number.MAX_VALUE;
@@ -286,7 +319,7 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
                         if (bestMatchIsDownhill) {
                             isDownhillMode = true;
                         } else {
-                            if (Math.abs(currentSpeed - targetNormal) < 0.2 && Math.abs(currentSpeed - targetDownhill) > 0.2) {
+                            if (Math.abs(currentSpeed - targetNormal) < DOWNHILL_NORMAL_MATCH_TOL && Math.abs(currentSpeed - targetDownhill) > DOWNHILL_NORMAL_MATCH_TOL) {
                                 isDownhillMode = false;
                             } else {
                                 isDownhillMode = true;
@@ -301,6 +334,7 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
                 res.min += downhillSpeedBonus;
             }
 
+            if (!isPastPK) {
             const isFrontRunner = strategy === 1 || isOonige;
 
             const posKeepRange = POSITION_KEEP_RANGES[strategy]?.(courseFactor) ?? { min: 0, max: 1000 };
@@ -308,24 +342,24 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
             const canPaceUp = !isFrontRunner && distanceFromLeader > posKeepRange.max;
             const canPaceDown = !isFrontRunner && distanceFromLeader < posKeepRange.min;
 
-            const isEarlyRace = time < 2.0;
+            const isEarlyRace = time < EARLY_RACE_TIME;
             const isEarlyRacePaceDown = isEarlyRace && !isFrontRunner && i !== designatedPacemaker;
 
             let isTriggeredHigh = false;
             let isTriggeredLow = false;
 
-            if (currentSpeed > referenceMax * 1.02 || (currentSpeed > referenceMax && accel > 0.2)) {
+            if (currentSpeed > referenceMax * PACE_TRIGGER_RATIO || (currentSpeed > referenceMax && accel > PACE_TRIGGER_ACCEL)) {
                 if (isFrontRunner) {
                     if (isDownhillMode) {
                         const baseSpeedNoBuffs = res.base - activeSpeedBuff - downhillSpeedBonus;
                         const downhillOnlyMax = baseSpeedNoBuffs + activeSpeedBuff + downhillSpeedBonus;
 
-                        const speedUpDownhillMax = (baseSpeedNoBuffs * 1.04) + activeSpeedBuff + downhillSpeedBonus;
-                        const overtakeDownhillMax = (baseSpeedNoBuffs * 1.05) + activeSpeedBuff + downhillSpeedBonus;
+                        const speedUpDownhillMax = (baseSpeedNoBuffs * PACE_UP_MULTIPLIER) + activeSpeedBuff + downhillSpeedBonus;
+                        const overtakeDownhillMax = (baseSpeedNoBuffs * OVERTAKE_MULTIPLIER) + activeSpeedBuff + downhillSpeedBonus;
 
-                        if (currentSpeed > downhillOnlyMax * 1.02 ||
-                            Math.abs(currentSpeed - speedUpDownhillMax) < 0.3 ||
-                            Math.abs(currentSpeed - overtakeDownhillMax) < 0.3) {
+                        if (currentSpeed > downhillOnlyMax * PACE_TRIGGER_RATIO ||
+                            Math.abs(currentSpeed - speedUpDownhillMax) < SPEED_MATCH_TOLERANCE ||
+                            Math.abs(currentSpeed - overtakeDownhillMax) < SPEED_MATCH_TOLERANCE) {
                             isTriggeredHigh = true;
                         }
                     } else {
@@ -336,15 +370,15 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
                         const downhillOnlyMax = res.max + downhillSpeedBonus;
 
                         // Calculate expected Pace Up + Downhill max speed
-                        // Pace Up applies 1.04x multiplier to base speed (before additives)
+                        // Pace Up applies PACE_UP_MULTIPLIER to base speed (before additives)
                         const baseSpeedNoBuffs = res.base - activeSpeedBuff;
-                        const downhillPaceUpMax = (baseSpeedNoBuffs * 1.04) + activeSpeedBuff + downhillSpeedBonus;
+                        const downhillPaceUpMax = (baseSpeedNoBuffs * PACE_UP_MULTIPLIER) + activeSpeedBuff + downhillSpeedBonus;
 
                         // Trigger only if:
-                        // 1. Clearly breaking speed limit (> 2% above normal downhill max)
+                        // 1. Clearly breaking speed limit (> PACE_TRIGGER_RATIO above normal downhill max)
                         // 2. OR closely matching expected Pace Up + Downhill speed AND accelerating
-                        if (currentSpeed > downhillOnlyMax * 1.02 ||
-                            (Math.abs(currentSpeed - downhillPaceUpMax) < 0.3 && accel > 0.2)) {
+                        if (currentSpeed > downhillOnlyMax * PACE_TRIGGER_RATIO ||
+                            (Math.abs(currentSpeed - downhillPaceUpMax) < SPEED_MATCH_TOLERANCE && accel > PACE_TRIGGER_ACCEL)) {
                             isTriggeredHigh = true;
                         }
                     } else {
@@ -353,14 +387,14 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
                 }
             }
 
-            if (accel < -0.2 && currentSpeed < referenceMax * 1.005) {
+            if (accel < PACE_EXIT_DECEL && currentSpeed < referenceMax * PACE_EXIT_SPEED_RATIO) {
                 isTriggeredHigh = false;
             }
 
-            const theoreticalPaceDown = (res.base * 0.915) + (activeSpeedBuff || 0) + (isDownhillMode ? downhillSpeedBonus : 0);
+            const theoreticalPaceDown = (res.base * PACE_DOWN_MULTIPLIER) + (activeSpeedBuff || 0) + (isDownhillMode ? downhillSpeedBonus : 0);
 
             if (isEarlyRacePaceDown) {
-                if (currentSpeed < theoreticalPaceDown * 1.15 && activeSpeedBuff <= 0) {
+                if (currentSpeed < theoreticalPaceDown * EARLY_PACE_DOWN_SPEED_RATIO && activeSpeedBuff <= 0) {
                     isTriggeredLow = true;
                 }
             } else if (activeSpeedBuff <= 0) {
@@ -370,20 +404,20 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
                 let hpIndicatesPaceDown = false;
 
 
-                if (!isDownhillMode && (currentSpeed < res.min * 0.98 || (currentSpeed < res.min && accel < -0.2)) && accel < 0.2) {
+                if (!isDownhillMode && (currentSpeed < res.min * PACE_DOWN_SPEED_THRESHOLD || (currentSpeed < res.min && accel < PACE_DOWN_DECEL_THRESHOLD)) && accel < PACE_DOWN_ACCEL_CEILING) {
                     speedIndicatesPaceDown = true;
                 }
 
 
-                if (!isFrontRunner && canPaceDown && currentSpeed < theoreticalPaceDown * 1.06 && accel < 0.5) {
+                if (!isFrontRunner && canPaceDown && currentSpeed < theoreticalPaceDown * PACE_DOWN_SPEED_SOFT_RATIO && accel < PACE_DOWN_ACCEL_LIMIT) {
                     if (isDownhillMode) {
 
-                        if (hpConsumptionRatio < 0.3) {
+                        if (hpConsumptionRatio < DOWNHILL_HP_RATIO_PACE_DOWN) {
                             hpIndicatesPaceDown = true;
                         }
                     } else {
 
-                        if (hpConsumptionRatio < 0.8) {
+                        if (hpConsumptionRatio < DOWNHILL_HP_RATIO_THRESHOLD) {
                             hpIndicatesPaceDown = true;
                         }
                     }
@@ -398,7 +432,7 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
             // "Low" Mode Exit Safeguard
             // If accelerating significantly while not firmly in "Low" territory, kill it.
             // Also force exit if we are clearly above Pace Down territory (e.g. due to strong acceleration)
-            if ((accel > 0.2 && currentSpeed > theoreticalPaceDown * 1.02) || (currentSpeed > theoreticalPaceDown * 1.06)) {
+            if ((accel > PACE_DOWN_EXIT_ACCEL && currentSpeed > theoreticalPaceDown * PACE_DOWN_EXIT_SPEED_RATIO) || (currentSpeed > theoreticalPaceDown * PACE_DOWN_SPEED_SOFT_RATIO)) {
                 isTriggeredLow = false;
             }
 
@@ -423,7 +457,7 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
                 // Try to enter a mode
                 if (isTriggeredHigh) {
                     if (isFrontRunner) {
-                        const isFirst = Math.abs(currentDistance - leaderDistance) < 0.05;
+                        const isFirst = Math.abs(currentDistance - leaderDistance) < LEADER_PROXIMITY_EPSILON;
                         const type = isFirst ? "Speed Up" : "Overtake";
                         activeModes[i] = { type, startTime: time, lastTime: time };
                     } else {
@@ -436,6 +470,8 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
                 }
             }
 
+
+            } // end !isPastPK
 
             if (activeDownhill[i]) {
 

@@ -253,7 +253,7 @@ export const useWinDistributionData = (
         });
 
 
-        const MAX_SLICES = 6; // Increased slightly since tuples add fragmentation
+        const MAX_SLICES = 5;
         const topWinsAll = Array.from(winMapAll.entries()).sort((a, b) => b[1].count - a[1].count).slice(0, MAX_SLICES).map(e => e[0]);
         const topWinsOpp = Array.from(winMapOpp.entries()).sort((a, b) => b[1].count - a[1].count).slice(0, MAX_SLICES).map(e => e[0]);
         const topPop = Array.from(popMap.entries()).sort((a, b) => b[1].count - a[1].count).slice(0, MAX_SLICES).map(e => e[0]);
@@ -331,7 +331,13 @@ export const useWinDistributionData = (
         };
 
 
-        const genFullSlices = (sourceMap: Map<string, { name: string; fullLabel: string; count: number; charaId: number; strategy: number; cardId: number }>, total: number) => {
+        const actualWinMapOpp = new Map<string, number>();
+        allHorses.filter(h => !h.isPlayer && h.finishOrder === 1).forEach(h => {
+            const key = getKey(h.charaId, h.strategy, h.cardId);
+            actualWinMapOpp.set(key, (actualWinMapOpp.get(key) || 0) + 1);
+        });
+
+        const genFullSlices = (sourceMap: Map<string, { name: string; fullLabel: string; count: number; charaId: number; strategy: number; cardId: number }>, total: number, secondaryMap?: Map<string, number>) => {
             return Array.from(sourceMap.entries())
                 .map(([id, data]) => {
                     const cardName = data.cardId ? UMDatabaseWrapper.cards[data.cardId]?.name : null;
@@ -342,10 +348,12 @@ export const useWinDistributionData = (
                         percentage: (data.count / total) * 100,
                         label: label,
                         fullLabel: data.fullLabel,
-                        color: colorMap.get(id) || "#718096", // Default color if not in keyIds
+                        color: colorMap.get(id) || "#718096",
                         charaId: id,
                         strategyId: data.strategy,
                         cardId: data.cardId,
+                        secondaryValue: secondaryMap !== undefined ? (secondaryMap.get(id) ?? 0) : undefined,
+                        secondaryPercentage: secondaryMap !== undefined ? ((secondaryMap.get(id) ?? 0) / total) * 100 : undefined,
                     };
                 })
                 .sort((a, b) => b.value - a.value);
@@ -356,7 +364,7 @@ export const useWinDistributionData = (
         const unifiedCharacterPop = popTotal > 0 ? commonGenSlices(popMap, popTotal) : [];
 
         const rawUnifiedCharacterWinsAll = winTotalAll > 0 ? genFullSlices(winMapAll, winTotalAll) : [];
-        const rawUnifiedCharacterWinsOpp = winTotalOpp > 0 ? genFullSlices(winMapOpp, winTotalOpp) : [];
+        const rawUnifiedCharacterWinsOpp = winTotalOpp > 0 ? genFullSlices(winMapOpp, winTotalOpp, actualWinMapOpp) : [];
         const rawUnifiedCharacterPop = popTotal > 0 ? genFullSlices(popMap, popTotal) : [];
 
 

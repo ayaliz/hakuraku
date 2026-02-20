@@ -4,6 +4,12 @@ import { getCharaActivatedSkillIds } from "../../../data/RaceDataUtils";
 import { getPassiveStatModifiers } from "../utils/SkillDataUtils";
 import { useHeuristicEvents } from "./useHeuristicEvents";
 import GameDataLoader from "../../../data/GameDataLoader";
+import { CAREER_RACE_STAT_BONUS } from "../utils/raceConstants";
+
+const HP_EVENT_TIME_EPSILON = 0.001;      // Max time gap (seconds) between frames to merge into one HP-zero event
+const PHASE3_START_RATIO = 2 / 3;        // Fraction of course distance where phase 3 (late race) begins
+const SPURT_DELAY_THRESHOLD = 4;         // Metres past phase 3 start before flagging a spurt delay
+const SPURT_DELAY_DISPLAY_DURATION = 2;  // Display duration (seconds) for the spurt delay marker event
 
 export function useRaceDerivedData(
     raceData: any,
@@ -13,7 +19,8 @@ export function useRaceDerivedData(
     otherEvents: Record<number, any[]>,
     goalInX: number,
     selectedTrackId: string | null,
-    toggles: { heuristics: boolean }
+    toggles: { heuristics: boolean },
+    raceType?: string,
 ) {
     const horseInfoByIdx = useMemo(() => {
         const map: Record<number, any> = {};
@@ -51,7 +58,7 @@ export function useRaceDerivedData(
                     if (currentStart === -1) {
                         currentStart = t;
                         currentEnd = nextT;
-                    } else if (Math.abs(t - currentEnd) < 0.001) {
+                    } else if (Math.abs(t - currentEnd) < HP_EVENT_TIME_EPSILON) {
                         currentEnd = nextT;
                     } else {
                         horseEvents.push({ time: currentStart, duration: currentEnd - currentStart, name: "Out of HP" });
@@ -81,7 +88,7 @@ export function useRaceDerivedData(
         const events: Record<number, { time: number; duration: number; name: string }[]> = {};
         if (!frames || frames.length < 2 || !goalInX) return events;
 
-        const phase3Start = (goalInX * 2) / 3;
+        const phase3Start = goalInX * PHASE3_START_RATIO;
         const numHorses = frames[0]?.horseFrame?.length ?? 0;
 
         for (let h = 0; h < numHorses; h++) {
@@ -96,7 +103,7 @@ export function useRaceDerivedData(
                 eventName = "No spurt";
             } else {
                 const delay = dist - phase3Start;
-                if (delay > 4) {
+                if (delay > SPURT_DELAY_THRESHOLD) {
                     eventName = `${delay.toFixed(2)}m spurt delay`;
                 }
             }
@@ -112,7 +119,7 @@ export function useRaceDerivedData(
                 }
 
                 if (foundTime !== -1) {
-                    events[h] = [{ time: foundTime, duration: 2, name: eventName }];
+                    events[h] = [{ time: foundTime, duration: SPURT_DELAY_DISPLAY_DURATION, name: eventName }];
                 }
             }
         }
@@ -154,11 +161,12 @@ export function useRaceDerivedData(
     const passiveStatModifiers = useMemo(() => {
         const map: Record<number, { speed: number, stamina: number, power: number, guts: number, wisdom: number }> = {};
         if (!raceData) return map;
+        const careerBonus = raceType === 'Single' ? CAREER_RACE_STAT_BONUS : 0;
         (raceHorseInfo || []).forEach((h: any) => {
             const idx = (h.frame_order ?? h.frameOrder) - 1;
             if (idx < 0) return;
             const skillIds = getCharaActivatedSkillIds(raceData, idx);
-            const totalMods = { speed: 0, stamina: 0, power: 0, guts: 0, wisdom: 0 };
+            const totalMods = { speed: careerBonus, stamina: careerBonus, power: careerBonus, guts: careerBonus, wisdom: careerBonus };
             skillIds.forEach(id => {
                 const mods = getPassiveStatModifiers(id);
                 totalMods.speed += mods.speed || 0;
@@ -170,7 +178,7 @@ export function useRaceDerivedData(
             map[idx] = totalMods;
         });
         return map;
-    }, [raceData, raceHorseInfo]);
+    }, [raceData, raceHorseInfo, raceType]);
 
     const heuristicEvents = useHeuristicEvents(
         frames,

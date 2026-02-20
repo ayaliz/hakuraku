@@ -26,8 +26,8 @@ const cardStyle: React.CSSProperties = {
 
 const cardHoverStyle: React.CSSProperties = {
     ...cardStyle,
-    borderColor: 'var(--haku-accent)',
-    boxShadow: '0 4px 20px rgba(102,126,234,0.2)',
+    borderColor: '#65D283',
+    boxShadow: '0 4px 20px rgba(101,210,131,0.2)',
 };
 
 function NoteCard({ entry, onClick }: { entry: NoteEntry; onClick: () => void }) {
@@ -135,16 +135,18 @@ export default function NotesPage() {
                     <div style={{
                         backgroundColor: 'var(--haku-bg-2)',
                         borderRadius: 'var(--haku-radius)',
-                        padding: '28px 32px',
+                        padding: 'clamp(16px, 5vw, 28px) clamp(16px, 5vw, 32px)',
                         boxShadow: 'var(--haku-shadow)',
                         border: '1px solid var(--haku-border)',
                         lineHeight: 1.7,
+                        overflowWrap: 'break-word',
+                        minWidth: 0,
                     }}>
                         <ReactMarkdown
                             remarkPlugins={[remarkGfm, remarkMath]}
                             rehypePlugins={[rehypeKatex as any]}
                             components={{
-                                h1: ({ children }) => <h1 style={{ borderBottom: '1px solid var(--haku-border)', paddingBottom: 10, marginBottom: 20, color: 'var(--haku-text-primary)' }}>{children}</h1>,
+                                h1: ({ children }) => <h1 style={{ borderBottom: '1px solid var(--haku-border)', paddingBottom: 10, marginBottom: 20, color: 'var(--haku-text-primary)', overflowWrap: 'break-word', wordBreak: 'break-word' }}>{children}</h1>,
                                 h2: ({ children }) => <h2 style={{ color: 'var(--haku-text-primary)', marginTop: 32 }}>{children}</h2>,
                                 h3: ({ children }) => <h3 style={{ color: 'var(--haku-text-primary)' }}>{children}</h3>,
                                 p: ({ children }) => <p style={{ color: 'var(--haku-text-secondary)' }}>{children}</p>,
@@ -156,7 +158,7 @@ export default function NotesPage() {
                                         : href;
                                     return <a href={resolved} target="_blank" rel="noreferrer" style={{ color: 'var(--haku-accent)' }}>{children}</a>;
                                 },
-                                table: ({ children }) => <table style={{ borderCollapse: 'collapse', width: '100%', marginTop: 12, marginBottom: 12 }}>{children}</table>,
+                                table: ({ children }) => <div style={{ overflowX: 'auto', marginTop: 12, marginBottom: 12 }}><table style={{ borderCollapse: 'collapse', width: '100%' }}>{children}</table></div>,
                                 th: ({ children }) => <th style={{ border: '1px solid var(--haku-border)', padding: '6px 12px', color: 'var(--haku-text-primary)', textAlign: 'center', backgroundColor: 'var(--haku-bg-3, rgba(255,255,255,0.05))' }}>{children}</th>,
                                 td: ({ children }) => <td style={{ border: '1px solid var(--haku-border)', padding: '5px 12px', color: 'var(--haku-text-secondary)', textAlign: 'center' }}>{children}</td>,
                                 code: ({ children, className }) => {

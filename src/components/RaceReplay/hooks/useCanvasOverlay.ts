@@ -1,7 +1,8 @@
 import { useRef, useCallback, useEffect, type MutableRefObject, type RefObject } from "react";
 import { bisectFrameIndex, clamp01, lerp, getCharaIcon, formatSigned, mixWithWhite } from "../RaceReplay.utils";
 import { buildPositionKeepSeries, teamColorFor } from "../utils/chartBuilders";
-import { getSkillDurationSecs, getActiveSpeedDebuff, hasSkillEffect } from "../utils/SkillDataUtils";
+import { getSkillDurationSecs, getActiveSpeedDebuff, hasSkillEffect, getSkillBaseTime, getActiveSpeedModifier } from "../utils/SkillDataUtils";
+import { calculateTargetSpeed, getDistanceCategory } from "../utils/speedCalculations";
 import { InterpolatedFrame } from "../RaceReplay.types";
 import { TrainedCharaData } from "../../../data/TrainedCharaData";
 import {
@@ -12,9 +13,10 @@ import {
     HP_BAR_WIDTH, HP_BAR_HEIGHT, HP_BAR_GAP_Y, HP_BAR_BG_COLOR, HP_BAR_FILL_COLOR,
     EXCLUDE_SKILL_RE, TEMPTATION_TEXT, STACK_BASE_PX, STACK_GAP_PX,
 } from "../RaceReplay.constants";
+import { TEMPTATION_MODE_RUSH_BOOST } from "../utils/raceConstants";
 import AssetLoader from "../../../data/AssetLoader";
 
-const GRID_TOP = 80;
+const GRID_TOP = 40;
 const GRID_RIGHT = 16;
 const GRID_BOTTOM = 40;
 const GRID_LEFT = 50;
@@ -78,7 +80,8 @@ interface CanvasOverlayParams {
     displayNames: Record<number, string>;
     horseInfoByIdx: Record<number, any>;
     trainerColors: Record<number, string> | undefined;
-    legendSelection: Record<string, boolean>;
+    characterVisibility: Record<string, 0 | 1 | 2>;
+    hoveredLegendName: string | null;
     toggles: {
         speed: boolean;
         accel: boolean;
@@ -104,13 +107,15 @@ interface CanvasOverlayParams {
     yMaxWithHeadroom: number;
 }
 
-type HorseHoverEntry = {
+export type HorseHoverEntry = {
     idx: number;
     cx: number; cy: number;
     speed: number; accel: number;
     hp: number; maxHp: number;
     distance: number; lanePosition: number;
     startDelay: number;
+    targetSpeedMin?: number;
+    targetSpeedMax?: number;
 };
 
 export function useCanvasOverlay(
@@ -231,9 +236,13 @@ export function useCanvasOverlay(
 
         const yMax = p.yMaxWithHeadroom;
 
+        type CharEntry = { idx: number; name: string; vis: 0 | 1 | 2; cx: number; cy: number; hf: any; teamColor: string; iconUrl: string };
+        const charDataList: CharEntry[] = [];
         const hoverEntries: HorseHoverEntry[] = [];
+
         Object.entries(p.displayNames).forEach(([iStr, name]) => {
-            if (p.legendSelection && p.legendSelection[name] === false) return;
+            const vis = (p.characterVisibility?.[name] ?? 0) as 0 | 1 | 2;
+            if (vis === 2) return; // hidden
             const idx = +iStr;
             const hf = interpolatedFrame.horseFrame[idx];
             if (!hf) return;
@@ -244,6 +253,95 @@ export function useCanvasOverlay(
             const cx = xToPixel(hf.distance ?? 0, xMin, xMax, w);
             const cy = yToPixel(hf.lanePosition ?? 0, yMax, h);
 
+            charDataList.push({ idx, name, vis, cx, cy, hf, teamColor, iconUrl });
+
+            // Compute target speed for hover tooltip
+            let targetSpeedMin: number | undefined;
+            let targetSpeedMax: number | undefined;
+            const trainedChara = p.trainedCharaByIdx[idx];
+            if (trainedChara && p.goalInX > 0) {
+                const runningStyleStr = info.running_style ?? 0;
+                const strategy = +runningStyleStr > 0 ? +runningStyleStr : (trainedChara.rawData?.param?.runningStyle ?? 1);
+                const isOonige = p.oonigeByIdx[idx] ?? false;
+                const currentDistance = hf.distance ?? 0;
+                const lastSpurtDist = p.lastSpurtStartDistances[idx] ?? -1;
+                const inLastSpurt = lastSpurtDist > 0 && currentDistance >= lastSpurtDist;
+                const currentSlopeObj = p.trackSlopes.find((s: any) => currentDistance >= s.start && currentDistance < s.start + s.length);
+                const currentSlope = currentSlopeObj?.slope ?? 0;
+                const greenStats = p.passiveStatModifiers?.[idx];
+
+                let activeSpeedBuff = 0;
+                (p.skillActivations?.[idx] ?? []).forEach((s: any) => {
+                    const skillId = s.param[1];
+                    const baseTime = getSkillBaseTime(skillId);
+                    if (baseTime > 0) {
+                        const duration = (baseTime / 10000) * (p.goalInX / 1000);
+                        if (time >= s.time && time < s.time + duration) {
+                            activeSpeedBuff += getActiveSpeedModifier(skillId);
+                        }
+                    }
+                });
+
+                let activeSpeedDebuff = 0;
+                Object.values(p.skillActivations ?? {}).flat().forEach((s: any) => {
+                    const targetMask = s.param?.[4] ?? 0;
+                    if ((targetMask & (1 << idx)) === 0) return;
+                    if ((p.skillActivations?.[idx] ?? []).some((self: any) => self === s)) return;
+                    const skillId = s.param[1];
+                    const debuff = getActiveSpeedDebuff(skillId);
+                    if (debuff <= 0) return;
+                    const dur = getSkillDurationSecs(skillId, p.goalInX);
+                    if (time >= s.time && time < s.time + dur) activeSpeedDebuff += debuff;
+                });
+
+                let isSpotStruggle = false, isDueling = false, isRushed = false, rushedType = 0;
+                let isPaceUp = false, isPaceDown = false, isSpeedUp = false, isOvertake = false;
+                const tempMode = hf.temptationMode ?? 0;
+                if (tempMode > 0) { isRushed = true; if (tempMode === TEMPTATION_MODE_RUSH_BOOST) rushedType = 2; }
+                (p.combinedOtherEvents[idx] ?? []).forEach(evt => {
+                    if (time >= evt.time && time < evt.time + evt.duration) {
+                        const evtName = evt.name ?? "";
+                        if (evtName.includes("Spot Struggle") || evtName.includes("Competes (Pos)")) isSpotStruggle = true;
+                        if (evtName.includes("Dueling") || evtName.includes("Competes (Speed)")) isDueling = true;
+                        if (evtName.includes("Rushed")) { isRushed = true; if (evtName.includes("Boost")) rushedType = 2; }
+                        if (evtName === "Pace Up") isPaceUp = true;
+                        if (evtName === "Pace Down") isPaceDown = true;
+                        if (evtName === "Speed Up") isSpeedUp = true;
+                        if (evtName === "Overtake") isOvertake = true;
+                    }
+                });
+
+                const res = calculateTargetSpeed({
+                    courseDistance: p.goalInX,
+                    courseId: p.selectedTrackId ? +p.selectedTrackId : undefined,
+                    currentDistance,
+                    speedStat: trainedChara.speed,
+                    wisdomStat: trainedChara.wiz,
+                    powerStat: trainedChara.pow,
+                    gutsStat: trainedChara.guts,
+                    staminaStat: trainedChara.stamina,
+                    strategy,
+                    distanceProficiency: trainedChara.properDistances[getDistanceCategory(p.goalInX)] ?? 1,
+                    mood: info.motivation ?? 3,
+                    isOonige,
+                    inLastSpurt,
+                    slope: currentSlope,
+                    greenSkillBonuses: greenStats,
+                    activeSpeedBuff,
+                    activeSpeedDebuff,
+                    isSpotStruggle,
+                    isDueling,
+                    isRushed,
+                    rushedType,
+                    isPaceUp,
+                    isPaceDown,
+                    isSpeedUp,
+                    isOvertake,
+                });
+                targetSpeedMin = res.min;
+                targetSpeedMax = res.max;
+            }
+
             hoverEntries.push({
                 idx, cx, cy,
                 speed: hf.speed ?? 0,
@@ -253,93 +351,118 @@ export function useCanvasOverlay(
                 distance: hf.distance ?? 0,
                 lanePosition: hf.lanePosition ?? 0,
                 startDelay: p.startDelayByIdx[idx] ?? 0,
+                targetSpeedMin,
+                targetSpeedMax,
             });
-
-            if (iconUrl) {
-                ctx.beginPath();
-                ctx.arc(cx + BG_OFFSET_X_PX, cy + BG_OFFSET_Y_PX, BG_SIZE / 2, 0, 2 * Math.PI);
-                ctx.fillStyle = teamColor;
-                ctx.fill();
-
-                const img = getImg(iconUrl, redrawRef.current);
-                if (img.complete && img.naturalWidth > 0) {
-                    ctx.drawImage(img, cx - ICON_SIZE / 2, cy - ICON_SIZE / 2, ICON_SIZE, ICON_SIZE);
-                }
-            } else {
-                ctx.beginPath();
-                ctx.arc(cx, cy, DOT_SIZE / 2, 0, 2 * Math.PI);
-                ctx.fillStyle = teamColor;
-                ctx.fill();
-                ctx.strokeStyle = "#000";
-                ctx.lineWidth = 1;
-                ctx.stroke();
-            }
-
-            const isBlocked = p.toggles.blocked && hf.blockFrontHorseIndex != null && hf.blockFrontHorseIndex !== -1;
-            if (isBlocked) {
-                const blockedUrl = getBlockedIconUrl();
-                if (blockedUrl) {
-                    const img = getImg(blockedUrl, redrawRef.current);
-                    if (img.complete && img.naturalWidth > 0) {
-                        const bx = cx + (iconUrl ? ICON_SIZE : DOT_SIZE) / 2 - BLOCKED_ICON_SIZE;
-                        const by = cy + (iconUrl ? ICON_SIZE : DOT_SIZE) / 2 - BLOCKED_ICON_SIZE;
-                        ctx.drawImage(img, bx, by, BLOCKED_ICON_SIZE, BLOCKED_ICON_SIZE);
-                    }
-                }
-            }
-
-            const baseSize = iconUrl ? ICON_SIZE : DOT_SIZE;
-            const speedRectX = cx - baseSize / 2 + OVERLAY_INSET;
-            const speedRectY = cy + baseSize / 2 - SPEED_BOX_HEIGHT - OVERLAY_INSET;
-            const accelRectX = speedRectX;
-            const accelRectY = speedRectY - SPEED_BOX_HEIGHT - ACCEL_BOX_GAP_Y;
-
-            if (p.toggles.speed) {
-                drawOverlayBox(ctx, speedRectX, speedRectY, ((hf.speed ?? 0) / 100).toFixed(2));
-            }
-            if (p.toggles.accel) {
-                drawOverlayBox(ctx, accelRectX, accelRectY, formatSigned(accByIdx[idx] ?? 0));
-            }
-
-            if (p.toggles.hp) {
-                const maxHp = p.maxHpByIdx[idx] ?? 1;
-                const hp = hf.hp ?? 0;
-                const rate = consumptionRateByIdx[idx] ?? 0;
-                const hpPct = Math.max(0, Math.min(1, hp / maxHp));
-                const hpBarX = cx - HP_BAR_WIDTH / 2;
-                const hpBarY = cy + baseSize / 2 + HP_BAR_GAP_Y;
-
-                ctx.fillStyle = HP_BAR_BG_COLOR;
-                ctx.fillRect(hpBarX, hpBarY, HP_BAR_WIDTH, HP_BAR_HEIGHT);
-                ctx.fillStyle = HP_BAR_FILL_COLOR;
-                ctx.fillRect(hpBarX, hpBarY, HP_BAR_WIDTH * hpPct, HP_BAR_HEIGHT);
-
-                if ((hf.distance ?? 0) > (5 / 6) * p.goalInX) {
-                    const timeToEmpty = rate > 0 ? hp / rate : Number.POSITIVE_INFINITY;
-                    const estText = Number.isFinite(timeToEmpty) ? `${timeToEmpty.toFixed(1)}s` : "∞";
-
-                    ctx.font = "bold 9px sans-serif";
-                    ctx.textBaseline = "bottom";
-                    ctx.strokeStyle = "#000";
-                    ctx.lineWidth = 2;
-
-                    ctx.textAlign = "left";
-                    ctx.strokeText(`${Math.round(hp)}`, hpBarX + 1, hpBarY - 2);
-                    ctx.fillStyle = "#fff";
-                    ctx.fillText(`${Math.round(hp)}`, hpBarX + 1, hpBarY - 2);
-
-                    ctx.textAlign = "right";
-                    ctx.strokeText(estText, hpBarX + HP_BAR_WIDTH - 1, hpBarY - 2);
-                    ctx.fillStyle = "#fff";
-                    ctx.fillText(estText, hpBarX + HP_BAR_WIDTH - 1, hpBarY - 2);
-                }
-            }
         });
         horseHoverDataRef.current = hoverEntries;
 
+        // Two-pass draw: dim characters (vis=1) rendered first (below), then visible (vis=0)
+        for (const targetVis of [1, 0] as const) {
+            for (const { idx, name, vis, cx, cy, hf, teamColor, iconUrl } of charDataList) {
+                if (vis !== targetVis) continue;
+
+                if (vis === 1) ctx.globalAlpha = 0.3;
+
+                if (iconUrl) {
+                    ctx.beginPath();
+                    ctx.arc(cx + BG_OFFSET_X_PX, cy + BG_OFFSET_Y_PX, BG_SIZE / 2, 0, 2 * Math.PI);
+                    ctx.fillStyle = teamColor;
+                    ctx.fill();
+
+                    const img = getImg(iconUrl, redrawRef.current);
+                    if (img.complete && img.naturalWidth > 0) {
+                        ctx.drawImage(img, cx - ICON_SIZE / 2, cy - ICON_SIZE / 2, ICON_SIZE, ICON_SIZE);
+                    }
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, DOT_SIZE / 2, 0, 2 * Math.PI);
+                    ctx.fillStyle = teamColor;
+                    ctx.fill();
+                    ctx.strokeStyle = "#000";
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+
+                const isBlocked = p.toggles.blocked && hf.blockFrontHorseIndex != null && hf.blockFrontHorseIndex !== -1;
+                if (isBlocked) {
+                    const blockedUrl = getBlockedIconUrl();
+                    if (blockedUrl) {
+                        const img = getImg(blockedUrl, redrawRef.current);
+                        if (img.complete && img.naturalWidth > 0) {
+                            const bx = cx + (iconUrl ? ICON_SIZE : DOT_SIZE) / 2 - BLOCKED_ICON_SIZE;
+                            const by = cy + (iconUrl ? ICON_SIZE : DOT_SIZE) / 2 - BLOCKED_ICON_SIZE;
+                            ctx.drawImage(img, bx, by, BLOCKED_ICON_SIZE, BLOCKED_ICON_SIZE);
+                        }
+                    }
+                }
+
+                const baseSize = iconUrl ? ICON_SIZE : DOT_SIZE;
+                const speedRectX = cx - baseSize / 2 + OVERLAY_INSET;
+                const speedRectY = cy + baseSize / 2 - SPEED_BOX_HEIGHT - OVERLAY_INSET;
+                const accelRectX = speedRectX;
+                const accelRectY = speedRectY - SPEED_BOX_HEIGHT - ACCEL_BOX_GAP_Y;
+
+                if (p.toggles.speed) {
+                    drawOverlayBox(ctx, speedRectX, speedRectY, ((hf.speed ?? 0) / 100).toFixed(2));
+                }
+                if (p.toggles.accel) {
+                    drawOverlayBox(ctx, accelRectX, accelRectY, formatSigned(accByIdx[idx] ?? 0));
+                }
+
+                if (p.toggles.hp) {
+                    const maxHp = p.maxHpByIdx[idx] ?? 1;
+                    const hp = hf.hp ?? 0;
+                    const rate = consumptionRateByIdx[idx] ?? 0;
+                    const hpPct = Math.max(0, Math.min(1, hp / maxHp));
+                    const hpBarX = cx - HP_BAR_WIDTH / 2;
+                    const hpBarY = cy + baseSize / 2 + HP_BAR_GAP_Y;
+
+                    ctx.fillStyle = HP_BAR_BG_COLOR;
+                    ctx.fillRect(hpBarX, hpBarY, HP_BAR_WIDTH, HP_BAR_HEIGHT);
+                    ctx.fillStyle = HP_BAR_FILL_COLOR;
+                    ctx.fillRect(hpBarX, hpBarY, HP_BAR_WIDTH * hpPct, HP_BAR_HEIGHT);
+
+                    if ((hf.distance ?? 0) > (5 / 6) * p.goalInX) {
+                        const timeToEmpty = rate > 0 ? hp / rate : Number.POSITIVE_INFINITY;
+                        const estText = Number.isFinite(timeToEmpty) ? `${timeToEmpty.toFixed(1)}s` : "∞";
+
+                        ctx.font = "bold 9px sans-serif";
+                        ctx.textBaseline = "bottom";
+                        ctx.strokeStyle = "#000";
+                        ctx.lineWidth = 2;
+
+                        ctx.textAlign = "left";
+                        ctx.strokeText(`${Math.round(hp)}`, hpBarX + 1, hpBarY - 2);
+                        ctx.fillStyle = "#fff";
+                        ctx.fillText(`${Math.round(hp)}`, hpBarX + 1, hpBarY - 2);
+
+                        ctx.textAlign = "right";
+                        ctx.strokeText(estText, hpBarX + HP_BAR_WIDTH - 1, hpBarY - 2);
+                        ctx.fillStyle = "#fff";
+                        ctx.fillText(estText, hpBarX + HP_BAR_WIDTH - 1, hpBarY - 2);
+                    }
+                }
+
+                if (p.hoveredLegendName === name) {
+                    ctx.globalAlpha = 1.0;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, baseSize / 2 + 4, 0, 2 * Math.PI);
+                    ctx.strokeStyle = "#fff";
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                }
+
+                if (vis === 1) ctx.globalAlpha = 1.0;
+            }
+        }
+
         if (p.toggles.skills) {
+          for (const targetVis of [1, 0] as const) {
             Object.entries(p.displayNames).forEach(([iStr, name]) => {
-                if (p.legendSelection && p.legendSelection[name] === false) return;
+                const vis = (p.characterVisibility?.[name] ?? 0) as 0 | 1 | 2;
+                if (vis === 2) return; // hidden
+                if (vis !== targetVis) return;
                 const idx = +iStr;
                 const hf = interpolatedFrame.horseFrame[idx];
                 if (!hf) return;
@@ -395,6 +518,8 @@ export function useCanvasOverlay(
 
                 if (labels.length === 0) return;
 
+                if (vis === 1) ctx.globalAlpha = 0.3;
+
                 const boxH = 20;
                 ctx.font = "12px sans-serif";
                 let labelY = cy - STACK_BASE_PX - boxH / 2;
@@ -419,7 +544,10 @@ export function useCanvasOverlay(
 
                     labelY -= STACK_GAP_PX;
                 }
+
+                if (vis === 1) ctx.globalAlpha = 1.0;
             });
+          }
         }
 
         ctx.restore();

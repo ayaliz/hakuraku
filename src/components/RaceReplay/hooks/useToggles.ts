@@ -1,6 +1,6 @@
 import React, { useReducer } from "react";
 
-type Toggles = { speed: boolean; accel: boolean; skills: boolean; slopes: boolean; blocked: boolean; course: boolean; positionKeep: boolean; hp: boolean; heuristics: boolean; skillDuration: boolean };
+export type Toggles = { speed: boolean; accel: boolean; skills: boolean; slopes: boolean; blocked: boolean; course: boolean; positionKeep: boolean; hp: boolean; heuristics: boolean; skillDuration: boolean };
 
 export function useToggles(initial?: Partial<Toggles>) {
     const [t, set] = useReducer(

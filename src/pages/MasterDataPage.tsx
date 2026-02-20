@@ -608,7 +608,7 @@ export default function MasterDataPage() {
     const defaultTab = new URLSearchParams(location.search).has('diff') ? 'history' : 'browser';
     return (
         <Container className="mt-4">
-            <Tabs defaultActiveKey={defaultTab} id="masterdata-tabs" transition={false}>
+            <Tabs defaultActiveKey={defaultTab} id="masterdata-tabs" className="masterdata-tabs" transition={false}>
                 <Tab eventKey="browser" title="Table Browser">
                     <SqlBrowserTab />
                 </Tab>

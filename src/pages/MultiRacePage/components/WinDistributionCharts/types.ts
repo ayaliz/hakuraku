@@ -10,6 +10,8 @@ export interface PieSlice {
     cardId?: number;
     tooltipLines?: string[];
     fullLabel?: string;
+    secondaryValue?: number;
+    secondaryPercentage?: number;
 }
 
 export interface StrategyPieSlice extends PieSlice {

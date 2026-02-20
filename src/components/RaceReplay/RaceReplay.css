@@ -102,3 +102,47 @@
     font-weight: 700;
     margin-bottom: 2px;
 }
+
+/* Character visibility list above the replay */
+.char-vis-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px 0 6px;
+}
+
+.char-vis-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px 2px 5px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    font-size: 12px;
+    color: #ddd;
+    user-select: none;
+    white-space: nowrap;
+    transition: background 0.1s;
+}
+
+.char-vis-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.char-vis-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.char-vis-btn.char-vis-dim {
+    opacity: 0.3;
+}
+
+.char-vis-btn.char-vis-hidden {
+    opacity: 0.25;
+    text-decoration: line-through;
+}

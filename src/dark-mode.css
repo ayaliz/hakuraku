@@ -89,6 +89,26 @@ body {
   color: var(--haku-text-primary);
 }
 
+.masterdata-tabs .nav-link {
+  color: var(--haku-text-secondary);
+  background: transparent;
+  border-color: transparent;
+  border-radius: 8px 8px 0 0;
+  margin-right: 4px;
+}
+
+.masterdata-tabs .nav-link:hover,
+.masterdata-tabs .nav-link:focus {
+  color: var(--haku-text-primary);
+  border-color: rgba(101, 210, 131, 0.4) rgba(101, 210, 131, 0.4) transparent;
+}
+
+.masterdata-tabs .nav-link.active {
+  background: transparent;
+  border-color: #65D283 #65D283 transparent;
+  color: #65D283;
+}
+
 .dropdown-menu {
   --bs-dropdown-bg: var(--haku-bg-2);
   --bs-dropdown-border-color: var(--haku-border);

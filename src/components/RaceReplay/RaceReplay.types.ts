@@ -8,6 +8,7 @@ export type RaceReplayProps = {
     otherEvents: Record<number, { time: number; duration: number; name: string }[]>;
     trainerColors?: Record<number, string>;
     detectedCourseId?: number;
+    raceType?: string;
     onTrackChange?: (courseId: number | undefined) => void;
 };
 

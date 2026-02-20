@@ -40,12 +40,15 @@ import { useRaceDerivedData } from "./hooks/useRaceDerivedData";
 import { useRaceExport } from "./hooks/useRaceExport";
 import LegendItem from "./components/LegendItem";
 import ClipMaker from "./components/ClipMaker";
+import HorseTooltip from "./components/HorseTooltip";
+import { toggleDefs } from "./components/ToggleDefs";
 import {
     createOptions,
     buildLegendShadowSeries,
     buildCourseLabelItems,
     buildMarkLines,
     noTooltipScatter,
+    teamColorFor,
     ECOption,
 } from "./utils/chartBuilders";
 import GameDataLoader from "../../data/GameDataLoader";
@@ -70,6 +73,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     otherEvents,
     trainerColors,
     detectedCourseId,
+    raceType,
     onTrackChange,
 }) => {
     const frames = useMemo(() => raceData.frame ?? [], [raceData]);
@@ -124,13 +128,18 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         otherEvents,
         goalInX,
         selectedTrackId,
-        toggles
+        toggles,
+        raceType,
     );
 
     const legendNames = useMemo(() => Object.values(displayNames), [displayNames]);
-    const [legendSelection, setLegendSelection] = useState<Record<string, boolean>>({});
-    useEffect(() => { setLegendSelection(prev => { const next: Record<string, boolean> = {}; legendNames.forEach(n => { next[n] = prev[n] ?? true; }); return next; }); }, [legendNames]);
-    const onEvents = useMemo(() => ({ legendselectchanged: (e: any) => { if (e && e.selected) setLegendSelection(e.selected); } }), []);
+    type VisibilityState = 0 | 1 | 2; // 0=visible, 1=dim, 2=hidden
+    const [characterVisibility, setCharacterVisibility] = useState<Record<string, VisibilityState>>({});
+    useEffect(() => { setCharacterVisibility(prev => { const next: Record<string, VisibilityState> = {}; legendNames.forEach(n => { next[n] = prev[n] ?? 0; }); return next; }); }, [legendNames]);
+    const cycleVisibility = useCallback((name: string) => {
+        setCharacterVisibility(prev => ({ ...prev, [name]: ((prev[name] ?? 0) + 1) % 3 as VisibilityState }));
+    }, []);
+    const [hoveredLegendName, setHoveredLegendName] = useState<string | null>(null);
 
     const startDelayByIdx = useMemo(() => {
         const map: Record<number, number> = {};
@@ -143,14 +152,15 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     const { isExporting, handleExport } = useRaceExport(echartsRef, canvasRef, renderTime, isPlaying, playPause, setRenderTime);
     const legendShadowSeries = useMemo(() => buildLegendShadowSeries(displayNames, horseInfoByIdx, trainerColors), [displayNames, horseInfoByIdx, trainerColors]);
 
-    const yMaxWithHeadroom = maxLanePosition + 3;
+    const yMaxWithHeadroom = Math.max(6000, maxLanePosition);
 
     const { tick, interpolatedFrameRef, xAxisRef, horseHoverDataRef } = useCanvasOverlay(echartsRef, canvasRef, {
         frames,
         displayNames,
         horseInfoByIdx,
         trainerColors,
-        legendSelection,
+        characterVisibility,
+        hoveredLegendName,
         toggles,
         maxHpByIdx,
         goalInX,
@@ -175,7 +185,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     useEffect(() => {
         if (!isPlaying) tick(renderTime);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [toggles, legendSelection]);
+    }, [toggles, characterVisibility, hoveredLegendName]);
 
     const { straights, corners, straightsFinal, cornersFinal, segMarkers, slopeTriangles } = useCourseLayers(selectedTrackId, goalInX, yMaxWithHeadroom);
 
@@ -273,195 +283,10 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         xMax: xAxisRef.current.max,
         yMax: yMaxWithHeadroom,
         series: seriesList as ECOption["series"],
-        legendNames,
-        legendSelection,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }), [cameraWindow, yMaxWithHeadroom, seriesList, legendNames, legendSelection]);
+    }), [cameraWindow, yMaxWithHeadroom, seriesList]);
 
     const clampedRenderTime = clamp(renderTime, startTime, endTime);
-
-    const toggleDefs = [
-        {
-            id: "skills" as const,
-            label: (
-                <span>
-                    Skill labels
-                    <OverlayTrigger
-                        placement="top"
-                        overlay={
-                            <Tooltip id="skills-info-tooltip">
-                                Toggles popups above Umas' heads to display skill procs and assorted race events like dueling. Skills with no duration (e.g. Swinging Maestro) are shown for 2 seconds.
-                            </Tooltip>
-                        }
-                    >
-                        <span className="toggle-info-icon">ⓘ</span>
-                    </OverlayTrigger>
-                </span>
-            )
-        },
-        {
-            id: "skillDuration" as const,
-            label: (
-                <span>
-                    Skill timers
-                    <OverlayTrigger
-                        placement="top"
-                        overlay={
-                            <Tooltip id="skill-duration-info-tooltip">
-                                Shows remaining duration in seconds on skill labels (e.g. "Groundwork 3.0s"). Requires Skill labels to be enabled.
-                            </Tooltip>
-                        }
-                    >
-                        <span className="toggle-info-icon">ⓘ</span>
-                    </OverlayTrigger>
-                </span>
-            )
-        },
-        {
-            id: "hp" as const,
-            label: (
-                <span>
-                    HP Bar
-                    <OverlayTrigger
-                        placement="top"
-                        overlay={
-                            <Tooltip id="hp-info-tooltip">
-                                Toggles an HP bar to visualize remaining HP; displays numeric values and estimates for time to live during late-race.
-                            </Tooltip>
-                        }
-                    >
-                        <span className="toggle-info-icon">ⓘ</span>
-                    </OverlayTrigger>
-                </span>
-            )
-        },
-        {
-            id: "blocked" as const,
-            label: (
-                <span>
-                    Block indicator
-                    <OverlayTrigger
-                        placement="top"
-                        overlay={
-                            <Tooltip id="blocked-info-tooltip">
-                                Directly received from the server, but due to the low frequency of race frames during most of the race, short blocks can be missed.
-                            </Tooltip>
-                        }
-                    >
-                        <span className="toggle-info-icon">ⓘ</span>
-                    </OverlayTrigger>
-                </span>
-            )
-        },
-        {
-            id: "slopes" as const,
-            label: (
-                <span>
-                    Slopes
-                    <OverlayTrigger
-                        placement="top"
-                        overlay={
-                            <Tooltip id="slopes-info-tooltip">
-                                Visualizes uphills and downhills on the replay; the visuals are not to scale - refer to the value displayed at the start of each slope for its angle.
-                            </Tooltip>
-                        }
-                    >
-                        <span className="toggle-info-icon">ⓘ</span>
-                    </OverlayTrigger>
-                </span>
-            )
-        },
-        {
-            id: "speed" as const,
-            label: (
-                <span>
-                    Speed [m/s]
-                    <OverlayTrigger
-                        placement="top"
-                        overlay={
-                            <Tooltip id="speed-info-tooltip">
-                                Directly received from the server for each race frame; inter-frame values are interpolated.
-                            </Tooltip>
-                        }
-                    >
-                        <span className="toggle-info-icon">ⓘ</span>
-                    </OverlayTrigger>
-                </span>
-            )
-        },
-        {
-            id: "accel" as const,
-            label: (
-                <span>
-                    Acceleration [m/s^2]
-                    <OverlayTrigger
-                        placement="top"
-                        overlay={
-                            <Tooltip id="accel-info-tooltip">
-                                Not directly received from the server, derived via the speed change between the current and next race frame.
-                            </Tooltip>
-                        }
-                    >
-                        <span className="toggle-info-icon">ⓘ</span>
-                    </OverlayTrigger>
-                </span>
-            )
-        },
-        {
-            id: "heuristics" as const,
-            label: (
-                <span>
-                    Mode heuristics
-                    <OverlayTrigger
-                        placement="top"
-                        overlay={
-                            <Tooltip id="heuristics-info-tooltip">
-                                Attempts to display when Umas are in Pace Up, Pace Down, Overtake, or Speed Up mode during Position Keep.
-                            </Tooltip>
-                        }
-                    >
-                        <span className="toggle-info-icon">ⓘ</span>
-                    </OverlayTrigger>
-                </span>
-            )
-        },
-        {
-            id: "course" as const,
-            label: (
-                <span>
-                    Course events
-                    <OverlayTrigger
-                        placement="top"
-                        overlay={
-                            <Tooltip id="course-events-info-tooltip">
-                                Toggles display for assorted information like corners, straights, slopes, and race sections.
-                            </Tooltip>
-                        }
-                    >
-                        <span className="toggle-info-icon">ⓘ</span>
-                    </OverlayTrigger>
-                </span>
-            )
-        },
-        {
-            id: "positionKeep" as const,
-            label: (
-                <span>
-                    Position Keep
-                    <OverlayTrigger
-                        placement="top"
-                        overlay={
-                            <Tooltip id="position-keep-info-tooltip">
-                                Displays position keep zones for each style: when you're ahead of the displayed area you are hit with Pace Down, if you're behind it you roll Wit checks for Pace Up.
-                            </Tooltip>
-                        }
-                    >
-                        <span className="toggle-info-icon">ⓘ</span>
-                    </OverlayTrigger>
-                </span>
-            )
-        },
-    ];
 
     const [hoveredHorse, setHoveredHorse] = useState<{ idx: number; x: number; y: number; containerW: number } | null>(null);
 
@@ -675,6 +500,24 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                 </div>
             )}
 
+            {legendNames.length > 0 && (
+                <div className="char-vis-list">
+                    {Object.entries(displayNames).map(([iStr, name]) => {
+                        const idx = +iStr;
+                        const state = characterVisibility[name] ?? 0;
+                        const color = teamColorFor(idx, horseInfoByIdx[idx] ?? {}, trainerColors);
+                        const stateClass = state === 1 ? " char-vis-dim" : state === 2 ? " char-vis-hidden" : "";
+                        const stateTitle = state === 0 ? "Click to dim" : state === 1 ? "Click to hide" : "Click to show";
+                        return (
+                            <button key={name} className={`char-vis-btn${stateClass}`} onClick={() => cycleVisibility(name)} title={stateTitle} onMouseEnter={() => setHoveredLegendName(name)} onMouseLeave={() => setHoveredLegendName(null)}>
+                                <span className="char-vis-dot" style={{ background: color }} />
+                                {name}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+
             <div
                 style={{ position: "relative", height: "500px" }}
                 onMouseMove={(e) => {
@@ -701,37 +544,18 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                     style={{ height: "500px", width: "100%" }}
                     notMerge={true}
                     theme="dark"
-                    onEvents={onEvents}
                 />
                 <canvas
                     ref={canvasRef}
                     style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none" }}
                 />
-                {hoveredHorse !== null && (() => {
-                    const entry = horseHoverDataRef.current.find(e => e.idx === hoveredHorse.idx);
-                    if (!entry) return null;
-                    const name = displayNames[hoveredHorse.idx] ?? "";
-                    const speed = (entry.speed / 100).toFixed(2);
-                    const accelV = entry.accel / 100;
-                    const accelStr = (accelV > 0 ? "+" : "") + accelV.toFixed(2);
-                    const maxHp = entry.maxHp;
-                    const hp = entry.hp;
-                    const hpStr = maxHp > 0 ? `HP: ${Math.round(hp)}/${Math.round(maxHp)} (${((hp / maxHp) * 100).toFixed(1)}%)` : null;
-                    const tipY = Math.max(hoveredHorse.y - 8, 4);
-                    const flipLeft = hoveredHorse.x > hoveredHorse.containerW / 2;
-                    const tipStyle = flipLeft
-                        ? { right: hoveredHorse.containerW - hoveredHorse.x + 12, top: tipY }
-                        : { left: hoveredHorse.x + 12, top: tipY };
-                    return (
-                        <div className="replay-horse-tooltip" style={tipStyle}>
-                            {name && <div className="replay-horse-tooltip-name">{name}</div>}
-                            <div>Dist: {entry.distance.toFixed(1)} m &nbsp; Lane: {Math.round(entry.lanePosition)}</div>
-                            <div>Speed: {speed} m/s &nbsp; Accel: {accelStr} m/s²</div>
-                            {hpStr && <div>{hpStr}</div>}
-                            {entry.startDelay > 0 && <div>Start delay: {entry.startDelay.toFixed(5)}</div>}
-                        </div>
-                    );
-                })()}
+                {hoveredHorse !== null && (
+                    <HorseTooltip
+                        hoveredHorse={hoveredHorse}
+                        entry={horseHoverDataRef.current.find(e => e.idx === hoveredHorse.idx)}
+                        name={displayNames[hoveredHorse.idx] ?? ""}
+                    />
+                )}
             </div>
 
             <div className="d-flex align-items-center justify-content-between mt-2">

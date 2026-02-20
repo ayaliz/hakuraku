@@ -102,13 +102,12 @@ export const noTooltipScatter = (id: string, markArea?: any) => ({ id, type: "sc
 export function createOptions(args: {
     xMin: number; xMax: number; yMax: number;
     series: ECOption["series"];
-    legendNames: string[]; legendSelection: Record<string, boolean>;
 }): ECOption {
-    const { xMin, xMax, yMax, series, legendNames, legendSelection } = args;
+    const { xMin, xMax, yMax, series } = args;
     return {
         xAxis: { type: "value", min: xMin, max: xMax, name: "Distance", axisLabel: { show: false }, axisTick: { show: false }, splitLine: { show: false } },
         yAxis: { type: "value", min: 0, max: yMax, name: "Lane Position", splitLine: { show: false } },
-        legend: { show: true, type: "scroll", top: 8, left: 8, right: 8, data: legendNames, selected: legendSelection },
+        legend: { show: false },
         tooltip: {
             trigger: "item",
             confine: true,
@@ -138,7 +137,7 @@ export function createOptions(args: {
                 return `${has ? name + "<br/>" : ""}Distance: ${value[0].toFixed(2)}m<br/>Lane: ${Math.round(value[1])}<br/>Speed: ${speed.toFixed(2)} m/s<br/>Accel: ${accelStr} m/s²${hpStr}${targetStr}<br/>Start delay: ${(value[13] ?? 0).toFixed(5)}`;
             }
         },
-        grid: { top: 80, right: 16, bottom: 40, left: 50, containLabel: false },
+        grid: { top: 40, right: 16, bottom: 40, left: 50, containLabel: false },
         graphic: {
             elements: [
                 {

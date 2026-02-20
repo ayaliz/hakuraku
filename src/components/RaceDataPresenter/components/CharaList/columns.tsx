@@ -1,6 +1,5 @@
 import React from "react";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
-import { MODE_DISPLAY_TIME_SCALE } from "../../../RaceReplay/utils/raceConstants";
 import * as UMDatabaseUtils from "../../../../data/UMDatabaseUtils";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import CopyButton from "../../../CopyButton";

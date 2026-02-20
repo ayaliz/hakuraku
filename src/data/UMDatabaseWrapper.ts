@@ -16,6 +16,8 @@ class _UMDatabaseWrapper {
     charaRelationTypes: Record<number, Set<number>> = {};
     // relation_type -> relation_point
     relationPoints: Record<number, number> = {};
+    // win_saddle_id -> race_instance_id (only single-race saddles)
+    winSaddleToRaceInstance: Record<number, number> = {};
 
     initialize() {
         return fetch(import.meta.env.BASE_URL + 'data/umdb.binarypb.gz', {cache: 'no-cache'})
@@ -54,6 +56,10 @@ class _UMDatabaseWrapper {
                         this.charaRelationTypes[charaId] = new Set();
                     }
                     this.charaRelationTypes[charaId].add(m.relationType!);
+                });
+
+                this.umdb.singleModeWinsSaddle.forEach((s) => {
+                    this.winSaddleToRaceInstance[s.id!] = s.raceInstanceId!;
                 });
             });
     }

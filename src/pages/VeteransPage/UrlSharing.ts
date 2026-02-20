@@ -43,14 +43,15 @@ export async function fetchVeteransFromWorker(key: string): Promise<Veteran[]> {
     return res.json() as Promise<Veteran[]>;
 }
 
-export async function fetchLoanedChara(trainerId: string): Promise<unknown> {
-    const res = await fetch(`${WORKER_URL}/uma-search?trainer_id=${encodeURIComponent(trainerId)}`, {
+export async function fetchLoanedChara(viewerId: string): Promise<Veteran> {
+    const res = await fetch(`${WORKER_URL}/uma-search?viewer_id=${encodeURIComponent(viewerId)}`, {
         headers: {
             'X-Share-Secret': import.meta.env.VITE_SHARE_SECRET ?? '',
         },
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    const data = await res.json();
+    return data.practice_partner_info as Veteran;
 }
 
 export function getKvKeyFromUrl(): string | null {

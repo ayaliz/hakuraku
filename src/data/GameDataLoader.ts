@@ -58,6 +58,16 @@ class GameDataLoaderClass {
         return this.data!["tracks/tracknames"];
     }
 
+    get umaRaces(): Record<string, { turn: number; races: { id: number; name_en: string; icon_id: number }[] }[]> {
+        this.ensureLoaded();
+        return this.data!["tracks/uma_races"];
+    }
+
+    get uraRaces(): { instance: number; half: number; month: number; year: number }[] {
+        this.ensureLoaded();
+        return this.data!["tracks/ura_races"];
+    }
+
 }
 
 const GameDataLoader = new GameDataLoaderClass();

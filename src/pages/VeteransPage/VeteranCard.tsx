@@ -1,19 +1,21 @@
 import React, { useState } from "react";
 import './VeteransPage.css';
 import { Veteran } from "./types";
-import { aggregateFactors, getFactorCategory, calculateRaceBonus, calculateAffinity } from "../../data/VeteransHelper";
+import { aggregateFactors, getFactorCategory, calculateRaceBonus, calculateAffinity, calculatePairAffinity } from "../../data/VeteransHelper";
 import { getCardName, formatCardName, getCharaImageUrl, getFactorColor } from "./VeteransUIHelper";
 import { getRankIcon } from "../../components/RaceDataPresenter/components/CharaList/rankUtils";
-import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 
 interface VeteranCardProps {
     veteran: Veteran;
     config: any;
     affinityCharaId?: number | null;
+    legacyParent1?: Veteran | null;
+    legacyParent2?: Veteran | null;
+    onSelectForSlot?: (veteran: Veteran, slot: 'p1' | 'p2') => void;
 }
 
 
-const VeteranCard: React.FC<VeteranCardProps> = ({ veteran, config, affinityCharaId }) => {
+const VeteranCard: React.FC<VeteranCardProps> = ({ veteran, config, affinityCharaId, legacyParent1, legacyParent2, onSelectForSlot }) => {
     const [showRaces, setShowRaces] = useState(false);
 
     const parent1 = veteran.succession_chara_array.find(p => p.position_id === 10);
@@ -28,6 +30,10 @@ const VeteranCard: React.FC<VeteranCardProps> = ({ veteran, config, affinityChar
     return (
         <div className="vet-card">
             <div className="vet-portrait-col">
+                <div className="vet-portrait-rank">
+                    <img src={rankInfo.icon} alt={rankInfo.name} className="vet-rank-icon" />
+                    {veteran.rank_score.toLocaleString()}
+                </div>
                 <img
                     className="vet-portrait-img"
                     src={getCharaImageUrl(veteran.card_id)}
@@ -58,15 +64,40 @@ const VeteranCard: React.FC<VeteranCardProps> = ({ veteran, config, affinityChar
                         {formatCardName(getCardName(veteran.card_id))}
                     </span>
                     <div className="vet-meta-badges">
-                        <span className="vet-badge rating">
-                            <img src={rankInfo.icon} alt={rankInfo.name} className="vet-rank-icon" />
-                            {veteran.rank_score.toLocaleString()}
-                        </span>
-                        {affinityCharaId != null && (
-                            <span className="vet-badge affinity">
-                                Affinity with {UMDatabaseWrapper.charas[affinityCharaId]?.name ?? `Chara ${affinityCharaId}`}: +{calculateAffinity(veteran, affinityCharaId)}
-                            </span>
-                        )}
+                        {onSelectForSlot && (() => {
+                            const hasMain = affinityCharaId != null;
+                            const baseAff = hasMain ? calculateAffinity(veteran, affinityCharaId!) : 0;
+                            const rawAff1 = baseAff + (hasMain && legacyParent2 ? calculatePairAffinity(veteran, legacyParent2) : 0);
+                            const rawAff2 = baseAff + (hasMain && legacyParent1 ? calculatePairAffinity(legacyParent1, veteran) : 0);
+                            const pairAff12 = hasMain && legacyParent1 && legacyParent2 ? calculatePairAffinity(legacyParent1, legacyParent2) : 0;
+                            const currentP1 = hasMain && legacyParent1
+                                ? calculateAffinity(legacyParent1, affinityCharaId!) + pairAff12
+                                : null;
+                            const currentP2 = hasMain && legacyParent2
+                                ? calculateAffinity(legacyParent2, affinityCharaId!) + pairAff12
+                                : null;
+                            const delta1 = currentP1 !== null ? rawAff1 - currentP1 : rawAff1;
+                            const delta2 = currentP2 !== null ? rawAff2 - currentP2 : rawAff2;
+                            const fmt = (n: number) => n >= 0 ? `+${n}` : `${n}`;
+                            return (
+                                <>
+                                    <button
+                                        className="vet-slot-select-btn"
+                                        disabled={!hasMain}
+                                        onClick={e => { e.stopPropagation(); onSelectForSlot(veteran, 'p1'); }}
+                                    >
+                                        Set as Legacy 1{hasMain ? ` (${fmt(delta1)} Affinity)` : ''}
+                                    </button>
+                                    <button
+                                        className="vet-slot-select-btn"
+                                        disabled={!hasMain}
+                                        onClick={e => { e.stopPropagation(); onSelectForSlot(veteran, 'p2'); }}
+                                    >
+                                        Set as Legacy 2{hasMain ? ` (${fmt(delta2)} Affinity)` : ''}
+                                    </button>
+                                </>
+                            );
+                        })()}
                     </div>
                 </div>
 

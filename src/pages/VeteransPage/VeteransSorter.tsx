@@ -1,5 +1,6 @@
 import React from 'react';
 import { Form, Button } from 'react-bootstrap';
+import UMDatabaseWrapper from '../../data/UMDatabaseWrapper';
 
 export type SortOption =
     | 'none'
@@ -51,7 +52,9 @@ const VeteransSorter: React.FC<VeteransSorterProps> = ({
                 <option value="legacy_skills">Legacy Skills Stars</option>
                 <option value="date">Created Date</option>
                 <option value="affinity" disabled={!affinityCharaId}>
-                    Affinity{!affinityCharaId ? ' (select a character first)' : ''}
+                    {affinityCharaId
+                        ? `Affinity: ${UMDatabaseWrapper.charas[affinityCharaId]?.name ?? affinityCharaId}`
+                        : 'Affinity (select a character first)'}
                 </option>
             </Form.Control>
             <Button 

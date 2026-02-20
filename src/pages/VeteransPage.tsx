@@ -9,7 +9,8 @@ import VeteranCard from "./VeteransPage/VeteranCard";
 import FilterToolbar from "./VeteransPage/FilterToolbar";
 import ActiveFiltersList from "./VeteransPage/ActiveFiltersList";
 import OptimizerPanel from "./VeteransPage/OptimizerPanel";
-import AffinitySelector from "./VeteransPage/AffinitySelector";
+import AffinityCalculatorPanel from "./VeteransPage/AffinityCalculatorPanel";
+import RacePlannerModal from "./VeteransPage/RacePlannerModal";
 import { applyFiltersAndSort, getAvailableStats } from "./VeteransPage/VeteransLogic";
 import { getKvKeyFromUrl, buildShareBody, uploadVeteransToWorker, fetchVeteransFromWorker, fetchLoanedChara } from "./VeteransPage/UrlSharing";
 
@@ -23,6 +24,7 @@ const FILTER_CONFIG = {
 
 export default function VeteransPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const vetListRef = useRef<HTMLDivElement>(null);
 
     const [veterans, setVeterans] = useState<Veteran[]>([]);
     const [error, setError] = useState('');
@@ -30,25 +32,52 @@ export default function VeteransPage() {
     const [sharing, setSharing] = useState(false);
     const [shareCache, setShareCache] = useState<Record<string, string>>({});
 
-    const [trainerId, setTrainerId] = useState('');
-    const [loanLookupResult, setLoanLookupResult] = useState<string | null>(null);
-    const [loanLookupError, setLoanLookupError] = useState<string | null>(null);
-    const [loanLookupLoading, setLoanLookupLoading] = useState(false);
 
-    const handleLoanLookup = async () => {
-        if (!trainerId.trim()) return;
-        setLoanLookupResult(null);
-        setLoanLookupError(null);
-        setLoanLookupLoading(true);
+    const [affinityParent1, setAffinityParent1] = useState<Veteran | null>(null);
+    const [affinityParent2, setAffinityParent2] = useState<Veteran | null>(null);
+    const [parent2IsBorrowed, setParent2IsBorrowed] = useState(false);
+    const [borrowLoading, setBorrowLoading] = useState(false);
+    const [showPlanner, setShowPlanner] = useState(false);
+    const [activeAffinitySlot, setActiveAffinitySlot] = useState<'p1' | 'p2' | null>(null);
+
+    useEffect(() => {
+        if (activeAffinitySlot && vetListRef.current) {
+            const y = vetListRef.current.getBoundingClientRect().top + window.scrollY - 16;
+            window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+        }
+    }, [activeAffinitySlot]);
+
+    const handleLegacySlotClick = (slot: 'p1' | 'p2') => {
+        setActiveAffinitySlot(prev => prev === slot ? null : slot);
+    };
+
+    const handleSelectForSlot = (veteran: Veteran, slot: 'p1' | 'p2') => {
+        if (slot === 'p1') setAffinityParent1(veteran);
+        else { setAffinityParent2(veteran); setParent2IsBorrowed(false); }
+        setActiveAffinitySlot(null);
+        setActiveSort('affinity');
+    };
+
+    const handleAffinityReset = () => {
+        setAffinityParent1(null);
+        setAffinityParent2(null);
+        setParent2IsBorrowed(false);
+        setActiveAffinitySlot(null);
+        setAffinityCharaId(null);
+    };
+
+    const handleBorrowLookup = async (viewerId: string) => {
+        setBorrowLoading(true);
         try {
-            const data = await fetchLoanedChara(trainerId.trim());
-            setLoanLookupResult(JSON.stringify(data, null, 2));
-        } catch (err: any) {
-            setLoanLookupError(String(err));
+            const vet = await fetchLoanedChara(viewerId);
+            setAffinityParent2(vet);
+            setParent2IsBorrowed(true);
+            setActiveSort('affinity');
         } finally {
-            setLoanLookupLoading(false);
+            setBorrowLoading(false);
         }
     };
+
 
     const [bluesFilters, setBluesFilters] = useState<BluesFilter[]>([]);
     const [aptitudeFilters, setAptitudeFilters] = useState<AptitudeFilter[]>([]);
@@ -179,6 +208,14 @@ export default function VeteransPage() {
             displayVeterans = applyFiltersAndSort(
                 veterans, filters, FILTER_CONFIG, activeSort, sortDirection, nameSearch, affinityCharaId
             );
+
+            const excludedCharaIds = new Set<number>();
+            if (affinityParent1) excludedCharaIds.add(Math.floor(affinityParent1.card_id / 100));
+            if (affinityParent2) excludedCharaIds.add(Math.floor(affinityParent2.card_id / 100));
+            if (excludedCharaIds.size > 0) {
+                displayVeterans = displayVeterans.filter(v => !excludedCharaIds.has(Math.floor(v.card_id / 100)));
+            }
+
         } catch (e: any) {
             console.error("Filter/Sort Logic Crashed", e);
             renderError = "Error processing veteran data. Please clear filters or reload.";
@@ -196,49 +233,7 @@ export default function VeteransPage() {
     return (
         <Container className="vet-page-container">
 
-            <div className="mb-3">
-                <div className="toolbar-row">
-                    <div className="toolbar-filters">
-                        <FilterToolbar
-                            config={FILTER_CONFIG}
-                            visibilityState={visibilityState}
-                            onToggle={toggleSelector}
-                            onAddFilter={handleAddFilter}
-                            getAvailableStats={(catId) => getAvailableStats(veterans, catId)}
-                        />
-                        <InputGroup className="vet-search-input">
-                            <Form.Control
-                                placeholder="Search by name..."
-                                value={nameSearch}
-                                onChange={e => setNameSearch(e.target.value)}
-                            />
-                            {nameSearch && (
-                                <Button variant="outline-secondary" onClick={() => setNameSearch('')}>✕</Button>
-                            )}
-                        </InputGroup>
-                    </div>
-                    <div className="toolbar-row-actions">
-                        <Button variant="secondary" size="sm" onClick={handleExportUrl} disabled={!veterans.length || sharing}>
-                            {sharing ? 'Sharing...' : 'Share'}
-                        </Button>
-                    </div>
-                </div>
-
-                <input ref={fileInputRef} type="file" accept=".json" onChange={handleFileChange} style={{ display: 'none' }} />
-            </div>
-
-            <ActiveFiltersList
-                filters={{
-                    bluesFilters,
-                    aptitudeFilters,
-                    uniquesFilters,
-                    racesFilters,
-                    skillsFilters
-                }}
-                config={FILTER_CONFIG}
-                onRemove={handleRemoveFilter}
-                onClearAll={handleClearAllFilters}
-            />
+            <input ref={fileInputRef} type="file" accept=".json" onChange={handleFileChange} style={{ display: 'none' }} />
 
             {successMessage && (
                 <Alert variant="success" dismissible onClose={() => setSuccessMessage('')}>
@@ -252,31 +247,6 @@ export default function VeteransPage() {
                 </Alert>
             )}
 
-            {false && (
-            <div className="mb-3">
-                <div style={{ fontWeight: 600, marginBottom: 6 }}>Loaned Character Lookup (test)</div>
-                <InputGroup style={{ maxWidth: 400 }}>
-                    <Form.Control
-                        placeholder="Trainer ID..."
-                        value={trainerId}
-                        onChange={e => setTrainerId(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleLoanLookup()}
-                    />
-                    <Button variant="outline-primary" onClick={handleLoanLookup} disabled={loanLookupLoading}>
-                        {loanLookupLoading ? 'Loading...' : 'Lookup'}
-                    </Button>
-                </InputGroup>
-                {loanLookupError && (
-                    <Alert variant="danger" className="mt-2">{loanLookupError}</Alert>
-                )}
-                {loanLookupResult !== null && (
-                    <pre style={{ marginTop: 8, fontSize: 12, maxHeight: 200, overflow: 'auto', background: 'var(--haku-bg-2)', padding: 8, borderRadius: 4 }}>
-                        {(() => { try { return JSON.stringify(JSON.parse(loanLookupResult), null, 2); } catch { return loanLookupResult; } })()}
-                    </pre>
-                )}
-            </div>
-            )}
-
             {!veterans.length && !error && !renderError && (
                 <div className="upload-zone" onClick={() => fileInputRef.current?.click()}>
                     <div className="upload-icon">📂</div>
@@ -286,31 +256,92 @@ export default function VeteransPage() {
             )}
 
             {veterans.length > 0 && !renderError && (
-                <div>
-                    <div className="vet-count-sort-row">
+                <>
+                    <div className="vet-top-layout">
+                        <div className="vet-top-left">
+                            <div className="vet-filter-buttons">
+                                <FilterToolbar
+                                    config={FILTER_CONFIG}
+                                    visibilityState={visibilityState}
+                                    onToggle={toggleSelector}
+                                    onAddFilter={handleAddFilter}
+                                    getAvailableStats={(catId) => getAvailableStats(veterans, catId)}
+                                />
+                            </div>
+                            <InputGroup className="vet-search-input">
+                                <Form.Control
+                                    placeholder="Search by name..."
+                                    value={nameSearch}
+                                    onChange={e => setNameSearch(e.target.value)}
+                                />
+                                {nameSearch && (
+                                    <Button variant="outline-secondary" onClick={() => setNameSearch('')}>✕</Button>
+                                )}
+                            </InputGroup>
+                            <ActiveFiltersList
+                                filters={{ bluesFilters, aptitudeFilters, uniquesFilters, racesFilters, skillsFilters }}
+                                config={FILTER_CONFIG}
+                                onRemove={handleRemoveFilter}
+                                onClearAll={handleClearAllFilters}
+                            />
+                            <div className="vet-sort-share-group">
+                                <Button variant="secondary" size="sm" onClick={handleExportUrl} disabled={sharing}>
+                                    {sharing ? 'Sharing...' : 'Share'}
+                                </Button>
+                                <VeteransSorter
+                                    activeSort={activeSort} sortDirection={sortDirection}
+                                    onSortChange={setActiveSort}
+                                    onDirectionToggle={() => setSortDirection(prev => prev === 'desc' ? 'asc' : 'desc')}
+                                    affinityCharaId={affinityCharaId}
+                                />
+                                <OptimizerPanel veterans={veterans} />
+                            </div>
+                        </div>
+
+                        <div className="vet-top-right">
+                            <AffinityCalculatorPanel
+                                mainCharId={affinityCharaId}
+                                onMainCharChange={id => { setAffinityCharaId(id); if (id && activeSort === 'none') setActiveSort('affinity'); }}
+                                parent1={affinityParent1}
+                                parent2={affinityParent2}
+                                parent2IsBorrowed={parent2IsBorrowed}
+                                activeSlot={activeAffinitySlot}
+                                onLegacySlotClick={handleLegacySlotClick}
+                                onBorrowLookup={handleBorrowLookup}
+                                borrowLoading={borrowLoading}
+                                onReset={handleAffinityReset}
+                                onPlannerOpen={() => setShowPlanner(true)}
+                            />
+                            <RacePlannerModal
+                                show={showPlanner}
+                                onHide={() => setShowPlanner(false)}
+                                mainCharId={affinityCharaId}
+                                parent1={affinityParent1}
+                                parent2={affinityParent2}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="vet-count-row" ref={vetListRef}>
                         <span className="vet-count-label">
                             Showing {displayVeterans.length} of {veterans.length} veterans
                         </span>
-                        <VeteransSorter
-                            activeSort={activeSort} sortDirection={sortDirection}
-                            onSortChange={setActiveSort}
-                            onDirectionToggle={() => setSortDirection(prev => prev === 'desc' ? 'asc' : 'desc')}
-                            affinityCharaId={affinityCharaId}
-                        />
                     </div>
-
-                    <OptimizerPanel veterans={veterans} />
-                    <AffinitySelector
-                        selectedCharaId={affinityCharaId}
-                        onSelect={setAffinityCharaId}
-                    />
 
                     <div className="vet-grid">
                         {displayVeterans.map((veteran, index) => (
-                            <VeteranCard key={`${veteran.card_id}-${index}`} veteran={veteran} config={FILTER_CONFIG} affinityCharaId={affinityCharaId} />
+                            <VeteranCard
+                                key={`${veteran.card_id}-${index}`}
+                                veteran={veteran}
+                                config={FILTER_CONFIG}
+                                affinityCharaId={affinityCharaId}
+                                legacyParent1={affinityParent1}
+                                legacyParent2={affinityParent2}
+                                onSelectForSlot={handleSelectForSlot}
+                            />
                         ))}
                     </div>
-                </div>
+                </>
             )}
 
         </Container>

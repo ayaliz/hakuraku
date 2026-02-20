@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import './VeteransPage/VeteransPage.css';
 import { Alert, Button, Container, Form, InputGroup } from "react-bootstrap";
 import { Veteran, BaseFilter, BluesFilter, AptitudeFilter, UniquesFilter, RacesFilter, SkillsFilter } from "./VeteransPage/types";
@@ -11,6 +12,7 @@ import ActiveFiltersList from "./VeteransPage/ActiveFiltersList";
 import OptimizerPanel from "./VeteransPage/OptimizerPanel";
 import AffinityCalculatorPanel from "./VeteransPage/AffinityCalculatorPanel";
 import RacePlannerModal from "./VeteransPage/RacePlannerModal";
+import SparkProcModal from "./VeteransPage/SparkProcModal";
 import { applyFiltersAndSort, getAvailableStats } from "./VeteransPage/VeteransLogic";
 import { getKvKeyFromUrl, buildShareBody, uploadVeteransToWorker, fetchVeteransFromWorker, fetchLoanedChara } from "./VeteransPage/UrlSharing";
 
@@ -38,6 +40,7 @@ export default function VeteransPage() {
     const [parent2IsBorrowed, setParent2IsBorrowed] = useState(false);
     const [borrowLoading, setBorrowLoading] = useState(false);
     const [showPlanner, setShowPlanner] = useState(false);
+    const [showSparkProc, setShowSparkProc] = useState(false);
     const [activeAffinitySlot, setActiveAffinitySlot] = useState<'p1' | 'p2' | null>(null);
 
     useEffect(() => {
@@ -248,11 +251,16 @@ export default function VeteransPage() {
             )}
 
             {!veterans.length && !error && !renderError && (
-                <div className="upload-zone" onClick={() => fileInputRef.current?.click()}>
-                    <div className="upload-icon">📂</div>
-                    <div className="upload-label">No veterans loaded</div>
-                    <div className="upload-sublabel">Upload a JSON file or share link to get started</div>
-                </div>
+                <>
+                    <div className="upload-zone" onClick={() => fileInputRef.current?.click()}>
+                        <div className="upload-icon">📂</div>
+                        <div className="upload-label">No veterans loaded</div>
+                        <div className="upload-sublabel">Upload a JSON file or share link to get started</div>
+                    </div>
+                    <Alert variant="info" style={{ marginTop: '20px' }}>
+                        This page supports both veteran data extracted via the hachimi plugin on the <Link to="/setup">setup page</Link>, as well as the standalone umaextractor on <a href="https://github.com/xancia/UmaExtractor/releases/latest" target="_blank" rel="noreferrer">https://github.com/xancia/UmaExtractor/releases/latest</a>.
+                    </Alert>
+                </>
             )}
 
             {veterans.length > 0 && !renderError && (
@@ -311,6 +319,7 @@ export default function VeteransPage() {
                                 borrowLoading={borrowLoading}
                                 onReset={handleAffinityReset}
                                 onPlannerOpen={() => setShowPlanner(true)}
+                                onSparkProcOpen={() => setShowSparkProc(true)}
                             />
                             <RacePlannerModal
                                 show={showPlanner}
@@ -318,6 +327,14 @@ export default function VeteransPage() {
                                 mainCharId={affinityCharaId}
                                 parent1={affinityParent1}
                                 parent2={affinityParent2}
+                            />
+                            <SparkProcModal
+                                show={showSparkProc}
+                                onHide={() => setShowSparkProc(false)}
+                                mainCharId={affinityCharaId}
+                                parent1={affinityParent1}
+                                parent2={affinityParent2}
+                                config={FILTER_CONFIG}
                             />
                         </div>
                     </div>

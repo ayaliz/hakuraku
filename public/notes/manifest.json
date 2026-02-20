@@ -12,5 +12,12 @@
     "filename": "events.md",
     "date": "2026-02-19",
     "description": "Race event parameters"
+  },
+  {
+    "id": "sparks",
+    "title": "Individual inheritance theory",
+    "filename": "sparks.md",
+    "date": "2026-02-20",
+    "description": "Spark proc chances and stuff"
   }
 ]

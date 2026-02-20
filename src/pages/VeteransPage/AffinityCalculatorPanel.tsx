@@ -19,12 +19,13 @@ interface Props {
     borrowLoading: boolean;
     onReset: () => void;
     onPlannerOpen: () => void;
+    onSparkProcOpen: () => void;
 }
 
 const AffinityCalculatorPanel: React.FC<Props> = ({
     mainCharId, onMainCharChange,
     parent1, parent2, parent2IsBorrowed, activeSlot, onLegacySlotClick,
-    onBorrowLookup, borrowLoading, onReset, onPlannerOpen,
+    onBorrowLookup, borrowLoading, onReset, onPlannerOpen, onSparkProcOpen,
 }) => {
     const [showMainPicker, setShowMainPicker] = useState(false);
     const [mainSearch, setMainSearch] = useState('');
@@ -122,6 +123,16 @@ const AffinityCalculatorPanel: React.FC<Props> = ({
     return (
         <div className="aff-panel">
             <div className="aff-tree">
+                {hasAny ? (
+                    <div className="aff-breakdown-side">
+                        {p1Aff !== null && <span className="aff-breakdown-item">Legacy 1: <strong>+{p1Aff}</strong></span>}
+                        {p2Aff !== null && <span className="aff-breakdown-item">Legacy 2: <strong>+{p2Aff}</strong></span>}
+                        {pairAff !== null && <span className="aff-breakdown-item">L1 × L2: <strong>+{pairAff}</strong></span>}
+                        <span className="aff-breakdown-item total">Total: <strong>+{total}</strong></span>
+                    </div>
+                ) : (
+                    <div style={{ width: '83px' }} />
+                )}
                 {renderMainSlot()}
                 {renderLegacySlot('p1')}
                 {renderLegacySlot('p2')}
@@ -150,6 +161,13 @@ const AffinityCalculatorPanel: React.FC<Props> = ({
                     >
                         Parent Run Planner
                     </button>
+                    <button
+                        className="aff-action-btn aff-planner-btn"
+                        disabled={!mainCharId || !parent1 || !parent2}
+                        onClick={onSparkProcOpen}
+                    >
+                        Spark Proc Chance
+                    </button>
                 </div>
             </div>
 
@@ -157,15 +175,6 @@ const AffinityCalculatorPanel: React.FC<Props> = ({
                 <p className="aff-select-hint">
                     Scroll down and click "Set as Legacy {activeSlot === 'p1' ? '1' : '2'}" on a veteran — or click the slot again to cancel.
                 </p>
-            )}
-
-            {hasAny && (
-                <div className="aff-breakdown">
-                    {p1Aff !== null && <span className="aff-breakdown-item">Legacy 1: <strong>+{p1Aff}</strong></span>}
-                    {p2Aff !== null && <span className="aff-breakdown-item">Legacy 2: <strong>+{p2Aff}</strong></span>}
-                    {pairAff !== null && <span className="aff-breakdown-item">L1 × L2: <strong>+{pairAff}</strong></span>}
-                    <span className="aff-breakdown-item total">Total: <strong>+{total}</strong></span>
-                </div>
             )}
 
             <Modal show={showMainPicker} onHide={() => { setShowMainPicker(false); setMainSearch(''); }} size="lg" scrollable>

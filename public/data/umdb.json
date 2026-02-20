@@ -35365,5 +35365,567 @@
       "relationType": 2601,
       "charaId": 1069
     }
+  ],
+  "singleModeWinsSaddle": [
+    {
+      "id": 10,
+      "raceInstanceId": 102301
+    },
+    {
+      "id": 11,
+      "raceInstanceId": 101901
+    },
+    {
+      "id": 12,
+      "raceInstanceId": 101001
+    },
+    {
+      "id": 13,
+      "raceInstanceId": 100601
+    },
+    {
+      "id": 14,
+      "raceInstanceId": 101201
+    },
+    {
+      "id": 15,
+      "raceInstanceId": 101601
+    },
+    {
+      "id": 16,
+      "raceInstanceId": 101501
+    },
+    {
+      "id": 17,
+      "raceInstanceId": 100301
+    },
+    {
+      "id": 18,
+      "raceInstanceId": 100501
+    },
+    {
+      "id": 19,
+      "raceInstanceId": 100901
+    },
+    {
+      "id": 20,
+      "raceInstanceId": 100201
+    },
+    {
+      "id": 21,
+      "raceInstanceId": 101101
+    },
+    {
+      "id": 22,
+      "raceInstanceId": 101301
+    },
+    {
+      "id": 23,
+      "raceInstanceId": 101801
+    },
+    {
+      "id": 24,
+      "raceInstanceId": 100401
+    },
+    {
+      "id": 25,
+      "raceInstanceId": 100801
+    },
+    {
+      "id": 26,
+      "raceInstanceId": 101701
+    },
+    {
+      "id": 27,
+      "raceInstanceId": 100701
+    },
+    {
+      "id": 28,
+      "raceInstanceId": 101401
+    },
+    {
+      "id": 29,
+      "raceInstanceId": 102001
+    },
+    {
+      "id": 30,
+      "raceInstanceId": 100101
+    },
+    {
+      "id": 31,
+      "raceInstanceId": 110501
+    },
+    {
+      "id": 32,
+      "raceInstanceId": 110601
+    },
+    {
+      "id": 33,
+      "raceInstanceId": 102201
+    },
+    {
+      "id": 34,
+      "raceInstanceId": 102401
+    },
+    {
+      "id": 35,
+      "raceInstanceId": 102101
+    },
+    {
+      "id": 36,
+      "raceInstanceId": 110101
+    },
+    {
+      "id": 37,
+      "raceInstanceId": 110401
+    },
+    {
+      "id": 38,
+      "raceInstanceId": 110201
+    },
+    {
+      "id": 39,
+      "raceInstanceId": 110301
+    },
+    {
+      "id": 40,
+      "raceInstanceId": 200101
+    },
+    {
+      "id": 41,
+      "raceInstanceId": 200201
+    },
+    {
+      "id": 42,
+      "raceInstanceId": 200301
+    },
+    {
+      "id": 43,
+      "raceInstanceId": 200401
+    },
+    {
+      "id": 44,
+      "raceInstanceId": 200501
+    },
+    {
+      "id": 45,
+      "raceInstanceId": 200601
+    },
+    {
+      "id": 46,
+      "raceInstanceId": 200701
+    },
+    {
+      "id": 47,
+      "raceInstanceId": 200801
+    },
+    {
+      "id": 48,
+      "raceInstanceId": 200901
+    },
+    {
+      "id": 49,
+      "raceInstanceId": 201001
+    },
+    {
+      "id": 50,
+      "raceInstanceId": 201101
+    },
+    {
+      "id": 51,
+      "raceInstanceId": 201201
+    },
+    {
+      "id": 52,
+      "raceInstanceId": 201301
+    },
+    {
+      "id": 53,
+      "raceInstanceId": 201401
+    },
+    {
+      "id": 54,
+      "raceInstanceId": 201501
+    },
+    {
+      "id": 55,
+      "raceInstanceId": 201601
+    },
+    {
+      "id": 56,
+      "raceInstanceId": 201701
+    },
+    {
+      "id": 57,
+      "raceInstanceId": 201801
+    },
+    {
+      "id": 58,
+      "raceInstanceId": 201901
+    },
+    {
+      "id": 59,
+      "raceInstanceId": 202001
+    },
+    {
+      "id": 60,
+      "raceInstanceId": 202101
+    },
+    {
+      "id": 61,
+      "raceInstanceId": 202201
+    },
+    {
+      "id": 62,
+      "raceInstanceId": 202301
+    },
+    {
+      "id": 63,
+      "raceInstanceId": 202401
+    },
+    {
+      "id": 64,
+      "raceInstanceId": 202501
+    },
+    {
+      "id": 65,
+      "raceInstanceId": 202601
+    },
+    {
+      "id": 66,
+      "raceInstanceId": 202701
+    },
+    {
+      "id": 67,
+      "raceInstanceId": 202801
+    },
+    {
+      "id": 68,
+      "raceInstanceId": 202901
+    },
+    {
+      "id": 69,
+      "raceInstanceId": 203001
+    },
+    {
+      "id": 70,
+      "raceInstanceId": 203101
+    },
+    {
+      "id": 71,
+      "raceInstanceId": 203201
+    },
+    {
+      "id": 72,
+      "raceInstanceId": 203301
+    },
+    {
+      "id": 73,
+      "raceInstanceId": 203401
+    },
+    {
+      "id": 74,
+      "raceInstanceId": 300101
+    },
+    {
+      "id": 75,
+      "raceInstanceId": 300201
+    },
+    {
+      "id": 76,
+      "raceInstanceId": 300301
+    },
+    {
+      "id": 77,
+      "raceInstanceId": 300401
+    },
+    {
+      "id": 78,
+      "raceInstanceId": 300501
+    },
+    {
+      "id": 79,
+      "raceInstanceId": 300601
+    },
+    {
+      "id": 80,
+      "raceInstanceId": 300701
+    },
+    {
+      "id": 81,
+      "raceInstanceId": 300801
+    },
+    {
+      "id": 82,
+      "raceInstanceId": 300901
+    },
+    {
+      "id": 83,
+      "raceInstanceId": 301001
+    },
+    {
+      "id": 84,
+      "raceInstanceId": 301101
+    },
+    {
+      "id": 85,
+      "raceInstanceId": 301201
+    },
+    {
+      "id": 86,
+      "raceInstanceId": 301301
+    },
+    {
+      "id": 87,
+      "raceInstanceId": 301401
+    },
+    {
+      "id": 88,
+      "raceInstanceId": 301501
+    },
+    {
+      "id": 89,
+      "raceInstanceId": 301601
+    },
+    {
+      "id": 90,
+      "raceInstanceId": 301701
+    },
+    {
+      "id": 91,
+      "raceInstanceId": 301801
+    },
+    {
+      "id": 92,
+      "raceInstanceId": 301901
+    },
+    {
+      "id": 93,
+      "raceInstanceId": 302001
+    },
+    {
+      "id": 94,
+      "raceInstanceId": 302101
+    },
+    {
+      "id": 95,
+      "raceInstanceId": 302201
+    },
+    {
+      "id": 96,
+      "raceInstanceId": 302301
+    },
+    {
+      "id": 97,
+      "raceInstanceId": 302401
+    },
+    {
+      "id": 98,
+      "raceInstanceId": 302501
+    },
+    {
+      "id": 99,
+      "raceInstanceId": 302601
+    },
+    {
+      "id": 100,
+      "raceInstanceId": 302701
+    },
+    {
+      "id": 101,
+      "raceInstanceId": 302801
+    },
+    {
+      "id": 102,
+      "raceInstanceId": 302901
+    },
+    {
+      "id": 103,
+      "raceInstanceId": 303001
+    },
+    {
+      "id": 104,
+      "raceInstanceId": 303101
+    },
+    {
+      "id": 105,
+      "raceInstanceId": 303201
+    },
+    {
+      "id": 106,
+      "raceInstanceId": 303301
+    },
+    {
+      "id": 107,
+      "raceInstanceId": 303401
+    },
+    {
+      "id": 108,
+      "raceInstanceId": 303501
+    },
+    {
+      "id": 109,
+      "raceInstanceId": 303601
+    },
+    {
+      "id": 110,
+      "raceInstanceId": 303701
+    },
+    {
+      "id": 111,
+      "raceInstanceId": 303801
+    },
+    {
+      "id": 112,
+      "raceInstanceId": 303901
+    },
+    {
+      "id": 113,
+      "raceInstanceId": 304001
+    },
+    {
+      "id": 114,
+      "raceInstanceId": 304101
+    },
+    {
+      "id": 115,
+      "raceInstanceId": 304201
+    },
+    {
+      "id": 116,
+      "raceInstanceId": 304301
+    },
+    {
+      "id": 117,
+      "raceInstanceId": 304401
+    },
+    {
+      "id": 118,
+      "raceInstanceId": 304501
+    },
+    {
+      "id": 119,
+      "raceInstanceId": 304601
+    },
+    {
+      "id": 120,
+      "raceInstanceId": 304701
+    },
+    {
+      "id": 121,
+      "raceInstanceId": 304801
+    },
+    {
+      "id": 122,
+      "raceInstanceId": 304901
+    },
+    {
+      "id": 123,
+      "raceInstanceId": 305001
+    },
+    {
+      "id": 124,
+      "raceInstanceId": 305101
+    },
+    {
+      "id": 125,
+      "raceInstanceId": 305201
+    },
+    {
+      "id": 126,
+      "raceInstanceId": 305301
+    },
+    {
+      "id": 127,
+      "raceInstanceId": 305401
+    },
+    {
+      "id": 128,
+      "raceInstanceId": 305501
+    },
+    {
+      "id": 129,
+      "raceInstanceId": 305601
+    },
+    {
+      "id": 130,
+      "raceInstanceId": 305701
+    },
+    {
+      "id": 131,
+      "raceInstanceId": 305801
+    },
+    {
+      "id": 132,
+      "raceInstanceId": 305901
+    },
+    {
+      "id": 133,
+      "raceInstanceId": 306001
+    },
+    {
+      "id": 134,
+      "raceInstanceId": 306101
+    },
+    {
+      "id": 135,
+      "raceInstanceId": 306201
+    },
+    {
+      "id": 136,
+      "raceInstanceId": 306301
+    },
+    {
+      "id": 137,
+      "raceInstanceId": 306401
+    },
+    {
+      "id": 138,
+      "raceInstanceId": 306501
+    },
+    {
+      "id": 139,
+      "raceInstanceId": 306601
+    },
+    {
+      "id": 140,
+      "raceInstanceId": 306701
+    },
+    {
+      "id": 141,
+      "raceInstanceId": 306801
+    },
+    {
+      "id": 142,
+      "raceInstanceId": 306901
+    },
+    {
+      "id": 143,
+      "raceInstanceId": 307001
+    },
+    {
+      "id": 147,
+      "raceInstanceId": 102501
+    },
+    {
+      "id": 148,
+      "raceInstanceId": 102601
+    },
+    {
+      "id": 149,
+      "raceInstanceId": 203501
+    },
+    {
+      "id": 150,
+      "raceInstanceId": 405001
+    },
+    {
+      "id": 153,
+      "raceInstanceId": 102701
+    },
+    {
+      "id": 155,
+      "raceInstanceId": 102801
+    }
   ]
 }

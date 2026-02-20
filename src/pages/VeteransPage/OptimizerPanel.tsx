@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Accordion, Button, Form, Table } from "react-bootstrap";
+import { Button, Form, Modal, Table } from "react-bootstrap";
 import './VeteransPage.css';
 import { Veteran, OptimizerConfig } from "./types";
 import { aggregateFactors, calculateOptimizerScore, calculateRaceBonus } from "../../data/VeteransHelper";
@@ -40,6 +40,7 @@ const factorCell = (items: FactorSummary[]) =>
     items.length === 0 ? '—' : items.map(f => `${f.name} ${stars(f.level)}`).join(', ');
 
 const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ veterans }) => {
+    const [show, setShow] = useState(false);
     const [config, setConfig] = useState<OptimizerConfig>(DEFAULT_CONFIG);
     const [results, setResults] = useState<TransferResult[] | null>(null);
     const [skillSearch, setSkillSearch] = useState('');
@@ -86,10 +87,16 @@ const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ veterans }) => {
     };
 
     return (
-        <Accordion className="mb-4">
-            <Accordion.Item eventKey="optimizer">
-                <Accordion.Header>Transfer Helper</Accordion.Header>
-                <Accordion.Body>
+        <>
+            <Button variant="outline-secondary" size="sm" onClick={() => setShow(true)} disabled={veterans.length === 0}>
+                Transfer Helper
+            </Button>
+
+            <Modal show={show} onHide={() => setShow(false)} size="xl" scrollable>
+                <Modal.Header closeButton>
+                    <Modal.Title>Transfer Helper</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
                     <div className="row g-3 mb-3">
                         {([
                             ['Blues weight (score/★)', 'bluesWeight'],
@@ -137,7 +144,7 @@ const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ veterans }) => {
                         </div>
                     </div>
 
-                    <Button variant="primary" onClick={calculate} disabled={veterans.length === 0}>
+                    <Button variant="primary" onClick={calculate}>
                         Calculate
                     </Button>
 
@@ -176,9 +183,9 @@ const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ veterans }) => {
                             </Table>
                         </div>
                     )}
-                </Accordion.Body>
-            </Accordion.Item>
-        </Accordion>
+                </Modal.Body>
+            </Modal>
+        </>
     );
 };
 

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "Bash(magick identify:*)",
+      "Bash(protoc:*)",
+      "Bash(yarn protoc:*)",
+      "Bash(yarn typecheck:*)",
+      "Bash(ls:*)",
+      "Bash(yarn tsc:*)"
+    ]
+  }
+}

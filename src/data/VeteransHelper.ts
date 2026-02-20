@@ -105,6 +105,14 @@ const sumSharedRelationPoints = (setA: Set<number>, setB: Set<number>, setC?: Se
     return total;
 };
 
+export const calculatePairAffinity = (veteran1: Veteran, veteran2: Veteran): number => {
+    const id1 = Math.floor(veteran1.card_id / 100);
+    const id2 = Math.floor(veteran2.card_id / 100);
+    const rel1 = UMDatabaseWrapper.charaRelationTypes[id1] ?? new Set<number>();
+    const rel2 = UMDatabaseWrapper.charaRelationTypes[id2] ?? new Set<number>();
+    return sumSharedRelationPoints(rel1, rel2);
+};
+
 export const calculateAffinity = (veteran: Veteran, targetCharaId: number): number => {
     const veteranCharaId = Math.floor(veteran.card_id / 100);
     const veteranRelations = UMDatabaseWrapper.charaRelationTypes[veteranCharaId] ?? new Set<number>();

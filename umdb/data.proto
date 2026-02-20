@@ -20,6 +20,8 @@ message UMDatabase {
 
     repeated SuccessionRelation succession_relation = 15;
     repeated SuccessionRelationMember succession_relation_member = 16;
+
+    repeated SingleModeWinsSaddle single_mode_wins_saddle = 17;
 }
 
 message Chara {
@@ -117,4 +119,9 @@ message SuccessionRelationMember {
     optional int32 id = 1;
     optional int32 relation_type = 2;
     optional int32 chara_id = 3;
+}
+
+message SingleModeWinsSaddle {
+    optional int32 id = 1;
+    optional int32 race_instance_id = 2;
 }

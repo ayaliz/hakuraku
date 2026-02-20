@@ -7,6 +7,9 @@ import { useAvailableTracks } from "../../../RaceReplay/hooks/useAvailableTracks
 import { useGuessTrack } from "../../../RaceReplay/hooks/useGuessTrack";
 import { getPassiveStatModifiers } from "../../../RaceReplay/utils/SkillDataUtils";
 import { adjustStat, calculateTargetSpeed, getDistanceCategory, calculateReferenceHpConsumption } from "../../../RaceReplay/utils/speedCalculations";
+import { CAREER_RACE_STAT_BONUS, DOWNHILL_HP_RATIO_THRESHOLD } from "../../../RaceReplay/utils/raceConstants";
+
+const LATE_START_ACCEL_THRESHOLD = 0.0001; // Acceleration (m/s²) below which a horse is considered a late starter
 import { computeHeuristicEvents } from "../../../RaceReplay/utils/computeHeuristicEvents";
 import { calculateRaceDistance } from "../../utils/RacePresenterUtils";
 import { CharaTableData } from "./types";
@@ -57,7 +60,7 @@ export const computeCharaTableData = (
         });
 
         if (raceType === 'Single') {
-            const flatBonus = 400;
+            const flatBonus = CAREER_RACE_STAT_BONUS;
             passiveStats.speed += flatBonus;
             passiveStats.stamina += flatBonus;
             passiveStats.power += flatBonus;
@@ -112,7 +115,7 @@ export const computeCharaTableData = (
         });
 
         if (raceType === 'Single') {
-            const flatBonus = 400;
+            const flatBonus = CAREER_RACE_STAT_BONUS;
             passiveStats.speed += flatBonus;
             passiveStats.stamina += flatBonus;
             passiveStats.power += flatBonus;
@@ -143,7 +146,7 @@ export const computeCharaTableData = (
 
                 if (dt > 0) {
                     const accel = (v1 - v0) / dt;
-                    if (accel < 0.0001) {
+                    if (accel < LATE_START_ACCEL_THRESHOLD) {
                         isLateStart = true;
                     }
                 }
@@ -186,7 +189,8 @@ export const computeCharaTableData = (
                 skillActivations,
                 otherEvents,
                 trackSlopes,
-                adjustedGuts
+                adjustedGuts,
+                lastSpurtStartDistances[frameOrder] ?? -1
             );
         }
 
@@ -222,7 +226,7 @@ export const computeCharaTableData = (
                     if (dt > 0 && speed > 0) {
                         const rate = ((h.hp ?? 0) - (hNext.hp ?? 0)) / dt;
                         const expected = calculateReferenceHpConsumption(speed, raceDistance);
-                        if (expected > 0 && rate > 0 && rate < expected * 0.8) {
+                        if (expected > 0 && rate > 0 && rate < expected * DOWNHILL_HP_RATIO_THRESHOLD) {
                             downhillModeTime += dt;
                         }
                     }

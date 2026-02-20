@@ -16,7 +16,7 @@ Grandparent 2:  [2, 6, 7, 10, 11, 14, 15, 17, 18, 21, 23, 25, 26, 29, 32, 34, 35
 
 For every overlapping value in the parent's array and either of the grandparent's arrays, 1 affinity is added.
 
-The parent has ID 10 in her array, so both grandparents sharing that yields +2 total affinity. The parent's ID 147 win isn't shared, so it does nothing.
+The parent has ID `10` in her array, so both grandparents sharing that yields +2 total affinity. The parent's ID `147` win isn't shared, so it does nothing.
 
 ## win saddle IDs
 

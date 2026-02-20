@@ -5,5 +5,12 @@
     "filename": "affinity.md",
     "date": "2026-02-16",
     "description": "How the game shows triangle/circle/double circle affinity."
+  },
+  {
+    "id": "events",
+    "title": "Race events",
+    "filename": "events.md",
+    "date": "2026-02-19",
+    "description": "Race event parameters"
   }
 ]

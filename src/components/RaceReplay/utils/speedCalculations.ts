@@ -1,5 +1,14 @@
 import GameDataLoader from "../../../data/GameDataLoader";
 import { RaceSimulateHorseResultData_RunningStyle } from "../../../data/race_data_pb";
+import {
+    BASE_SPEED_CONSTANT, BASE_SPEED_COURSE_OFFSET, BASE_SPEED_COURSE_SCALE,
+    HP_CONSUMPTION_SCALE, HP_CONSUMPTION_SPEED_OFFSET, HP_CONSUMPTION_DIVISOR,
+    SLOPE_SCALE, SLOPE_PENALTY_COEFF,
+    DOWNHILL_BONUS_BASE, DOWNHILL_BONUS_DIVISOR,
+    PACE_UP_MULTIPLIER, OVERTAKE_MULTIPLIER, PACE_DOWN_MULTIPLIER, RUSHED_TYPE2_MULTIPLIER,
+    SPOT_STRUGGLE_GUTS_BASE, SPOT_STRUGGLE_GUTS_EXPONENT, SPOT_STRUGGLE_GUTS_SCALE,
+    DUELING_GUTS_BASE, DUELING_GUTS_EXPONENT, DUELING_GUTS_SCALE,
+} from "./raceConstants";
 
 type SpeedCalculationParams = {
     courseDistance: number;
@@ -64,14 +73,42 @@ const MOOD_MODIFIER: Record<number, number> = {
     2: 0.98, // Bad
     1: 0.96, // Awful
 };
-// ... (rest of imports and types)
 
-// ... (existing constants)
+// Stat cap: above this, excess is halved before mood modifier
+const STAT_CAP = 1200;
+
+// Track stat threshold modifiers
+const TRACK_STAT_THRESHOLD_HIGH = 900;
+const TRACK_STAT_MODIFIER_HIGH = 1.2;
+const TRACK_STAT_THRESHOLD_MID = 600;
+const TRACK_STAT_MODIFIER_MID = 1.15;
+const TRACK_STAT_THRESHOLD_LOW = 300;
+const TRACK_STAT_MODIFIER_LOW = 1.1;
+const TRACK_STAT_MODIFIER_BASE = 1.05;
+
+// Speed term in base target speed: Math.sqrt(SPEED_TERM_COEFF * adjustedSpeed) * distMod * SPEED_TERM_SCALE
+const SPEED_TERM_COEFF = 500;
+const SPEED_TERM_SCALE = 0.002;
+
+// Last spurt guts term: Math.pow(GUTS_TERM_BASE * guts, GUTS_TERM_EXPONENT) * GUTS_TERM_SCALE
+const GUTS_TERM_BASE = 450;
+const GUTS_TERM_EXPONENT = 0.597;
+const GUTS_TERM_SCALE = 0.0001;
+
+// Last spurt speed formula: (lateBase + LAST_SPURT_BASE_RATIO * baseSpeed) * LAST_SPURT_MULTIPLIER + speedTerm + gutsTerm
+const LAST_SPURT_MULTIPLIER = 1.05;
+const LAST_SPURT_BASE_RATIO = 0.01;
+
+// Wisdom target speed variance
+const WISDOM_VARIANCE_DIVISOR = 5500;
+const WISDOM_LOG_SCALE = 0.1;
+const WISDOM_MIN_PCT_OFFSET = 0.65;
+
 
 export function adjustStat(stat: number, mood: number, bonus: number = 0): number {
     let val = stat;
-    if (val > 1200) {
-        val = 1200 + (val - 1200) / 2;
+    if (val > STAT_CAP) {
+        val = STAT_CAP + (val - STAT_CAP) / 2;
     }
     const moodMod = MOOD_MODIFIER[mood] || 1.0;
     return val * moodMod + bonus;
@@ -90,12 +127,10 @@ function getTrackStatThresholdModifier(courseId: number, stats: { speed: number,
         const statVal = (stats as any)[statName] ?? 0;
         const adjusted = statVal * moodMod;
 
-        // Threshold check
-        let mod = 1.0;
-        if (adjusted > 900) mod = 1.2;
-        else if (adjusted > 600) mod = 1.15;
-        else if (adjusted > 300) mod = 1.1;
-        else mod = 1.05;
+        let mod = TRACK_STAT_MODIFIER_BASE;
+        if (adjusted > TRACK_STAT_THRESHOLD_HIGH) mod = TRACK_STAT_MODIFIER_HIGH;
+        else if (adjusted > TRACK_STAT_THRESHOLD_MID) mod = TRACK_STAT_MODIFIER_MID;
+        else if (adjusted > TRACK_STAT_THRESHOLD_LOW) mod = TRACK_STAT_MODIFIER_LOW;
 
         totalMod += mod;
         count++;
@@ -150,12 +185,12 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
     const adjustedPower = adjustStat(powerStat, mood, greenSkillBonuses?.power);
     const adjustedGuts = adjustStat(gutsStat, mood, greenSkillBonuses?.guts);
 
-    const baseSpeed = 20.0 - (courseDistance - 2000) / 1000;
+    const baseSpeed = BASE_SPEED_CONSTANT - (courseDistance - BASE_SPEED_COURSE_OFFSET) / BASE_SPEED_COURSE_SCALE;
 
     let phase = 0; // 0: Early, 1: Mid, 2: Late/Last
     if (currentDistance >= courseDistance * 2 / 3) {
         phase = 2;
-    } else if (currentDistance >= courseDistance * 0.2) {
+    } else if (currentDistance >= courseDistance / 6) {
         phase = 1;
     }
 
@@ -168,7 +203,7 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
     let baseTargetSpeed = baseSpeed * phaseCoeff;
 
     const distMod = DISTANCE_PROFICIENCY_MODIFIER[distanceProficiency] || 1.0;
-    const speedTerm = Math.sqrt(500 * adjustedSpeed) * distMod * 0.002;
+    const speedTerm = Math.sqrt(SPEED_TERM_COEFF * adjustedSpeed) * distMod * SPEED_TERM_SCALE;
 
     if (phase === 2) {
         baseTargetSpeed += speedTerm;
@@ -176,48 +211,47 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
     if (inLastSpurt) {
         const baseTargetSpeedPhase2 = baseSpeed * strategyCoeffs[2];
         const lateRaceBaseSpeed = baseTargetSpeedPhase2 + speedTerm;
-        const gutsTerm = Math.pow(450 * adjustedGuts, 0.597) * 0.0001;
+        const gutsTerm = Math.pow(GUTS_TERM_BASE * adjustedGuts, GUTS_TERM_EXPONENT) * GUTS_TERM_SCALE;
 
-        baseTargetSpeed = (lateRaceBaseSpeed + 0.01 * baseSpeed) * 1.05 + speedTerm + gutsTerm;
+        baseTargetSpeed = (lateRaceBaseSpeed + LAST_SPURT_BASE_RATIO * baseSpeed) * LAST_SPURT_MULTIPLIER + speedTerm + gutsTerm;
     }
     if (slope > 0) {
-        const slopePer = slope / 10000;
-        const penalty = (slopePer * 200) / adjustedPower; // m/s
+        const slopePer = slope / SLOPE_SCALE;
+        const penalty = (slopePer * SLOPE_PENALTY_COEFF) / adjustedPower;
         baseTargetSpeed -= penalty;
     }
-    // Note: Downhill non-mode logic is usually handled by consuming less HP, not increasing speed, 
+    // Note: Downhill non-mode logic is usually handled by consuming less HP, not increasing speed,
     // unless in Downhill Mode which is handled below.
 
     // Apply Position Keep Modifiers to Base Speed (before skills/downhill)
     let modeMultiplier = 1.0;
     if (isPaceUp || isSpeedUp) {
-        modeMultiplier = 1.04;
+        modeMultiplier = PACE_UP_MULTIPLIER;
     } else if (isOvertake) {
-        modeMultiplier = 1.05;
+        modeMultiplier = OVERTAKE_MULTIPLIER;
     } else if (isPaceDown) {
-        modeMultiplier = 0.915;
+        modeMultiplier = PACE_DOWN_MULTIPLIER;
     }
 
     // Rushed type 2 is also a base speed multiplier
     if (isRushed && rushedType === 2) {
-        modeMultiplier *= 1.04;
+        modeMultiplier *= RUSHED_TYPE2_MULTIPLIER;
     }
 
     baseTargetSpeed *= modeMultiplier;
 
-
     if (isDownhillMode) {
-        baseTargetSpeed += 0.3 + Math.abs(slope) / 1000000;
+        baseTargetSpeed += DOWNHILL_BONUS_BASE + Math.abs(slope) / DOWNHILL_BONUS_DIVISOR;
     }
 
     baseTargetSpeed += (activeSpeedBuff || 0);
     baseTargetSpeed -= (activeSpeedDebuff || 0);
 
     if (isSpotStruggle) {
-        baseTargetSpeed += Math.pow(500 * adjustedGuts, 0.6) * 0.0001;
+        baseTargetSpeed += Math.pow(SPOT_STRUGGLE_GUTS_BASE * adjustedGuts, SPOT_STRUGGLE_GUTS_EXPONENT) * SPOT_STRUGGLE_GUTS_SCALE;
     }
     if (isDueling) {
-        baseTargetSpeed += Math.pow(200 * adjustedGuts, 0.708) * 0.0001;
+        baseTargetSpeed += Math.pow(DUELING_GUTS_BASE * adjustedGuts, DUELING_GUTS_EXPONENT) * DUELING_GUTS_SCALE;
     }
 
     // If in Last Spurt, no Wit variance (or rather, we are at the max/fixed speed)
@@ -229,9 +263,9 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
         };
     }
 
-    const logVal = Math.log10(adjustedWisdom * 0.1);
-    const maxPct = (adjustedWisdom / 5500) * logVal;
-    const minPct = maxPct - 0.65;
+    const logVal = Math.log10(adjustedWisdom * WISDOM_LOG_SCALE);
+    const maxPct = (adjustedWisdom / WISDOM_VARIANCE_DIVISOR) * logVal;
+    const minPct = maxPct - WISDOM_MIN_PCT_OFFSET;
 
     const maxSpeed = baseTargetSpeed + baseSpeed * (maxPct / 100);
     const minSpeed = baseTargetSpeed + baseSpeed * (minPct / 100);
@@ -244,6 +278,6 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
 }
 
 export function calculateReferenceHpConsumption(speed: number, courseDistance: number) {
-    const baseSpeed = 20.0 - (courseDistance - 2000.0) / 1000.0;
-    return 20.0 * Math.pow(Math.max(0, speed - baseSpeed + 12.0), 2) / 144.0;
+    const baseSpeed = BASE_SPEED_CONSTANT - (courseDistance - BASE_SPEED_COURSE_OFFSET) / BASE_SPEED_COURSE_SCALE;
+    return HP_CONSUMPTION_SCALE * Math.pow(Math.max(0, speed - baseSpeed + HP_CONSUMPTION_SPEED_OFFSET), 2) / HP_CONSUMPTION_DIVISOR;
 }

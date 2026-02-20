@@ -56,9 +56,9 @@ export default function App() {
                     <Nav className="me-auto">
                         <Nav.Link as={Link} to="/">Home</Nav.Link>
                         <Nav.Link as={Link} to="/veterans">Veterans</Nav.Link>
-                        <Nav.Link as={Link} to="/masterdata">Master Data</Nav.Link>
                         <Nav.Link as={Link} to="/racedata">Race Analysis</Nav.Link>
                         <Nav.Link as={Link} to="/multirace">Multi-Race Analysis</Nav.Link>
+                        <Nav.Link as={Link} to="/masterdata">Master Data</Nav.Link>
                         <Nav.Link as={Link} to="/notes">Research Notes</Nav.Link>
                     </Nav>
                     <Nav className="ms-auto">

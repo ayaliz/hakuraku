@@ -333,9 +333,9 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
 
         return (
             <tr key={`heatmap-${skill.skillId}`} className="heatmap-row">
-                <td colSpan={5} style={{ padding: 0 }}>
+                <td colSpan={7} style={{ padding: 0 }}>
                     <div className="inline-heatmap-container">
-                        <div className="heatmap-track" style={{ height: "50px", position: "relative", display: "flex" }}>
+                        <div className="heatmap-track" style={{ height: "65px", position: "relative", display: "flex" }}>
                             {buckets.map((count, i) => {
                                 const pct = activations.length > 0 ? (count / activations.length) * 100 : 0;
                                 const distStart = ((i / numBuckets) * avgRaceDistance).toFixed(0);
@@ -449,7 +449,13 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                         value={selectedOwnCharaFilter}
                         defaultLabel="Own Characters"
                         options={ownCharaDropdownOptions}
-                        onChange={setSelectedOwnCharaFilter}
+                        onChange={v => {
+                            setSelectedOwnCharaFilter(v);
+                            if (v !== "all") {
+                                setSelectedCharaFilter("all");
+                                setSelectedStrategy("all");
+                            }
+                        }}
                     />
                 )}
 

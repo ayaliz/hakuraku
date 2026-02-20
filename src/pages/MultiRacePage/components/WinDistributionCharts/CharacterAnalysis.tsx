@@ -28,15 +28,15 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
     legend,
     perfMetrics,
 }) => {
-    const [modalState, setModalState] = useState<{ isOpen: boolean; title: string; data: PieSlice[]; unit: string }>({
+    const [modalState, setModalState] = useState<{ isOpen: boolean; title: string; data: PieSlice[]; unit: string; primaryLabel?: string; secondaryLabel?: string }>({
         isOpen: false,
         title: "",
         data: [],
         unit: "wins",
     });
 
-    const openModal = (title: string, data: PieSlice[], unit: string) => {
-        setModalState({ isOpen: true, title, data, unit });
+    const openModal = (title: string, data: PieSlice[], unit: string, primaryLabel?: string, secondaryLabel?: string) => {
+        setModalState({ isOpen: true, title, data, unit, primaryLabel, secondaryLabel });
     };
 
     const closeModal = () => {
@@ -51,6 +51,8 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                 title={modalState.title}
                 data={modalState.data}
                 unit={modalState.unit}
+                primaryLabel={modalState.primaryLabel}
+                secondaryLabel={modalState.secondaryLabel}
             />
             <div className="pie-chart-title" style={{ borderBottom: "1px solid #2d3748", paddingBottom: "10px", marginBottom: "20px" }}>
                 Character Analysis
@@ -84,7 +86,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                             size={200}
                             unit="wins"
                             chartId="chara-wins-opp"
-                            onClick={() => openModal("Character Wins (Top Opponent)", rawWinsOpp, "wins")}
+                            onClick={() => openModal("Character Wins (Top Opponent)", rawWinsOpp, "wins", "Best Placing Opponent", "Actual Match Wins")}
                         />
                     ) : (
                         <div style={{ height: 200, width: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "#718096" }}>

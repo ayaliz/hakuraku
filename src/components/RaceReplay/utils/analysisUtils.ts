@@ -4,6 +4,36 @@ import { getDistanceCategory, calculateTargetSpeed, adjustStat, calculateReferen
 import { getPassiveStatModifiers, getSkillBaseTime, getActiveSpeedModifier, hasSkillEffect } from "./SkillDataUtils";
 import { filterCharaSkills } from "../../../data/RaceDataUtils";
 import GameDataLoader from "../../../data/GameDataLoader";
+import {
+    BASE_SPEED_CONSTANT, BASE_SPEED_COURSE_OFFSET, BASE_SPEED_COURSE_SCALE,
+    HP_CONSUMPTION_SCALE, HP_CONSUMPTION_SPEED_OFFSET, HP_CONSUMPTION_DIVISOR,
+    SLOPE_SCALE, SLOPE_PENALTY_COEFF,
+    DOWNHILL_BONUS_BASE, DOWNHILL_BONUS_DIVISOR, DOWNHILL_HP_RATIO_THRESHOLD,
+    SKILL_TIME_SCALE, DEFAULT_SKILL_DURATION,
+    SPOT_STRUGGLE_GUTS_BASE, SPOT_STRUGGLE_GUTS_EXPONENT, SPOT_STRUGGLE_GUTS_SCALE,
+    DUELING_GUTS_BASE, DUELING_GUTS_EXPONENT, DUELING_GUTS_SCALE,
+} from "./raceConstants";
+
+// Dueling detection
+const DUELING_HP_THRESHOLD_RATIO = 0.05;   // Dueling ends if HP drops below this fraction of starting HP
+const DUEL_UPHILL_SPEED_SLACK = 0.2;       // Min gap between target and current speed to check if duel resumes
+const DUEL_ENTRY_ACCEL_MAX = 0.1;          // Max acceleration at duel start to consider early exit
+const DUEL_RESUME_SPEED_SLACK = 0.05;      // Speed must exceed target + downhill bonus + this to count as resumed
+
+// Spot Struggle (COMPETE_TOP)
+const SPOT_STRUGGLE_DIST_RATIO = 9 / 24;           // Only active before this fraction of course distance
+const SPOT_STRUGGLE_GUTS_DURATION_BASE = 700;       // Math.pow(BASE * guts, EXPONENT) * SCALE → duration
+const SPOT_STRUGGLE_GUTS_DURATION_EXPONENT = 0.5;
+const SPOT_STRUGGLE_GUTS_DURATION_SCALE = 0.012;
+
+// Max adjusted speed calculation
+const DECELERATION_THRESHOLD = -0.05;      // m/s²: frames with accel below this are skipped
+const DUELING_FRAME_LOOKAHEAD = 2;         // Frames to skip after dueling ends before counting peak speed
+
+// HP outcome calculation
+const DEATH_EPSILON = 0.1;                 // Horse is considered to have died before finish if dist < raceDistance - this
+const HP_STATUS_MODIFIER_GUTS_BASE = 600;  // Guts scaling base: 1 + COEFF / sqrt(BASE * guts)
+const HP_STATUS_MODIFIER_COEFF = 200;
 
 
 type HpOutcome ={ type: 'died', distance: number, deficit: number, startHp: number }
@@ -41,7 +71,7 @@ export function computeOtherEvents(
 
         if (e.type === RaceSimulateEventData_SimulateEventType.COMPETE_FIGHT) {
             const startHp = raceData.frame[0].horseFrame[frameOrder].hp!;
-            const hpThreshold = startHp * 0.05;
+            const hpThreshold = startHp * DUELING_HP_THRESHOLD_RATIO;
             let endTime = raceData.frame[raceData.frame.length - 1].time!;
 
             // Prepare data for speed check
@@ -108,7 +138,7 @@ export function computeOtherEvents(
                     if (skillActivations && skillActivations[frameOrder]) {
                         skillActivations[frameOrder].forEach(s => {
                             const baseTime = getSkillBaseTime(s.param[1]);
-                            const duration = baseTime > 0 ? (baseTime / 10000) * (goalInX / 1000) : 2.0;
+                            const duration = baseTime > 0 ? (baseTime / SKILL_TIME_SCALE) * (goalInX / 1000) : DEFAULT_SKILL_DURATION;
                             if (frameTime >= s.time && frameTime < s.time + duration) {
                                 activeSpeedBuff += getActiveSpeedModifier(s.param[1]);
                             }
@@ -140,9 +170,9 @@ export function computeOtherEvents(
                     const currentSlopeObj = trackSlopes.find((s: any) => dist >= s.start && dist < s.start + s.length);
                     const currentSlope = currentSlopeObj?.slope ?? 0;
                     if (currentSlope > 0) {
-                        const slopePer = currentSlope / 10000.;
+                        const slopePer = currentSlope / SLOPE_SCALE;
                         const adjustedPower = adjustStat(trainedChara.pow, rawData['motivation'], passiveStats.power);
-                        const penalty = (slopePer * 200) / adjustedPower;
+                        const penalty = (slopePer * SLOPE_PENALTY_COEFF) / adjustedPower;
                         targetRes.base -= penalty;
                     }
 
@@ -156,7 +186,7 @@ export function computeOtherEvents(
                         if (nextSlope > 0) isAffectedByUphill = true;
                     }
 
-                    if (!isAffectedByUphill && (targetRes.base > currentSpeed + 0.2) && (accel < 0.1)) {
+                    if (!isAffectedByUphill && (targetRes.base > currentSpeed + DUEL_UPHILL_SPEED_SLACK) && (accel < DUEL_ENTRY_ACCEL_MAX)) {
                         let duelResumed = false;
                         for (let j = i + 1; j < raceData.frame.length; j++) {
                             const futureFrame = raceData.frame[j];
@@ -169,7 +199,7 @@ export function computeOtherEvents(
                             if (skillActivations && skillActivations[frameOrder]) {
                                 skillActivations[frameOrder].forEach(s => {
                                     const baseTime = getSkillBaseTime(s.param[1]);
-                                    const dur = baseTime > 0 ? (baseTime / 10000) * (goalInX / 1000) : 2.0;
+                                    const dur = baseTime > 0 ? (baseTime / SKILL_TIME_SCALE) * (goalInX / 1000) : DEFAULT_SKILL_DURATION;
                                     if (futureTime >= s.time && futureTime < s.time + dur) {
                                         futureActiveSpeedBuff += getActiveSpeedModifier(s.param[1]);
                                     }
@@ -200,9 +230,9 @@ export function computeOtherEvents(
                             const futureSlopeObj = trackSlopes.find((s: any) => futureDist >= s.start && futureDist < s.start + s.length);
                             const futureSlope = futureSlopeObj?.slope ?? 0;
                             if (futureSlope > 0) {
-                                const slopePer = futureSlope / 10000;
+                                const slopePer = futureSlope / SLOPE_SCALE;
                                 const adjustedPower = adjustStat(trainedChara.pow, rawData['motivation'], passiveStats.power);
-                                futureTargetRes.base -= (slopePer * 200) / adjustedPower;
+                                futureTargetRes.base -= (slopePer * SLOPE_PENALTY_COEFF) / adjustedPower;
                             }
 
                             let futureDownhillBuff = 0;
@@ -212,13 +242,13 @@ export function computeOtherEvents(
                                 if (dt > 0) {
                                     const rate = ((futureH.hp ?? 0) - (nextFutureH.hp ?? 0)) / dt;
                                     const expected = calculateReferenceHpConsumption(futureSpeed, goalInX);
-                                    if (expected > 0 && rate > 0 && rate < expected * 0.8) {
-                                        futureDownhillBuff = 0.3 + Math.abs(futureSlope) / 1000;
+                                    if (expected > 0 && rate > 0 && rate < expected * DOWNHILL_HP_RATIO_THRESHOLD) {
+                                        futureDownhillBuff = DOWNHILL_BONUS_BASE + Math.abs(futureSlope) / DOWNHILL_BONUS_DIVISOR;
                                     }
                                 }
                             }
 
-                            if (futureSpeed > futureTargetRes.base + futureDownhillBuff + 0.05) {
+                            if (futureSpeed > futureTargetRes.base + futureDownhillBuff + DUEL_RESUME_SPEED_SLACK) {
                                 duelResumed = true;
                                 break;
                             }
@@ -239,8 +269,8 @@ export function computeOtherEvents(
 
         if (e.type === RaceSimulateEventData_SimulateEventType.COMPETE_TOP) {
             const guts = charaData.get(frameOrder)?.guts ?? 0;
-            const gutsDuration = Math.pow(700 * guts, 0.5) * 0.012;
-            const distanceThreshold = (9 / 24) * goalInX;
+            const gutsDuration = Math.pow(SPOT_STRUGGLE_GUTS_DURATION_BASE * guts, SPOT_STRUGGLE_GUTS_DURATION_EXPONENT) * SPOT_STRUGGLE_GUTS_DURATION_SCALE;
+            const distanceThreshold = SPOT_STRUGGLE_DIST_RATIO * goalInX;
 
             let distanceThresholdTime = -1;
             for (let i = 0; i < raceData.frame.length; i++) {
@@ -270,7 +300,8 @@ export function calculateMaxAdjustedSpeed(
     skillActivations: Record<number, { time: number; name: string; param: number[] }[]> | undefined,
     otherEvents: Record<number, { time: number; duration: number; name: string }[]> | undefined,
     trackSlopes: any[],
-    adjustedGuts: number
+    adjustedGuts: number,
+    lastSpurtStartDistance: number = -1
 ): number {
     let maxAdjSpeed = 0;
     let wasType28Active = false;
@@ -292,7 +323,7 @@ export function calculateMaxAdjustedSpeed(
         if (skillActivations && skillActivations[frameOrder]) {
             skillActivations[frameOrder].forEach(s => {
                 const baseTime = getSkillBaseTime(s.param[1]);
-                const duration = baseTime > 0 ? (baseTime / 10000) * (raceDistance / 1000) : 2.0;
+                const duration = baseTime > 0 ? (baseTime / SKILL_TIME_SCALE) * (raceDistance / 1000) : DEFAULT_SKILL_DURATION;
                 if (time >= s.time && time < s.time + duration) {
                     buff += getActiveSpeedModifier(s.param[1]);
                     if (hasSkillEffect(s.param[1], 28)) {
@@ -313,10 +344,10 @@ export function calculateMaxAdjustedSpeed(
                 if (time >= e.time && time < e.time + e.duration) {
                     const name = e.name || "";
                     if (name.includes("Spot Struggle") || name.includes("Competes (Pos)")) {
-                        buff += Math.pow(500 * adjustedGuts, 0.6) * 0.0001;
+                        buff += Math.pow(SPOT_STRUGGLE_GUTS_BASE * adjustedGuts, SPOT_STRUGGLE_GUTS_EXPONENT) * SPOT_STRUGGLE_GUTS_SCALE;
                     }
                     if (name.includes("Dueling") || name.includes("Competes (Speed)")) {
-                        buff += Math.pow(200 * adjustedGuts, 0.708) * 0.0001;
+                        buff += Math.pow(DUELING_GUTS_BASE * adjustedGuts, DUELING_GUTS_EXPONENT) * DUELING_GUTS_SCALE;
                         isDuelingActive = true;
                     }
                 }
@@ -326,7 +357,7 @@ export function calculateMaxAdjustedSpeed(
         if (isDuelingActive) {
             lastDuelingActiveFrameIndex = fIdx;
         } else {
-            if (fIdx - lastDuelingActiveFrameIndex <= 2) continue;
+            if (fIdx - lastDuelingActiveFrameIndex <= DUELING_FRAME_LOOKAHEAD) continue;
         }
 
         // Downhill Mode
@@ -335,16 +366,21 @@ export function calculateMaxAdjustedSpeed(
         const currentSlope = currentSlopeObj?.slope ?? 0;
 
         if (currentSlope < 0) {
-            const nextFrame = frames[fIdx + 1];
-            if (nextFrame) {
-                const hNext = nextFrame.horseFrame?.[frameOrder];
-                if (hNext) {
-                    const dt = (nextFrame.time ?? 0) - time;
-                    if (dt > 0) {
-                        const rate = ((h.hp ?? 0) - (hNext.hp ?? 0)) / dt;
-                        const expected = calculateReferenceHpConsumption(speed, raceDistance);
-                        if (expected > 0 && rate > 0 && rate < expected * 0.8) {
-                            buff += 0.3 + Math.abs(currentSlope) / 1000;
+            const isInLastSpurt = lastSpurtStartDistance > 0 && dist >= lastSpurtStartDistance;
+            if (isInLastSpurt) {
+                buff += DOWNHILL_BONUS_BASE + Math.abs(currentSlope) / DOWNHILL_BONUS_DIVISOR;
+            } else {
+                const nextFrame = frames[fIdx + 1];
+                if (nextFrame) {
+                    const hNext = nextFrame.horseFrame?.[frameOrder];
+                    if (hNext) {
+                        const dt = (nextFrame.time ?? 0) - time;
+                        if (dt > 0) {
+                            const rate = ((h.hp ?? 0) - (hNext.hp ?? 0)) / dt;
+                            const expected = calculateReferenceHpConsumption(speed, raceDistance);
+                            if (expected > 0 && rate > 0 && rate < expected * DOWNHILL_HP_RATIO_THRESHOLD) {
+                                buff += DOWNHILL_BONUS_BASE + Math.abs(currentSlope) / DOWNHILL_BONUS_DIVISOR;
+                            }
                         }
                     }
                 }
@@ -361,7 +397,7 @@ export function calculateMaxAdjustedSpeed(
                 const dt = (time - (prevFrame.time ?? 0));
                 if (dt > 0) {
                     const accel = (speed - prevSpeed) / dt;
-                    if (accel < -0.05) isDecelerating = true;
+                    if (accel < DECELERATION_THRESHOLD) isDecelerating = true;
                 }
             }
         }
@@ -373,7 +409,7 @@ export function calculateMaxAdjustedSpeed(
                 const dt = ((nextFrame.time ?? 0) - time);
                 if (dt > 0) {
                     const accel = (nextSpeed - speed) / dt;
-                    if (accel < -0.05) isDecelerating = true;
+                    if (accel < DECELERATION_THRESHOLD) isDecelerating = true;
                 }
             }
         }
@@ -402,13 +438,13 @@ export function calculateHpOutcome(
 
     if (firstDeathFrame) {
         const dist = firstDeathFrame.horseFrame?.[frameOrder]?.distance ?? 0;
-        if (dist < raceDistance - 0.1) {
+        if (dist < raceDistance - DEATH_EPSILON) {
             const distance = raceDistance - dist;
-            const baseSpeed = 20.0 - (raceDistance - 2000) / 1000;
-            const statusModifier = 1.0 + 200.0 / Math.sqrt(600.0 * adjustedGuts);
-            const currentSpeed = maxAdjSpeed || lastSpurtTargetSpeed || 20;
+            const baseSpeed = BASE_SPEED_CONSTANT - (raceDistance - BASE_SPEED_COURSE_OFFSET) / BASE_SPEED_COURSE_SCALE;
+            const statusModifier = 1.0 + HP_STATUS_MODIFIER_COEFF / Math.sqrt(HP_STATUS_MODIFIER_GUTS_BASE * adjustedGuts);
+            const currentSpeed = maxAdjSpeed || lastSpurtTargetSpeed || BASE_SPEED_CONSTANT;
 
-            const hpPerSec = 20.0 * Math.pow(currentSpeed - baseSpeed + 12.0, 2) / 144.0 * statusModifier * 1.0;
+            const hpPerSec = HP_CONSUMPTION_SCALE * Math.pow(currentSpeed - baseSpeed + HP_CONSUMPTION_SPEED_OFFSET, 2) / HP_CONSUMPTION_DIVISOR * statusModifier;
             const time = distance / currentSpeed;
             const deficit = time * hpPerSec;
 

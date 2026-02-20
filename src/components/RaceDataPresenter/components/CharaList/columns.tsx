@@ -1,5 +1,6 @@
 import React from "react";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
+import { MODE_DISPLAY_TIME_SCALE } from "../../../RaceReplay/utils/raceConstants";
 import * as UMDatabaseUtils from "../../../../data/UMDatabaseUtils";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import CopyButton from "../../../CopyButton";
@@ -344,7 +345,7 @@ export const charaTableColumns: CharaColumnDef[] = [
         cellClassName: 'stat-cell',
         renderCell: (row) => {
             if (!row.downhillModeTime || row.downhillModeTime < 0.01) return '-';
-            return <span style={{ color: '#60a5fa' }}>{row.downhillModeTime.toFixed(1)}s</span>;
+            return <span style={{ color: '#60a5fa' }}>{Math.round(row.downhillModeTime * 15 / 16)}s</span>;
         },
     },
     {
@@ -366,11 +367,11 @@ export const charaTableColumns: CharaColumnDef[] = [
             return (
                 <div style={{ lineHeight: 1.3 }}>
                     {hasUp && (
-                        <span style={{ color: '#4ade80' }}>↑{row.paceUpTime!.toFixed(1)}s</span>
+                        <span style={{ color: '#4ade80' }}>↑{Math.round(row.paceUpTime! * 15 / 16)}s</span>
                     )}
                     {hasUp && hasDown && <br />}
                     {hasDown && (
-                        <span style={{ color: '#f87171' }}>↓{row.paceDownTime!.toFixed(1)}s</span>
+                        <span style={{ color: '#f87171' }}>↓{Math.round(row.paceDownTime! * 15 / 16)}s</span>
                     )}
                 </div>
             );

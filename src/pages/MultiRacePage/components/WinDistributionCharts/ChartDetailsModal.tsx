@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { PieSlice } from "./types";
 import { getCharaIcon } from "./utils";
 import { STRATEGY_COLORS } from "./constants";
@@ -9,188 +9,130 @@ interface ChartDetailsModalProps {
     title: string;
     data: PieSlice[];
     unit?: string;
+    primaryLabel?: string;
+    secondaryLabel?: string;
 }
+
+type SortCol = "name" | "primary" | "secondary";
 
 const ChartDetailsModal: React.FC<ChartDetailsModalProps> = ({
     isOpen,
     onClose,
     title,
     data,
-    unit: _unit = "wins",
+    unit = "wins",
+    primaryLabel,
+    secondaryLabel,
 }) => {
+    const [sortCol, setSortCol] = useState<SortCol>("primary");
+    const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+    useEffect(() => {
+        if (isOpen) {
+            setSortCol("primary");
+            setSortDir("desc");
+        }
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
-    const maxValue = Math.max(...data.map((d) => d.value));
+    const hasSecondary = secondaryLabel !== undefined && data.some(d => d.secondaryValue !== undefined);
+    const resolvedPrimaryLabel = primaryLabel ?? (unit.charAt(0).toUpperCase() + unit.slice(1));
 
-    // Sort data descending just in case
-    const sortedData = [...data].sort((a, b) => b.value - a.value);
+    const handleSort = (col: SortCol) => {
+        if (col === sortCol) {
+            setSortDir(d => d === "asc" ? "desc" : "asc");
+        } else {
+            setSortCol(col);
+            setSortDir("desc");
+        }
+    };
+
+    const sortIndicator = (col: SortCol) =>
+        sortCol === col ? <span className="cdt-sort-indicator">{sortDir === "asc" ? " ▲" : " ▼"}</span> : null;
+
+    const sortedData = [...data].sort((a, b) => {
+        let cmp = 0;
+        if (sortCol === "name") {
+            cmp = a.label.localeCompare(b.label);
+        } else if (sortCol === "primary") {
+            cmp = a.value - b.value;
+        } else {
+            cmp = (a.secondaryValue ?? 0) - (b.secondaryValue ?? 0);
+        }
+        return sortDir === "asc" ? cmp : -cmp;
+    });
 
     return (
-        <div
-            style={{
-                position: "fixed",
-                top: 0,
-                left: 0,
-                width: "100vw",
-                height: "100vh",
-                backgroundColor: "rgba(0, 0, 0, 0.75)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                zIndex: 1000,
-            }}
-            onClick={onClose}
-        >
-            <div
-                style={{
-                    backgroundColor: "#1a202c",
-                    border: "1px solid #2d3748",
-                    borderRadius: "8px",
-                    width: "800px",
-                    maxWidth: "95vw",
-                    maxHeight: "90vh",
-                    display: "flex",
-                    flexDirection: "column",
-                    boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
-                }}
-                onClick={(e) => e.stopPropagation()}
-            >
+        <div className="cdt-overlay" onClick={onClose}>
+            <div className="cdt-modal" onClick={(e) => e.stopPropagation()}>
                 {/* Header */}
-                <div
-                    style={{
-                        padding: "16px 24px",
-                        borderBottom: "1px solid #2d3748",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                    }}
-                >
-                    <h3 style={{ margin: 0, fontSize: "18px", color: "#e2e8f0" }}>{title}</h3>
-                    <button
-                        onClick={onClose}
-                        style={{
-                            background: "transparent",
-                            border: "none",
-                            color: "#a0aec0",
-                            fontSize: "24px",
-                            cursor: "pointer",
-                            lineHeight: 1,
-                        }}
-                    >
-                        &times;
-                    </button>
+                <div className="cdt-header">
+                    <h3 className="cdt-title">{title}</h3>
+                    <button className="cdt-close-btn" onClick={onClose}>&times;</button>
                 </div>
 
                 {/* Content */}
-                <div style={{ padding: "24px", overflowY: "auto", flex: 1 }}>
-                    {sortedData.map((item, i) => {
-                        const barWidth = (item.value / maxValue) * 100;
-                        const iconUrl = item.charaId ? getCharaIcon(item.charaId) : null;
+                <div className="cdt-content">
+                    <table className="cdt-table">
+                        <thead>
+                            <tr>
+                                <th className="cdt-th-rank">#</th>
+                                <th className="cdt-th-sortable" onClick={() => handleSort("name")}>
+                                    Name{sortIndicator("name")}
+                                </th>
+                                <th className="cdt-th-value cdt-th-sortable" onClick={() => handleSort("primary")}>
+                                    {resolvedPrimaryLabel}{sortIndicator("primary")}
+                                </th>
+                                {hasSecondary && (
+                                    <th className="cdt-th-value cdt-th-sortable" onClick={() => handleSort("secondary")}>
+                                        {secondaryLabel}{sortIndicator("secondary")}
+                                    </th>
+                                )}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {sortedData.map((item, i) => {
+                                const iconUrl = item.charaId ? getCharaIcon(item.charaId) : null;
+                                const bgColor = item.strategyId && STRATEGY_COLORS[item.strategyId]
+                                    ? STRATEGY_COLORS[item.strategyId]
+                                    : item.color;
 
-                        return (
-                            <div
-                                key={i}
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    marginBottom: "12px",
-                                }}
-                            >
-                                {/* Label & Icon */}
-                                <div
-                                    style={{
-                                        width: "200px",
-                                        marginRight: "12px",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "flex-end",
-                                        textAlign: "right",
-                                    }}
-                                >
-                                    <span
-                                        style={{
-                                            marginRight: "10px",
-                                            fontSize: "14px",
-                                            color: "#e2e8f0",
-                                            whiteSpace: "nowrap",
-                                            overflow: "hidden",
-                                            textOverflow: "ellipsis",
-                                        }}
-                                        title={item.label}
-                                    >
-                                        {item.label}
-                                    </span>
-                                    {iconUrl ? (
-                                        <div style={{ position: "relative", width: "48px", height: "48px", flexShrink: 0 }}>
-                                            {item.strategyId && STRATEGY_COLORS[item.strategyId] && (
-                                                <div
-                                                    style={{
-                                                        position: "absolute",
-                                                        top: -2,
-                                                        right: -2,
-                                                        width: "14px",
-                                                        height: "14px",
-                                                        borderRadius: "50%",
-                                                        backgroundColor: STRATEGY_COLORS[item.strategyId],
-                                                        border: "1px solid #1a202c",
-                                                    }}
-                                                />
-                                            )}
-                                            <img
-                                                src={iconUrl}
-                                                alt=""
-                                                style={{
-                                                    width: "100%",
-                                                    height: "100%",
-                                                    borderRadius: "50%",
-                                                }}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div style={{ width: "48px", height: "48px" }} />
-                                    )}
-                                </div>
-
-                                {/* Bar Area */}
-                                <div style={{ flex: 1, marginRight: "12px", position: "relative", height: "24px" }}>
-                                    {/* Bar Background */}
-                                    <div
-                                        style={{
-                                            position: "absolute",
-                                            left: 0,
-                                            top: 0,
-                                            bottom: 0,
-                                            right: 0,
-                                            backgroundColor: "#2d3748",
-                                            borderRadius: "4px",
-                                            opacity: 0.3,
-                                        }}
-                                    />
-                                    {/* Bar Foreground */}
-                                    <div
-                                        style={{
-                                            position: "absolute",
-                                            left: 0,
-                                            top: 0,
-                                            bottom: 0,
-                                            width: `${barWidth}%`,
-                                            backgroundColor: item.color,
-                                            borderRadius: "4px",
-                                            transition: "width 0.5s ease-out",
-                                        }}
-                                    />
-                                </div>
-
-                                {/* Value Area */}
-                                <div style={{ width: "80px", color: "#a0aec0", fontSize: "14px" }}>
-                                    <span style={{ color: "#e2e8f0", fontWeight: "bold" }}>{item.value}</span>
-                                    <span style={{ fontSize: "12px", marginLeft: "4px" }}>
-                                        ({item.percentage.toFixed(1)}%)
-                                    </span>
-                                </div>
-                            </div>
-                        );
-                    })}
+                                return (
+                                    <tr key={i} className="cdt-tr">
+                                        <td className="cdt-td-rank">{i + 1}</td>
+                                        <td>
+                                            <div className="cdt-name-cell">
+                                                <div className="cdt-portrait">
+                                                    {iconUrl ? (
+                                                        <>
+                                                            <div className="cdt-portrait-bg" style={{ backgroundColor: bgColor }} />
+                                                            <img src={iconUrl} alt="" className="cdt-portrait-img" />
+                                                        </>
+                                                    ) : (
+                                                        <div className="cdt-portrait-fallback" style={{ backgroundColor: bgColor }} />
+                                                    )}
+                                                </div>
+                                                <span className="cdt-label" title={item.fullLabel || item.label}>
+                                                    {item.label}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="cdt-td-value">
+                                            <span className="cdt-value-main">{item.value}</span>
+                                            <span className="cdt-value-pct">({item.percentage.toFixed(1)}%)</span>
+                                        </td>
+                                        {hasSecondary && (
+                                            <td className="cdt-td-value">
+                                                <span className="cdt-value-main">{item.secondaryValue ?? 0}</span>
+                                                <span className="cdt-value-pct">({(item.secondaryPercentage ?? 0).toFixed(1)}%)</span>
+                                            </td>
+                                        )}
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

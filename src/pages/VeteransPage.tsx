@@ -11,7 +11,7 @@ import ActiveFiltersList from "./VeteransPage/ActiveFiltersList";
 import OptimizerPanel from "./VeteransPage/OptimizerPanel";
 import AffinitySelector from "./VeteransPage/AffinitySelector";
 import { applyFiltersAndSort, getAvailableStats } from "./VeteransPage/VeteransLogic";
-import { getKvKeyFromUrl, buildShareBody, uploadVeteransToWorker, fetchVeteransFromWorker } from "./VeteransPage/UrlSharing";
+import { getKvKeyFromUrl, buildShareBody, uploadVeteransToWorker, fetchVeteransFromWorker, fetchLoanedChara } from "./VeteransPage/UrlSharing";
 
 const FILTER_CONFIG = {
     blues: { categoryId: 1, stateKey: 'bluesFilters' as const, label: 'Blues', color: 'rgb(55, 183, 244)', selectorType: 'blues' as SelectorType },
@@ -41,9 +41,8 @@ export default function VeteransPage() {
         setLoanLookupError(null);
         setLoanLookupLoading(true);
         try {
-            const res = await fetch(`https://uma.moe/api/v3/search?trainer_id=${encodeURIComponent(trainerId.trim())}`);
-            const text = await res.text();
-            setLoanLookupResult(text);
+            const data = await fetchLoanedChara(trainerId.trim());
+            setLoanLookupResult(JSON.stringify(data, null, 2));
         } catch (err: any) {
             setLoanLookupError(String(err));
         } finally {

@@ -252,6 +252,7 @@ export default function VeteransPage() {
                 </Alert>
             )}
 
+            {false && (
             <div className="mb-3">
                 <div style={{ fontWeight: 600, marginBottom: 6 }}>Loaned Character Lookup (test)</div>
                 <InputGroup style={{ maxWidth: 400 }}>
@@ -274,6 +275,7 @@ export default function VeteransPage() {
                     </pre>
                 )}
             </div>
+            )}
 
             {!veterans.length && !error && !renderError && (
                 <div className="upload-zone" onClick={() => fileInputRef.current?.click()}>

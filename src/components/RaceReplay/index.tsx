@@ -74,6 +74,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     trainerColors,
     detectedCourseId,
     raceType,
+    trackDetails,
     onTrackChange,
 }) => {
     const frames = useMemo(() => raceData.frame ?? [], [raceData]);
@@ -184,7 +185,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
 
     useEffect(() => {
         if (!isPlaying) tick(renderTime);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [toggles, characterVisibility, hoveredLegendName]);
 
     const { straights, corners, straightsFinal, cornersFinal, segMarkers, slopeTriangles } = useCourseLayers(selectedTrackId, goalInX, yMaxWithHeadroom);
@@ -283,7 +284,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         xMax: xAxisRef.current.max,
         yMax: yMaxWithHeadroom,
         series: seriesList as ECOption["series"],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }), [cameraWindow, yMaxWithHeadroom, seriesList]);
 
     const clampedRenderTime = clamp(renderTime, startTime, endTime);
@@ -385,6 +386,13 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                                 </span>
                             )}
                         </div>
+                        {trackDetails && (
+                            <div className="d-flex align-items-center mt-2" style={{ gap: 8 }}>
+                                {trackDetails.season && <img src={`${import.meta.env.BASE_URL}assets/track_details/${trackDetails.season}.webp`} alt={trackDetails.season} height={24} title={trackDetails.season} />}
+                                {trackDetails.weather && <img src={`${import.meta.env.BASE_URL}assets/track_details/${trackDetails.weather}.webp`} alt={trackDetails.weather} height={24} title={trackDetails.weather} />}
+                                {/* {trackDetails.condition && <img src={`${import.meta.env.BASE_URL}assets/track_details/${trackDetails.condition}.webp`} alt={trackDetails.condition} height={24} title={trackDetails.condition} />} */}
+                            </div>
+                        )}
                     </div>
 
                     <div className="d-flex flex-column" style={{ marginRight: TOOLBAR_GAP, marginBottom: TOOLBAR_GAP }}>
@@ -410,34 +418,34 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                                     />
                                 ))}
                             </div>
-                        <div className="d-flex align-items-center mt-2" style={{ gap: 6 }}>
-                            <Form.Label className="mb-0" style={{ whiteSpace: "nowrap" }}>
-                                View window:
-                                <OverlayTrigger
-                                    placement="top"
-                                    overlay={
-                                        <Tooltip id="camera-window-tooltip">
-                                            Controls how many metres of the track are visible at once. The camera follows the frontmost character, with a 10% lead ahead of them.
-                                        </Tooltip>
-                                    }
-                                >
-                                    <span className="toggle-info-icon">ⓘ</span>
-                                </OverlayTrigger>
-                            </Form.Label>
-                            <Form.Control
-                                type="number"
-                                min={20}
-                                max={400}
-                                step={10}
-                                value={cameraWindow}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                    const v = parseInt(e.target.value, 10);
-                                    if (!isNaN(v) && v >= 20 && v <= 400) setCameraWindow(v);
-                                }}
-                                style={{ width: 80 }}
-                            />
-                            <span style={{ color: "#aaa" }}>m</span>
-                        </div>
+                            <div className="d-flex align-items-center mt-2" style={{ gap: 6 }}>
+                                <Form.Label className="mb-0" style={{ whiteSpace: "nowrap" }}>
+                                    View window:
+                                    <OverlayTrigger
+                                        placement="top"
+                                        overlay={
+                                            <Tooltip id="camera-window-tooltip">
+                                                Controls how many metres of the track are visible at once. The camera follows the frontmost character, with a 10% lead ahead of them.
+                                            </Tooltip>
+                                        }
+                                    >
+                                        <span className="toggle-info-icon">ⓘ</span>
+                                    </OverlayTrigger>
+                                </Form.Label>
+                                <Form.Control
+                                    type="number"
+                                    min={20}
+                                    max={400}
+                                    step={10}
+                                    value={cameraWindow}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                        const v = parseInt(e.target.value, 10);
+                                        if (!isNaN(v) && v >= 20 && v <= 400) setCameraWindow(v);
+                                    }}
+                                    style={{ width: 80 }}
+                                />
+                                <span style={{ color: "#aaa" }}>m</span>
+                            </div>
                         </div>
 
                     </div>

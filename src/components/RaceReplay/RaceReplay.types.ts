@@ -10,6 +10,11 @@ export type RaceReplayProps = {
     detectedCourseId?: number;
     raceType?: string;
     onTrackChange?: (courseId: number | undefined) => void;
+    trackDetails?: {
+        condition?: string;
+        weather?: string;
+        season?: string;
+    };
 };
 
 export type InterpolatedFrame = {

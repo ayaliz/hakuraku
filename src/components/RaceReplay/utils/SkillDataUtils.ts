@@ -9,6 +9,7 @@ type SkillEffect = {
 type SkillDef = {
     id: number;
     iconid?: number;
+    rarity?: number;
     condition_groups: {
         effects: SkillEffect[];
     }[];

@@ -43,7 +43,7 @@ export default function CharaProperLabels({ chara, groundFilter, distanceFilter,
     .filter(([k]) => runningStyleFilter == null || Number(k) === runningStyleFilter);
 
   return (
-    <Table size="sm" className="w-auto m-2">
+    <Table size="sm" className="w-auto mx-auto my-2" style={{ backgroundColor: 'transparent' }}>
       <tbody>
         <tr>
           {(groundFilter == null || groundFilter === 1) && <>

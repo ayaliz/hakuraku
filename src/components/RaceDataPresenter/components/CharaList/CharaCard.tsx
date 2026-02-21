@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { Table } from "react-bootstrap";
 import { CharaTableData, ParentEntry } from "./types";
 import { aggregateFactors, formatFactor, getCharaImageUrl, getFactorColor } from "./utils";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import CharaProperLabels from "../../../CharaProperLabels";
-import AssetLoader from "../../../../data/AssetLoader";
 import { charaTableColumns } from "./columns";
 import { getSkillDef } from "../../../RaceReplay/utils/SkillDataUtils";
+import { getCourseAptitudeFilters } from "../../../../pages/MultiRacePage/utils";
+import AssetLoader from "../../../../data/AssetLoader";
 
 const ChevronIcon = () => (
     <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
@@ -16,6 +16,7 @@ const ChevronIcon = () => (
 
 interface CharaTableProps {
     data: CharaTableData[];
+    courseId?: number;
 }
 
 const ParentGroup = ({ parents }: { parents: ParentEntry[] }) => {
@@ -25,23 +26,20 @@ const ParentGroup = ({ parents }: { parents: ParentEntry[] }) => {
     const aggregatedFactors = aggregateFactors(sortedParents);
 
     return (
-        <div
-            className="mb-2 p-2 border border-secondary rounded"
-            style={{ backgroundColor: 'rgba(0,0,0,0.2)', width: '100%' }}
-        >
-            <div className="d-flex align-items-center mb-2 flex-wrap">
+        <div className="parent-group-container">
+            <div className="parent-images-flex">
                 {sortedParents.map((p, idx) => (
                     <img
                         key={idx}
                         src={getCharaImageUrl(p.cardId)}
                         alt={String(p.cardId)}
+                        className="parent-img"
                         title={`ID: ${p.cardId} (Pos: ${p.positionId})`}
-                        style={{ width: '64px', height: '64px', objectFit: 'contain', marginRight: '8px', marginBottom: '4px' }}
                         onError={(e) => (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iIzU1NSIvPjwvc3ZnPg=='}
                     />
                 ))}
             </div>
-            <div className="d-flex flex-wrap" style={{ fontSize: '0.95rem' }}>
+            <div className="d-flex flex-wrap">
                 {aggregatedFactors.length === 0 ? <span className="text-muted">No factors</span> : aggregatedFactors.map((f, fIdx) => {
                     let name = f.nameOverride;
                     if (!name) {
@@ -49,18 +47,9 @@ const ParentGroup = ({ parents }: { parents: ParentEntry[] }) => {
                         name = formatted ? formatted.name : `Factor ${f.id}`;
                     }
                     return (
-                        <span
-                            key={fIdx}
-                            className="mb-1 me-1 badge text-bg-dark"
-                            style={{
-                                marginRight: '3px',
-                                backgroundColor: '#343a40',
-                                border: '1px solid #555',
-                                padding: '4px 6px'
-                            }}
-                        >
-                            <span style={{ color: getFactorColor(f.id) }}>{name}</span>
-                            {' '}{f.level}★
+                        <span key={fIdx} className="factor-badge">
+                            <span style={{ color: getFactorColor(f.id), fontWeight: 600 }}>{name}</span>
+                            <span style={{ color: '#9ca3af' }}>{f.level}★</span>
                         </span>
                     );
                 })}
@@ -69,9 +58,11 @@ const ParentGroup = ({ parents }: { parents: ParentEntry[] }) => {
     );
 };
 
-const CharaTable: React.FC<CharaTableProps> = ({ data }) => {
+const CharaTable: React.FC<CharaTableProps> = ({ data, courseId }) => {
     const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
     const [tableCollapsed, setTableCollapsed] = useState(false);
+
+    const aptitudeFilters = getCourseAptitudeFilters(courseId);
 
     const toggleRow = (frameOrder: number) => {
         setExpandedRows(prev => {
@@ -155,84 +146,113 @@ const CharaTable: React.FC<CharaTableProps> = ({ data }) => {
                         const expandedRow = (
                             <tr key={`expanded-${row.frameOrder}`}>
                                 <td colSpan={charaTableColumns.length} className="expanded-content">
-                                    <div className="d-flex flex-row align-items-start flex-wrap">
-                                        {/* Skills table - left */}
-                                        <Table className="w-auto m-1">
-                                            <tbody>
-                                                {row.trainedChara.skills.map((cs, idx) => {
-                                                    const count = row.activatedSkillCounts.get(cs.skillId);
-                                                    const skillDef = getSkillDef(cs.skillId);
-                                                    return (
-                                                        <tr key={idx}>
-                                                            <td style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                {skillDef?.iconid && (
-                                                                    <img
-                                                                        src={AssetLoader.getSkillIcon(skillDef.iconid)}
-                                                                        alt=""
-                                                                        style={{ width: '24px', height: '24px' }}
-                                                                    />
-                                                                )}
-                                                                <span>{UMDatabaseWrapper.skillName(cs.skillId)}</span>
-                                                            </td>
-                                                            <td>
-                                                                {count ? (
-                                                                    count > 1 ? <strong>{count}x</strong> : 'Used'
-                                                                ) : ''}
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                        </Table>
+                                    <div className="dashboard-grid">
+                                        {/* Skills Panel */}
+                                        <div className="dashboard-panel panel-skills">
+                                            <div className="dashboard-panel-header">
+                                                Skills ({row.trainedChara.skills.length})
+                                            </div>
+                                            <div className="skills-list">
+                                                {(() => {
+                                                    const inherentSkill = row.trainedChara.skills.length > 0 ? row.trainedChara.skills[0] : undefined;
 
-                                        {/* Aptitudes + Deck - middle */}
-                                        <div className="d-flex flex-column m-2">
-                                            <div className="mb-2">
-                                                <CharaProperLabels chara={row.trainedChara} />
+                                                    const otherSkills = row.trainedChara.skills.slice(1).sort((a, b) => {
+                                                        const aUsed = row.activatedSkillCounts.has(a.skillId) ? 1 : 0;
+                                                        const bUsed = row.activatedSkillCounts.has(b.skillId) ? 1 : 0;
+                                                        // Sort by used (descending), then iconid (ascending)
+                                                        if (aUsed !== bUsed) return bUsed - aUsed;
+
+                                                        const aDef = getSkillDef(a.skillId);
+                                                        const bDef = getSkillDef(b.skillId);
+                                                        return (aDef?.iconid || 0) - (bDef?.iconid || 0);
+                                                    });
+
+                                                    const sortedSkills = inherentSkill ? [inherentSkill, ...otherSkills] : otherSkills;
+
+                                                    return sortedSkills.map((cs, idx) => {
+                                                        const count = row.activatedSkillCounts.get(cs.skillId);
+                                                        const skillDef = getSkillDef(cs.skillId);
+                                                        return (
+                                                            <div key={idx} className="skill-item">
+                                                                <div className="skill-info">
+                                                                    {skillDef?.iconid ? (
+                                                                        <img
+                                                                            src={AssetLoader.getSkillIcon(skillDef.iconid)}
+                                                                            alt=""
+                                                                            className="skill-icon"
+                                                                        />
+                                                                    ) : (
+                                                                        <div className="skill-icon"></div>
+                                                                    )}
+                                                                    <span>{UMDatabaseWrapper.skillName(cs.skillId)}</span>
+                                                                </div>
+                                                                {count ? (
+                                                                    <span className={`skill-badge ${count > 1 ? 'multiple' : ''}`}>
+                                                                        {count > 1 ? `${count}x Used` : 'Used'}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="skill-badge failed">
+                                                                        ✕
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    });
+                                                })()}
+                                            </div>
+                                        </div>
+
+                                        {/* Aptitudes & Deck Panel */}
+                                        <div className="dashboard-panel panel-aptitudes">
+                                            <div className="dashboard-panel-header">
+                                                Aptitudes
+                                            </div>
+                                            <div className="aptitude-container">
+                                                <CharaProperLabels
+                                                    chara={row.trainedChara}
+                                                    groundFilter={aptitudeFilters?.ground}
+                                                    distanceFilter={aptitudeFilters?.distance}
+                                                    runningStyleFilter={row.horseResultData.runningStyle}
+                                                />
                                             </div>
 
                                             {row.deck && row.deck.length > 0 && (
-                                                <div style={{
-                                                    display: 'grid',
-                                                    gridTemplateColumns: 'repeat(3, 1fr)',
-                                                    gap: '10px',
-                                                    justifyItems: 'center',
-                                                    padding: '10px',
-                                                    borderRadius: '4px'
-                                                }}>
-                                                    {row.deck.map((card) => (
-                                                        <div key={card.position} className="text-center">
-                                                            <img
-                                                                src={AssetLoader.getSupportCardIcon(card.id) ?? ""}
-                                                                alt={String(card.id)}
-                                                                title={`ID: ${card.id}`}
-                                                                style={{
-                                                                    width: '85px',
-                                                                    height: 'auto',
-                                                                    borderRadius: '5px',
-                                                                    boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
-                                                                }}
-                                                                onError={(e) => {
-                                                                    const target = e.target as HTMLImageElement;
-                                                                    target.style.display = 'none';
-                                                                    if (target.parentElement) {
-                                                                        target.parentElement.innerText = String(card.id);
-                                                                    }
-                                                                }}
-                                                            />
-                                                            <div style={{ fontSize: '0.8rem', fontWeight: 'bold', marginTop: '2px' }}>
-                                                                LB {card.lb}
+                                                <>
+                                                    <div className="dashboard-panel-header" style={{ marginTop: 'auto', paddingTop: '16px' }}>
+                                                        Support Deck
+                                                    </div>
+                                                    <div className="support-deck-grid">
+                                                        {row.deck.map((card) => (
+                                                            <div key={card.position} className="support-card-wrapper" title={`ID: ${card.id}`}>
+                                                                <img
+                                                                    src={AssetLoader.getSupportCardIcon(card.id) ?? ""}
+                                                                    alt={String(card.id)}
+                                                                    className="support-card-img"
+                                                                    onError={(e) => {
+                                                                        const target = e.target as HTMLImageElement;
+                                                                        target.style.display = 'none';
+                                                                        if (target.parentElement) {
+                                                                            target.parentElement.innerText = String(card.id);
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <div className="support-card-lb">
+                                                                    LB {card.lb}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                                        ))}
+                                                    </div>
+                                                </>
                                             )}
                                         </div>
 
-                                        {/* Parents/Legacies - right */}
+                                        {/* Inheritance Panel */}
                                         {(parentGroup1.length > 0 || parentGroup2.length > 0) && (
-                                            <div className="m-2 d-flex flex-column" style={{ flex: '1 1 300px', minWidth: '300px', maxWidth: '100%' }}>
-                                                <div className="d-flex flex-column mt-1">
+                                            <div className="dashboard-panel panel-inheritance">
+                                                <div className="dashboard-panel-header">
+                                                    Parents
+                                                </div>
+                                                <div className="parents-list">
                                                     <ParentGroup parents={parentGroup1} />
                                                     <ParentGroup parents={parentGroup2} />
                                                 </div>

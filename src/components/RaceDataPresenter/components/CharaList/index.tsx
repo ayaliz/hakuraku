@@ -25,7 +25,7 @@ const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData, detected
 
     return (
         <div className="chara-list-section">
-            <CharaTable data={sortedData} />
+            <CharaTable data={sortedData} courseId={detectedCourseId} />
         </div>
     );
 };

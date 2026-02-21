@@ -272,3 +272,205 @@
         padding: 6px 8px;
     }
 }
+
+.dashboard-grid {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0;
+    background: transparent;
+    border-radius: 8px;
+}
+
+.dashboard-panel {
+    background: transparent;
+    border: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    box-shadow: none;
+}
+
+.panel-skills {
+    flex: 0 0 260px;
+    padding-right: 12px;
+}
+
+.panel-aptitudes {
+    flex: 0 0 250px;
+    padding-right: 12px;
+}
+
+.panel-inheritance {
+    flex: 1 1 350px;
+}
+
+.dashboard-panel-header {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #818cf8;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+}
+
+/* Skills list styling */
+.skills-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.skill-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 8px;
+    background: transparent;
+    border-radius: 6px;
+    border: none;
+    transition: background 0.2s;
+}
+
+.skill-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.skill-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #e5e7eb;
+}
+
+.skill-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.skill-badge {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    font-weight: 600;
+}
+
+.skill-badge.multiple {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+}
+
+.skill-badge.failed {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+/* Support Deck Grid */
+.support-deck-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 75px);
+    justify-content: center;
+    gap: 10px;
+    margin-top: auto;
+}
+
+.support-card-wrapper {
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    transition: transform 0.2s ease;
+}
+
+.support-card-wrapper:hover {
+    transform: translateY(-2px);
+}
+
+.support-card-img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.support-card-lb {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-align: center;
+    padding: 2px 0;
+    backdrop-filter: blur(2px);
+}
+
+/* Parents panel adjustments */
+.parent-group-container {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin-bottom: 12px;
+}
+
+.parent-group-container:last-child {
+    margin-bottom: 0;
+}
+
+.parent-images-flex {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.parent-img {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    border-radius: 4px;
+    background: transparent;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.factor-badge {
+    font-size: 0.85rem;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    background: #1e232c;
+    border: 1px solid #374151;
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.aptitude-container {
+    margin-bottom: 12px;
+    background: transparent;
+    padding: 0;
+    border: none;
+}
+
+/* Override alternating backgrounds for internal tables */
+.dashboard-grid .table tbody tr {
+    background: transparent !important;
+}
+
+.dashboard-grid .table tbody tr:hover {
+    background: transparent !important;
+}
+
+.dashboard-grid .table td {
+    border: none;
+}

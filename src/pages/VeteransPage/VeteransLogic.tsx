@@ -19,7 +19,7 @@ const matchesFilter = (veteran: Veteran, filter: BaseFilter, categoryId: number)
 
 const calculateSortScore = (veteran: Veteran, sortMode: SortOption, affinityCharaId?: number | null): number => {
     const aggregated = aggregateFactors(veteran);
-    
+
     const sumStars = (condition: (f: typeof aggregated[0]) => boolean) => {
         return aggregated.filter(condition).reduce((acc, curr) => acc + curr.level, 0);
     };
@@ -30,7 +30,7 @@ const calculateSortScore = (veteran: Veteran, sortMode: SortOption, affinityChar
         case 'total_skills': return sumStars(f => f.category === 5);
         case 'legacy_common': return sumStars(f => (f.category === 4 || f.category === 5) && f.isGold);
         case 'legacy_skills': return sumStars(f => f.category === 5 && f.isGold);
-        case 'date': return new Date(veteran.create_time).getTime();
+        case 'score': return veteran.rank_score;
         case 'affinity': return affinityCharaId ? calculateAffinity(veteran, affinityCharaId) : 0;
         case 'none': default: return 0;
     }

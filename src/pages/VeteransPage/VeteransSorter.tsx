@@ -9,7 +9,7 @@ export type SortOption =
     | 'total_skills'
     | 'legacy_common'
     | 'legacy_skills'
-    | 'date'
+    | 'score'
     | 'affinity';
 
 export type SortDirection = 'asc' | 'desc';
@@ -38,9 +38,9 @@ const VeteransSorter: React.FC<VeteransSorterProps> = ({
             <Form.Label className="me-2 mb-0" style={{ whiteSpace: 'nowrap', marginRight: '10px', fontWeight: 'bold' }}>
                 Sort By:
             </Form.Label>
-            <Form.Control 
+            <Form.Control
                 as="select"
-                value={activeSort} 
+                value={activeSort}
                 onChange={handleChange}
                 style={{ width: 'auto', minWidth: '200px', display: 'inline-block' }}
             >
@@ -50,15 +50,15 @@ const VeteransSorter: React.FC<VeteransSorterProps> = ({
                 <option value="total_skills">Total Skills Stars</option>
                 <option value="legacy_common">Legacy Common Stars</option>
                 <option value="legacy_skills">Legacy Skills Stars</option>
-                <option value="date">Created Date</option>
+                <option value="score">Score</option>
                 <option value="affinity" disabled={!affinityCharaId}>
                     {affinityCharaId
                         ? `Affinity: ${UMDatabaseWrapper.charas[affinityCharaId]?.name ?? affinityCharaId}`
                         : 'Affinity (select a character first)'}
                 </option>
             </Form.Control>
-            <Button 
-                variant="outline-secondary" 
+            <Button
+                variant="outline-secondary"
                 onClick={onDirectionToggle}
                 disabled={activeSort === 'none'}
                 style={{ marginLeft: '10px', whiteSpace: 'nowrap' }}

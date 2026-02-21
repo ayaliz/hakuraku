@@ -1,5 +1,5 @@
 class AssetLoaderClass {
-    async initialize(): Promise<void> {}
+    async initialize(): Promise<void> { }
 
     getAssetUrl(key: string): string {
         return `${import.meta.env.BASE_URL}assets/${key}`;
@@ -24,6 +24,10 @@ class AssetLoaderClass {
 
     getSupportCardIcon(id: number): string {
         return this.getAssetUrl(`umamusume_cards/tex_support_card_${id}.webp`);
+    }
+
+    getSkillIcon(iconId: number): string {
+        return this.getAssetUrl(`skill_icons/utx_ico_skill_${iconId}.webp`);
     }
 
     getBlockedIcon(): string {

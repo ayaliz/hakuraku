@@ -27,7 +27,7 @@ function generateTiles(): PlannerTile[] {
     const tiles: PlannerTile[] = [];
     let id = 0;
 
-    tiles.push({ id: id++, label: 'Debut', year: 'junior', debut: true });
+    tiles.push({ id: id++, label: 'Early Jul', year: 'junior', debut: true });
     tiles.push({ id: id++, label: 'Late Jul', year: 'junior' });
 
     for (let m = 7; m <= 11; m++) {
@@ -55,9 +55,10 @@ const YEAR_ABBR: Record<string, string> = {
 };
 
 function getTileLabel(tile: PlannerTile): string {
-    if (tile.debut) return 'Debut';
     return `${YEAR_ABBR[tile.year]} ${tile.label}`;
 }
+
+const EPITHET_SADDLE_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 type Portrait = { slot: 'main' | 'p1' | 'p2'; charaId: number };
 
@@ -86,6 +87,9 @@ function getTileIndex(year: number, month: number, half: number): number | null 
     } else {
         return null;
     }
+
+    tile -= 1;
+
     if (tile < 0) return null;
     if (tile >= TILES.length) tile = TILES.length - 1;
     return tile;
@@ -94,8 +98,6 @@ function getTileIndex(year: number, month: number, half: number): number | null 
 const RacePlannerModal: React.FC<Props> = ({ show, onHide, mainCharId, parent1, parent2 }) => {
     const [lockCareerRaces, setLockCareerRaces] = useState(true);
     const [conflictCycle, setConflictCycle] = useState<Record<number, number>>({});
-
-    const mainName = mainCharId ? (UMDatabaseWrapper.charas[mainCharId]?.name ?? `Chara ${mainCharId}`) : '';
 
     const uraRaceMultiMap = useMemo((): Map<number, number[]> => {
         try {
@@ -132,7 +134,10 @@ const RacePlannerModal: React.FC<Props> = ({ show, onHide, mainCharId, parent1, 
                 const entries = cardKey ? data[cardKey] : null;
                 if (entries) {
                     for (const entry of entries) {
-                        const tileIdx = Math.min(entry.turn - 12, TILES.length - 1);
+                        let tileIdx = entry.turn - 13;
+                        if (entry.turn === 12) tileIdx = 0;
+                        tileIdx = Math.min(tileIdx, TILES.length - 1);
+
                         if (tileIdx >= 0) {
                             for (const race of entry.races) {
                                 getEntries(tileIdx).push({
@@ -165,8 +170,17 @@ const RacePlannerModal: React.FC<Props> = ({ show, onHide, mainCharId, parent1, 
                     const altTiles = uraRaceMultiMap.get(raceInstanceId);
                     if (!altTiles || altTiles.length === 0) continue;
 
-                    const tileIdx = altTiles[0];
                     const iconId = Math.floor(raceInstanceId / 100);
+
+                    let tileIdx = altTiles[0];
+                    for (const t of altTiles) {
+                        const tEntries = map.get(t);
+                        if (tEntries && tEntries.some(e => e.iconId === iconId)) {
+                            tileIdx = t;
+                            break;
+                        }
+                    }
+
                     const entries = getEntries(tileIdx);
 
                     const existing = entries.find(e => e.iconId === iconId);
@@ -243,6 +257,44 @@ const RacePlannerModal: React.FC<Props> = ({ show, onHide, mainCharId, parent1, 
             }
         }
 
+        const getEpithetScore = (entry: TileEntry) => {
+            let completes = 0;
+            let partOf = 0;
+            for (const saddleId of EPITHET_SADDLE_IDS) {
+                const races = UMDatabaseWrapper.winSaddleToRaceInstances[saddleId] || [];
+                if (races.length === 0) continue;
+
+                const reqIcons = races.map(r => Math.floor(r / 100));
+                if (reqIcons.includes(entry.iconId)) {
+                    partOf++;
+                    let weHaveOthers = true;
+                    for (const reqIcon of reqIcons) {
+                        if (reqIcon === entry.iconId) continue;
+                        let found = false;
+                        for (const tEntries of map.values()) {
+                            if (tEntries.some(e => e.iconId === reqIcon)) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) { weHaveOthers = false; break; }
+                    }
+                    if (weHaveOthers) completes++;
+                }
+            }
+            return completes * 100 + partOf;
+        };
+
+        for (const tileEntries of map.values()) {
+            tileEntries.sort((a, b) => {
+                if (a.isCareer !== b.isCareer) return a.isCareer ? -1 : 1;
+                const scoreA = getEpithetScore(a);
+                const scoreB = getEpithetScore(b);
+                if (scoreA !== scoreB) return scoreB - scoreA;
+                return 0;
+            });
+        }
+
         return map;
     }, [lockCareerRaces, mainCharId, parent1, parent2, uraRaceMultiMap]);
 
@@ -253,16 +305,51 @@ const RacePlannerModal: React.FC<Props> = ({ show, onHide, mainCharId, parent1, 
         }));
     };
 
+    const { plannerCells, scheduledRaceIcons } = useMemo(() => {
+        const cells = TILES.map((tile, i) => {
+            const prevYear = i > 0 ? TILES[i - 1].year : null;
+            const yearChanged = tile.year !== prevYear;
+            const entries = tileMap.get(tile.id) ?? [];
+
+            const careerEntries = entries.filter(e => e.isCareer);
+            const nonCareerEntries = entries.filter(e => !e.isCareer);
+            const hasCareers = careerEntries.length > 0;
+
+            const hasConflict = !hasCareers && nonCareerEntries.some(e =>
+                e.portraits.some(p => p.slot === 'p1') && !e.portraits.some(p => p.slot === 'p2')
+            ) && nonCareerEntries.some(e =>
+                e.portraits.some(p => p.slot === 'p2') && !e.portraits.some(p => p.slot === 'p1')
+            );
+
+            const shownNonCareer = hasCareers
+                ? []
+                : hasConflict
+                    ? [nonCareerEntries[(conflictCycle[tile.id] ?? 0) % nonCareerEntries.length]]
+                    : nonCareerEntries;
+
+            return {
+                tile,
+                yearChanged,
+                hasConflict,
+                entriesToShow: [...careerEntries, ...shownNonCareer],
+                conflictOptionsCount: nonCareerEntries.length
+            };
+        });
+
+        const scheduledIcons = new Set<number>();
+        for (const cell of cells) {
+            for (const entry of cell.entriesToShow) {
+                scheduledIcons.add(entry.iconId);
+            }
+        }
+
+        return { plannerCells: cells, scheduledRaceIcons: scheduledIcons };
+    }, [tileMap, conflictCycle]);
+
     return (
         <Modal show={show} onHide={onHide} size="xl" scrollable>
             <Modal.Header closeButton>
-                <Modal.Title>
-                    Parent Run Planner
-                    {mainName && <span className="planner-title-sub"> — {mainName}</span>}
-                </Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-                <div className="planner-toolbar">
+                <div className="planner-toolbar" style={{ marginBottom: 0 }}>
                     <Form.Check
                         type="switch"
                         id="lock-career-races"
@@ -272,74 +359,108 @@ const RacePlannerModal: React.FC<Props> = ({ show, onHide, mainCharId, parent1, 
                         className="planner-career-toggle"
                     />
                 </div>
+            </Modal.Header>
+            <Modal.Body>
 
                 <div className="planner-grid">
-                    {TILES.map((tile, i) => {
-                        const prevYear = i > 0 ? TILES[i - 1].year : null;
-                        const yearChanged = tile.year !== prevYear;
-                        const entries = tileMap.get(tile.id) ?? [];
-
-                        const careerEntries = entries.filter(e => e.isCareer);
-                        const nonCareerEntries = entries.filter(e => !e.isCareer);
-                        const hasCareers = careerEntries.length > 0;
-
-                        const hasConflict = !hasCareers && nonCareerEntries.some(e =>
-                            e.portraits.some(p => p.slot === 'p1') && !e.portraits.some(p => p.slot === 'p2')
-                        ) && nonCareerEntries.some(e =>
-                            e.portraits.some(p => p.slot === 'p2') && !e.portraits.some(p => p.slot === 'p1')
-                        );
-
-                        const shownNonCareer = hasCareers
-                            ? []
-                            : hasConflict
-                                ? [nonCareerEntries[(conflictCycle[tile.id] ?? 0) % nonCareerEntries.length]]
-                                : nonCareerEntries;
-
-                        const entriesToShow = [...careerEntries, ...shownNonCareer];
-
-                        return (
-                            <div key={tile.id} className="planner-cell">
-                                <div className="planner-cell-label">{getTileLabel(tile)}</div>
-                                <div
-                                    className={`planner-tile planner-tile-${tile.year}${tile.debut ? ' planner-tile-debut' : ''}${yearChanged && !tile.debut ? ' planner-tile-year-start' : ''}`}
-                                    onClick={hasConflict ? () => handleTileClick(tile.id, nonCareerEntries.length) : undefined}
-                                >
-                                    {hasConflict && (
+                    {plannerCells.map(({ tile, yearChanged, hasConflict, entriesToShow, conflictOptionsCount }) => (
+                        <div key={tile.id} className="planner-cell">
+                            <div className="planner-cell-label">{getTileLabel(tile)}</div>
+                            <div
+                                className={`planner-tile planner-tile-${tile.year}${tile.debut ? ' planner-tile-debut' : ''}${yearChanged && !tile.debut ? ' planner-tile-year-start' : ''}`}
+                                onClick={hasConflict ? () => handleTileClick(tile.id, conflictOptionsCount) : undefined}
+                            >
+                                {hasConflict && (
+                                    <img
+                                        src={AssetLoader.getBlockedIcon()}
+                                        alt=""
+                                        title="Both parents ran a different race on this turn, click to cycle"
+                                        className="planner-conflict-icon"
+                                    />
+                                )}
+                                {entriesToShow.map((entry, idx) => (
+                                    <div
+                                        key={`${entry.iconId}-${idx}`}
+                                        className="planner-parent-race"
+                                    >
                                         <img
-                                            src={AssetLoader.getBlockedIcon()}
-                                            alt=""
-                                            title="Both parents ran a different race on this turn, click to cycle"
-                                            className="planner-conflict-icon"
+                                            src={getRaceBannerUrl(entry.iconId)}
+                                            alt={entry.name ?? ''}
+                                            title={entry.name}
+                                            className="planner-race-icon"
+                                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                         />
-                                    )}
-                                    {entriesToShow.map((entry, idx) => (
-                                        <div
-                                            key={`${entry.iconId}-${idx}`}
-                                            className="planner-parent-race"
-                                        >
+                                        {entry.portraits.map((p, pi) => (
                                             <img
-                                                src={getRaceBannerUrl(entry.iconId)}
-                                                alt={entry.name ?? ''}
-                                                title={entry.name}
-                                                className="planner-race-icon"
+                                                key={`${p.slot}-${pi}`}
+                                                src={AssetLoader.getCharaIcon(p.charaId)}
+                                                alt=""
+                                                className="planner-parent-portrait"
+                                                style={{ right: `${1 + pi * 22}px` }}
                                                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                             />
-                                            {entry.portraits.map((p, pi) => (
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="planner-epithets-section">
+                    <div className="planner-epithets-grid">
+                        {EPITHET_SADDLE_IDS.map(saddleId => {
+                            const name = UMDatabaseWrapper.getTextData(111, saddleId)?.text || `Epithet ${saddleId}`;
+                            const p1Has = parent1?.win_saddle_id_array.includes(saddleId);
+                            const p2Has = parent2?.win_saddle_id_array.includes(saddleId);
+
+                            const parentPortraits: number[] = [];
+                            if (p1Has && parent1) parentPortraits.push(Math.floor(parent1.card_id / 100));
+                            if (p2Has && parent2) {
+                                const p2Chara = Math.floor(parent2.card_id / 100);
+                                if (!parentPortraits.includes(p2Chara)) {
+                                    parentPortraits.push(p2Chara);
+                                }
+                            }
+
+                            const races = UMDatabaseWrapper.winSaddleToRaceInstances[saddleId] || [];
+                            if (races.length === 0) return null;
+
+                            return (
+                                <div key={saddleId} className="planner-epithet-card">
+                                    <div className="planner-epithet-header">
+                                        <span className="planner-epithet-name">{name}</span>
+                                        <div className="planner-epithet-parents">
+                                            {parentPortraits.map((charaId, idx) => (
                                                 <img
-                                                    key={`${p.slot}-${pi}`}
-                                                    src={AssetLoader.getCharaIcon(p.charaId)}
+                                                    key={idx}
+                                                    src={AssetLoader.getCharaIcon(charaId)}
                                                     alt=""
-                                                    className="planner-parent-portrait"
-                                                    style={{ right: `${1 + pi * 22}px` }}
+                                                    className="planner-epithet-parent"
                                                     onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                                 />
                                             ))}
                                         </div>
-                                    ))}
+                                    </div>
+                                    <div className="planner-epithet-races">
+                                        {races.map((r, ri) => {
+                                            const iconId = Math.floor(r / 100);
+                                            const active = scheduledRaceIcons.has(iconId);
+                                            return (
+                                                <img
+                                                    key={ri}
+                                                    src={getRaceBannerUrl(iconId)}
+                                                    className={`planner-epithet-race ${active ? 'active' : 'inactive'}`}
+                                                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                                    title={UMDatabaseWrapper.raceInstanceNameWithId(r)}
+                                                />
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
+                    </div>
                 </div>
             </Modal.Body>
         </Modal>

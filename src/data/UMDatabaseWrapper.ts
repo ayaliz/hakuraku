@@ -1,6 +1,6 @@
 import pako from "pako";
 import { create, fromBinary } from "@bufbuild/protobuf";
-import {Card, Chara, RaceInstance, SingleModeRank, Skill, SupportCard, TextData, UMDatabase, UMDatabaseSchema} from './data_pb';
+import { Card, Chara, RaceInstance, SingleModeRank, Skill, SupportCard, TextData, UMDatabase, UMDatabaseSchema } from './data_pb';
 
 class _UMDatabaseWrapper {
     umdb: UMDatabase = create(UMDatabaseSchema);
@@ -18,9 +18,11 @@ class _UMDatabaseWrapper {
     relationPoints: Record<number, number> = {};
     // win_saddle_id -> race_instance_id (only single-race saddles)
     winSaddleToRaceInstance: Record<number, number> = {};
+    // win_saddle_id -> array of race_instance_id (all races in the saddle)
+    winSaddleToRaceInstances: Record<number, number[]> = {};
 
     initialize() {
-        return fetch(import.meta.env.BASE_URL + 'data/umdb.binarypb.gz', {cache: 'no-cache'})
+        return fetch(import.meta.env.BASE_URL + 'data/umdb.binarypb.gz', { cache: 'no-cache' })
             .then(response => response.arrayBuffer())
             .then(response => {
                 this.umdb = fromBinary(UMDatabaseSchema, pako.inflate(new Uint8Array(response)));
@@ -59,7 +61,8 @@ class _UMDatabaseWrapper {
                 });
 
                 this.umdb.singleModeWinsSaddle.forEach((s) => {
-                    this.winSaddleToRaceInstance[s.id!] = s.raceInstanceId!;
+                    if (s.raceInstanceId) this.winSaddleToRaceInstance[s.id!] = s.raceInstanceId;
+                    this.winSaddleToRaceInstances[s.id!] = Array.from(s.raceInstanceIds);
                 });
             });
     }

@@ -124,4 +124,5 @@ message SuccessionRelationMember {
 message SingleModeWinsSaddle {
     optional int32 id = 1;
     optional int32 race_instance_id = 2;
+    repeated int32 race_instance_ids = 3;
 }

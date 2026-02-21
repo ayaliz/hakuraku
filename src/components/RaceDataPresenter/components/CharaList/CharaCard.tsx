@@ -6,6 +6,7 @@ import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import CharaProperLabels from "../../../CharaProperLabels";
 import AssetLoader from "../../../../data/AssetLoader";
 import { charaTableColumns } from "./columns";
+import { getSkillDef } from "../../../RaceReplay/utils/SkillDataUtils";
 
 const ChevronIcon = () => (
     <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
@@ -160,10 +161,19 @@ const CharaTable: React.FC<CharaTableProps> = ({ data }) => {
                                             <tbody>
                                                 {row.trainedChara.skills.map((cs, idx) => {
                                                     const count = row.activatedSkillCounts.get(cs.skillId);
+                                                    const skillDef = getSkillDef(cs.skillId);
                                                     return (
                                                         <tr key={idx}>
-                                                            <td>{UMDatabaseWrapper.skillName(cs.skillId)}</td>
-                                                            <td>Lv {cs.level}</td>
+                                                            <td style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                {skillDef?.iconid && (
+                                                                    <img
+                                                                        src={AssetLoader.getSkillIcon(skillDef.iconid)}
+                                                                        alt=""
+                                                                        style={{ width: '24px', height: '24px' }}
+                                                                    />
+                                                                )}
+                                                                <span>{UMDatabaseWrapper.skillName(cs.skillId)}</span>
+                                                            </td>
                                                             <td>
                                                                 {count ? (
                                                                     count > 1 ? <strong>{count}x</strong> : 'Used'

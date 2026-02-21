@@ -793,6 +793,72 @@
   object-position: top center;
 }
 
+.planner-epithets-section {
+  margin-top: 16px;
+}
+
+.planner-epithets-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.planner-epithet-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--haku-border);
+  border-radius: var(--haku-radius);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.planner-epithet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  min-height: 24px;
+}
+
+.planner-epithet-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--haku-text-primary);
+  line-height: 1.2;
+}
+
+.planner-epithet-parents {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.planner-epithet-parent {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.planner-epithet-races {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.planner-epithet-race {
+  width: 64px;
+  height: auto;
+  border-radius: 4px;
+  transition: opacity 0.2s, filter 0.2s;
+}
+
+.planner-epithet-race.inactive {
+  opacity: 0.35;
+  filter: grayscale(100%);
+}
+
 /* Spark Proc Modal inline styles extracted */
 
 .spark-proc-container {

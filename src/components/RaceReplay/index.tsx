@@ -26,7 +26,6 @@ import {
     STRAIGHT_FINAL_FILL,
     CORNER_FINAL_FILL,
     TOOLBAR_GAP,
-    TOOLBAR_INLINE_GAP,
 } from "./RaceReplay.constants";
 import { clamp } from "./RaceReplay.utils";
 import { useRafPlayer } from "./hooks/useRafPlayer";
@@ -351,15 +350,18 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     return (
         <div>
             {goalInX > 0 && availableTracks.length > 0 && (
-                <div className="d-flex align-items-start" style={{ flexWrap: "wrap", marginBottom: TOOLBAR_GAP }}>
-                    <div className="d-flex flex-column" style={{ marginRight: TOOLBAR_GAP, marginBottom: TOOLBAR_GAP, minWidth: 260 }}>
+                <div className="d-flex align-items-start" style={{ flexWrap: "wrap", marginBottom: TOOLBAR_GAP, gap: 24, rowGap: 16 }}>
+
+                    {/* LEFT SECTION: Track Info & View Window */}
+                    <div className="d-flex flex-column" style={{ flex: "0 1 auto" }}>
                         <div className="d-flex align-items-center">
-                            <Form.Label className="mb-0 me-2">Track:</Form.Label>
+                            <Form.Label className="mb-0 me-2" style={{ fontWeight: 600 }}>Track:</Form.Label>
                             <Form.Control
                                 as="select"
+                                size="sm"
                                 value={selectedTrackId ?? ""}
                                 onChange={(e) => setSelectedTrackId(e.target.value)}
-                                style={{ width: "auto", maxWidth: 320 }}
+                                style={{ width: "auto", maxWidth: 240 }}
                             >
                                 {availableTracks.map((t) => (<option key={t.id} value={t.id}>{t.name}</option>))}
                                 {guessStatus === "detected" && selectedTrackId && !availableTracks.some(t => t.id === selectedTrackId) && (
@@ -369,96 +371,77 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                                 )}
                             </Form.Control>
                         </div>
-                        <div className="mt-2" style={{ minHeight: 20 }}>
-                            {guessStatus === "detected" && (
-                                <span style={{ color: "green" }}>
-                                    Detected track from race data
-                                </span>
-                            )}
-                            {guessStatus === "guessed" && (
-                                <span style={{ color: "green" }}>
-                                    Guessed track based on CM schedule
-                                </span>
-                            )}
-                            {guessStatus === "fallback" && (
-                                <span style={{ color: "darkorange" }}>
-                                    Select track
-                                </span>
-                            )}
-                        </div>
-                        {trackDetails && (
-                            <div className="d-flex align-items-center mt-2" style={{ gap: 8 }}>
-                                {trackDetails.season && <img src={`${import.meta.env.BASE_URL}assets/track_details/${trackDetails.season}.webp`} alt={trackDetails.season} height={24} title={trackDetails.season} />}
-                                {trackDetails.weather && <img src={`${import.meta.env.BASE_URL}assets/track_details/${trackDetails.weather}.webp`} alt={trackDetails.weather} height={24} title={trackDetails.weather} />}
-                                {/* {trackDetails.condition && <img src={`${import.meta.env.BASE_URL}assets/track_details/${trackDetails.condition}.webp`} alt={trackDetails.condition} height={24} title={trackDetails.condition} />} */}
-                            </div>
-                        )}
-                    </div>
 
-                    <div className="d-flex flex-column" style={{ marginRight: TOOLBAR_GAP, marginBottom: TOOLBAR_GAP }}>
-                        <div className="d-flex align-items-start" style={{ gap: TOOLBAR_INLINE_GAP }}>
-                            <Form.Label className="mb-0 me-2 mt-1">Display:</Form.Label>
-                            <div
-                                className="d-grid"
-                                style={{
-                                    display: "grid",
-                                    gridTemplateColumns: "repeat(4, minmax(160px, auto))",
-                                    columnGap: TOOLBAR_INLINE_GAP,
-                                    rowGap: 4,
+                        <div style={{ fontSize: "0.85em", minHeight: 18, marginTop: 2 }}>
+                            {guessStatus === "detected" && <span style={{ color: "#28a745" }}>Detected track from race data</span>}
+                            {guessStatus === "guessed" && <span style={{ color: "#28a745" }}>Guessed track based on CM schedule</span>}
+                            {guessStatus === "fallback" && <span style={{ color: "darkorange" }}>Select track manually</span>}
+                        </div>
+
+                        <div className="d-flex align-items-center mt-2">
+                            <Form.Label className="mb-0" style={{ whiteSpace: "nowrap", fontWeight: 600, fontSize: "0.95em" }}>
+                                View window:
+                                <OverlayTrigger
+                                    placement="top"
+                                    overlay={
+                                        <Tooltip id="camera-window-tooltip">
+                                            Controls how many metres of the track are visible at once.
+                                        </Tooltip>
+                                    }
+                                >
+                                    <span className="toggle-info-icon ms-1">ⓘ</span>
+                                </OverlayTrigger>
+                            </Form.Label>
+                            <Form.Control
+                                type="number"
+                                size="sm"
+                                min={20}
+                                max={400}
+                                step={10}
+                                value={cameraWindow}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                    const v = parseInt(e.target.value, 10);
+                                    if (!isNaN(v) && v >= 20 && v <= 400) setCameraWindow(v);
                                 }}
-                            >
-                                {toggleDefs.map(({ id, label }) => (
-                                    <Form.Check
-                                        key={id}
-                                        type="checkbox"
-                                        id={`toggle-${id}`}
-                                        label={label}
-                                        {...bind(id)}
-                                        className="mb-1"
-                                    />
-                                ))}
-                            </div>
-                            <div className="d-flex align-items-center mt-2" style={{ gap: 6 }}>
-                                <Form.Label className="mb-0" style={{ whiteSpace: "nowrap" }}>
-                                    View window:
-                                    <OverlayTrigger
-                                        placement="top"
-                                        overlay={
-                                            <Tooltip id="camera-window-tooltip">
-                                                Controls how many metres of the track are visible at once. The camera follows the frontmost character, with a 10% lead ahead of them.
-                                            </Tooltip>
-                                        }
-                                    >
-                                        <span className="toggle-info-icon">ⓘ</span>
-                                    </OverlayTrigger>
-                                </Form.Label>
-                                <Form.Control
-                                    type="number"
-                                    min={20}
-                                    max={400}
-                                    step={10}
-                                    value={cameraWindow}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                        const v = parseInt(e.target.value, 10);
-                                        if (!isNaN(v) && v >= 20 && v <= 400) setCameraWindow(v);
-                                    }}
-                                    style={{ width: 80 }}
-                                />
-                                <span style={{ color: "#aaa" }}>m</span>
-                            </div>
+                                style={{ width: 65, marginLeft: 8, marginRight: 4 }}
+                            />
+                            <span style={{ color: "#aaa", fontSize: "0.9em" }}>m</span>
+                            {trackDetails && (
+                                <div className="d-flex align-items-center ms-3" style={{ gap: 8 }}>
+                                    {trackDetails.season && <img src={`${import.meta.env.BASE_URL}assets/track_details/${trackDetails.season}.webp`} alt={trackDetails.season} height={22} title={trackDetails.season} />}
+                                    {trackDetails.weather && <img src={`${import.meta.env.BASE_URL}assets/track_details/${trackDetails.weather}.webp`} alt={trackDetails.weather} height={22} title={trackDetails.weather} />}
+                                    {/* {trackDetails.condition && <img src={`${import.meta.env.BASE_URL}assets/track_details/${trackDetails.condition}.webp`} alt={trackDetails.condition} height={22} title={trackDetails.condition} />} */}
+                                </div>
+                            )}
                         </div>
-
                     </div>
 
+                    {/* MIDDLE SECTION: Toggles */}
+                    <div className="d-flex flex-column justify-content-center" style={{ flex: "1 1 350px", marginTop: 4 }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "8px 12px" }}>
+                            {toggleDefs.map(({ id, label }) => (
+                                <Form.Check
+                                    key={id}
+                                    type="checkbox"
+                                    id={`toggle-${id}`}
+                                    label={<span style={{ fontSize: "0.85em", whiteSpace: "nowrap" }}>{label}</span>}
+                                    {...bind(id)}
+                                    className="mb-0"
+                                />
+                            ))}
+                        </div>
+                    </div>
 
-                    <div className="d-flex flex-column align-items-end" style={{ marginLeft: "auto", marginBottom: TOOLBAR_GAP }}>
-                        <div className="d-flex align-items-center" style={{ flexWrap: "wrap", marginBottom: 4 }}>
+                    {/* RIGHT SECTION: Legends, Frame, ClipMaker */}
+                    <div className="d-flex flex-column align-items-end ms-auto" style={{ flex: "0 1 auto" }}>
+                        <div className="d-flex align-items-center mb-2" style={{ gap: 10, fontSize: "0.85em" }}>
                             <LegendItem color={STRAIGHT_FILL} label="Straight" />
                             <LegendItem color={STRAIGHT_FINAL_FILL} label="Final straight" />
                             <LegendItem color={CORNER_FILL} label="Corner" />
                             <LegendItem color={CORNER_FINAL_FILL} label="Final corner" />
                         </div>
-                        <span className="mt-1" style={{ fontSize: "0.9em", color: "#aaa", whiteSpace: "nowrap" }}>
+
+                        <div className="mb-2" style={{ fontSize: "0.95em", color: "#ccc", whiteSpace: "nowrap" }}>
                             Frame: {isEditingFrame ? (
                                 <input
                                     autoFocus
@@ -492,9 +475,9 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                                     </Tooltip>
                                 }
                             >
-                                <span className="toggle-info-icon">ⓘ</span>
+                                <span className="toggle-info-icon ms-1">ⓘ</span>
                             </OverlayTrigger>
-                        </span>
+                        </div>
 
                         {/* Clip Maker */}
                         <ClipMaker

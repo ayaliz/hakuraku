@@ -44,6 +44,7 @@ export default function RaceDataPage() {
     const [horseActVersion, setHorseActVersion] = useState<string | undefined>(undefined);
     const [isShared, setIsShared] = useState(false);
     const [raceType, setRaceType] = useState<string | undefined>(undefined);
+    const [trackDetails, setTrackDetails] = useState<{ condition?: string, weather?: string, season?: string } | undefined>(undefined);
     const [dragOver, setDragOver] = useState(false);
 
     useEffect(() => {
@@ -63,7 +64,7 @@ export default function RaceDataPage() {
         }
     }, []);
 
-    function loadSharedData(data: { raceHorseInfo: string, raceScenario: string, detectedCourseId?: number, raceType?: string }) {
+    function loadSharedData(data: { raceHorseInfo: string, raceScenario: string, detectedCourseId?: number, raceType?: string, trackDetails?: { condition?: string, weather?: string, season?: string } }) {
         try {
             const horseInfo = typeof data.raceHorseInfo === 'string' ? JSON.parse(data.raceHorseInfo) : data.raceHorseInfo;
             const parsed = deserializeFromBase64(data.raceScenario);
@@ -77,12 +78,13 @@ export default function RaceDataPage() {
             setError('');
             setIsShared(true);
             setRaceType(data.raceType);
+            setTrackDetails(data.trackDetails);
         } catch (err: any) {
             setError(`Failed to parse shared data: ${err.message}`);
         }
     }
 
-    function finalizeParsing(horseInfo: any[], raceScenario: string, courseId?: number, actVersion?: string, type?: string) {
+    function finalizeParsing(horseInfo: any[], raceScenario: string, courseId?: number, actVersion?: string, type?: string, tDetails?: { condition?: string, weather?: string, season?: string }) {
         const parsed = deserializeFromBase64(raceScenario);
         if (!parsed) { setError('Failed to parse race scenario data'); return; }
         setParsedHorseInfo(horseInfo);
@@ -97,6 +99,7 @@ export default function RaceDataPage() {
         setHorseActVersion(actVersion);
         setIsShared(false);
         setRaceType(type);
+        setTrackDetails(tDetails);
     }
 
     function parseRaceJson(json: any) {
@@ -119,6 +122,10 @@ export default function RaceDataPage() {
         } catch { }
 
         const type = json['<RaceType>k__BackingField'];
+        const condition = json['<GroundCondition>k__BackingField'];
+        const weather = json['<Weather>k__BackingField'];
+        const season = json['<Season>k__BackingField'];
+        const tDetails = { condition, weather, season };
 
         const horseInfo = raceHorseArray
             .map((member: any) => {
@@ -171,7 +178,7 @@ export default function RaceDataPage() {
             return;
         }
 
-        finalizeParsing(horseInfo, raceScenario, courseId, horseActVer, type);
+        finalizeParsing(horseInfo, raceScenario, courseId, horseActVer, type, tDetails);
     }
 
     function parseNewFormat(json: any) {
@@ -180,6 +187,10 @@ export default function RaceDataPage() {
             const trainedCharas = json['trained_chara_array'] || [];
             const actVersion = json['horseACT_version'];
             const type = json['race_type'] || json['RaceType'];
+            const condition = json['ground_condition'] || json['GroundCondition'];
+            const weather = json['weather'] || json['Weather'];
+            const season = json['season'] || json['Season'];
+            const tDetails = { condition, weather, season };
 
             let courseId: number | undefined;
             const courseSet = json['race_course_set'] || json['RaceCourseSet'];
@@ -230,7 +241,7 @@ export default function RaceDataPage() {
                 return { ...horseData, deck, parents };
             }).filter((h: any) => h !== null);
 
-            finalizeParsing(horseInfo, json['race_scenario'], courseId, actVersion, type);
+            finalizeParsing(horseInfo, json['race_scenario'], courseId, actVersion, type, tDetails);
         } catch (err: any) {
             setError(`Failed to parse new JSON format: ${err.message}`);
         }
@@ -297,6 +308,7 @@ export default function RaceDataPage() {
                     raceScenario: rawScenario,
                     detectedCourseId,
                     raceType,
+                    trackDetails,
                     salt: Date.now()
                 });
             } catch {
@@ -304,7 +316,7 @@ export default function RaceDataPage() {
                 return;
             }
         } else {
-            content = JSON.stringify({ raceHorseInfo: JSON.stringify(rawHorseInfo), raceScenario: rawScenario, detectedCourseId, raceType });
+            content = JSON.stringify({ raceHorseInfo: JSON.stringify(rawHorseInfo), raceScenario: rawScenario, detectedCourseId, raceType, trackDetails });
         }
 
         const hash = await hashPayload(content);
@@ -379,6 +391,7 @@ export default function RaceDataPage() {
                     raceHorseInfo={parsedHorseInfo}
                     raceData={parsedRaceData}
                     raceType={raceType}
+                    trackDetails={trackDetails}
                     detectedCourseId={detectedCourseId} />
             </>
         ) : (

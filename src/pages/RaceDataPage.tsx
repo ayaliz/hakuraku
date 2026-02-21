@@ -373,7 +373,7 @@ export default function RaceDataPage() {
                     {shareStatus === 'sharing' ? 'Sharing...' : 'Share'}
                 </Button>
                 <Button variant="secondary" size="sm" onClick={() => share(true)} disabled={shareStatus === 'sharing'}>
-                    Share (anon)
+                    Share (anonymous)
                 </Button>
                 {shareStatus === 'shared' && <ShareLinkBox shareUrl={shareUrl} />}
                 {shareError && <span className="text-danger" style={{ fontSize: '0.85rem' }}>{shareError}</span>}

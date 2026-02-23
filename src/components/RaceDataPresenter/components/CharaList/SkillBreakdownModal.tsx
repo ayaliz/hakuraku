@@ -111,9 +111,30 @@ const SkillBreakdownModal: React.FC<SkillBreakdownModalProps> = ({ show, onHide,
     const [hoveredIdx, setHoveredIdx] = React.useState<number | null>(null);
 
     // Sort events by time
-    const validEvents = (charaData.skillEvents ?? [])
+    const rawEvents = (charaData.skillEvents ?? [])
         .slice()
         .sort((a, b) => a.time - b.time);
+
+    let validEvents: any[] = [];
+    const zeroMEvents = rawEvents.filter(e => e.startDistance === 0 && e.durationSecs === 0);
+    const otherEvents = rawEvents.filter(e => !(e.startDistance === 0 && e.durationSecs === 0));
+
+    if (zeroMEvents.length > 1) {
+        validEvents.push({
+            isGroupedZeroM: true,
+            name: `${zeroMEvents.length} Start Skills`,
+            events: zeroMEvents,
+            startDistance: 0,
+            endDistance: Math.max(...zeroMEvents.map(e => e.endDistance)),
+            durationSecs: Math.max(...zeroMEvents.map(e => e.durationSecs)),
+            isInstant: false,
+            isMode: false,
+            time: 0
+        });
+        validEvents.push(...otherEvents);
+    } else {
+        validEvents = rawEvents;
+    }
 
     return (
         <Modal show={show} onHide={onHide} size="lg" centered>
@@ -209,8 +230,23 @@ const SkillBreakdownModal: React.FC<SkillBreakdownModalProps> = ({ show, onHide,
 
                     {hoveredIdx !== null && validEvents[hoveredIdx] && (() => {
                         const evt = validEvents[hoveredIdx];
+                        if (evt.isGroupedZeroM) {
+                            return evt.events.map((subEvt: any, sIdx: number) => {
+                                const startPct = 0;
+                                const endPct = Math.min(100, Math.max(0, (subEvt.endDistance / totalDistance) * 100));
+                                const widthPct = Math.max(0, endPct - startPct);
+                                return (widthPct > 0 ?
+                                    <div key={`hov-sub-${sIdx}`} className="sbm-highlight-box" style={{
+                                        left: `${startPct}%`,
+                                        width: `${widthPct}%`,
+                                    }} />
+                                    : null
+                                );
+                            });
+                        }
+
                         if (evt.segments) {
-                            return evt.segments.map((seg, sIdx) => {
+                            return evt.segments.map((seg: any, sIdx: number) => {
                                 const startPct = Math.min(100, Math.max(0, (seg.startDistance / totalDistance) * 100));
                                 const endPct = Math.min(100, Math.max(0, (seg.endDistance / totalDistance) * 100));
                                 const widthPct = Math.max(0, endPct - startPct);
@@ -240,6 +276,65 @@ const SkillBreakdownModal: React.FC<SkillBreakdownModalProps> = ({ show, onHide,
             <Modal.Body style={{ maxHeight: '60vh', overflowY: 'scroll', overflowX: 'hidden', padding: 0 }}>
                 <div className="sbm-list-container">
                     {validEvents.map((evt, idx) => {
+                        if (evt.isGroupedZeroM) {
+                            return (
+                                <div
+                                    key={idx}
+                                    onMouseEnter={() => setHoveredIdx(idx)}
+                                    onMouseLeave={() => setHoveredIdx(null)}
+                                    className="sbm-list-item"
+                                >
+                                    <div className="sbm-item-left">
+                                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                            {evt.events.map((e: any, i: number) => {
+                                                const skillDef = getSkillDef(e.skillId);
+                                                const iconUrl = e.iconId ? AssetLoader.getSkillIcon(e.iconId) : (skillDef?.iconid ? AssetLoader.getSkillIcon(skillDef.iconid) : null);
+                                                return iconUrl ? (
+                                                    <OverlayTrigger key={i} placement="top" overlay={<Tooltip id={`tt-${idx}-${i}`}>{e.name}</Tooltip>}>
+                                                        <img src={iconUrl} alt="skill" className="sbm-item-icon" style={{ margin: 0, width: '24px', height: '24px' }} />
+                                                    </OverlayTrigger>
+                                                ) : (
+                                                    <OverlayTrigger key={i} placement="top" overlay={<Tooltip id={`tt-${idx}-${i}`}>{e.name}</Tooltip>}>
+                                                        <span style={{ fontSize: '10px', display: 'inline-block', padding: '2px', backgroundColor: '#eee', borderRadius: '2px', cursor: 'help' }}>{e.name}</span>
+                                                    </OverlayTrigger>
+                                                );
+                                            })}
+                                        </div>
+                                        <span className="sbm-item-name" style={{ marginLeft: '8px' }}>
+                                            {evt.name}
+                                        </span>
+                                    </div>
+                                    <div className="sbm-item-right">
+                                        <div className="sbm-item-desc">
+                                            Activation: 0m (0%)
+                                        </div>
+                                        <div className="sbm-item-track-container">
+                                            <div className="sbm-item-track-bg">
+                                                {evt.events.map((e: any, i: number) => {
+                                                    const sPct = 0;
+                                                    const ePct = Math.min(100, Math.max(0, (e.endDistance / totalDistance) * 100));
+                                                    const wPct = Math.max(0, ePct - sPct);
+                                                    const skillDef = getSkillDef(e.skillId);
+                                                    const isGold = skillDef?.rarity === 2 || skillDef?.rarity === 3;
+
+                                                    return wPct > 0 ? (
+                                                        <div key={`gseg-${i}`} style={{
+                                                            position: 'absolute',
+                                                            left: `${sPct}%`,
+                                                            width: `${wPct}%`,
+                                                            height: '100%',
+                                                            backgroundColor: isGold ? '#fbbf24' : '#65D283',
+                                                            opacity: 0.5
+                                                        }} />
+                                                    ) : null;
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        }
+
                         const skillDef = getSkillDef(evt.skillId);
                         const isGold = skillDef?.rarity === 2 || skillDef?.rarity === 3;
                         const iconUrl = evt.iconId ? AssetLoader.getSkillIcon(evt.iconId) : (skillDef?.iconid ? AssetLoader.getSkillIcon(skillDef.iconid) : null);
@@ -296,7 +391,7 @@ const SkillBreakdownModal: React.FC<SkillBreakdownModalProps> = ({ show, onHide,
                                         <div className="sbm-item-track-container">
                                             <div className="sbm-item-track-bg">
                                                 {evt.segments ? (
-                                                    evt.segments.map((seg, sIdx) => {
+                                                    evt.segments.map((seg: any, sIdx: number) => {
                                                         const sPct = Math.min(100, Math.max(0, (seg.startDistance / totalDistance) * 100));
                                                         const ePct = Math.min(100, Math.max(0, (seg.endDistance / totalDistance) * 100));
                                                         const wPct = Math.max(0, ePct - sPct);

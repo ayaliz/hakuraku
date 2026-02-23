@@ -71,6 +71,7 @@ const InfoIcon = ({ id, tip }: { id: string; tip: string }) => (
 
 // Stats cell component
 const StatsCell: React.FC<{ row: CharaTableData }> = ({ row }) => {
+
     const skillBreakdown = row.trainedChara.skills.map(cs => {
         const base = UMDatabaseWrapper.skillNeedPoints[cs.skillId] ?? 0;
         let upgrade = 0;

@@ -29,6 +29,6 @@ In a [follow-up analysis](https://x.com/BourBon_Polaris/status/18465207157948828
 
 The screenshots are kind of a nightmare to decipher if you're nihongo jouzu so I've transferred the data to a [spreadsheet](https://docs.google.com/spreadsheets/d/13fGrEQB5YRp5qJcCg38UAGLhIS3Vn_JV9dZoEooYgl8/edit?usp=sharing) for your, and my, convenience.
 
-Individual inheritance theory is very consistently in line with the actual results. The only outlier is a single 2.8% probability of the observed result happening given the underlying probability resulting from the formula - which is actually a good result, given that in 47 individual trials we'd expect `47 * 0.05 = 2.35` trials to coincidentally be lower than 5% probability.
+Individual inheritance theory is very consistently in line with the actual results. The only outlier is a single 2.8% probability of the observed result happening given the underlying probability resulting from the formula - which is actually a good result, given that for 47 individual test cases we'd expect `47 * 0.05 = 2.35` of them to coincidentally be lower than 5% probability.
 
 Given this model's strength and how intuitively it combines the patent's formula with quite reasonable assumptions about how affinity is distributed to individual parents, I feel confident saying it's either correct, or at least so close to the truth it basically doesn't matter. As such, this is what's implemented for the spark chance calculation on the [/veterans](/hakuraku/#/veterans) page.

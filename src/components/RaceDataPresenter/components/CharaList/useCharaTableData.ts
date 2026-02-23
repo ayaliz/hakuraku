@@ -5,14 +5,45 @@ import GameDataLoader from "../../../../data/GameDataLoader";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import { useAvailableTracks } from "../../../RaceReplay/hooks/useAvailableTracks";
 import { useGuessTrack } from "../../../RaceReplay/hooks/useGuessTrack";
-import { getPassiveStatModifiers } from "../../../RaceReplay/utils/SkillDataUtils";
+import { getPassiveStatModifiers, getSkillDurationSecs, getSkillBaseTime } from "../../../RaceReplay/utils/SkillDataUtils";
 import { adjustStat, calculateTargetSpeed, getDistanceCategory, calculateReferenceHpConsumption } from "../../../RaceReplay/utils/speedCalculations";
 import { CAREER_RACE_STAT_BONUS, DOWNHILL_HP_RATIO_THRESHOLD } from "../../../RaceReplay/utils/raceConstants";
 
 const LATE_START_ACCEL_THRESHOLD = 0.0001; // Acceleration (m/s²) below which a horse is considered a late starter
 import { computeHeuristicEvents } from "../../../RaceReplay/utils/computeHeuristicEvents";
 import { calculateRaceDistance } from "../../utils/RacePresenterUtils";
-import { CharaTableData } from "./types";
+import { CharaTableData, SkillEventData } from "./types";
+import { RaceSimulateFrameData } from "../../../../data/race_data_pb";
+
+function interpolateDistance(frames: RaceSimulateFrameData[], horseIndex: number, time: number): number {
+    if (!frames || frames.length === 0) return 0;
+
+    let firstTime = frames[0].time ?? 0;
+    if (time <= firstTime) return frames[0].horseFrame?.[horseIndex]?.distance ?? 0;
+    let lastTime = frames[frames.length - 1].time ?? 0;
+    if (time >= lastTime) return frames[frames.length - 1].horseFrame?.[horseIndex]?.distance ?? 0;
+
+    let left = 0;
+    let right = frames.length - 1;
+    while (left <= right) {
+        let mid = Math.floor((left + right) / 2);
+        if ((frames[mid].time ?? 0) < time) {
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+    const f1 = frames[right];
+    const f2 = frames[left];
+    if (!f1 || !f2) return 0;
+    const t1 = f1.time ?? 0;
+    const t2 = f2.time ?? 0;
+    const d1 = f1.horseFrame?.[horseIndex]?.distance ?? 0;
+    const d2 = f2.horseFrame?.[horseIndex]?.distance ?? 0;
+    if (t2 === t1) return d1;
+    return d1 + (d2 - d1) * ((time - t1) / (t2 - t1));
+}
+
 import { calculateMaxAdjustedSpeed, calculateHpOutcome } from "../../../RaceReplay/utils/analysisUtils";
 
 export const computeCharaTableData = (
@@ -194,6 +225,63 @@ export const computeCharaTableData = (
             );
         }
 
+        // Calculate Skill Events
+        const parsedSkillEvents: SkillEventData[] = [];
+        if (skillActivations && skillActivations[frameOrder]) {
+            skillActivations[frameOrder].forEach(act => {
+                const skillId = act.param[1];
+                let durationSecs = getSkillDurationSecs(skillId, raceDistance, act.param[2]);
+                const baseTime = getSkillBaseTime(skillId);
+                const isInstant = baseTime <= 0 && act.param[2] <= 0;
+
+                const startDistance = interpolateDistance(raceData.frame ?? [], frameOrder, act.time);
+                const endDistance = isInstant ? startDistance : interpolateDistance(raceData.frame ?? [], frameOrder, act.time + durationSecs);
+                parsedSkillEvents.push({
+                    skillId,
+                    name: act.name,
+                    time: act.time,
+                    durationSecs: isInstant ? 0 : durationSecs,
+                    startDistance,
+                    endDistance,
+                    isInstant
+                });
+            });
+        }
+
+        const positionHistory: { startDistance: number; endDistance: number; rank: number }[] = [];
+        if (raceData.frame && raceData.frame.length > 0) {
+            let currentRank = -1;
+            let rankStartDistance = 0;
+
+            for (let i = 0; i < raceData.frame.length; i++) {
+                const frame = raceData.frame[i];
+                if (!frame.horseFrame) continue;
+
+                const myDist = frame.horseFrame[frameOrder]?.distance ?? 0;
+                let rank = 1;
+                for (let j = 0; j < frame.horseFrame.length; j++) {
+                    if (j !== frameOrder) {
+                        const otherDist = frame.horseFrame[j]?.distance ?? 0;
+                        if (otherDist > myDist) {
+                            rank++;
+                        }
+                    }
+                }
+
+                if (rank !== currentRank) {
+                    if (currentRank !== -1 && myDist > rankStartDistance) {
+                        positionHistory.push({ startDistance: rankStartDistance, endDistance: myDist, rank: currentRank });
+                    }
+                    currentRank = rank;
+                    rankStartDistance = myDist;
+                }
+
+                if (i === raceData.frame.length - 1 && currentRank !== -1) {
+                    positionHistory.push({ startDistance: rankStartDistance, endDistance: raceDistance, rank: currentRank });
+                }
+            }
+        }
+
         // Calculate Dueling Time from otherEvents
         let duelingTime = 0;
         if (otherEvents && otherEvents[frameOrder]) {
@@ -201,13 +289,30 @@ export const computeCharaTableData = (
                 const name = evt.name || "";
                 if (name.includes("Dueling") || name.includes("Competes (Speed)")) {
                     duelingTime += evt.duration;
+                    const startDistance = interpolateDistance(raceData.frame ?? [], frameOrder, evt.time);
+                    const endDistance = interpolateDistance(raceData.frame ?? [], frameOrder, evt.time + evt.duration);
+                    parsedSkillEvents.push({
+                        skillId: -1,
+                        name: "Dueling",
+                        time: evt.time,
+                        durationSecs: evt.duration,
+                        startDistance,
+                        endDistance,
+                        isInstant: false,
+                        iconId: 20011,
+                        isMode: false
+                    });
                 }
             });
         }
 
         // Calculate Downhill Mode Time by iterating frames
         let downhillModeTime = 0;
+        const downhillSegments: { startDistance: number; endDistance: number }[] = [];
         if (raceData.frame && raceData.frame.length > 1) {
+            let currentDownhillStart = -1;
+            let currentDownhillEnd = -1;
+
             for (let fIdx = 0; fIdx < raceData.frame.length - 1; fIdx++) {
                 const frame = raceData.frame[fIdx];
                 const nextFrame = raceData.frame[fIdx + 1];
@@ -216,9 +321,11 @@ export const computeCharaTableData = (
                 if (!h || !hNext) continue;
 
                 const dist = h.distance ?? 0;
+                const nextDist = hNext.distance ?? 0;
                 const currentSlopeObj = trackSlopes.find((s: any) => dist >= s.start && dist < s.start + s.length);
                 const currentSlope = currentSlopeObj?.slope ?? 0;
 
+                let isDownhillActive = false;
                 if (currentSlope < 0) {
                     const speed = (h.speed ?? 0) / 100;
                     const time = frame.time ?? 0;
@@ -228,23 +335,92 @@ export const computeCharaTableData = (
                         const expected = calculateReferenceHpConsumption(speed, raceDistance);
                         if (expected > 0 && rate > 0 && rate < expected * DOWNHILL_HP_RATIO_THRESHOLD) {
                             downhillModeTime += dt;
+                            isDownhillActive = true;
                         }
                     }
                 }
+
+                if (isDownhillActive) {
+                    if (currentDownhillStart === -1) {
+                        currentDownhillStart = dist;
+                    }
+                    currentDownhillEnd = nextDist;
+                } else {
+                    if (currentDownhillStart !== -1) {
+                        downhillSegments.push({ startDistance: currentDownhillStart, endDistance: currentDownhillEnd });
+                        currentDownhillStart = -1;
+                    }
+                }
+            }
+            if (currentDownhillStart !== -1) {
+                downhillSegments.push({ startDistance: currentDownhillStart, endDistance: currentDownhillEnd });
             }
         }
 
         // Calculate Pace Up/Down Time from precomputed heuristic events
         let paceUpTime = 0;
         let paceDownTime = 0;
+        const paceUpSegments: { startDistance: number; endDistance: number }[] = [];
+        const paceDownSegments: { startDistance: number; endDistance: number }[] = [];
         if (heuristicEvents && heuristicEvents[frameOrder]) {
             heuristicEvents[frameOrder].forEach(evt => {
                 const name = evt.name || "";
                 if (name === "Pace Up" || name === "Speed Up" || name === "Overtake") {
                     paceUpTime += evt.duration;
+                    paceUpSegments.push({
+                        startDistance: interpolateDistance(raceData.frame ?? [], frameOrder, evt.time),
+                        endDistance: interpolateDistance(raceData.frame ?? [], frameOrder, evt.time + evt.duration)
+                    });
                 } else if (name === "Pace Down") {
                     paceDownTime += evt.duration;
+                    paceDownSegments.push({
+                        startDistance: interpolateDistance(raceData.frame ?? [], frameOrder, evt.time),
+                        endDistance: interpolateDistance(raceData.frame ?? [], frameOrder, evt.time + evt.duration)
+                    });
                 }
+            });
+        }
+
+        if (downhillModeTime > 0) {
+            parsedSkillEvents.push({
+                skillId: -1,
+                name: "Downhill Mode",
+                time: Infinity,
+                durationSecs: downhillModeTime * (15 / 16),
+                startDistance: 0,
+                endDistance: 0,
+                isInstant: false,
+                iconId: 20011,
+                isMode: true,
+                segments: downhillSegments
+            });
+        }
+        if (paceUpTime > 0) {
+            parsedSkillEvents.push({
+                skillId: -1,
+                name: "Pace Up Mode",
+                time: Infinity,
+                durationSecs: paceUpTime * (15 / 16),
+                startDistance: 0,
+                endDistance: 0,
+                isInstant: false,
+                iconId: 20011,
+                isMode: true,
+                segments: paceUpSegments
+            });
+        }
+        if (paceDownTime > 0) {
+            parsedSkillEvents.push({
+                skillId: -1,
+                name: "Pace Down Mode",
+                time: Infinity,
+                durationSecs: paceDownTime * (15 / 16),
+                startDistance: 0,
+                endDistance: 0,
+                isInstant: false,
+                iconId: 20014,
+                isMode: true,
+                segments: paceDownSegments
             });
         }
 
@@ -279,6 +455,8 @@ export const computeCharaTableData = (
 
             activatedSkills: activatedSkillIds,
             activatedSkillCounts: activatedSkillCounts,
+            skillEvents: parsedSkillEvents,
+            positionHistory: positionHistory,
 
             raceDistance: raceDistance,
 

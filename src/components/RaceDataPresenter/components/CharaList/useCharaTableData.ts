@@ -282,7 +282,7 @@ export const computeCharaTableData = (
             }
         }
 
-        // Calculate Dueling Time from otherEvents
+        // Calculate Dueling and Spot Struggle from otherEvents
         let duelingTime = 0;
         if (otherEvents && otherEvents[frameOrder]) {
             otherEvents[frameOrder].forEach(evt => {
@@ -294,6 +294,20 @@ export const computeCharaTableData = (
                     parsedSkillEvents.push({
                         skillId: -1,
                         name: "Dueling",
+                        time: evt.time,
+                        durationSecs: evt.duration,
+                        startDistance,
+                        endDistance,
+                        isInstant: false,
+                        iconId: 20011,
+                        isMode: false
+                    });
+                } else if (name.includes("Spot Struggle") || name.includes("Competes (Pos)")) {
+                    const startDistance = interpolateDistance(raceData.frame ?? [], frameOrder, evt.time);
+                    const endDistance = interpolateDistance(raceData.frame ?? [], frameOrder, evt.time + evt.duration);
+                    parsedSkillEvents.push({
+                        skillId: -1,
+                        name: "Spot Struggle",
                         time: evt.time,
                         durationSecs: evt.duration,
                         startDistance,

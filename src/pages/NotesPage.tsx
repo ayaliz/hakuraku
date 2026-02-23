@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
+import './NotesPage.css';
 
 interface NoteEntry {
     id: string;
@@ -14,34 +15,15 @@ interface NoteEntry {
     description: string;
 }
 
-const cardStyle: React.CSSProperties = {
-    backgroundColor: 'var(--haku-bg-2)',
-    borderRadius: 'var(--haku-radius)',
-    padding: '20px',
-    boxShadow: 'var(--haku-shadow)',
-    border: '1px solid var(--haku-border)',
-    cursor: 'pointer',
-    transition: 'border-color 0.18s ease, box-shadow 0.18s ease',
-};
-
-const cardHoverStyle: React.CSSProperties = {
-    ...cardStyle,
-    borderColor: '#65D283',
-    boxShadow: '0 4px 20px rgba(101,210,131,0.2)',
-};
-
 function NoteCard({ entry, onClick }: { entry: NoteEntry; onClick: () => void }) {
-    const [hovered, setHovered] = useState(false);
     return (
         <div
-            style={hovered ? cardHoverStyle : cardStyle}
+            className="np-card"
             onClick={onClick}
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
         >
-            <div style={{ fontSize: '0.8rem', color: 'var(--haku-text-muted)', marginBottom: 6 }}>{entry.date}</div>
-            <h3 style={{ margin: '0 0 8px', color: 'var(--haku-text-primary)', fontSize: '1.1rem' }}>{entry.title}</h3>
-            <p style={{ margin: 0, color: 'var(--haku-text-secondary)', fontSize: '0.9rem' }}>{entry.description}</p>
+            <div className="np-card-date">{entry.date}</div>
+            <h3 className="np-card-title">{entry.title}</h3>
+            <p className="np-card-desc">{entry.description}</p>
         </div>
     );
 }
@@ -74,7 +56,7 @@ export default function NotesPage() {
                 setError(err.message);
                 setLoading(false);
             });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     function openNote(entry: NoteEntry, pushHistory = true) {
@@ -103,86 +85,44 @@ export default function NotesPage() {
     }
 
     if (loading) {
-        return <div style={{ padding: '40px 20px', color: 'var(--haku-text-secondary)' }}>Loading notes…</div>;
+        return <div className="np-loading">Loading notes…</div>;
     }
 
     if (error) {
-        return <div style={{ padding: '40px 20px', color: '#f87171' }}>Error: {error}</div>;
+        return <div className="np-error">Error: {error}</div>;
     }
 
     if (selected) {
         return (
-            <div style={{ padding: '20px', maxWidth: 800, margin: '0 auto' }}>
+            <div className="np-content-wrapper">
                 <button
                     onClick={backToList}
-                    style={{
-                        background: 'none',
-                        border: '1px solid var(--haku-border)',
-                        borderRadius: 'var(--haku-radius)',
-                        color: 'var(--haku-text-secondary)',
-                        padding: '6px 14px',
-                        cursor: 'pointer',
-                        marginBottom: 24,
-                        fontSize: '0.9rem',
-                    }}
+                    className="np-back-btn"
                 >
                     ← Back to Notes
                 </button>
 
                 {mdLoading ? (
-                    <div style={{ color: 'var(--haku-text-muted)' }}>Loading…</div>
+                    <div className="np-md-loading">Loading…</div>
                 ) : (
-                    <div style={{
-                        backgroundColor: 'var(--haku-bg-2)',
-                        borderRadius: 'var(--haku-radius)',
-                        padding: 'clamp(16px, 5vw, 28px) clamp(16px, 5vw, 32px)',
-                        boxShadow: 'var(--haku-shadow)',
-                        border: '1px solid var(--haku-border)',
-                        lineHeight: 1.7,
-                        overflowWrap: 'break-word',
-                        minWidth: 0,
-                    }}>
+                    <div className="np-md-container">
                         <ReactMarkdown
                             remarkPlugins={[remarkGfm, remarkMath]}
                             rehypePlugins={[rehypeKatex as any]}
                             components={{
-                                h1: ({ children }) => <h1 style={{ borderBottom: '1px solid var(--haku-border)', paddingBottom: 10, marginBottom: 20, color: 'var(--haku-text-primary)', overflowWrap: 'break-word', wordBreak: 'break-word' }}>{children}</h1>,
-                                h2: ({ children }) => <h2 style={{ color: 'var(--haku-text-primary)', marginTop: 32 }}>{children}</h2>,
-                                h3: ({ children }) => <h3 style={{ color: 'var(--haku-text-primary)' }}>{children}</h3>,
-                                p: ({ children }) => <p style={{ color: 'var(--haku-text-secondary)' }}>{children}</p>,
-                                li: ({ children }) => <li style={{ color: 'var(--haku-text-secondary)', marginBottom: 4 }}>{children}</li>,
-                                strong: ({ children }) => <strong style={{ color: 'var(--haku-text-primary)' }}>{children}</strong>,
                                 a: ({ href, children }) => {
                                     const resolved = href?.startsWith('attachments/')
                                         ? `${import.meta.env.BASE_URL}notes/${href}`
                                         : href;
-                                    return <a href={resolved} target="_blank" rel="noreferrer" style={{ color: 'var(--haku-accent)' }}>{children}</a>;
+                                    return <a href={resolved} target="_blank" rel="noreferrer">{children}</a>;
                                 },
-                                table: ({ children }) => <div style={{ overflowX: 'auto', marginTop: 12, marginBottom: 12 }}><table style={{ borderCollapse: 'collapse', width: '100%' }}>{children}</table></div>,
-                                th: ({ children }) => <th style={{ border: '1px solid var(--haku-border)', padding: '6px 12px', color: 'var(--haku-text-primary)', textAlign: 'center', backgroundColor: 'var(--haku-bg-3, rgba(255,255,255,0.05))' }}>{children}</th>,
-                                td: ({ children }) => <td style={{ border: '1px solid var(--haku-border)', padding: '5px 12px', color: 'var(--haku-text-secondary)', textAlign: 'center' }}>{children}</td>,
+                                table: ({ children }) => <div className="table-wrapper"><table>{children}</table></div>,
                                 code: ({ children, className }) => {
                                     const isBlock = className?.startsWith('language-');
                                     return isBlock ? (
-                                        <code style={{
-                                            display: 'block',
-                                            backgroundColor: '#1e1e1e',
-                                            color: '#a5d6a7',
-                                            padding: '10px 14px',
-                                            borderRadius: 4,
-                                            fontFamily: "'Consolas', 'Monaco', monospace",
-                                            fontSize: '0.88rem',
-                                            overflowX: 'auto',
-                                        }}>{children}</code>
+                                        <code className="language-code">{children}</code>
                                     ) : (
-                                        <code style={{
-                                            backgroundColor: 'rgba(255,255,255,0.08)',
-                                            padding: '1px 5px',
-                                            borderRadius: 3,
-                                            fontFamily: "'Consolas', 'Monaco', monospace",
-                                            fontSize: '0.88em',
-                                            color: '#a5d6a7',
-                                        }}>{children}</code>
+                                        <code className="inline-code">{children}</code>
                                     );
                                 },
                             }}
@@ -196,17 +136,17 @@ export default function NotesPage() {
     }
 
     return (
-        <div style={{ padding: '20px', maxWidth: 900, margin: '0 auto' }}>
-            <div style={{ borderBottom: '1px solid var(--haku-border)', paddingBottom: 16, marginBottom: 28 }}>
-                <p style={{ margin: '6px 0 0', color: 'var(--haku-text-secondary)', fontSize: '0.9rem' }}>
+        <div className="np-container">
+            <div className="np-header">
+                <p className="np-header-text">
                     Some notes on stuff I come across while looking at this game.
                 </p>
             </div>
 
             {notes.length === 0 ? (
-                <p style={{ color: 'var(--haku-text-muted)' }}>No notes yet.</p>
+                <p className="np-empty">No notes yet.</p>
             ) : (
-                <div style={{ display: 'grid', gap: 16 }}>
+                <div className="np-grid">
                     {notes.map(entry => (
                         <NoteCard key={entry.id} entry={entry} onClick={() => openNote(entry)} />
                     ))}

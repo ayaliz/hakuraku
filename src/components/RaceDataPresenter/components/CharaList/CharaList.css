@@ -474,3 +474,10 @@
 .dashboard-grid .table td {
     border: none;
 }
+
+.skills-breakdown-hint {
+    font-size: 0.75em;
+    color: var(--text-muted, #9ca3af);
+    margin-left: auto;
+    font-weight: normal;
+}

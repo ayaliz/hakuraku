@@ -7,6 +7,7 @@ import { charaTableColumns } from "./columns";
 import { getSkillDef } from "../../../RaceReplay/utils/SkillDataUtils";
 import { getCourseAptitudeFilters } from "../../../../pages/MultiRacePage/utils";
 import AssetLoader from "../../../../data/AssetLoader";
+import SkillBreakdownModal from "./SkillBreakdownModal";
 
 const ChevronIcon = () => (
     <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
@@ -61,6 +62,7 @@ const ParentGroup = ({ parents }: { parents: ParentEntry[] }) => {
 const CharaTable: React.FC<CharaTableProps> = ({ data, courseId }) => {
     const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
     const [tableCollapsed, setTableCollapsed] = useState(false);
+    const [selectedSkillRow, setSelectedSkillRow] = useState<CharaTableData | null>(null);
 
     const aptitudeFilters = getCourseAptitudeFilters(courseId);
 
@@ -149,10 +151,15 @@ const CharaTable: React.FC<CharaTableProps> = ({ data, courseId }) => {
                                     <div className="dashboard-grid">
                                         {/* Skills Panel */}
                                         <div className="dashboard-panel panel-skills">
-                                            <div className="dashboard-panel-header">
-                                                Skills ({row.trainedChara.skills.length})
+                                            <div
+                                                className="dashboard-panel-header"
+                                                style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                                                onClick={() => setSelectedSkillRow(row)}
+                                            >
+                                                <span>Skills ({row.trainedChara.skills.length})</span>
+                                                <span className="skills-breakdown-hint">Click for breakdown</span>
                                             </div>
-                                            <div className="skills-list">
+                                            <div className="skills-list" style={{ cursor: 'pointer' }} onClick={() => setSelectedSkillRow(row)}>
                                                 {(() => {
                                                     const inherentSkill = row.trainedChara.skills.length > 0 ? row.trainedChara.skills[0] : undefined;
 
@@ -267,6 +274,9 @@ const CharaTable: React.FC<CharaTableProps> = ({ data, courseId }) => {
                     })}
                 </tbody>
             </table>
+            {selectedSkillRow && (
+                <SkillBreakdownModal show={!!selectedSkillRow} onHide={() => setSelectedSkillRow(null)} charaData={selectedSkillRow} courseId={courseId} />
+            )}
         </div>
     );
 };

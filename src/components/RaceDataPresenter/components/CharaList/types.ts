@@ -16,6 +16,19 @@ export type ParentEntry = {
     factors: { id: number; level: number }[];
 };
 
+export type SkillEventData = {
+    skillId: number;
+    name: string;
+    time: number;
+    durationSecs: number;
+    startDistance: number;
+    endDistance: number;
+    isInstant: boolean;
+    iconId?: number;
+    isMode?: boolean;
+    segments?: { startDistance: number; endDistance: number }[];
+};
+
 export type CharaTableData = {
     trainedChara: TrainedCharaData,
     chara: Chara | undefined,
@@ -31,6 +44,8 @@ export type CharaTableData = {
 
     activatedSkills: Set<number>,
     activatedSkillCounts: Map<number, number>,
+    skillEvents: SkillEventData[],
+    positionHistory?: { startDistance: number; endDistance: number; rank: number }[],
 
     raceDistance: number,
 

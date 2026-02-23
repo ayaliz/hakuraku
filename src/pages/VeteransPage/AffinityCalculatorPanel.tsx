@@ -173,7 +173,7 @@ const AffinityCalculatorPanel: React.FC<Props> = ({
 
             {activeSlot && (
                 <p className="aff-select-hint">
-                    Scroll down and click "Set as Legacy {activeSlot === 'p1' ? '1' : '2'}" on a veteran — or click the slot again to cancel.
+                    Scroll down and click "Set as Legacy {activeSlot === 'p1' ? '1' : '2'}" on a veteran.
                 </p>
             )}
 

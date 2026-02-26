@@ -344,6 +344,12 @@ export default function RaceDataPage() {
 
     const shareUrl = `${window.location.origin}${window.location.pathname}#/racedata?kv=${shareKey}`;
 
+    const isHorseActOutdated = (ver: string | undefined) => {
+        if (!ver) return true;
+        const [ma, mi, pa] = ver.split('.').map(Number);
+        return ma < 1 || (ma === 1 && mi < 0) || (ma === 1 && mi === 0 && pa < 2);
+    };
+
     return <div style={{ paddingTop: 20 }}>
         <input
             ref={fileInputRef}
@@ -384,7 +390,7 @@ export default function RaceDataPage() {
 
         {parsedRaceData && parsedHorseInfo ? (
             <>
-                {(!isShared && (!horseActVersion || horseActVersion !== '1.0.2')) && <Alert variant="info">
+                {(!isShared && isHorseActOutdated(horseActVersion)) && <Alert variant="info">
                     The version of horseACT used to generate this file appears to be outdated. A newer version is available at <a href="https://github.com/ayaliz/horseACT/releases/latest" target="_blank" rel="noreferrer">https://github.com/ayaliz/horseACT/releases/latest</a>. It's recommended to update by replacing your existing horseACT.dll.
                 </Alert>}
                 <RaceDataPresenterAny

@@ -314,6 +314,17 @@ body {
   border-radius: 3px;
 }
 
+.haku-json-download {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.haku-json-download button {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.75rem;
+}
+
 .haku-json-viewer {
   line-height: 1.2;
   white-space: pre-wrap;

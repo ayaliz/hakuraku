@@ -209,6 +209,24 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
 
             <div style={sectionDividerStyle} />
 
+            <div className="haku-json-download">
+                <button
+                    onClick={() => {
+                        const json = toJson(RaceSimulateDataSchema, this.props.raceData);
+                        const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'race_data.json';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }}
+                    className="btn btn-outline-secondary btn-sm"
+                >
+                    Save JSON
+                </button>
+            </div>
+
             <JsonView data={toJson(RaceSimulateDataSchema, this.props.raceData) as object} style={hakuJsonStyles} shouldExpandNode={collapseAllNested} />
         </div>;
     }

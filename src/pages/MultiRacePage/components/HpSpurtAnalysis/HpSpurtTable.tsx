@@ -122,6 +122,8 @@ const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats, courseId }) => {
                 return row.totalRuns > 0 ? (row.top3Finishes / row.totalRuns) : 0;
             case 'totalRuns':
                 return row.totalRuns;
+            case 'wins':
+                return row.wins;
             case 'fullSpurtRate':
                 return row.totalRuns > 0 ? (row.hpOutcomesFullSpurt.length / row.totalRuns) * 100 : 0;
             case 'survivalRate':
@@ -169,9 +171,10 @@ const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats, courseId }) => {
                         <SortableHeader columnKey="charaName">Character</SortableHeader>
                         <th>Stats <span className="hp-sort-indicator" title="The sixth value is total SP in terms of learned skills, using costs without any hint levels.">ⓘ</span></th>
                         <SortableHeader columnKey="rankScore" className="hp-col-center">Score</SortableHeader>
+                        <SortableHeader columnKey="totalRuns" className="hp-col-center">Runs</SortableHeader>
+                        <SortableHeader columnKey="wins" className="hp-col-center">Wins</SortableHeader>
                         <SortableHeader columnKey="winRate" className="hp-col-center">Win Rate</SortableHeader>
                         <SortableHeader columnKey="top3Rate" className="hp-col-center">Top 3 %</SortableHeader>
-                        <SortableHeader columnKey="totalRuns" className="hp-col-center">Runs</SortableHeader>
                         <SortableHeader columnKey="fullSpurtRate">Full Spurt Rate</SortableHeader>
                         <SortableHeader columnKey="survivalRate">Survival Rate</SortableHeader>
                     </tr>
@@ -218,9 +221,11 @@ const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats, courseId }) => {
                                         {row.trainedChara.rankScore}
                                     </div>
                                 </td>
+                                <td className="hp-col-center">{row.totalRuns}</td>
+                                <td className="hp-col-center">{row.wins}</td>
                                 <td className="hp-col-center">
                                     <span className="hp-rate-value" style={{ color: winRate > 50 ? '#4ade80' : winRate > 20 ? '#facc15' : '#e2e8f0' }}>
-                                        {winRate.toFixed(1)}% <span className="hp-rate-count text-muted">({row.wins})</span>
+                                        {winRate.toFixed(1)}%
                                     </span>
                                 </td>
                                 <td className="hp-col-center">
@@ -228,7 +233,6 @@ const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats, courseId }) => {
                                         {top3Rate.toFixed(1)}% <span className="hp-rate-count text-muted">({row.top3Finishes})</span>
                                     </span>
                                 </td>
-                                <td className="hp-col-center">{row.totalRuns}</td>
                                 <td>
                                     <div className="hp-progress-container">
                                         <div className="hp-progress-bar">

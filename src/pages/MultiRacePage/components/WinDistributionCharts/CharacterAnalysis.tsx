@@ -153,9 +153,9 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
     const [fullDataSort, setFullDataSort] = useState<"pop" | "winRate">("pop");
 
     const rawWinsByKey = new Map(rawWinsSlices.filter(s => s.charaId).map(s => [s.charaId as string, s]));
-    const rawPopByKey  = new Map(rawPopSlices.filter(s => s.charaId).map(s => [s.charaId as string, s]));
+    const rawPopByKey = new Map(rawPopSlices.filter(s => s.charaId).map(s => [s.charaId as string, s]));
     const ratingWinsSlices = rawRatingWinsSlices ?? rawWinsSlices;
-    const ratingWinsByKey  = new Map(ratingWinsSlices.filter(s => s.charaId).map(s => [s.charaId as string, s]));
+    const ratingWinsByKey = new Map(ratingWinsSlices.filter(s => s.charaId).map(s => [s.charaId as string, s]));
 
     type CharRow = { key: string; label: string; fullLabel?: string; strategyId?: number; winsPct: number; popPct: number; adjRate: number; winsCount: number; appsCount: number; };
 
@@ -178,31 +178,32 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
         };
     };
 
-    const allPopKeys = rawPopSlices.filter(s => s.charaId).map(s => s.charaId as string);
+    const allPopKeys = rawPopSlices.filter(s => s.charaId && (ratingWinsByKey.get(s.charaId as string)?.value ?? 0) > 0).map(s => s.charaId as string);
 
     const allWinRateKeys = [...allPopKeys]
         .map(key => {
             const apps = rawPopByKey.get(key)?.value ?? 0;
             const wins = ratingWinsByKey.get(key)?.value ?? 0;
             const adjRate = (wins + CHAR_BAYES_K * CHAR_BAYES_PRIOR) / (apps + CHAR_BAYES_K);
-            return { key, adjRate };
+            return { key, adjRate, wins };
         })
+        .filter(x => x.wins > 0)
         .sort((a, b) => b.adjRate - a.adjRate)
         .map(x => x.key);
 
-    const topPopKeys     = allPopKeys.slice(0, 5);
+    const topPopKeys = allPopKeys.slice(0, 5);
     const topWinRateKeys = allWinRateKeys.slice(0, 5);
-    const activeKeys     = sortMode === "pop" ? topPopKeys : topWinRateKeys;
-    const chars          = activeKeys.map(buildCharRow);
+    const activeKeys = sortMode === "pop" ? topPopKeys : topWinRateKeys;
+    const chars = activeKeys.map(buildCharRow);
 
-    const fullDataKeys  = fullDataSort === "pop" ? allPopKeys : allWinRateKeys;
+    const fullDataKeys = fullDataSort === "pop" ? allPopKeys : allWinRateKeys;
     const fullDataChars = fullDataKeys.map(buildCharRow);
 
-    const maxPct         = Math.max(...chars.flatMap(c => [c.adjRate * 100, c.popPct]), 1);
+    const maxPct = Math.max(...chars.flatMap(c => [c.adjRate * 100, c.popPct]), 1);
     const fullDataMaxPct = Math.max(...fullDataChars.flatMap(c => [c.adjRate * 100, c.popPct]), 1);
 
     const renderBarRow = (c: CharRow, maxP: number) => {
-        const icon  = getCharaIcon(c.key);
+        const icon = getCharaIcon(c.key);
         const color = STRATEGY_COLORS[c.strategyId ?? 0] ?? "#718096";
         return (
             <div key={c.key} className="sa-sb-row">
@@ -327,10 +328,10 @@ function CharacterBuildsPanel({ rawPopSlices, allHorses, characterStats }: Chara
             .filter(s => s.charaId)
             .map(s => {
                 const parts = (s.charaId as string).split('_');
-                const charaId  = Number(parts[0]);
-                const cardId   = Number(parts[1]);
+                const charaId = Number(parts[0]);
+                const cardId = Number(parts[1]);
                 const strategy = Number(parts[2]);
-                const cardName  = UMDatabaseWrapper.cards[cardId]?.name ?? s.label;
+                const cardName = UMDatabaseWrapper.cards[cardId]?.name ?? s.label;
                 const charaName = charaNameMap.get(charaId) ?? s.fullLabel ?? s.label;
                 return { key: s.charaId as string, cardId, strategy, charaId, cardName, charaName, totalCoApps: s.value };
             }),
@@ -347,12 +348,12 @@ function CharacterBuildsPanel({ rawPopSlices, allHorses, characterStats }: Chara
 
     const allSkillRows = useMemo((): SkillRow[] => {
         if (selCardId === null || selStrategy === null) return [];
-        const horses     = allHorses.filter(h => h.cardId === selCardId && h.strategy === selStrategy);
-        const total      = horses.length;
-        const totalWins  = horses.filter(h => h.finishOrder === 1).length;
+        const horses = allHorses.filter(h => h.cardId === selCardId && h.strategy === selStrategy);
+        const total = horses.length;
+        const totalWins = horses.filter(h => h.finishOrder === 1).length;
         if (total === 0) return [];
 
-        const BAYES_K  = 54;
+        const BAYES_K = 54;
         const priorMean = totalWins / total; // variant's base win rate
 
         const counts = new Map<number, { apps: number; winApps: number }>();
@@ -382,12 +383,12 @@ function CharacterBuildsPanel({ rawPopSlices, allHorses, characterStats }: Chara
     }, [allHorses, selCardId, selStrategy]);
 
     const sortedByPop = useMemo(() => [...allSkillRows].sort((a, b) => b.popPct - a.popPct), [allSkillRows]);
-    const sortedByWin = useMemo(() => [...allSkillRows].sort((a, b) => b.adjWinRate - a.adjWinRate), [allSkillRows]);
+    const sortedByWin = useMemo(() => [...allSkillRows].filter(r => r.winAppearances > 0).sort((a, b) => b.adjWinRate - a.adjWinRate), [allSkillRows]);
 
-    const top5     = (sortMode    === "pop" ? sortedByPop : sortedByWin).slice(0, 5);
-    const fullList =  fullDataSort === "pop" ? sortedByPop : sortedByWin;
+    const top5 = (sortMode === "pop" ? sortedByPop : sortedByWin).slice(0, 5);
+    const fullList = fullDataSort === "pop" ? sortedByPop : sortedByWin;
 
-    const maxPct         = Math.max(...top5.flatMap(r => [r.popPct, r.adjWinRate * 100]), 1);
+    const maxPct = Math.max(...top5.flatMap(r => [r.popPct, r.adjWinRate * 100]), 1);
     const fullDataMaxPct = Math.max(...fullList.flatMap(r => [r.popPct, r.adjWinRate * 100]), 1);
 
     const renderSkillRow = (row: SkillRow, maxP: number) => (

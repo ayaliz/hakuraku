@@ -119,12 +119,12 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
         [group]
     );
     const scoredWinners = useMemo(() => winners.filter(h => h.rankScore > 0), [winners]);
-    const fastestWin   = useMemo(() => winners.reduce<HorseEntry | null>((b, h) => !b || h.finishTime < b.finishTime ? h : b, null), [winners]);
-    const slowestWin   = useMemo(() => winners.reduce<HorseEntry | null>((b, h) => !b || h.finishTime > b.finishTime ? h : b, null), [winners]);
+    const fastestWin = useMemo(() => winners.reduce<HorseEntry | null>((b, h) => !b || h.finishTime < b.finishTime ? h : b, null), [winners]);
+    const slowestWin = useMemo(() => winners.reduce<HorseEntry | null>((b, h) => !b || h.finishTime > b.finishTime ? h : b, null), [winners]);
     const highestWinner = useMemo(() => scoredWinners.reduce<HorseEntry | null>((b, h) => !b || h.rankScore > b.rankScore ? h : b, null), [scoredWinners]);
-    const lowestWinner  = useMemo(() => scoredWinners.reduce<HorseEntry | null>((b, h) => !b || h.rankScore < b.rankScore ? h : b, null), [scoredWinners]);
+    const lowestWinner = useMemo(() => scoredWinners.reduce<HorseEntry | null>((b, h) => !b || h.rankScore < b.rankScore ? h : b, null), [scoredWinners]);
 
-    const nonDebuffers = useMemo(() => group.stats.allHorses.filter(h => !h.isDebuffer), [group]);
+
 
     const styleReps = useMemo<Record<number, StyleRepEntry[]>>(() => {
         const MIN_APPEARANCES = 5;
@@ -141,7 +141,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
         }
         const result: Record<number, StyleRepEntry[]> = {};
         for (const [key, t] of map.entries()) {
-            if (t.appearances < MIN_APPEARANCES) continue;
+            if (t.appearances < MIN_APPEARANCES || t.wins === 0) continue;
             const strategy = Number(key.split('_')[0]);
             if (!result[strategy]) result[strategy] = [];
             const winRate = t.wins / t.appearances;
@@ -161,7 +161,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
         rawUnifiedCharacterWinsAll,
         rawUnifiedCharacterWinsOpp,
         rawUnifiedCharacterPop,
-    } = useWinDistributionData(nonDebuffers);
+    } = useWinDistributionData(group.stats.allHorses);
 
     return (
         <>
@@ -173,12 +173,12 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
                             onClick={() => setSection(s)}
                             className="uma-section-link"
                         >
-                            {s === 'introduction' ? 'Introduction'         :
-                             s === 'overview'     ? 'Overview'             :
-                             s === 'strategy'     ? 'Strategy Analysis'    :
-                             s === 'character'    ? 'Character Analysis'   :
-                             s === 'skill'        ? 'Skill Analysis'       :
-                                                    'Explorer'}
+                            {s === 'introduction' ? 'Introduction' :
+                                s === 'overview' ? 'Overview' :
+                                    s === 'strategy' ? 'Strategy Analysis' :
+                                        s === 'character' ? 'Character Analysis' :
+                                            s === 'skill' ? 'Skill Analysis' :
+                                                'Explorer'}
                         </Nav.Link>
                     </Nav.Item>
                 ))}

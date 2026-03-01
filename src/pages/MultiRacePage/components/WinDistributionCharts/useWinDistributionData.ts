@@ -75,8 +75,8 @@ export const useWinDistributionData = (allHorses: HorseEntry[]) => {
         const MAX_SLICES = 5;
         const topWinsAll = Array.from(winMapAll.entries()).sort((a, b) => b[1].count - a[1].count).slice(0, MAX_SLICES).map(e => e[0]);
         const topWinsOpp = Array.from(winMapOpp.entries()).sort((a, b) => b[1].count - a[1].count).slice(0, MAX_SLICES).map(e => e[0]);
-        const topPop    = Array.from(popMap.entries()).sort((a, b) => b[1].count - a[1].count).slice(0, MAX_SLICES).map(e => e[0]);
-        const keyIds    = Array.from(new Set([...topWinsAll, ...topWinsOpp, ...topPop]));
+        const topPop = Array.from(popMap.entries()).sort((a, b) => b[1].count - a[1].count).slice(0, MAX_SLICES).map(e => e[0]);
+        const keyIds = Array.from(new Set([...topWinsAll, ...topWinsOpp, ...topPop]));
 
         const colorMap = new Map<string, string>();
         let colorIndex = 0;
@@ -121,7 +121,7 @@ export const useWinDistributionData = (allHorses: HorseEntry[]) => {
 
         const rawUnifiedCharacterWinsAll = winTotalAll > 0 ? genFullSlices(winMapAll, winTotalAll) : [];
         const rawUnifiedCharacterWinsOpp = winTotalOpp > 0 ? genFullSlices(winMapOpp, winTotalOpp, actualWinMapOpp) : [];
-        const rawUnifiedCharacterPop     = popTotal > 0    ? genFullSlices(popMap, popTotal) : [];
+        const rawUnifiedCharacterPop = popTotal > 0 ? genFullSlices(popMap, popTotal) : [];
 
         return { rawUnifiedCharacterWinsAll, rawUnifiedCharacterWinsOpp, rawUnifiedCharacterPop };
     }, [allHorses]);

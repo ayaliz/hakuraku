@@ -20,6 +20,8 @@ class _UMDatabaseWrapper {
     winSaddleToRaceInstance: Record<number, number> = {};
     // win_saddle_id -> array of race_instance_id (all races in the saddle)
     winSaddleToRaceInstances: Record<number, number[]> = {};
+    // race_instance_id -> course_set_id (track/course ID used in GameDataLoader.courseData)
+    raceInstanceCourseSetId: Record<number, number> = {};
 
     initialize() {
         return fetch(import.meta.env.BASE_URL + 'data/umdb.binarypb.gz', { cache: 'no-cache' })
@@ -31,7 +33,10 @@ class _UMDatabaseWrapper {
                 this.umdb.card.forEach((card) => this.cards[card.id!] = card);
                 this.umdb.supportCard.forEach((card) => this.supportCards[card.id!] = card);
 
-                this.umdb.raceInstance.forEach((race) => this.raceInstances[race.id!] = race);
+                this.umdb.raceInstance.forEach((race) => {
+                    this.raceInstances[race.id!] = race;
+                    if (race.courseSetId) this.raceInstanceCourseSetId[race.id!] = race.courseSetId;
+                });
 
                 this.umdb.skill.forEach((skill) => this.skills[skill.id!] = skill);
 

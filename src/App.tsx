@@ -25,6 +25,7 @@ function lazyWithReload<T extends React.ComponentType<any>>(
 
 const RaceDataPage    = lazyWithReload(() => import("./pages/RaceDataPage"),    "RaceDataPage");
 const MultiRacePage   = lazyWithReload(() => import("./pages/MultiRacePage"),   "MultiRacePage");
+const UmaLogsPage     = lazyWithReload(() => import("./pages/UmaLogsPage"),     "UmaLogsPage");
 const MasterDataPage  = lazyWithReload(() => import("./pages/MasterDataPage"),  "MasterDataPage");
 const NotesPage       = lazyWithReload(() => import("./pages/NotesPage"),       "NotesPage");
 const SetupGuidePage  = lazyWithReload(() => import("./pages/SetupGuidePage"),  "SetupGuidePage");
@@ -60,6 +61,7 @@ export default function App() {
                         <Nav.Link as={Link} to="/multirace">Multi-Race Analysis</Nav.Link>
                         <Nav.Link as={Link} to="/masterdata">Master Data</Nav.Link>
                         <Nav.Link as={Link} to="/notes">Research Notes</Nav.Link>
+                        <Nav.Link as={Link} to="/umalogs">UmaLogs</Nav.Link>
                     </Nav>
                     <Nav className="ms-auto">
                         <Nav.Link as={Link} to="/setup">Setup Guide</Nav.Link>
@@ -74,6 +76,7 @@ export default function App() {
                     <Route path="/veterans" element={<VeteransPage />} />
                     <Route path="/racedata" element={<RaceDataPage />} />
                     <Route path="/multirace" element={<MultiRacePage />} />
+                    <Route path="/umalogs" element={<UmaLogsPage />} />
                     <Route path="/setup" element={<SetupGuidePage />} />
                     <Route path="/masterdata" element={<MasterDataPage />} />
                     <Route path="/notes/:noteId" element={<NotesPage />} />

@@ -1,127 +1,422 @@
-import React, { useState } from "react";
-import PieChart from "./PieChart";
-import PerformancePanel from "./PerformancePanel";
-import ChartDetailsModal from "./ChartDetailsModal";
+import React from "react";
 import { STRATEGY_COLORS, STRATEGY_NAMES } from "./constants";
-import { StrategyPieSlice, PerformanceMetrics, PieSlice } from "./types";
+import type { StrategyStats, RoomCompositionEntry, TeamCompositionStats } from "../../types";
+import AssetLoader from "../../../../data/AssetLoader";
+import "./StrategyAnalysis.css";
+
+const DEBUFFER_NOTE = "Debuffers excluded - any horse with ≥4 red debuff skills is not counted.";
+
+export type StyleRepEntry = {
+    cardId: number;
+    charaId: number;
+    charaName: string;
+    wins: number;
+    appearances: number;
+    winRate: number;
+    bayesianWinRate: number;
+};
 
 interface StrategyAnalysisProps {
-    strategyPieDataAll: StrategyPieSlice[];
-    strategyPieDataOpp: StrategyPieSlice[];
-    popStrategyData: PieSlice[];
-    perfMetrics: PerformanceMetrics[];
+    strategyStats?: StrategyStats[];
+    totalRaces?: number;
+    rawStrategyTotals?: Record<number, number>;
+    roomCompositions?: RoomCompositionEntry[];
+    teamStats?: TeamCompositionStats[];
+    styleReps?: Record<number, StyleRepEntry[]>;
 }
 
-const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
-    strategyPieDataAll,
-    strategyPieDataOpp,
-    popStrategyData,
-    perfMetrics,
-}) => {
-    const [modalState, setModalState] = useState<{ isOpen: boolean; title: string; data: PieSlice[]; unit: string }>({
-        isOpen: false,
-        title: "",
-        data: [],
-        unit: "wins",
+// ── Panel 1: Style Breakdown (bullet chart) ───────────────────────────────────
+function StyleBreakdownPanel({ strategyStats, totalRaces }: { strategyStats: StrategyStats[]; totalRaces: number }) {
+    const sumEntries = strategyStats.reduce((s, st) => s + st.totalRaces, 0);
+
+    const rows = [1, 2, 3, 4].map(sId => {
+        const stat = strategyStats.find(s => s.strategy === sId);
+        const winShare = stat && totalRaces > 0 ? (stat.wins / totalRaces) * 100 : 0;
+        const pickRate = stat && sumEntries > 0 ? (stat.totalRaces / sumEntries) * 100 : 0;
+        return { sId, winShare, pickRate };
     });
-
-    const openModal = (title: string, data: PieSlice[], unit: string) => {
-        setModalState({ isOpen: true, title, data, unit });
-    };
-
-    const closeModal = () => {
-        setModalState({ ...modalState, isOpen: false });
-    };
-
-    // Shared legend items (Front Runner, Pace Chaser, etc.)
-    const strategies = [1, 2, 3, 4];
+    const globalMax = Math.max(...rows.flatMap(r => [r.winShare, r.pickRate]), 1);
 
     return (
-        <div className="pie-chart-container" style={{ marginBottom: "20px" }}>
-            <ChartDetailsModal
-                isOpen={modalState.isOpen}
-                onClose={closeModal}
-                title={modalState.title}
-                data={modalState.data}
-                unit={modalState.unit}
-            />
-            <div className="pie-chart-title" style={{ borderBottom: "1px solid #2d3748", paddingBottom: "10px", marginBottom: "20px" }}>
-                Strategy Analysis
+        <div className="sa-panel">
+            <div className="sa-panel-header">
+                Style Breakdown
+                <span title={DEBUFFER_NOTE} className="sa-info-icon">i</span>
             </div>
+            {rows.map(({ sId, winShare, pickRate }) => {
+                const color = STRATEGY_COLORS[sId];
+                const winW = (winShare / globalMax) * 100;
+                const pickW = (pickRate / globalMax) * 100;
 
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-around", gap: "20px" }}>
-                {/* Wins Pie (All) */}
-                <div style={{ textAlign: "center" }}>
-                    <div style={{ marginBottom: "10px", color: "#a0aec0", fontSize: "14px" }}>Wins (All)</div>
-                    {strategyPieDataAll.length > 0 ? (
-                        <PieChart
-                            slices={strategyPieDataAll}
-                            size={200}
-                            unit="wins"
-                            chartId="strat-wins-all"
-                            onClick={() => openModal("Strategy Wins (All)", strategyPieDataAll, "wins")}
-                        />
-                    ) : (
-                        <div style={{ height: 200, width: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "#718096" }}>
-                            No wins
+                return (
+                    <div key={sId} className="sa-sb-row">
+                        <div className="sa-sb-strategy-label">
+                            <span className="sa-sb-dot" style={{ background: color }} />
+                            <span className="sa-sb-strategy-name">{STRATEGY_NAMES[sId]}</span>
                         </div>
-                    )}
-                </div>
-
-                {/* Wins Pie (Opponents) */}
-                <div style={{ textAlign: "center" }}>
-                    <div style={{ marginBottom: "10px", color: "#a0aec0", fontSize: "14px" }}>Best Placing Opponent</div>
-                    {strategyPieDataOpp.length > 0 ? (
-                        <PieChart
-                            slices={strategyPieDataOpp}
-                            size={200}
-                            unit="wins"
-                            chartId="strat-wins-opp"
-                            onClick={() => openModal("Strategy Wins (Top Opponent)", strategyPieDataOpp, "wins")}
-                        />
-                    ) : (
-                        <div style={{ height: 200, width: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "#718096" }}>
-                            No wins
+                        <div className="sa-sb-bar-row">
+                            <div className="sa-sb-bar-label">Win%</div>
+                            <div className="sa-sb-track sa-sb-track--win">
+                                <div className="sa-sb-bar-fill" style={{ width: `${winW}%`, background: color }} />
+                            </div>
+                            <div className="sa-sb-value sa-sb-value--win">{winShare.toFixed(1)}%</div>
                         </div>
-                    )}
-                </div>
-
-                {/* Population Pie */}
-                <div style={{ textAlign: "center" }}>
-                    <div style={{ marginBottom: "10px", color: "#a0aec0", fontSize: "14px" }}>Population (Opp. Only)</div>
-                    {popStrategyData.length > 0 ? (
-                        <PieChart
-                            slices={popStrategyData}
-                            size={200}
-                            unit="entries"
-                            chartId="strat-pop"
-                            onClick={() => openModal("Strategy Population (Opponents)", popStrategyData, "entries")}
-                        />
-                    ) : (
-                        <div style={{ height: 200, width: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "#718096" }}>
-                            No entries
+                        <div className="sa-sb-bar-row">
+                            <div className="sa-sb-bar-label">Pop%</div>
+                            <div className="sa-sb-track sa-sb-track--pick">
+                                <div className="sa-sb-bar-fill sa-sb-bar-fill--pick" style={{ width: `${pickW}%` }} />
+                            </div>
+                            <div className="sa-sb-value sa-sb-value--pick">{pickRate.toFixed(1)}%</div>
                         </div>
-                    )}
-                </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
 
-                {/* Shared Legend */}
-                <div className="pie-legend" style={{ minWidth: "150px" }}>
-                    {strategies.map(sId => (
-                        <div key={sId} className="pie-legend-item" style={{ marginBottom: "8px" }}>
-                            <span
-                                className="pie-legend-color"
-                                style={{ background: STRATEGY_COLORS[sId] }}
-                            />
-                            <span className="pie-legend-label" style={{ fontSize: "14px" }}>
-                                {STRATEGY_NAMES[sId]}
-                            </span>
+// ── Panel 2: Effects of style saturation ─────────────────────────────────────
+const BASELINE = 1 / 9;
+
+function SaturationPanel({ strategyStats, totalRaces }: { strategyStats: StrategyStats[]; totalRaces: number }) {
+    const W = 500, H = 180;
+    const ML = 38, MB = 28, MT = 10, MR = 28;
+    const plotW = W - ML - MR;
+    const plotH = H - MT - MB;
+
+    const minRaceCount = Math.max(1, totalRaces * 0.001);
+
+    const allCounts = new Set<number>();
+    strategyStats.forEach(st => {
+        (st.saturation ?? []).forEach(b => {
+            if (b.raceCount >= minRaceCount) allCounts.add(b.count);
+        });
+    });
+    const counts = Array.from(allCounts).sort((a, b) => a - b);
+
+    if (counts.length === 0) {
+        return (
+            <div className="sa-panel sa-panel--center">
+                <span className="sa-no-data">Not enough data</span>
+            </div>
+        );
+    }
+
+    const allPerRunnerWRs = strategyStats.flatMap(st =>
+        (st.saturation ?? [])
+            .filter(b => b.raceCount >= minRaceCount && b.count > 0)
+            .map(b => (b.wins / b.raceCount) / b.count)
+    );
+    const dataMax = Math.max(...allPerRunnerWRs, BASELINE, 0.01);
+    const axisMax = Math.ceil(dataMax / 0.05) * 0.05;
+    const yTicks = [0, 0.25, 0.5, 0.75, 1.0].map(t => t * axisMax);
+
+    const minCount = counts[0], maxCount = counts[counts.length - 1];
+    const xRange = maxCount - minCount || 1;
+    const toX = (c: number) => ML + ((c - minCount) / xRange) * plotW;
+    const toY = (wr: number) => MT + plotH - (wr / axisMax) * plotH;
+
+    return (
+        <div className="sa-panel">
+            <div className="sa-panel-header sa-panel-header--sat">
+                <span>Effects of style saturation</span>
+                <div className="sa-sat-legend">
+                    {strategyStats.map(st => (
+                        <div key={st.strategy} className="sa-sat-legend-item">
+                            <span className="sa-sat-legend-line" style={{ background: STRATEGY_COLORS[st.strategy] }} />
+                            <span className="sa-sat-legend-label">{STRATEGY_NAMES[st.strategy]}</span>
                         </div>
                     ))}
                 </div>
-
-                {/* Performance Panel */}
-                <PerformancePanel items={perfMetrics} title="Performance (Opponents)" maxItems={4} columns={1} displayMode="multiplier" showIcons={false} />
             </div>
+            <div className="sa-sat-subtitle">Per-uma win rate vs. # of that style in a room</div>
+            <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="sa-sat-svg">
+                {yTicks.map(wr => (
+                    <line key={wr} x1={ML} x2={ML + plotW} y1={toY(wr)} y2={toY(wr)} stroke="#2d3748" strokeWidth={1} />
+                ))}
+                <line x1={ML} x2={ML + plotW} y1={toY(BASELINE)} y2={toY(BASELINE)}
+                    stroke="#718096" strokeWidth={1} strokeDasharray="4 3" />
+                <text x={ML + plotW + 4} y={toY(BASELINE) + 3} textAnchor="start" fill="#718096" fontSize={8}>1/9</text>
+                {yTicks.map(wr => (
+                    <text key={wr} x={ML - 5} y={toY(wr) + 4} textAnchor="end" fill="#718096" fontSize={9}>{Math.round(wr * 100)}%</text>
+                ))}
+                {counts.map(c => (
+                    <text key={c} x={toX(c)} y={MT + plotH + 16} textAnchor="middle" fill="#718096" fontSize={9}>{c}</text>
+                ))}
+                {strategyStats.map(st => {
+                    const points = (st.saturation ?? [])
+                        .filter(b => b.raceCount >= minRaceCount && b.count > 0)
+                        .sort((a, b) => a.count - b.count);
+                    if (points.length < 1) return null;
+                    const color = STRATEGY_COLORS[st.strategy];
+                    const ptsStr = points.map(b => `${toX(b.count)},${toY((b.wins / b.raceCount) / b.count)}`).join(" ");
+                    return (
+                        <g key={st.strategy}>
+                            {points.length > 1 && (
+                                <polyline points={ptsStr} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" />
+                            )}
+                            {points.map(b => {
+                                const wr = (b.wins / b.raceCount) / b.count;
+                                return (
+                                    <circle key={b.count} cx={toX(b.count)} cy={toY(wr)}
+                                        r={3.5} fill={color} stroke="#1a202c" strokeWidth={1.5}>
+                                        <title>{STRATEGY_NAMES[st.strategy]}: {b.count} in room, {(wr * 100).toFixed(1)}% per horse ({b.raceCount} races)</title>
+                                    </circle>
+                                );
+                            })}
+                        </g>
+                    );
+                })}
+                <line x1={ML} x2={ML} y1={MT} y2={MT + plotH} stroke="#4a5568" strokeWidth={1} />
+                <line x1={ML} x2={ML + plotW} y1={MT + plotH} y2={MT + plotH} stroke="#4a5568" strokeWidth={1} />
+            </svg>
+        </div>
+    );
+}
+
+// ── Panel 3: Room Composition ──────────────────────────────────────────────────
+function CompositionSection({ rawStrategyTotals, totalRaces, roomCompositions }: {
+    rawStrategyTotals: Record<number, number>;
+    totalRaces: number;
+    roomCompositions: RoomCompositionEntry[];
+}) {
+    const top10 = roomCompositions.slice(0, 10);
+    const avgCounts = [1, 2, 3, 4].map(sId =>
+        totalRaces > 0 ? (rawStrategyTotals[sId] ?? 0) / totalRaces : 0
+    );
+    const colMaxes = [0, 1, 2, 3].map(i =>
+        Math.max(...top10.map(c => c.counts[i]), avgCounts[i], 1)
+    );
+
+    const makeBg = (value: number, colIdx: number) => {
+        if (value === 0) return "transparent";
+        const intensity = value / colMaxes[colIdx];
+        const base = STRATEGY_COLORS[colIdx + 1];
+        return base.replace("rgb(", "rgba(").replace(")", `, ${(0.15 + intensity * 0.65).toFixed(2)})`);
+    };
+
+    return (
+        <div className="sa-comp-section">
+            <div className="sa-comp-header">Room Composition</div>
+            <table className="sa-comp-table">
+                <thead>
+                    <tr>
+                        {[1, 2, 3, 4].map(sId => (
+                            <th key={sId} className="sa-comp-th">
+                                <span className="sa-comp-th-label" style={{ color: STRATEGY_COLORS[sId] }}>
+                                    {STRATEGY_NAMES[sId].split(" ")[0].toUpperCase()}
+                                </span>
+                            </th>
+                        ))}
+                        <th className="sa-comp-th-freq">
+                            <span className="sa-comp-th-freq-label">FREQUENCY</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        {avgCounts.map((avg, i) => (
+                            <td key={i} className="sa-comp-td sa-comp-td--avg" style={{
+                                background: makeBg(avg, i),
+                                color: avg > 0 ? "#f7fafc" : "#4a5568",
+                            }}>
+                                {avg > 0 ? avg.toFixed(1) : "—"}
+                            </td>
+                        ))}
+                        <td className="sa-comp-td-avg-freq">all rooms average</td>
+                    </tr>
+                    {top10.map((comp, idx) => (
+                        <tr key={idx}>
+                            {[0, 1, 2, 3].map(i => {
+                                const count = comp.counts[i];
+                                return (
+                                    <td key={i} className="sa-comp-td sa-comp-td--row" style={{
+                                        background: makeBg(count, i),
+                                        color: count > 0 ? "#f7fafc" : "#4a5568",
+                                    }}>
+                                        {count > 0 ? count : "—"}
+                                    </td>
+                                );
+                            })}
+                            <td className="sa-comp-td-freq">{(comp.rate * 100).toFixed(1)}%</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
+// ── Style Representatives panel ───────────────────────────────────────────────
+function StyleRepsPanel({ styleReps }: { styleReps: Record<number, StyleRepEntry[]> }) {
+    return (
+        <div className="sa-reps-panel">
+            <div className="sa-panel-header">
+                Style Representatives
+            </div>
+            <div className="sa-reps-columns">
+                {[1, 2, 3, 4].map(sId => {
+                    const entries = styleReps[sId] ?? [];
+                    const color = STRATEGY_COLORS[sId];
+                    return (
+                        <div key={sId} className="sa-reps-col">
+                            <div className="sa-reps-col-header" style={{ color }}>
+                                {STRATEGY_NAMES[sId].split(" ")[0].toUpperCase()}
+                                <span className="sa-stats-meta">
+                                    <span className="sa-meta-adj sa-meta-adj--neutral">Adj. win%</span>
+                                    <span className="sa-meta-raw"> | Raw win% (samples)</span>
+                                </span>
+                            </div>
+                            {entries.map(entry => {
+                                const src = AssetLoader.getCharaThumb(entry.cardId);
+                                return (
+                                    <div key={entry.cardId} className="sa-reps-entry">
+                                        <div className="sa-reps-portrait" style={{ border: `1px solid ${color}` }}>
+                                            {src && (
+                                                <img
+                                                    src={src}
+                                                    alt={entry.charaName}
+                                                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                                                />
+                                            )}
+                                        </div>
+                                        <span className="sa-reps-name" title={entry.charaName}>{entry.charaName}</span>
+                                        <div className="sa-reps-stats">
+                                            <span className="sa-adj-pct">{(entry.bayesianWinRate * 100).toFixed(0)}%</span>
+                                            <span className="sa-pipe"> | </span>
+                                            <span className="sa-raw-pct">{(entry.winRate * 100).toFixed(0)}% ({entry.appearances})</span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+// ── Panel 4: Style Composition Performance ────────────────────────────────────
+const STYLE_BAYES_PRIOR = 1 / 3;
+const STYLE_BAYES_K = 18; // virtual appearances added; prior 1/3 → 6 virtual wins
+const MIN_STYLE_APPEARANCES = 20;
+const MAX_STYLE_ITEMS = 10;
+
+type StyleTeamEntry = {
+    key: string;
+    strategies: number[];
+    label: string;
+    appearances: number;
+    wins: number;
+    winRate: number;
+    bayesianWinRate: number;
+};
+
+function aggregateStyleTeams(teamStats: TeamCompositionStats[]): StyleTeamEntry[] {
+    const map = new Map<string, { strategies: number[]; appearances: number; wins: number }>();
+    for (const t of teamStats) {
+        const strategies = t.members.map(m => m.strategy).sort((a, b) => a - b);
+        const key = strategies.join('_');
+        if (!map.has(key)) map.set(key, { strategies, appearances: 0, wins: 0 });
+        const e = map.get(key)!;
+        e.appearances += t.appearances;
+        e.wins += t.wins;
+    }
+    return Array.from(map.entries()).map(([key, e]) => ({
+        key,
+        strategies: e.strategies,
+        label: e.strategies.map(s => (STRATEGY_NAMES[s] ?? String(s)).split(" ")[0]).join(" · "),
+        appearances: e.appearances,
+        wins: e.wins,
+        winRate: e.wins / e.appearances,
+        bayesianWinRate: (e.wins + STYLE_BAYES_K * STYLE_BAYES_PRIOR) / (e.appearances + STYLE_BAYES_K),
+    }));
+}
+
+function StyleTeamCompositionPanel({ teamStats }: { teamStats: TeamCompositionStats[] }) {
+    const all = aggregateStyleTeams(teamStats).filter(e => e.appearances >= MIN_STYLE_APPEARANCES);
+    if (all.length === 0) return null;
+
+    const sorted = [...all].sort((a, b) => b.bayesianWinRate - a.bayesianWinRate);
+    const overperformers = sorted.filter(e => e.bayesianWinRate > STYLE_BAYES_PRIOR).slice(0, MAX_STYLE_ITEMS);
+    const underperformers = sorted.filter(e => e.bayesianWinRate < STYLE_BAYES_PRIOR).slice(-MAX_STYLE_ITEMS).reverse();
+    if (overperformers.length === 0 && underperformers.length === 0) return null;
+
+    const renderItem = (e: StyleTeamEntry, positive: boolean) => {
+        const valueColor = positive ? "#68d391" : "#fc8181";
+        return (
+            <div key={e.key} className="sa-stcp-item">
+                <div className="sa-stcp-dots">
+                    {e.strategies.map((s, i) => (
+                        <span key={i} className="sa-stcp-dot" style={{ background: STRATEGY_COLORS[s] ?? "#718096" }} />
+                    ))}
+                </div>
+                <div className="sa-stcp-name">{e.label}</div>
+                <div className="sa-stcp-stats">
+                    <span className="sa-adj-pct" style={{ color: valueColor }}>{(e.bayesianWinRate * 100).toFixed(0)}%</span>
+                    <span className="sa-pipe"> | </span>
+                    <span className="sa-raw-pct">{(e.winRate * 100).toFixed(0)}% ({e.appearances})</span>
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <div className="sa-stcp-section">
+            <div className="sa-stcp-header">Style Composition Performance</div>
+            <div className="sa-stcp-columns">
+                {overperformers.length > 0 && (
+                    <div className="sa-stcp-col">
+                        <div className="sa-stcp-col-label sa-stcp-col-label--over">OVERPERFORMERS<span className="sa-stats-meta"><span className="sa-meta-adj sa-meta-adj--over">Adj. win%</span><span className="sa-meta-raw"> | Raw win% (samples)</span></span></div>
+                        {overperformers.map(e => renderItem(e, true))}
+                    </div>
+                )}
+                {underperformers.length > 0 && (
+                    <div className="sa-stcp-col">
+                        <div className="sa-stcp-col-label sa-stcp-col-label--under">UNDERPERFORMERS<span className="sa-stats-meta"><span className="sa-meta-adj sa-meta-adj--under">Adj. win%</span><span className="sa-meta-raw"> | Raw win% (samples)</span></span></div>
+                        {underperformers.map(e => renderItem(e, false))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
+const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
+    strategyStats,
+    totalRaces,
+    rawStrategyTotals,
+    roomCompositions,
+    teamStats,
+    styleReps,
+}) => {
+    const hasData = strategyStats && strategyStats.length > 0 && totalRaces != null && totalRaces > 0;
+
+    return (
+        <div className="pie-chart-container sa-main">
+            {hasData ? (
+                <>
+                    <div className="sa-top-panels-row">
+                        <StyleBreakdownPanel strategyStats={strategyStats!} totalRaces={totalRaces!} />
+                        <SaturationPanel strategyStats={strategyStats!} totalRaces={totalRaces!} />
+                    </div>
+                    {rawStrategyTotals && (
+                        <div className="sa-comp-row">
+                            <CompositionSection
+                                rawStrategyTotals={rawStrategyTotals}
+                                totalRaces={totalRaces!}
+                                roomCompositions={roomCompositions ?? []}
+                            />
+                            {styleReps && <StyleRepsPanel styleReps={styleReps} />}
+                        </div>
+                    )}
+                    {teamStats && teamStats.length > 0 && (
+                        <StyleTeamCompositionPanel teamStats={teamStats} />
+                    )}
+                </>
+            ) : null}
         </div>
     );
 };

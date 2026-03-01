@@ -52,6 +52,9 @@ message RaceInstance {
         DIRT = 2;
     }
     optional GroundType ground_type = 4;
+
+    // race_course_set.id — the track/course ID used elsewhere (e.g. GameDataLoader.courseData)
+    optional int32 course_set_id = 5;
 }
 
 message Skill {

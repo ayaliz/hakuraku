@@ -13,6 +13,7 @@ interface PerformancePanelProps {
     minPopCount?: number;
     minPopPct?: number;
     showIcons?: boolean;
+    headerNote?: string;
 }
 
 const PerformancePanel: React.FC<PerformancePanelProps> = ({
@@ -23,28 +24,23 @@ const PerformancePanel: React.FC<PerformancePanelProps> = ({
     displayMode = "multiplier",
     minPopCount = 3,
     minPopPct = 1.0,
-    showIcons = true
+    showIcons = true,
+    headerNote,
 }) => {
-    const MIN_POP_COUNT = minPopCount;
-    const MIN_POP_PCT = minPopPct;
-
     const isSignificant = (m: PerformanceMetrics) => {
-        if (m.popCount < MIN_POP_COUNT) return false;
-        return m.popPct >= MIN_POP_PCT;
+        if (m.popCount < minPopCount) return false;
+        return m.popPct >= minPopPct;
     };
 
-    // Sort by impact (Ratio). Secondary sort by diff (to rank 0-win entries by population size)
     const sorted = [...items].sort((a, b) => {
-        if (Math.abs(b.impact - a.impact) > 0.01) return b.impact - a.impact;
+        if (Math.abs(b.impact - a.impact) > 0.004) return b.impact - a.impact;
         return b.diff - a.diff;
     });
 
-    // Overperformers: Impact > 1 & Significant
     const overperformers = sorted
         .filter(x => x.impact > 1 && isSignificant(x))
         .slice(0, maxItems);
 
-    // Underperformers: Impact < 1 & Significant
     const underperformers = sorted
         .filter(x => x.impact < 1 && isSignificant(x))
         .slice(-maxItems)
@@ -60,7 +56,6 @@ const PerformancePanel: React.FC<PerformancePanelProps> = ({
                 </span>
             );
         }
-        // Default "multiplier"
         return (
             <span style={{ marginLeft: "4px", fontWeight: "bold", color: isPositive ? "#68d391" : "#fc8181" }}>
                 x{item.impact.toFixed(2)}
@@ -150,8 +145,16 @@ const PerformancePanel: React.FC<PerformancePanelProps> = ({
 
     return (
         <div className="performance-panel" style={containerStyle}>
-            <div style={{ fontSize: "13px", fontWeight: "bold", color: "#a0aec0", marginBottom: "8px", borderBottom: "1px solid #4a5568", paddingBottom: "4px" }}>
+            <div style={{ fontSize: "13px", fontWeight: "bold", color: "#a0aec0", marginBottom: "8px", borderBottom: "1px solid #4a5568", paddingBottom: "4px", display: "flex", alignItems: "center", gap: "6px" }}>
                 {title}
+                {headerNote && (
+                    <span
+                        title={headerNote}
+                        style={{ fontSize: "10px", color: "#718096", border: "1px solid #718096", borderRadius: "50%", width: "14px", height: "14px", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "help", flexShrink: 0, lineHeight: 1 }}
+                    >
+                        i
+                    </span>
+                )}
             </div>
 
             {overperformers.length > 0 && (
@@ -164,7 +167,7 @@ const PerformancePanel: React.FC<PerformancePanelProps> = ({
             )}
 
             {underperformers.length > 0 && (
-                <div style={{}}>
+                <div>
                     <div style={{ fontSize: "11px", color: "#fc8181", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Underperformers</div>
                     <div style={gridStyle}>
                         {underperformers.map(item => renderItem(item, false))}

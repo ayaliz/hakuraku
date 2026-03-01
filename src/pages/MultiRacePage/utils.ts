@@ -7,10 +7,12 @@ import {
     AggregatedStats,
     CharacterStats,
     HorseEntry,
+    PairSynergyStats,
     ParsedRace,
     SkillActivationPoint,
     SkillStats,
-    StrategyStats
+    StrategyStats,
+    TeamCompositionStats,
 } from "./types";
 
 const STRATEGY_NAMES: Record<number, string> = {
@@ -27,6 +29,25 @@ function getSkillsJsonMap() {
         _skillsJsonMap = new Map((GameDataLoader.skills as any[]).map(s => [s.id, s]));
     }
     return _skillsJsonMap;
+}
+
+// Skill icon IDs that indicate a debuff skill
+const DEBUFF_ICON_IDS = new Set([
+    30011, 30012, 30021, 30022, 30031, 30032,
+    30041, 30042, 30051, 30052, 30053,
+    30061, 30062, 30071, 30072,
+]);
+
+let _debuffSkillIds: Set<number> | null = null;
+function getDebuffSkillIds(): Set<number> {
+    if (!_debuffSkillIds) {
+        _debuffSkillIds = new Set(
+            (GameDataLoader.skills as any[])
+                .filter(s => s.iconid && DEBUFF_ICON_IDS.has(s.iconid))
+                .map(s => s.id as number)
+        );
+    }
+    return _debuffSkillIds;
 }
 
 // Get track info from course ID
@@ -152,6 +173,16 @@ function parseNewFormat(json: any, fileName: string, id: string): ParsedRace | {
             detectedCourseId = courseSet['id'] ?? courseSet.Id;
         }
 
+        // Fallback: derive course ID from race instance ID embedded in filename (e.g. "800001_xxx_xxx.json")
+        if (!detectedCourseId) {
+            const match = fileName.match(/^(\d+)_/);
+            if (match) {
+                const raceInstanceId = parseInt(match[1], 10);
+                const courseSetId = UMDatabaseWrapper.raceInstanceCourseSetId[raceInstanceId];
+                if (courseSetId) detectedCourseId = courseSetId;
+            }
+        }
+
         const raceType = json['race_type'] || json['RaceType'];
 
         const horseInfo = rawHorses.filter((h: any) => h !== null);
@@ -217,7 +248,11 @@ function extractHorseEntries(race: ParsedRace): HorseEntry[] {
 
         const strategy = data.running_style ?? trainedChara.rawData?.param?.runningStyle ?? 1;
 
-        // Get wiz and motivation for activation chance calculation
+        // Get stats and motivation
+        const speed = trainedChara.speed ?? data['speed'] ?? 0;
+        const stamina = trainedChara.stamina ?? data['stamina'] ?? 0;
+        const pow = trainedChara.pow ?? data['pow'] ?? 0;
+        const guts = trainedChara.guts ?? data['guts'] ?? 0;
         const wiz = trainedChara.wiz ?? data['wiz'] ?? 300;
         const motivation = data['motivation'] ?? 3; // Default to Normal (3)
 
@@ -227,6 +262,12 @@ function extractHorseEntries(race: ParsedRace): HorseEntry[] {
         const moodMult = moodMultipliers[motivation] ?? 1.0;
         const baseWiz = wiz * moodMult;
         const activationChance = Math.max(100 - 9000 / baseWiz, 20) / 100; // As decimal 0-1
+
+        const debuffSkillIds = getDebuffSkillIds();
+        let debuffCount = 0;
+        for (const id of learnedSkillIds) {
+            if (debuffSkillIds.has(id)) debuffCount++;
+        }
 
         entries.push({
             raceId: race.id,
@@ -241,10 +282,17 @@ function extractHorseEntries(race: ParsedRace): HorseEntry[] {
             learnedSkillIds,
             finishTime: horseResult.finishTimeRaw ?? 0,
             raceDistance: race.raceDistance,
+            speed,
+            stamina,
+            pow,
+            guts,
             wiz,
+            rankScore: trainedChara.rankScore,
             motivation,
             activationChance,
             isPlayer: race.playerIndices.has(frameOrder),
+            isDebuffer: debuffCount >= 4,
+            teamId: data['team_id'] ?? 0,
         });
     });
 
@@ -324,6 +372,136 @@ function extractSkillActivations(race: ParsedRace): Map<number, SkillActivationP
     return activations;
 }
 
+const TEAM_BAYES_PRIOR = 1 / 3;
+const TEAM_BAYES_K = 18; // virtual appearances added; prior 1/3 → 6 virtual wins
+
+function computeTeamStats(allHorses: HorseEntry[]): TeamCompositionStats[] {
+    // Group horses by race
+    const raceMap = new Map<string, HorseEntry[]>();
+    for (const h of allHorses) {
+        if (!raceMap.has(h.raceId)) raceMap.set(h.raceId, []);
+        raceMap.get(h.raceId)!.push(h);
+    }
+
+    const compMap = new Map<string, {
+        members: { charaId: number; cardId: number; strategy: number; charaName: string }[];
+        memberWins: number[];
+        appearances: number;
+        wins: number;
+        expectedWins: number;
+    }>();
+
+    for (const horses of raceMap.values()) {
+        // Group by teamId, skip unassigned (0)
+        const teamMap = new Map<number, HorseEntry[]>();
+        for (const h of horses) {
+            if (h.teamId === 0) continue;
+            if (!teamMap.has(h.teamId)) teamMap.set(h.teamId, []);
+            teamMap.get(h.teamId)!.push(h);
+        }
+
+        const teams = Array.from(teamMap.values());
+        // Require at least 2 teams, all with exactly 3 members
+        if (teams.length < 2 || teams.some(t => t.length !== 3)) continue;
+
+        const numTeams = teams.length;
+        const expectedWinPerTeam = 1 / numTeams;
+
+        // Winning team = lowest sum of finish orders
+        let winningTeam = teams[0];
+        let bestScore = teams[0].reduce((s, h) => s + h.finishOrder, 0);
+        for (let i = 1; i < teams.length; i++) {
+            const score = teams[i].reduce((s, h) => s + h.finishOrder, 0);
+            if (score < bestScore) { bestScore = score; winningTeam = teams[i]; }
+        }
+
+        for (const team of teams) {
+            // Sort by (cardId * 10 + strategy) — same canonical ordering as pairSynergy
+            const sorted = [...team].sort((a, b) => (a.cardId * 10 + a.strategy) - (b.cardId * 10 + b.strategy));
+            const key = sorted.map(h => `${h.cardId}_${h.strategy}`).join('__');
+
+            if (!compMap.has(key)) {
+                compMap.set(key, {
+                    members: sorted.map(h => ({ charaId: h.charaId, cardId: h.cardId, strategy: h.strategy, charaName: h.charaName })),
+                    memberWins: new Array(sorted.length).fill(0),
+                    appearances: 0,
+                    wins: 0,
+                    expectedWins: 0,
+                });
+            }
+            const entry = compMap.get(key)!;
+            entry.appearances++;
+            entry.expectedWins += expectedWinPerTeam;
+            if (team === winningTeam) {
+                entry.wins++;
+                // Credit the team member with the best finish position in this winning race
+                let bestFinish = Infinity;
+                let bestIdx = -1;
+                for (let si = 0; si < sorted.length; si++) {
+                    const horse = team.find(h => h.cardId === sorted[si].cardId && h.strategy === sorted[si].strategy);
+                    if (horse && horse.finishOrder < bestFinish) {
+                        bestFinish = horse.finishOrder;
+                        bestIdx = si;
+                    }
+                }
+                if (bestIdx >= 0) entry.memberWins[bestIdx]++;
+            }
+        }
+    }
+
+    return Array.from(compMap.values())
+        .map(e => ({
+            ...e,
+            winRate: e.wins / e.appearances,
+            impact: e.expectedWins > 0 ? e.wins / e.expectedWins : 0,
+            bayesianWinRate: (e.wins + TEAM_BAYES_K * TEAM_BAYES_PRIOR) / (e.appearances + TEAM_BAYES_K),
+            memberWins: e.memberWins,
+        }))
+        .sort((a, b) => b.appearances - a.appearances);
+}
+
+function computePairSynergy(allHorses: HorseEntry[]): PairSynergyStats[] {
+    // Group by race → team, tracking whether the team produced the race winner
+    const raceMap = new Map<string, Map<number, { horses: HorseEntry[]; teamWon: boolean }>>();
+
+    for (const h of allHorses) {
+        if (h.teamId <= 0) continue;
+        if (!raceMap.has(h.raceId)) raceMap.set(h.raceId, new Map());
+        const teamMap = raceMap.get(h.raceId)!;
+        if (!teamMap.has(h.teamId)) teamMap.set(h.teamId, { horses: [], teamWon: false });
+        const team = teamMap.get(h.teamId)!;
+        team.horses.push(h);
+        if (h.finishOrder === 1) team.teamWon = true;
+    }
+
+    // Accumulate pairwise co-appearances keyed by (cardId, strategy) pairs.
+    // Each (cardId, strategy) is a distinct entity — same card in different running styles are separate.
+    type PairEntry = { cardId_x: number; strategy_x: number; charaId_x: number; cardId_y: number; strategy_y: number; charaId_y: number; coApps: number; teamWins: number };
+    const pairMap = new Map<string, PairEntry>();
+
+    for (const teamMap of raceMap.values()) {
+        for (const { horses, teamWon } of teamMap.values()) {
+            for (let i = 0; i < horses.length; i++) {
+                for (let j = i + 1; j < horses.length; j++) {
+                    const a = horses[i], b = horses[j];
+                    // Skip identical (cardId, strategy) entities
+                    if (a.cardId === b.cardId && a.strategy === b.strategy) continue;
+                    // Canonical ordering: lower (cardId * 10 + strategy) is X
+                    const [x, y] = (a.cardId * 10 + a.strategy) <= (b.cardId * 10 + b.strategy) ? [a, b] : [b, a];
+                    const key = `${x.cardId}_${x.strategy}__${y.cardId}_${y.strategy}`;
+                    if (!pairMap.has(key))
+                        pairMap.set(key, { cardId_x: x.cardId, strategy_x: x.strategy, charaId_x: x.charaId, cardId_y: y.cardId, strategy_y: y.strategy, charaId_y: y.charaId, coApps: 0, teamWins: 0 });
+                    const p = pairMap.get(key)!;
+                    p.coApps++;
+                    if (teamWon) p.teamWins++;
+                }
+            }
+        }
+    }
+
+    return Array.from(pairMap.values()).filter(p => p.coApps >= 3);
+}
+
 export function aggregateStats(races: ParsedRace[]): AggregatedStats {
     const allHorses: HorseEntry[] = [];
     const allSkillActivations = new Map<number, SkillActivationPoint[]>();
@@ -353,6 +531,7 @@ export function aggregateStats(races: ParsedRace[]): AggregatedStats {
     }>();
 
     allHorses.forEach(horse => {
+        if (horse.isDebuffer) return;
         if (!charaMap.has(horse.charaId)) {
             charaMap.set(horse.charaId, {
                 charaName: horse.charaName,
@@ -390,7 +569,13 @@ export function aggregateStats(races: ParsedRace[]): AggregatedStats {
         winnersByChara: Map<number, { charaName: string; wins: number }>;
     }>();
 
+    const rawStrategyTotals: Record<number, number> = {};
     allHorses.forEach(horse => {
+        rawStrategyTotals[horse.strategy] = (rawStrategyTotals[horse.strategy] ?? 0) + 1;
+    });
+
+    allHorses.forEach(horse => {
+        if (horse.isDebuffer) return;
         if (!stratMap.has(horse.strategy)) {
             stratMap.set(horse.strategy, {
                 races: 0,
@@ -414,6 +599,32 @@ export function aggregateStats(races: ParsedRace[]): AggregatedStats {
         stats.totalPosition += horse.finishOrder;
     });
 
+    // Saturation: per-strategy win rate bucketed by how many of that strategy appear in a room
+    const raceHorsesByRace = new Map<string, HorseEntry[]>();
+    for (const h of allHorses) {
+        if (!raceHorsesByRace.has(h.raceId)) raceHorsesByRace.set(h.raceId, []);
+        raceHorsesByRace.get(h.raceId)!.push(h);
+    }
+    const saturationBuckets = new Map<number, Map<number, { raceCount: number; wins: number }>>();
+    for (const horses of raceHorsesByRace.values()) {
+        const stratInRace = new Map<number, { count: number; hasWinner: boolean }>();
+        for (const h of horses) {
+            if (h.isDebuffer) continue;
+            if (!stratInRace.has(h.strategy)) stratInRace.set(h.strategy, { count: 0, hasWinner: false });
+            const e = stratInRace.get(h.strategy)!;
+            e.count++;
+            if (h.finishOrder === 1) e.hasWinner = true;
+        }
+        for (const [strategy, { count, hasWinner }] of stratInRace.entries()) {
+            if (!saturationBuckets.has(strategy)) saturationBuckets.set(strategy, new Map());
+            const buckets = saturationBuckets.get(strategy)!;
+            if (!buckets.has(count)) buckets.set(count, { raceCount: 0, wins: 0 });
+            const b = buckets.get(count)!;
+            b.raceCount++;
+            if (hasWinner) b.wins++;
+        }
+    }
+
     const strategyStats: StrategyStats[] = Array.from(stratMap.entries()).map(([strategy, s]) => ({
         strategy,
         strategyName: STRATEGY_NAMES[strategy] || `Strategy ${strategy}`,
@@ -424,6 +635,9 @@ export function aggregateStats(races: ParsedRace[]): AggregatedStats {
         winningCharacters: Array.from(s.winnersByChara.entries())
             .map(([charaId, data]) => ({ charaId, charaName: data.charaName, wins: data.wins }))
             .sort((a, b) => b.wins - a.wins),
+        saturation: Array.from((saturationBuckets.get(strategy) ?? new Map()).entries())
+            .map(([count, { raceCount, wins }]) => ({ count, raceCount, wins }))
+            .sort((a, b) => a.count - b.count),
     }));
 
     // Skill stats
@@ -575,6 +789,24 @@ export function aggregateStats(races: ParsedRace[]): AggregatedStats {
     const totalRaces = races.length;
     const totalHorses = allHorses.length;
 
+    // Room composition frequencies (all horses incl. debuffers)
+    const raceStratCounts = new Map<string, [number, number, number, number]>();
+    for (const h of allHorses) {
+        if (!raceStratCounts.has(h.raceId)) raceStratCounts.set(h.raceId, [0, 0, 0, 0]);
+        const c = raceStratCounts.get(h.raceId)!;
+        if (h.strategy >= 1 && h.strategy <= 4) c[h.strategy - 1]++;
+    }
+    const compFreqMap = new Map<string, { counts: [number, number, number, number]; occurrences: number }>();
+    for (const counts of raceStratCounts.values()) {
+        const key = counts.join('_');
+        if (!compFreqMap.has(key)) compFreqMap.set(key, { counts: [...counts] as [number, number, number, number], occurrences: 0 });
+        compFreqMap.get(key)!.occurrences++;
+    }
+    const roomCompositions = Array.from(compFreqMap.values())
+        .sort((a, b) => b.occurrences - a.occurrences)
+        .slice(0, 50)
+        .map(e => ({ counts: e.counts, occurrences: e.occurrences, rate: e.occurrences / (totalRaces || 1) }));
+
     // Use official track distance if available, otherwise fall back to calculated distance
     const avgRaceDistance = races.length > 0
         ? races.reduce((sum, r) => {
@@ -589,8 +821,12 @@ export function aggregateStats(races: ParsedRace[]): AggregatedStats {
         avgRaceDistance,
         characterStats,
         strategyStats,
+        rawStrategyTotals,
+        roomCompositions,
         skillStats,
         skillActivations: mergedSkillActivations,
         allHorses,
+        teamStats: computeTeamStats(allHorses),
+        pairSynergy: computePairSynergy(allHorses),
     };
 }

@@ -34,7 +34,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "protoc": "protoc --es_out=target=ts:src/data --python_out=umdb/ --pyi_out=umdb/ --proto_path=umdb/ umdb/*.proto"
+    "protoc": "protoc --es_out=target=ts:src/data --python_out=umdb/ --pyi_out=umdb/ --proto_path=umdb/ umdb/*.proto",
+    "precompute": "tsx scripts/precompute-umalogs.mts"
   },
   "devDependencies": {
     "@bufbuild/protoc-gen-es": "^2.11.0",
@@ -46,6 +47,7 @@
     "@types/sql.js": "^1.4.9",
     "@vitejs/plugin-react": "^5.1.4",
     "sharp": "^0.34.5",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1"
   },

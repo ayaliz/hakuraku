@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
-import { SkillStats, SkillActivationPoint, CharacterStats, StrategyStats, HorseEntry } from "../types";
+import { SkillStats, SkillActivationPoint, SkillActivationBuckets, CharacterStats, StrategyStats, HorseEntry } from "../types";
 import { CharaHpSpurtStats } from "./HpSpurtAnalysis/types";
 import AssetLoader from "../../../data/AssetLoader";
 import UMDatabaseWrapper from "../../../data/UMDatabaseWrapper";
@@ -14,6 +14,7 @@ interface SkillAnalysisProps {
     strategyStats: StrategyStats[];
     allHorses: HorseEntry[];
     ownCharas?: CharaHpSpurtStats[];
+    precomputedBuckets?: Map<number, SkillActivationBuckets>;
 }
 
 type SortKey = "skillName" | "timesActivated" | "learnedByHorses" | "uniqueRaces" | "winRate" | "avgFinishPosition" | "normalizedActivations" | "meanDistance" | "medianDistance";
@@ -26,6 +27,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
     strategyStats,
     allHorses,
     ownCharas,
+    precomputedBuckets,
 }) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedStrategy, setSelectedStrategy] = useState<string>("all");
@@ -138,6 +140,43 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
 
     // Recalculate skill stats based on filtered horses
     const activeSkillStats = useMemo(() => {
+        // Precomputed mode
+        if (precomputedBuckets) {
+            if (selectedStrategy === "all") return Array.from(skillStats.values());
+
+            const stratKey = String(selectedStrategy);
+            const result: SkillStats[] = [];
+
+            for (const skill of skillStats.values()) {
+                const b = precomputedBuckets.get(skill.skillId);
+                if (!b) continue;
+                const stratBuckets = b.byStrategy[stratKey] ?? [];
+                if (!stratBuckets.some(c => c > 0)) continue;
+
+                const timesActivated = stratBuckets.reduce((s, c) => s + c, 0);
+                const baseId = Math.floor(skill.skillId / 10);
+
+                const learnedByHorses = filteredHorses.filter(h => {
+                    for (const sid of h.learnedSkillIds)
+                        if (Math.floor(sid / 10) === baseId) return true;
+                    return false;
+                }).length;
+
+                const horsesWhoActivated = filteredHorses.filter(h => {
+                    for (const sid of h.activatedSkillIds)
+                        if (Math.floor(sid / 10) === baseId) return true;
+                    return false;
+                });
+                const uniqueHorses = horsesWhoActivated.length;
+                const winsWithSkill = horsesWhoActivated.filter(h => h.finishOrder === 1).length;
+                const winRate = uniqueHorses > 0 ? (winsWithSkill / uniqueHorses) * 100 : 0;
+
+                result.push({ ...skill, timesActivated, learnedByHorses, uniqueHorses, winRate });
+            }
+
+            return result;
+        }
+
         // If no filters active, use original stats (optimization)
         if (selectedStrategy === "all" && selectedCharaFilter === "all" && ownCharaHorseKeys === null && minDist === "" && maxDist === "") {
             return Array.from(skillStats.values());
@@ -289,6 +328,57 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
     };
 
     const renderHeatmap = (skill: SkillStats) => {
+        // Precomputed path
+        if (precomputedBuckets) {
+            const b = precomputedBuckets.get(skill.skillId);
+            if (!b) return null;
+            const buckets = selectedStrategy === "all"
+                ? b.all
+                : (b.byStrategy[String(selectedStrategy)] ?? b.all);
+            const totalActivations = buckets.reduce((s, c) => s + c, 0);
+            if (totalActivations === 0) return null;
+            const maxCount = Math.max(...buckets, 1);
+            const getBarColor = (count: number) => {
+                if (count === 0) return "transparent";
+                const intensity = count / maxCount;
+                return `hsla(240, 80%, ${60 + intensity * 20}%, ${0.15 + intensity * 0.85})`;
+            };
+            return (
+                <tr key={`heatmap-${skill.skillId}`} className="heatmap-row">
+                    <td colSpan={6} style={{ padding: 0 }}>
+                        <div className="inline-heatmap-container">
+                            <div className="heatmap-track" style={{ height: "65px", position: "relative", display: "flex" }}>
+                                {buckets.map((count, i) => {
+                                    const pct = (count / totalActivations) * 100;
+                                    const distStart = ((i / buckets.length) * avgRaceDistance).toFixed(0);
+                                    const distEnd = (((i + 1) / buckets.length) * avgRaceDistance).toFixed(0);
+                                    return (
+                                        <div key={i} style={{ flex: 1, height: "100%", background: getBarColor(count), transition: "background 0.2s ease", cursor: count > 0 ? "help" : "default" }}
+                                            title={count > 0 ? `${distStart}-${distEnd}m: ${count} activation${count > 1 ? 's' : ''} (${pct.toFixed(1)}%)` : undefined} />
+                                    );
+                                })}
+                                <div style={{ position: "absolute", left: "16.67%", top: 0, bottom: 0, width: "1px", background: "rgba(255,255,255,0.4)", pointerEvents: "none" }} />
+                                <div style={{ position: "absolute", left: "66.67%", top: 0, bottom: 0, width: "1px", background: "rgba(255,255,255,0.4)", pointerEvents: "none" }} />
+                                <div style={{ position: "absolute", left: "83.33%", top: 0, bottom: 0, width: "1px", background: "rgba(255,255,255,0.4)", pointerEvents: "none" }} />
+                            </div>
+                            <div className="inline-heatmap-legend">
+                                <span style={{ position: "absolute", left: 0 }}>0m</span>
+                                <span style={{ position: "absolute", left: "16.67%", transform: "translateX(-50%)" }}>Middle</span>
+                                <span style={{ position: "absolute", left: "66.67%", transform: "translateX(-50%)" }}>Late</span>
+                                <span style={{ position: "absolute", left: "83.33%", transform: "translateX(-50%)" }}>Spurt</span>
+                                <span style={{ position: "absolute", right: 0 }}>{Math.round(avgRaceDistance)}m</span>
+                            </div>
+                            <div className="inline-heatmap-stats">
+                                <span>{totalActivations} activations</span>
+                                <span>•</span>
+                                <span style={{ color: "#48bb78" }}>{skill.winRate.toFixed(1)}% wins</span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            );
+        }
+
         const baseActivations = skillActivations.get(skill.skillId) || [];
 
         const minD = minDist === "" ? -1 : Number(minDist);
@@ -437,14 +527,16 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                     ))}
                 </select>
 
-                <PortraitSelect
-                    value={selectedCharaFilter}
-                    defaultLabel="All Characters"
-                    options={allCharaDropdownOptions}
-                    onChange={setSelectedCharaFilter}
-                />
+                {!precomputedBuckets && (
+                    <PortraitSelect
+                        value={selectedCharaFilter}
+                        defaultLabel="All Characters"
+                        options={allCharaDropdownOptions}
+                        onChange={setSelectedCharaFilter}
+                    />
+                )}
 
-                {ownCharaDropdownOptions.length > 0 && (
+                {!precomputedBuckets && ownCharaDropdownOptions.length > 0 && (
                     <PortraitSelect
                         value={selectedOwnCharaFilter}
                         defaultLabel="Own Characters"
@@ -459,25 +551,27 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                     />
                 )}
 
-                <div style={{ display: "inline-flex", alignItems: "center", marginLeft: "10px" }}>
-                    <input
-                        type="number"
-                        className="skill-search-input"
-                        style={{ width: "110px", padding: "12px 10px" }}
-                        placeholder="Min dist"
-                        value={minDist}
-                        onChange={e => setMinDist(e.target.value)}
-                    />
-                    <span style={{ color: "#718096", margin: "0 8px" }}>-</span>
-                    <input
-                        type="number"
-                        className="skill-search-input"
-                        style={{ width: "110px", padding: "12px 10px" }}
-                        placeholder="Max dist"
-                        value={maxDist}
-                        onChange={e => setMaxDist(e.target.value)}
-                    />
-                </div>
+                {!precomputedBuckets && (
+                    <div style={{ display: "inline-flex", alignItems: "center", marginLeft: "10px" }}>
+                        <input
+                            type="number"
+                            className="skill-search-input"
+                            style={{ width: "110px", padding: "12px 10px" }}
+                            placeholder="Min dist"
+                            value={minDist}
+                            onChange={e => setMinDist(e.target.value)}
+                        />
+                        <span style={{ color: "#718096", margin: "0 8px" }}>-</span>
+                        <input
+                            type="number"
+                            className="skill-search-input"
+                            style={{ width: "110px", padding: "12px 10px" }}
+                            placeholder="Max dist"
+                            value={maxDist}
+                            onChange={e => setMaxDist(e.target.value)}
+                        />
+                    </div>
+                )}
                 <span style={{ color: "#718096", marginLeft: "15px", fontSize: "13px" }}>
                     {filteredSkills.length} of {skillsArray.length} skills
                 </span>
@@ -496,22 +590,24 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                             <th className="sortable" onClick={() => handleSort("timesActivated")}>
                                 Activations {renderSortIndicator("timesActivated")}
                             </th>
-                            <th className="sortable" onClick={() => handleSort("normalizedActivations")}>
-                                <OverlayTrigger
-                                    placement="top"
-                                    overlay={
-                                        <Tooltip id="normalized-tooltip">
-                                            Estimate for how often the skill's conditions are met with wit checks excluded.
-                                        </Tooltip>
-                                    }
-                                >
-                                    <span style={{ borderBottom: "1px dotted #a0aec0", cursor: "help" }}>
-                                        Normalized
-                                    </span>
-                                </OverlayTrigger>
-                                {" "}
-                                {renderSortIndicator("normalizedActivations")}
-                            </th>
+                            {!precomputedBuckets && (
+                                <th className="sortable" onClick={() => handleSort("normalizedActivations")}>
+                                    <OverlayTrigger
+                                        placement="top"
+                                        overlay={
+                                            <Tooltip id="normalized-tooltip">
+                                                Estimate for how often the skill's conditions are met with wit checks excluded.
+                                            </Tooltip>
+                                        }
+                                    >
+                                        <span style={{ borderBottom: "1px dotted #a0aec0", cursor: "help" }}>
+                                            Normalized
+                                        </span>
+                                    </OverlayTrigger>
+                                    {" "}
+                                    {renderSortIndicator("normalizedActivations")}
+                                </th>
+                            )}
                             <th className="sortable" onClick={() => handleSort("meanDistance")}>
                                 Mean Dist {renderSortIndicator("meanDistance")}
                             </th>
@@ -561,9 +657,11 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                                             ({activationPct.toFixed(1)}%)
                                         </span>
                                     </td>
-                                    <td>
-                                        {normalizedPct.toFixed(1)}%
-                                    </td>
+                                    {!precomputedBuckets && (
+                                        <td>
+                                            {normalizedPct.toFixed(1)}%
+                                        </td>
+                                    )}
                                     <td>{skill.meanDistance.toFixed(0)}m</td>
                                     <td>{skill.medianDistance.toFixed(0)}m</td>
                                     <td>

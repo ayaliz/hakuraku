@@ -29,3 +29,4 @@ umdb/*.py
 umdb/*.pyi
 /*.bat
 /assets
+/scripts

@@ -174,7 +174,6 @@ const MultiRacePage: React.FC = () => {
 
                                         <WinDistributionCharts
                                             characterStats={group.stats.characterStats}
-                                            strategyStats={group.stats.strategyStats}
                                             allHorses={group.stats.allHorses}
                                         />
 

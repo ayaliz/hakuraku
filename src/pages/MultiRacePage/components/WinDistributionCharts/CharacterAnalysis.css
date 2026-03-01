@@ -1,0 +1,277 @@
+/* Character portrait used in the per-character label row */
+.ca-portrait-wrap {
+    position: relative;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    overflow: hidden;
+}
+.ca-portrait-ring { position: absolute; inset: 0; border-radius: 50%; opacity: 0.85; }
+.ca-portrait-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* Label row: portrait + character name */
+.ca-char-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 5px;
+}
+.ca-char-name {
+    font-size: 11px;
+    font-weight: bold;
+    color: #e2e8f0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+/* Sort mode toggle in panel header */
+.ca-sort-toggle {
+    display: flex;
+    gap: 3px;
+    margin-left: auto;
+}
+.ca-sort-btn {
+    padding: 2px 7px;
+    font-size: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid #4a5568;
+    border-radius: 3px;
+    color: #718096;
+    cursor: pointer;
+    line-height: 1.4;
+}
+.ca-sort-btn--active {
+    background: rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+    border-color: #718096;
+}
+.ca-sort-btn:hover:not(.ca-sort-btn--active) {
+    background: rgba(255, 255, 255, 0.08);
+    color: #a0aec0;
+}
+
+/* Action buttons row at the bottom of the panel */
+.ca-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+}
+.ca-actions .ca-view-all-btn {
+    flex: 1;
+}
+
+.ca-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.ca-view-all-btn {
+    width: 100%;
+    margin-top: auto;
+    padding: 5px 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid #4a5568;
+    border-radius: 4px;
+    color: #a0aec0;
+    font-size: 11px;
+    cursor: pointer;
+    text-align: center;
+}
+.ca-view-all-btn:hover { background: rgba(255, 255, 255, 0.08); color: #e2e8f0; }
+
+/* Absolute count in brackets next to % values */
+.ca-abs-count {
+    color: #718096;
+    font-size: 9px;
+}
+
+/* Full-data modal: wider than default cdt-modal to give bars more room */
+.ca-full-data-modal {
+    width: 820px;
+}
+.ca-full-data-modal .cdt-content {
+    padding: 12px 20px;
+}
+
+/* Sort toggle when inside a modal header (needs right-margin to clear close button) */
+.ca-sort-toggle--modal {
+    margin-right: 8px;
+}
+
+/* Builds panel: entity select wrapper */
+.ca-builds-select {
+    margin-bottom: 10px;
+}
+
+/* SynergyEntitySelect dropdown */
+.syn-select {
+    position: relative;
+    display: inline-block;
+}
+.syn-select-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #2d3748;
+    border: 1px solid #4a5568;
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    color: #e2e8f0;
+    font-size: 14px;
+    min-width: 200px;
+}
+.syn-select-portrait {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+}
+.syn-select-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 31px;
+    height: 31px;
+    border-radius: 50%;
+    opacity: 0.85;
+}
+.syn-select-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+.syn-select-text {
+    flex: 1;
+    text-align: left;
+}
+.syn-select-name { display: block; }
+.syn-select-strategy { display: block; font-size: 12px; }
+.syn-select-arrow { color: #a0aec0; }
+.syn-select-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    background: #1a202c;
+    border: 1px solid #4a5568;
+    border-radius: 6px;
+    z-index: 100;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    min-width: 280px;
+    max-height: 360px;
+    display: flex;
+    flex-direction: column;
+}
+.syn-select-search {
+    padding: 8px;
+    border-bottom: 1px solid #2d3748;
+    flex-shrink: 0;
+}
+.syn-select-input {
+    width: 100%;
+    background: #2d3748;
+    border: 1px solid #4a5568;
+    border-radius: 4px;
+    padding: 6px 8px;
+    color: #e2e8f0;
+    font-size: 13px;
+    box-sizing: border-box;
+    outline: none;
+}
+.syn-select-list { overflow-y: auto; flex: 1; }
+.syn-select-no-matches {
+    padding: 12px;
+    color: #718096;
+    font-size: 13px;
+    text-align: center;
+}
+.syn-select-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+}
+.syn-select-option:hover:not(.syn-select-option--active) { background: #253041; }
+.syn-select-option--active { background: #2d3748; }
+.syn-select-option-name { display: block; font-size: 14px; color: #e2e8f0; }
+.syn-select-option-strategy { display: block; font-size: 12px; }
+
+/* Pair Synergy section layout */
+.syn-section {
+    margin-top: 32px;
+    border-top: 1px solid #2d3748;
+    padding-top: 20px;
+}
+.syn-section-header {
+    border-bottom: 1px solid #2d3748;
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+}
+.syn-entity-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+.syn-entity-label { color: #a0aec0; font-size: 14px; }
+.syn-no-data { color: #718096; text-align: center; padding: 20px; }
+.syn-tables-row {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+.syn-table-col { flex: 1 1 340px; min-width: 0; }
+.syn-table-col-label {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.syn-table-col-label--best { color: #68d391; }
+.syn-table-col-label--worst { color: #fc8181; }
+
+/* Pair Synergy table */
+.syn-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.syn-table thead tr { color: #a0aec0; border-bottom: 1px solid #2d3748; }
+.syn-table th { padding: 6px 10px; font-weight: 500; }
+.syn-table th:first-child { text-align: left; }
+.syn-table th:last-child { text-align: right; white-space: nowrap; }
+.syn-table-adj-label { font-weight: bold; color: #e2e8f0; }
+.syn-table-raw-label { color: #718096; font-weight: normal; }
+.syn-table tbody tr { border-bottom: 1px solid #1a202c; }
+.syn-table-name-cell { padding: 8px 10px; }
+.syn-table-name-inner { display: flex; align-items: center; gap: 8px; }
+.syn-table-char-name { display: block; }
+.syn-table-char-strategy { display: block; font-size: 12px; }
+.syn-table-rate-cell { text-align: right; padding: 8px 10px; }
+.syn-table-rate-inner { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.syn-table-bar-track {
+    width: 80px;
+    height: 6px;
+    background: #2d3748;
+    border-radius: 3px;
+    overflow: hidden;
+}
+.syn-table-bar-fill { height: 100%; border-radius: 3px; }
+.syn-table-pct { min-width: 30px; text-align: right; }
+.syn-table-raw-pct { color: #718096; font-size: 12px; white-space: nowrap; }

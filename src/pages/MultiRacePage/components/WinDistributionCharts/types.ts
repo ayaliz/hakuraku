@@ -1,4 +1,4 @@
-import { HorseEntry, CharacterStats, StrategyStats } from "../../types";
+import { HorseEntry, CharacterStats } from "../../types";
 
 export interface PieSlice {
     value: number;
@@ -35,6 +35,8 @@ export interface PerformanceMetrics {
 
 export interface WinDistributionChartsProps {
     characterStats: CharacterStats[];
-    strategyStats: StrategyStats[];
     allHorses: HorseEntry[];
+    /** When true, hides the opponent-specific views and removes "opponent" wording.
+     *  Use for data sources where there is no player/opponent distinction (e.g. spectated room matches). */
+    spectatorMode?: boolean;
 }

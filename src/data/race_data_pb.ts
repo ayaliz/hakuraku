@@ -458,11 +458,6 @@ export enum RaceSimulateEventData_SimulateEventType {
    * @generated from enum value: SECURE_LEAD = 10;
    */
   SECURE_LEAD = 10,
-
-  /**
-   * @generated from enum value: EXTRA_TARGET_SPEED = 12;
-   */
-  EXTRA_TARGET_SPEED = 12,
 }
 
 /**

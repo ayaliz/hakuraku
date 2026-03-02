@@ -10,6 +10,8 @@ export type ParsedRace = {
     uploadedAt: Date;
     playerIndices: Set<number>;
     raceType?: string;
+    /** trainedCharaId → support cards in slot order (positions 1–6) */
+    deckByTrainedCharaId: Map<number, { id: number; lb: number }[]>;
 };
 
 export type HorseEntry = {
@@ -36,6 +38,8 @@ export type HorseEntry = {
     isPlayer: boolean;
     isDebuffer: boolean; // True if horse has ≥4 skills with debuff icon IDs
     teamId: number; // Room match team (1, 2, 3); 0 = unassigned / NPC
+    supportCardIds: number[];       // 6 support card IDs in slot order (empty if unavailable)
+    supportCardLimitBreaks: number[]; // parallel to supportCardIds: limit_break_count for each card
 };
 
 export type CharacterStats = {
@@ -103,6 +107,8 @@ export type PairSynergyStats = {
     charaId_y: number;
     coApps: number;   // team-race appearances where both were on the same team
     teamWins: number; // of those, times the team produced the race winner
+    winsX: number;    // of teamWins, times entity X individually had finishOrder === 1
+    winsY: number;    // of teamWins, times entity Y individually had finishOrder === 1
 };
 
 export type RoomCompositionEntry = {

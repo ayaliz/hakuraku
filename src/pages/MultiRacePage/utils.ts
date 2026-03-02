@@ -161,6 +161,7 @@ export function parseRaceJson(json: any, fileName: string): ParsedRace | { error
         uploadedAt: new Date(),
         playerIndices,
         raceType,
+        deckByTrainedCharaId: new Map<number, { id: number; lb: number }[]>(),
     };
 }
 
@@ -186,6 +187,18 @@ function parseNewFormat(json: any, fileName: string, id: string): ParsedRace | {
         const raceType = json['race_type'] || json['RaceType'];
 
         const horseInfo = rawHorses.filter((h: any) => h !== null);
+
+        const deckByTrainedCharaId = new Map<number, { id: number; lb: number }[]>();
+        const trainedCharaArray: any[] = json['trained_chara_array'] ?? [];
+        for (const tc of trainedCharaArray) {
+            const tcId = tc['trained_chara_id'];
+            if (!tcId) continue;
+            const cards = (tc['support_card_list'] ?? [])
+                .slice()
+                .sort((a: any, b: any) => a.position - b.position)
+                .map((c: any) => ({ id: c['support_card_id'] as number, lb: (c['limit_break_count'] ?? 0) as number }));
+            deckByTrainedCharaId.set(tcId, cards);
+        }
 
         const parsedRaceData = deserializeFromBase64(json['race_scenario']);
         if (!parsedRaceData) {
@@ -214,7 +227,8 @@ function parseNewFormat(json: any, fileName: string, id: string): ParsedRace | {
             raceDistance,
             uploadedAt: new Date(),
             playerIndices,
-            raceType
+            raceType,
+            deckByTrainedCharaId,
         };
     } catch (err: any) {
         return { error: `Failed to parse new JSON format: ${err.message}` };
@@ -293,6 +307,8 @@ function extractHorseEntries(race: ParsedRace): HorseEntry[] {
             isPlayer: race.playerIndices.has(frameOrder),
             isDebuffer: debuffCount >= 4,
             teamId: data['team_id'] ?? 0,
+            supportCardIds: (race.deckByTrainedCharaId.get(data['trained_chara_id']) ?? []).map(c => c.id),
+            supportCardLimitBreaks: (race.deckByTrainedCharaId.get(data['trained_chara_id']) ?? []).map(c => c.lb),
         });
     });
 
@@ -476,7 +492,7 @@ function computePairSynergy(allHorses: HorseEntry[]): PairSynergyStats[] {
 
     // Accumulate pairwise co-appearances keyed by (cardId, strategy) pairs.
     // Each (cardId, strategy) is a distinct entity — same card in different running styles are separate.
-    type PairEntry = { cardId_x: number; strategy_x: number; charaId_x: number; cardId_y: number; strategy_y: number; charaId_y: number; coApps: number; teamWins: number };
+    type PairEntry = { cardId_x: number; strategy_x: number; charaId_x: number; cardId_y: number; strategy_y: number; charaId_y: number; coApps: number; teamWins: number; winsX: number; winsY: number };
     const pairMap = new Map<string, PairEntry>();
 
     for (const teamMap of raceMap.values()) {
@@ -490,10 +506,14 @@ function computePairSynergy(allHorses: HorseEntry[]): PairSynergyStats[] {
                     const [x, y] = (a.cardId * 10 + a.strategy) <= (b.cardId * 10 + b.strategy) ? [a, b] : [b, a];
                     const key = `${x.cardId}_${x.strategy}__${y.cardId}_${y.strategy}`;
                     if (!pairMap.has(key))
-                        pairMap.set(key, { cardId_x: x.cardId, strategy_x: x.strategy, charaId_x: x.charaId, cardId_y: y.cardId, strategy_y: y.strategy, charaId_y: y.charaId, coApps: 0, teamWins: 0 });
+                        pairMap.set(key, { cardId_x: x.cardId, strategy_x: x.strategy, charaId_x: x.charaId, cardId_y: y.cardId, strategy_y: y.strategy, charaId_y: y.charaId, coApps: 0, teamWins: 0, winsX: 0, winsY: 0 });
                     const p = pairMap.get(key)!;
                     p.coApps++;
-                    if (teamWon) p.teamWins++;
+                    if (teamWon) {
+                        p.teamWins++;
+                        if (x.finishOrder === 1) p.winsX++;
+                        else if (y.finishOrder === 1) p.winsY++;
+                    }
                 }
             }
         }

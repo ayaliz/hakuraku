@@ -112,7 +112,53 @@
 /* Builds panel: entity select wrapper */
 .ca-builds-select {
     margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
+
+/* View Decks button */
+.ca-decks-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    background: #2d3748;
+    border: 1px solid #4a5568;
+    border-radius: 6px;
+    color: #e2e8f0;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.ca-decks-btn:hover { background: #3a4a5c; border-color: #718096; }
+.ca-decks-btn-icon { width: 20px; height: 20px; object-fit: contain; }
+
+/* Decks modal */
+.ca-decks-modal { width: 760px; }
+.ca-decks-modal .cdt-content { padding: 12px 20px; }
+
+/* Cards modal */
+.ca-cards-modal { width: 760px; }
+.ca-cards-modal .cdt-content { padding: 12px 20px; }
+
+/* Deck bullet-chart row */
+.deck-row { display: flex; align-items: flex-start; gap: 12px; }
+.deck-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 48px);
+    grid-template-rows: repeat(2, 48px);
+    gap: 4px;
+    flex-shrink: 0;
+}
+.deck-card-icon {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: #1a202c;
+}
+.deck-bars { flex: 1; min-width: 0; }
 
 /* SynergyEntitySelect dropdown */
 .syn-select {
@@ -263,6 +309,7 @@
 .syn-table-name-inner { display: flex; align-items: center; gap: 8px; }
 .syn-table-char-name { display: block; }
 .syn-table-char-strategy { display: block; font-size: 12px; }
+.syn-table-win-split { display: block; font-size: 11px; color: #718096; margin-top: 2px; }
 .syn-table-rate-cell { text-align: right; padding: 8px 10px; }
 .syn-table-rate-inner { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
 .syn-table-bar-track {

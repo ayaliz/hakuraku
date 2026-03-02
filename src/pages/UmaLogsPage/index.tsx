@@ -20,6 +20,7 @@ import Histogram from "./Histogram";
 import UmaFeatCard from "./FastestUmaPanel";
 import { formatTime } from "../../data/UMDatabaseUtils";
 import TeamCompositionPanel from "./TeamCompositionPanel";
+import SupportCardPanel from "../MultiRacePage/components/WinDistributionCharts/SupportCardPanel";
 import ExplorerTab from "./ExplorerTab";
 import "../MultiRacePage/MultiRacePage.css";
 import "./UmaLogsPage.css";
@@ -32,6 +33,8 @@ type SerializedSkillStats = Omit<SkillStats, 'learnedByCharaIds' | 'learnedByStr
 type SerializedHorseEntry = Omit<HorseEntry, 'activatedSkillIds' | 'learnedSkillIds' | 'trainerName'> & {
     activatedSkillIds: number[];
     learnedSkillIds: number[];
+    supportCardIds: number[];
+    supportCardLimitBreaks: number[];
 };
 
 type SerializedStats = {
@@ -88,6 +91,8 @@ function deserializeStats(s: SerializedStats): AggregatedStats {
             trainerName: '',
             activatedSkillIds: new Set(h.activatedSkillIds),
             learnedSkillIds: new Set(h.learnedSkillIds),
+            supportCardIds: h.supportCardIds ?? [],
+            supportCardLimitBreaks: h.supportCardLimitBreaks ?? [],
         })),
         teamStats: s.teamStats,
         pairSynergy: s.pairSynergy ?? [],
@@ -113,6 +118,7 @@ interface TrackGroupContentProps {
 
 const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinnersOnly, setScoreWinnersOnly, totalRaces, totalUniqueUmas }) => {
     const [section, setSection] = useState<Section>('introduction');
+    const [cardUsageOpen, setCardUsageOpen] = useState(false);
 
     const winners = useMemo(
         () => group.stats.allHorses.filter(h => h.finishOrder === 1 && h.finishTime > 0),
@@ -289,6 +295,25 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
                                     skillStats={group.stats.skillStats}
                                 />
                             )}
+                        </div>
+                        <div className="uma-overview-actions">
+                            <button className="ca-decks-btn" onClick={() => setCardUsageOpen(true)}>
+                                <img src={`${import.meta.env.BASE_URL}assets/textures/card.webp`} alt="" className="ca-decks-btn-icon" />
+                                View card usage
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {cardUsageOpen && (
+                <div className="cdt-overlay" onClick={() => setCardUsageOpen(false)}>
+                    <div className="cdt-modal ca-cards-modal" onClick={e => e.stopPropagation()}>
+                        <div className="cdt-header">
+                            <h3 className="cdt-title">Support Card Usage</h3>
+                            <button className="cdt-close-btn" onClick={() => setCardUsageOpen(false)}>&times;</button>
+                        </div>
+                        <div className="cdt-content">
+                            <SupportCardPanel horses={group.stats.allHorses} />
                         </div>
                     </div>
                 </div>

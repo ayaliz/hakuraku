@@ -6,6 +6,8 @@ import { PieSlice } from "./types";
 import { getCharaIcon } from "./utils";
 import type { CharacterStats, HorseEntry, PairSynergyStats } from "../../types";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
+import AssetLoader from "../../../../data/AssetLoader";
+import SupportCardPanel from "./SupportCardPanel";
 
 const PRIOR_MEAN = 1 / 3;
 const PRIOR_STRENGTH = 18;
@@ -30,6 +32,8 @@ type SynergyDisplayRow = {
     coApps: number;
     teamWins: number;
     smoothedRate: number;
+    selectedWins: number; // times the selected/filtered entity had finishOrder === 1 in co-appearances
+    teammateWins: number; // times this row's entity had finishOrder === 1 in co-appearances
 };
 
 interface SynergyEntitySelectProps {
@@ -312,11 +316,23 @@ interface CharacterBuildsPanelProps {
     characterStats?: CharacterStats[];
 }
 
+type DeckRow = {
+    deckKey: string;
+    cardIds: number[];  // in slot order
+    appearances: number;
+    wins: number;
+    popPct: number;
+    adjWinRate: number;
+};
+
 function CharacterBuildsPanel({ rawPopSlices, allHorses, characterStats }: CharacterBuildsPanelProps) {
     const [selectedKey, setSelectedKey] = useState<string | null>(null);
     const [sortMode, setSortMode] = useState<"pop" | "winRate">("pop");
     const [fullDataOpen, setFullDataOpen] = useState(false);
     const [fullDataSort, setFullDataSort] = useState<"pop" | "winRate">("pop");
+    const [decksOpen, setDecksOpen] = useState(false);
+    const [deckSort, setDeckSort] = useState<"pop" | "winRate">("pop");
+    const [cardsOpen, setCardsOpen] = useState(false);
 
     const charaNameMap = useMemo(
         () => new Map((characterStats ?? []).map(c => [c.charaId, c.charaName])),
@@ -382,6 +398,39 @@ function CharacterBuildsPanel({ rawPopSlices, allHorses, characterStats }: Chara
         return rows;
     }, [allHorses, selCardId, selStrategy]);
 
+    const allDeckRows = useMemo((): DeckRow[] => {
+        if (selCardId === null || selStrategy === null) return [];
+        const horses = allHorses.filter(h => h.cardId === selCardId && h.strategy === selStrategy && h.supportCardIds.length === 6);
+        const total = horses.length;
+        if (total === 0) return [];
+        const totalWins = horses.filter(h => h.finishOrder === 1).length;
+        const BAYES_K = 54;
+        const priorMean = totalWins / total;
+
+        const deckMap = new Map<string, { cardIds: number[]; apps: number; wins: number }>();
+        for (const h of horses) {
+            const key = [...h.supportCardIds].sort((a, b) => a - b).join('_');
+            if (!deckMap.has(key)) deckMap.set(key, { cardIds: h.supportCardIds, apps: 0, wins: 0 });
+            const d = deckMap.get(key)!;
+            d.apps++;
+            if (h.finishOrder === 1) d.wins++;
+        }
+
+        return Array.from(deckMap.values()).map(({ cardIds, apps, wins }) => ({
+            deckKey: [...cardIds].sort((a, b) => a - b).join('_'),
+            cardIds,
+            appearances: apps,
+            wins,
+            popPct: (apps / total) * 100,
+            adjWinRate: (wins + BAYES_K * priorMean) / (apps + BAYES_K),
+        }));
+    }, [allHorses, selCardId, selStrategy]);
+
+    const decksByPop = useMemo(() => [...allDeckRows].sort((a, b) => b.appearances - a.appearances), [allDeckRows]);
+    const decksByWin = useMemo(() => [...allDeckRows].filter(r => r.wins > 0).sort((a, b) => b.adjWinRate - a.adjWinRate), [allDeckRows]);
+    const deckList = deckSort === "pop" ? decksByPop : decksByWin;
+    const deckMaxPct = Math.max(...deckList.slice(0, 20).flatMap(r => [r.popPct, r.adjWinRate * 100]), 1);
+
     const sortedByPop = useMemo(() => [...allSkillRows].sort((a, b) => b.popPct - a.popPct), [allSkillRows]);
     const sortedByWin = useMemo(() => [...allSkillRows].filter(r => r.winAppearances > 0).sort((a, b) => b.adjWinRate - a.adjWinRate), [allSkillRows]);
 
@@ -438,6 +487,14 @@ function CharacterBuildsPanel({ rawPopSlices, allHorses, characterStats }: Chara
             </div>
             <div className="ca-builds-select">
                 <SynergyEntitySelect entities={entities} value={effectiveKey} onChange={setSelectedKey} />
+                <button className="ca-decks-btn" onClick={() => setDecksOpen(true)} title="View support card decks">
+                    <img src={AssetLoader.getStatIcon("deck")} alt="" className="ca-decks-btn-icon" />
+                    View Decks
+                </button>
+                <button className="ca-decks-btn" onClick={() => setCardsOpen(true)} title="View support card usage">
+                    <img src={AssetLoader.getStatIcon("card")} alt="" className="ca-decks-btn-icon" />
+                    View Cards
+                </button>
             </div>
             {top5.length === 0 ? (
                 <span className="sa-no-data">No skill data</span>
@@ -470,6 +527,82 @@ function CharacterBuildsPanel({ rawPopSlices, allHorses, characterStats }: Chara
                         </div>
                         <div className="cdt-content">
                             {fullList.map(r => renderSkillRow(r, fullDataMaxPct))}
+                        </div>
+                    </div>
+                </div>
+            )}
+            {decksOpen && (
+                <div className="cdt-overlay" onClick={() => setDecksOpen(false)}>
+                    <div className="cdt-modal ca-decks-modal" onClick={e => e.stopPropagation()}>
+                        <div className="cdt-header">
+                            <h3 className="cdt-title">Support Decks</h3>
+                            <div className="ca-sort-toggle ca-sort-toggle--modal">
+                                <button
+                                    className={`ca-sort-btn${deckSort === "pop" ? " ca-sort-btn--active" : ""}`}
+                                    onClick={() => setDeckSort("pop")}>
+                                    By Population
+                                </button>
+                                <button
+                                    className={`ca-sort-btn${deckSort === "winRate" ? " ca-sort-btn--active" : ""}`}
+                                    onClick={() => setDeckSort("winRate")}>
+                                    By Adj. Win%
+                                </button>
+                            </div>
+                            <button className="cdt-close-btn" onClick={() => setDecksOpen(false)}>&times;</button>
+                        </div>
+                        <div className="cdt-content">
+                            {deckList.length === 0 ? (
+                                <span className="sa-no-data">No deck data for this character.</span>
+                            ) : deckList.slice(0, 20).map(row => (
+                                <div key={row.deckKey} className="sa-sb-row deck-row">
+                                    <div className="deck-cards-grid">
+                                        {row.cardIds.map((id, i) => (
+                                            <img
+                                                key={i}
+                                                src={AssetLoader.getSupportCardIcon(id)}
+                                                alt={`Card ${id}`}
+                                                className="deck-card-icon"
+                                                onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                                            />
+                                        ))}
+                                    </div>
+                                    <div className="deck-bars">
+                                        <div className="sa-sb-bar-row">
+                                            <div className="sa-sb-bar-label">Pop%</div>
+                                            <div className="sa-sb-track sa-sb-track--pick">
+                                                <div className="sa-sb-bar-fill sa-sb-bar-fill--pick" style={{ width: `${(row.popPct / deckMaxPct) * 100}%` }} />
+                                            </div>
+                                            <div className="sa-sb-value sa-sb-value--pick" style={{ width: "auto", minWidth: "72px" }}>
+                                                {row.popPct.toFixed(1)}% <span className="ca-abs-count">({row.appearances})</span>
+                                            </div>
+                                        </div>
+                                        <div className="sa-sb-bar-row">
+                                            <div className="sa-sb-bar-label">Win%</div>
+                                            <div className="sa-sb-track sa-sb-track--win">
+                                                <div className="sa-sb-bar-fill" style={{ width: `${(row.adjWinRate * 100 / deckMaxPct) * 100}%`, background: "#68d391" }} />
+                                            </div>
+                                            <div className="sa-sb-value sa-sb-value--win" style={{ width: "auto", minWidth: "72px" }}>
+                                                {(row.adjWinRate * 100).toFixed(1)}% <span className="ca-abs-count">({row.wins})</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+            {cardsOpen && selCardId !== null && selStrategy !== null && (
+                <div className="cdt-overlay" onClick={() => setCardsOpen(false)}>
+                    <div className="cdt-modal ca-cards-modal" onClick={e => e.stopPropagation()}>
+                        <div className="cdt-header">
+                            <h3 className="cdt-title">Support Card Usage</h3>
+                            <button className="cdt-close-btn" onClick={() => setCardsOpen(false)}>&times;</button>
+                        </div>
+                        <div className="cdt-content">
+                            <SupportCardPanel
+                                horses={allHorses.filter(h => h.cardId === selCardId && h.strategy === selStrategy)}
+                            />
                         </div>
                     </div>
                 </div>
@@ -522,6 +655,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
     }, [pairSynergy, characterStats]);
 
     const effectiveEntityKey = synEntityKey ?? synEntities[0]?.key ?? null;
+    const selectedSynEntity = synEntities.find(e => e.key === effectiveEntityKey) ?? null;
 
     const { topRows, bottomRows, maxRate } = useMemo((): { topRows: SynergyDisplayRow[]; bottomRows: SynergyDisplayRow[]; maxRate: number } => {
         const empty = { topRows: [], bottomRows: [], maxRate: 0.01 };
@@ -538,7 +672,9 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                 const cardName = UMDatabaseWrapper.cards[cardId]?.name ?? charaNameMap.get(charaId) ?? `#${charaId}`;
                 const charaName = charaNameMap.get(charaId) ?? `#${charaId}`;
                 const smoothedRate = (p.teamWins + PRIOR_STRENGTH * PRIOR_MEAN) / (p.coApps + PRIOR_STRENGTH);
-                return { key: `${cardId}_${strategy}`, cardId, strategy, charaId, cardName, charaName, coApps: p.coApps, teamWins: p.teamWins, smoothedRate };
+                const selectedWins = isX ? p.winsX : p.winsY;
+                const teammateWins = isX ? p.winsY : p.winsX;
+                return { key: `${cardId}_${strategy}`, cardId, strategy, charaId, cardName, charaName, coApps: p.coApps, teamWins: p.teamWins, smoothedRate, selectedWins, teammateWins };
             });
 
         if (pairs.length === 0) return empty;
@@ -551,7 +687,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
         return { topRows, bottomRows, maxRate };
     }, [pairSynergy, effectiveEntityKey, characterStats]);
 
-    const renderSynergyTable = (rows: SynergyDisplayRow[], accentColor: string) => (
+    const renderSynergyTable = (rows: SynergyDisplayRow[], accentColor: string, selectedEntityName: string) => (
         <table className="syn-table">
             <thead>
                 <tr>
@@ -568,6 +704,8 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                     const stratColor = STRATEGY_COLORS[row.strategy] ?? "#718096";
                     const rawPct = Math.round(100 * row.teamWins / row.coApps);
                     const smoothedPct = Math.round(row.smoothedRate * 100);
+                    const selectedPct = Math.round(100 * row.selectedWins / row.coApps);
+                    const teammatePct = Math.round(100 * row.teammateWins / row.coApps);
                     return (
                         <tr key={row.key}>
                             <td className="syn-table-name-cell">
@@ -582,6 +720,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                                     <span>
                                         <span className="syn-table-char-name">{row.charaName}</span>
                                         <span className="syn-table-char-strategy" style={{ color: stratColor }}>{STRATEGY_NAMES[row.strategy] ?? `Strategy ${row.strategy}`}</span>
+                                        <span className="syn-table-win-split">{selectedEntityName} ({selectedPct}%) · {row.charaName} ({teammatePct}%)</span>
                                     </span>
                                 </div>
                             </td>
@@ -648,7 +787,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                                     <div className="syn-table-col-label syn-table-col-label--best">
                                         <span>▲</span> Best Synergies
                                     </div>
-                                    {renderSynergyTable(topRows, "#68d391")}
+                                    {renderSynergyTable(topRows, "#68d391", selectedSynEntity?.charaName ?? "")}
                                 </div>
                             )}
                             {bottomRows.length > 0 && (
@@ -656,7 +795,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                                     <div className="syn-table-col-label syn-table-col-label--worst">
                                         <span>▼</span> Worst Synergies
                                     </div>
-                                    {renderSynergyTable(bottomRows, "#fc8181")}
+                                    {renderSynergyTable(bottomRows, "#fc8181", selectedSynEntity?.charaName ?? "")}
                                 </div>
                             )}
                         </div>

@@ -687,6 +687,65 @@
     color: #a0aec0;
 }
 
+/* Win rate breakdown table (shown in expanded skill heatmap row) */
+.swb-container {
+    margin-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 8px;
+}
+.swb-header {
+    font-size: 10px;
+    font-weight: 600;
+    color: #718096;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+}
+.swb-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+.swb-table thead th {
+    text-align: center;
+    padding: 0 4px 4px;
+    color: #718096;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.swb-label-col { text-align: left; }
+.swb-strat-col { width: 52px; }
+.swb-total-col { width: 52px; border-left: 1px solid rgba(255, 255, 255, 0.08); }
+.swb-label {
+    color: #a0aec0;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding-right: 12px;
+}
+.swb-apps {
+    color: #4a5568;
+    font-size: 10px;
+}
+.swb-row--total .swb-label {
+    color: #e2e8f0;
+    font-weight: 600;
+}
+.swb-cell {
+    text-align: center;
+    padding: 2px 4px;
+    font-variant-numeric: tabular-nums;
+}
+.swb-cell--all {
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    font-weight: 600;
+}
+.swb-pct { color: #68d391; }
+.swb-row--total .swb-pct { color: #9ae6b4; }
+.swb-empty { color: #4a5568; }
+
 /* ChartDetailsModal shell */
 .cdt-overlay {
     position: fixed;

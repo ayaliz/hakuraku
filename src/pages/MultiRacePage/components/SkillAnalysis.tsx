@@ -18,6 +18,106 @@ interface SkillAnalysisProps {
 }
 
 type SortKey = "skillName" | "timesActivated" | "learnedByHorses" | "uniqueRaces" | "winRate" | "avgFinishPosition" | "normalizedActivations" | "meanDistance" | "medianDistance";
+
+const STRAT_LABELS: Record<number, string> = { 1: "FR", 2: "PC", 3: "LS", 4: "EC" };
+const STRATS = [1, 2, 3, 4] as const;
+
+function renderWinBreakdown(skill: SkillStats, horses: HorseEntry[]) {
+    const baseId = Math.floor(skill.skillId / 10);
+
+    type Cell = { apps: number; wins: number };
+    const variantSet = new Set<number>();
+    const byVariantStrat = new Map<string, Cell>();
+    const byVariantAll = new Map<number, Cell>();
+    const byStratAll = new Map<number, Cell>();
+    let totalApps = 0, totalWins = 0;
+
+    const bump = (map: Map<any, Cell>, key: any, won: boolean) => {
+        if (!map.has(key)) map.set(key, { apps: 0, wins: 0 });
+        const c = map.get(key)!;
+        c.apps++;
+        if (won) c.wins++;
+    };
+
+    for (const h of horses) {
+        const won = h.finishOrder === 1;
+        let activatedAny = false;
+        for (const id of h.activatedSkillIds) {
+            if (Math.floor(id / 10) !== baseId) continue;
+            variantSet.add(id);
+            bump(byVariantStrat, `${id}:${h.strategy}`, won);
+            bump(byVariantAll, id, won);
+            activatedAny = true;
+        }
+        if (activatedAny) {
+            bump(byStratAll, h.strategy, won);
+            totalApps++;
+            if (won) totalWins++;
+        }
+    }
+
+    if (variantSet.size === 0) return null;
+
+    const variantIds = [...variantSet].sort();
+    const showVariants = variantIds.length > 1;
+
+    const fmtCell = (cell: Cell | undefined) => {
+        if (!cell || cell.apps === 0) return { el: <span className="swb-empty">—</span>, title: undefined };
+        return {
+            el: <span className="swb-pct">{(cell.wins / cell.apps * 100).toFixed(1)}%</span>,
+            title: `${cell.wins}W / ${cell.apps}`,
+        };
+    };
+
+    const rows: { label: string; apps: number; isTotal: boolean; variantId: number | null }[] = [];
+    if (showVariants) {
+        for (const vid of variantIds) {
+            const name = UMDatabaseWrapper.skills[vid]?.name ?? `#${vid}`;
+            const apps = byVariantAll.get(vid)?.apps ?? 0;
+            rows.push({ label: name, apps, isTotal: false, variantId: vid });
+        }
+    }
+    rows.push({ label: "All", apps: totalApps, isTotal: true, variantId: null });
+
+    return (
+        <div className="swb-container">
+            <div className="swb-header">Win rates if skill activated</div>
+            <table className="swb-table">
+                <thead>
+                    <tr>
+                        <th className="swb-label-col" />
+                        {STRATS.map(s => <th key={s} className="swb-strat-col">{STRAT_LABELS[s]}</th>)}
+                        <th className="swb-total-col">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows.map(({ label, apps, isTotal, variantId }) => (
+                        <tr key={variantId ?? 'all'} className={isTotal ? 'swb-row--total' : ''}>
+                            <td className="swb-label" title={`${label} (${apps} activations)`}>
+                                {label}
+                                <span className="swb-apps"> ({apps} activations)</span>
+                            </td>
+                            {STRATS.map(s => {
+                                const cell = variantId !== null
+                                    ? byVariantStrat.get(`${variantId}:${s}`)
+                                    : byStratAll.get(s);
+                                const { el, title } = fmtCell(cell);
+                                return <td key={s} className="swb-cell" title={title}>{el}</td>;
+                            })}
+                            {(() => {
+                                const cell = variantId !== null
+                                    ? byVariantAll.get(variantId)
+                                    : { apps: totalApps, wins: totalWins };
+                                const { el, title } = fmtCell(cell);
+                                return <td className="swb-cell swb-cell--all" title={title}>{el}</td>;
+                            })()}
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}
 type SortDir = "asc" | "desc";
 
 const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
@@ -368,11 +468,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                                 <span style={{ position: "absolute", left: "83.33%", transform: "translateX(-50%)" }}>Spurt</span>
                                 <span style={{ position: "absolute", right: 0 }}>{Math.round(avgRaceDistance)}m</span>
                             </div>
-                            <div className="inline-heatmap-stats">
-                                <span>{totalActivations} activations</span>
-                                <span>•</span>
-                                <span style={{ color: "#48bb78" }}>{skill.winRate.toFixed(1)}% wins</span>
-                            </div>
+                            {renderWinBreakdown(skill, allHorses)}
                         </div>
                     </td>
                 </tr>
@@ -483,13 +579,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                             <span style={{ position: "absolute", right: 0 }}>{Math.round(avgRaceDistance)}m</span>
                         </div>
 
-                        <div className="inline-heatmap-stats">
-                            <span>{activations.length} activations</span>
-                            <span>•</span>
-                            <span>{skill.uniqueHorses} horses</span>
-                            <span>•</span>
-                            <span style={{ color: "#48bb78" }}>{skill.winRate.toFixed(1)}% wins</span>
-                        </div>
+                        {renderWinBreakdown(skill, allHorses)}
                     </div>
                 </td>
             </tr>

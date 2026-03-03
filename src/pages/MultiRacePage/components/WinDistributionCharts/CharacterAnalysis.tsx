@@ -244,7 +244,7 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
     return (
         <div className="sa-panel ca-panel">
             <div className="sa-panel-header">
-                <span>{title} <span title="Win% is Bayesian-adjusted (prior: 1/9, strength: 54 races). Pop% is share of all non-player race appearances." className="sa-info-icon">i</span></span>
+                <span>{title} <span title="Win% is Bayesian-adjusted (prior: 1/9, strength: 54 races). Pop% is share of all race appearances." className="sa-info-icon">i</span></span>
                 <div className="ca-sort-toggle">
                     <button
                         className={`ca-sort-btn${sortMode === "pop" ? " ca-sort-btn--active" : ""}`}

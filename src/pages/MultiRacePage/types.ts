@@ -36,7 +36,6 @@ export type HorseEntry = {
     motivation: number; // 1=Awful, 2=Bad, 3=Normal, 4=Good, 5=Great
     activationChance: number; // Calculated skill activation chance based on wiz and mood
     isPlayer: boolean;
-    isDebuffer: boolean; // True if horse has ≥4 skills with debuff icon IDs
     teamId: number; // Room match team (1, 2, 3); 0 = unassigned / NPC
     supportCardIds: number[];       // 6 support card IDs in slot order (empty if unavailable)
     supportCardLimitBreaks: number[]; // parallel to supportCardIds: limit_break_count for each card
@@ -61,6 +60,8 @@ export type StrategyStats = {
     avgFinishPosition: number;
     winningCharacters: { charaId: number; charaName: string; wins: number }[];
     saturation: { count: number; raceCount: number; wins: number }[];
+    /** keyed by oppressor strategy (1–4); each bucket: wins/subjectCount = per-runner win rate of this style when there are `count` oppressors in room */
+    crossSaturation?: Record<number, { count: number; raceCount: number; wins: number; subjectCount: number }[]>;
 };
 
 export type SkillStats = {
@@ -112,7 +113,7 @@ export type PairSynergyStats = {
 };
 
 export type RoomCompositionEntry = {
-    counts: [number, number, number, number]; // [front, pace, late, end] — all horses incl. debuffers
+    counts: [number, number, number, number]; // [front, pace, late, end]
     occurrences: number;
     rate: number; // occurrences / totalRaces
 };
@@ -134,7 +135,7 @@ export type AggregatedStats = {
     avgRaceDistance: number;
     characterStats: CharacterStats[];
     strategyStats: StrategyStats[];
-    rawStrategyTotals: Record<number, number>; // count of all horses (incl. debuffers) per strategy
+    rawStrategyTotals: Record<number, number>; // count of all horses per strategy
     roomCompositions: RoomCompositionEntry[];
     skillStats: Map<number, SkillStats>;
     skillActivations: Map<number, SkillActivationPoint[]>;

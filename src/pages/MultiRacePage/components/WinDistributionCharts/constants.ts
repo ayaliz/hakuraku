@@ -20,3 +20,20 @@ export const CHARACTER_COLORS = [
     "#68d391", "#63b3ed", "#f687b3", "#b794f4", "#fbd38d",
     "#81e6d9", "#feb2b2", "#a3bffa", "#faf089", "#c6f6d5",
 ];
+
+// Per uma smoothing
+export const BAYES_UMA = {
+    K: 54,
+    PRIOR: 1 / 9,
+} as const;
+
+// Per team smoothing
+export const BAYES_TEAM = {
+    K: 18,
+    PRIOR: 1 / 3,
+} as const;
+
+// Minimum fraction of total races a saturation bucket must have to display a data point.
+// e.g. 0.003 @ 13600 rooms → floor of ~41 races.
+export const SAT_MIN_RACE_FRACTION = 0.003;
+

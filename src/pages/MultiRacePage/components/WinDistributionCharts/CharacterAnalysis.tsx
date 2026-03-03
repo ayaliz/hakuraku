@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import "./CharacterAnalysis.css";
-import { STRATEGY_COLORS, STRATEGY_NAMES } from "./constants";
+import { STRATEGY_COLORS, STRATEGY_NAMES, BAYES_UMA, BAYES_TEAM } from "./constants";
 import { PieSlice } from "./types";
 import { getCharaIcon } from "./utils";
 import type { CharacterStats, HorseEntry, PairSynergyStats } from "../../types";
@@ -9,8 +9,6 @@ import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import AssetLoader from "../../../../data/AssetLoader";
 import SupportCardPanel from "./SupportCardPanel";
 
-const PRIOR_MEAN = 1 / 3;
-const PRIOR_STRENGTH = 18;
 
 type SynergyEntityInfo = {
     key: string;         // `${cardId}_${strategy}`
@@ -140,8 +138,8 @@ const SynergyEntitySelect: React.FC<SynergyEntitySelectProps> = ({ entities, val
     );
 };
 
-const CHAR_BAYES_K = 54;
-const CHAR_BAYES_PRIOR = 1 / 9;
+const CHAR_BAYES_K = BAYES_UMA.K;
+const CHAR_BAYES_PRIOR = BAYES_UMA.PRIOR;
 
 interface CharacterBreakdownPanelProps {
     title: string;
@@ -246,7 +244,7 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
     return (
         <div className="sa-panel ca-panel">
             <div className="sa-panel-header">
-                {title}
+                <span>{title} <span title="Win% is Bayesian-adjusted (prior: 1/9, strength: 54 races). Pop% is share of all non-player race appearances." className="sa-info-icon">i</span></span>
                 <div className="ca-sort-toggle">
                     <button
                         className={`ca-sort-btn${sortMode === "pop" ? " ca-sort-btn--active" : ""}`}
@@ -369,7 +367,7 @@ function CharacterBuildsPanel({ rawPopSlices, allHorses, characterStats }: Chara
         const totalWins = horses.filter(h => h.finishOrder === 1).length;
         if (total === 0) return [];
 
-        const BAYES_K = 54;
+        const BAYES_K = BAYES_UMA.K;
         const priorMean = totalWins / total; // variant's base win rate
 
         const counts = new Map<number, { apps: number; winApps: number }>();
@@ -404,7 +402,7 @@ function CharacterBuildsPanel({ rawPopSlices, allHorses, characterStats }: Chara
         const total = horses.length;
         if (total === 0) return [];
         const totalWins = horses.filter(h => h.finishOrder === 1).length;
-        const BAYES_K = 54;
+        const BAYES_K = BAYES_UMA.K;
         const priorMean = totalWins / total;
 
         const deckMap = new Map<string, { cardIds: number[]; apps: number; wins: number }>();
@@ -471,7 +469,7 @@ function CharacterBuildsPanel({ rawPopSlices, allHorses, characterStats }: Chara
     return (
         <div className="sa-panel ca-panel">
             <div className="sa-panel-header">
-                Character Builds
+                <span>Character Builds <span title="Skill Win% = Bayesian-adjusted win rate among races where the selected character had this skill learned (prior = character's base win rate, strength: 54). Pop% = fraction of this character's appearances where the skill was in their learned set." className="sa-info-icon">i</span></span>
                 <div className="ca-sort-toggle">
                     <button
                         className={`ca-sort-btn${sortMode === "pop" ? " ca-sort-btn--active" : ""}`}
@@ -671,7 +669,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                 const charaId = isX ? p.charaId_y : p.charaId_x;
                 const cardName = UMDatabaseWrapper.cards[cardId]?.name ?? charaNameMap.get(charaId) ?? `#${charaId}`;
                 const charaName = charaNameMap.get(charaId) ?? `#${charaId}`;
-                const smoothedRate = (p.teamWins + PRIOR_STRENGTH * PRIOR_MEAN) / (p.coApps + PRIOR_STRENGTH);
+                const smoothedRate = (p.teamWins + BAYES_TEAM.K * BAYES_TEAM.PRIOR) / (p.coApps + BAYES_TEAM.K);
                 const selectedWins = isX ? p.winsX : p.winsY;
                 const teammateWins = isX ? p.winsY : p.winsX;
                 return { key: `${cardId}_${strategy}`, cardId, strategy, charaId, cardName, charaName, coApps: p.coApps, teamWins: p.teamWins, smoothedRate, selectedWins, teammateWins };
@@ -769,6 +767,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                 <div className="syn-section">
                     <div className="pie-chart-title syn-section-header">
                         Pair Synergy
+                        <span title="Combined team win rate when both characters appear on the same 3-player squad. 'Combined Adj. win%' is Bayesian-smoothed (prior: 1/3, strength: 18 races). Individual percentages show each member's own win rate among co-appearances." className="sa-info-icon">i</span>
                     </div>
                     <div className="syn-entity-row">
                         <span className="syn-entity-label">Character:</span>

@@ -131,8 +131,13 @@
     border-radius: 2px;
 }
 
-.sa-sb-track--win  { height: 12px; }
-.sa-sb-track--pick { height: 8px; }
+.sa-sb-track--win {
+    height: 12px;
+}
+
+.sa-sb-track--pick {
+    height: 8px;
+}
 
 .sa-sb-bar-fill {
     position: absolute;
@@ -155,8 +160,13 @@
     flex-shrink: 0;
 }
 
-.sa-sb-value--win  { color: #e2e8f0; }
-.sa-sb-value--pick { color: #718096; }
+.sa-sb-value--win {
+    color: #e2e8f0;
+}
+
+.sa-sb-value--pick {
+    color: #718096;
+}
 
 /* ── Saturation panel ─────────────────────────────────────────────────────── */
 
@@ -200,6 +210,79 @@
     display: block;
 }
 
+/* Self / Field toggle in the saturation panel header */
+.sa-sat-view-toggle {
+    display: flex;
+    gap: 2px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 6px;
+    padding: 2px;
+    flex-shrink: 0;
+}
+
+.sa-sat-toggle-btn {
+    background: transparent;
+    border: none;
+    color: #718096;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    letter-spacing: 0.03em;
+}
+
+.sa-sat-toggle-btn:hover {
+    color: #e2e8f0;
+}
+
+.sa-sat-toggle-btn--active {
+    background: #4a5568;
+    color: #e2e8f0;
+}
+
+/* ── Cross-saturation 2×2 grid ────────────────────────────────────────────── */
+
+.sa-cross-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sa-cross-legend {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    padding: 2px 0 4px;
+}
+
+.sa-cross-charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.sa-cross-chart {
+    min-width: 0;
+}
+
+.sa-cross-title {
+    font-size: 10px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 2px;
+    letter-spacing: 0.02em;
+}
+
+.sa-cross-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    overflow: visible;
+}
+
+
 /* ── Room Composition section ─────────────────────────────────────────────── */
 
 .sa-comp-section {
@@ -211,6 +294,9 @@
 }
 
 .sa-comp-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 13px;
     font-weight: bold;
     color: #a0aec0;
@@ -259,8 +345,15 @@
     /* background + color set inline — computed heatmap + conditional */
 }
 
-.sa-comp-td--avg { padding: 5px 0 9px; font-size: 13px; }
-.sa-comp-td--row { padding: 5px 0;     font-size: 14px; }
+.sa-comp-td--avg {
+    padding: 5px 0 9px;
+    font-size: 13px;
+}
+
+.sa-comp-td--row {
+    padding: 5px 0;
+    font-size: 14px;
+}
 
 .sa-comp-td-freq {
     text-align: left;
@@ -305,7 +398,9 @@
     gap: 24px;
 }
 
-.sa-stcp-col { flex: 1; }
+.sa-stcp-col {
+    flex: 1;
+}
 
 .sa-stcp-col-label {
     display: flex;
@@ -316,8 +411,13 @@
     margin-bottom: 6px;
 }
 
-.sa-stcp-col-label--over  { color: #68d391; }
-.sa-stcp-col-label--under { color: #fc8181; }
+.sa-stcp-col-label--over {
+    color: #68d391;
+}
+
+.sa-stcp-col-label--under {
+    color: #fc8181;
+}
 
 .sa-stcp-item {
     display: flex;
@@ -437,9 +537,18 @@
     font-size: 10px;
     font-weight: bold;
 }
-.sa-meta-adj--neutral { color: #e2e8f0; }
-.sa-meta-adj--over    { color: #68d391; }
-.sa-meta-adj--under   { color: #fc8181; }
+
+.sa-meta-adj--neutral {
+    color: #e2e8f0;
+}
+
+.sa-meta-adj--over {
+    color: #68d391;
+}
+
+.sa-meta-adj--under {
+    color: #fc8181;
+}
 
 .sa-meta-raw {
     font-size: 9px;

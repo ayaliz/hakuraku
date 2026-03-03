@@ -198,7 +198,14 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
                         Welcome to the initial release of the public room data page, aka UmaLogs.
                         It currently serves stats for <strong>{totalRaces.toLocaleString()}</strong> total
                         CM10 room matches featuring <strong>{totalUniqueUmas.toLocaleString()}</strong> unique umas.
-                        A lot of stuff isn't polished yet, but it should be mostly understandable.
+                        I'm currently no longer excluding debuffers from data since the previous implementation lead to results that were more misleading than helpful, will revisit.
+						Data collection for CM10 is over, the page will still see gradual improvement to prepare for CM11.
+                    </p>
+					<p>
+                        I'm currently no longer excluding debuffers from data since the previous implementation lead to results that were more misleading than helpful, will revisit.
+                    </p>
+					<p>
+						Data collection for CM10 is over, the page will still see gradual improvement to prepare for CM11.
                     </p>
                     <h5>Adjusted Win Rates</h5>
                     <p>

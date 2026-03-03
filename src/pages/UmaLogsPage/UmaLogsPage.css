@@ -17,26 +17,32 @@
     color: #e2e8f0;
     line-height: 1.7;
 }
+
 .uma-intro-tab h4 {
     color: #f7fafc;
     margin-bottom: 16px;
 }
+
 .uma-intro-tab h5 {
     color: #e2e8f0;
     margin-top: 20px;
     margin-bottom: 10px;
 }
+
 .uma-intro-tab p,
 .uma-intro-tab ul {
     color: #a0aec0;
     font-size: 14px;
 }
+
 .uma-intro-tab ul {
     padding-left: 20px;
 }
+
 .uma-intro-tab li {
     margin-bottom: 4px;
 }
+
 .uma-intro-tab strong {
     color: #e2e8f0;
 }
@@ -54,11 +60,26 @@
     color: var(--bs-secondary-color);
 }
 
+
 /* FastestUmaPanel */
-.fup-modal-title { font-size: 16px; }
-.fup-rank-icon--sm { height: 18px; width: auto; }
-.fup-rank-icon--md { height: 20px; width: auto; }
-.fup-style-icon { height: 40px; width: auto; }
+.fup-modal-title {
+    font-size: 16px;
+}
+
+.fup-rank-icon--sm {
+    height: 18px;
+    width: auto;
+}
+
+.fup-rank-icon--md {
+    height: 20px;
+    width: auto;
+}
+
+.fup-style-icon {
+    height: 40px;
+    width: auto;
+}
 
 /* Overview tab: center the histograms + cards */
 .uma-overview-tab {
@@ -513,8 +534,14 @@
     font-size: 10px;
     font-weight: bold;
 }
-.tcp-meta-adj--over  { color: #68d391; }
-.tcp-meta-adj--under { color: #fc8181; }
+
+.tcp-meta-adj--over {
+    color: #68d391;
+}
+
+.tcp-meta-adj--under {
+    color: #fc8181;
+}
 
 .tcp-meta-raw {
     font-size: 9px;

@@ -1,10 +1,9 @@
-import React from "react";
-import { STRATEGY_COLORS, STRATEGY_NAMES } from "./constants";
+import React, { useState } from "react";
+import { STRATEGY_COLORS, STRATEGY_NAMES, BAYES_TEAM, SAT_MIN_RACE_FRACTION } from "./constants";
 import type { StrategyStats, RoomCompositionEntry, TeamCompositionStats } from "../../types";
 import AssetLoader from "../../../../data/AssetLoader";
 import "./StrategyAnalysis.css";
 
-const DEBUFFER_NOTE = "Debuffers excluded - any horse with ≥4 red debuff skills is not counted.";
 
 export type StyleRepEntry = {
     cardId: number;
@@ -19,7 +18,6 @@ export type StyleRepEntry = {
 interface StrategyAnalysisProps {
     strategyStats?: StrategyStats[];
     totalRaces?: number;
-    rawStrategyTotals?: Record<number, number>;
     roomCompositions?: RoomCompositionEntry[];
     teamStats?: TeamCompositionStats[];
     styleReps?: Record<number, StyleRepEntry[]>;
@@ -41,7 +39,6 @@ function StyleBreakdownPanel({ strategyStats, totalRaces }: { strategyStats: Str
         <div className="sa-panel">
             <div className="sa-panel-header">
                 Style Breakdown
-                <span title={DEBUFFER_NOTE} className="sa-info-icon">i</span>
             </div>
             {rows.map(({ sId, winShare, pickRate }) => {
                 const color = STRATEGY_COLORS[sId];
@@ -79,12 +76,13 @@ function StyleBreakdownPanel({ strategyStats, totalRaces }: { strategyStats: Str
 const BASELINE = 1 / 9;
 
 function SaturationPanel({ strategyStats, totalRaces }: { strategyStats: StrategyStats[]; totalRaces: number }) {
+    const [view, setView] = useState<'self' | 'field'>('self');
     const W = 500, H = 180;
     const ML = 38, MB = 28, MT = 10, MR = 28;
     const plotW = W - ML - MR;
     const plotH = H - MT - MB;
 
-    const minRaceCount = Math.max(1, totalRaces * 0.001);
+    const minRaceCount = Math.max(1, totalRaces * SAT_MIN_RACE_FRACTION);
 
     const allCounts = new Set<number>();
     strategyStats.forEach(st => {
@@ -119,71 +117,178 @@ function SaturationPanel({ strategyStats, totalRaces }: { strategyStats: Strateg
     return (
         <div className="sa-panel">
             <div className="sa-panel-header sa-panel-header--sat">
-                <span>Effects of style saturation</span>
-                <div className="sa-sat-legend">
-                    {strategyStats.map(st => (
-                        <div key={st.strategy} className="sa-sat-legend-item">
-                            <span className="sa-sat-legend-line" style={{ background: STRATEGY_COLORS[st.strategy] }} />
-                            <span className="sa-sat-legend-label">{STRATEGY_NAMES[st.strategy]}</span>
-                        </div>
-                    ))}
+                <span>Effects of style saturation <span title="Per-uma win rate by how many of that style appear in a race. Decreasing lines show that field saturation reduces individual win rate. Note: saturation buckets are precomputed from the full race data." className="sa-info-icon">i</span></span>
+                <div className="sa-sat-view-toggle">
+                    <button className={`sa-sat-toggle-btn${view === 'self' ? ' sa-sat-toggle-btn--active' : ''}`} onClick={() => setView('self')}>Self</button>
+                    <button className={`sa-sat-toggle-btn${view === 'field' ? ' sa-sat-toggle-btn--active' : ''}`} onClick={() => setView('field')}>Field</button>
                 </div>
+                {view === 'self' && (
+                    <div className="sa-sat-legend">
+                        {strategyStats.map(st => (
+                            <div key={st.strategy} className="sa-sat-legend-item">
+                                <span className="sa-sat-legend-line" style={{ background: STRATEGY_COLORS[st.strategy] }} />
+                                <span className="sa-sat-legend-label">{STRATEGY_NAMES[st.strategy]}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
-            <div className="sa-sat-subtitle">Per-uma win rate vs. # of that style in a room</div>
-            <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="sa-sat-svg">
-                {yTicks.map(wr => (
-                    <line key={wr} x1={ML} x2={ML + plotW} y1={toY(wr)} y2={toY(wr)} stroke="#2d3748" strokeWidth={1} />
+            <div className="sa-sat-subtitle">
+                {view === 'self'
+                    ? 'Per-uma win rate vs. # of that style in a room'
+                    : 'Per-uma win rate vs. # of each style in the field'}
+            </div>
+            {view === 'self' ? (
+                <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="sa-sat-svg">
+                    {yTicks.map(wr => (
+                        <line key={wr} x1={ML} x2={ML + plotW} y1={toY(wr)} y2={toY(wr)} stroke="#2d3748" strokeWidth={1} />
+                    ))}
+                    <line x1={ML} x2={ML + plotW} y1={toY(BASELINE)} y2={toY(BASELINE)}
+                        stroke="#718096" strokeWidth={1} strokeDasharray="4 3" />
+                    <text x={ML + plotW + 4} y={toY(BASELINE) + 3} textAnchor="start" fill="#718096" fontSize={8}>1/9</text>
+                    {yTicks.map(wr => (
+                        <text key={wr} x={ML - 5} y={toY(wr) + 4} textAnchor="end" fill="#718096" fontSize={9}>{Math.round(wr * 100)}%</text>
+                    ))}
+                    {counts.map(c => (
+                        <text key={c} x={toX(c)} y={MT + plotH + 16} textAnchor="middle" fill="#718096" fontSize={9}>{c}</text>
+                    ))}
+                    {strategyStats.map(st => {
+                        const points = (st.saturation ?? [])
+                            .filter(b => b.raceCount >= minRaceCount && b.count > 0)
+                            .sort((a, b) => a.count - b.count);
+                        if (points.length < 1) return null;
+                        const color = STRATEGY_COLORS[st.strategy];
+                        const ptsStr = points.map(b => `${toX(b.count)},${toY((b.wins / b.raceCount) / b.count)}`).join(" ");
+                        return (
+                            <g key={st.strategy}>
+                                {points.length > 1 && (
+                                    <polyline points={ptsStr} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" />
+                                )}
+                                {points.map(b => {
+                                    const wr = (b.wins / b.raceCount) / b.count;
+                                    return (
+                                        <circle key={b.count} cx={toX(b.count)} cy={toY(wr)}
+                                            r={3.5} fill={color} stroke="#1a202c" strokeWidth={1.5}>
+                                            <title>{STRATEGY_NAMES[st.strategy]}: {b.count} in room, {(wr * 100).toFixed(1)}% per horse ({b.raceCount} races)</title>
+                                        </circle>
+                                    );
+                                })}
+                            </g>
+                        );
+                    })}
+                    <line x1={ML} x2={ML} y1={MT} y2={MT + plotH} stroke="#4a5568" strokeWidth={1} />
+                    <line x1={ML} x2={ML + plotW} y1={MT + plotH} y2={MT + plotH} stroke="#4a5568" strokeWidth={1} />
+                </svg>
+            ) : (
+                <CrossSaturationView strategyStats={strategyStats} totalRaces={totalRaces} />
+            )}
+        </div>
+    );
+}
+
+// ── Cross-saturation: 2×2 grid, one chart per subject style ─────────────────
+function CrossSaturationView({ strategyStats, totalRaces }: { strategyStats: StrategyStats[]; totalRaces: number }) {
+    const W = 380, H = 150;
+    const ML = 34, MB = 22, MT = 8, MR = 12;
+    const plotW = W - ML - MR;
+    const plotH = H - MT - MB;
+    const BASELINE = 1 / 9;
+    const minRaceCount = Math.max(1, totalRaces * SAT_MIN_RACE_FRACTION);
+
+    return (
+        <div className="sa-cross-grid">
+            <div className="sa-cross-legend">
+                {[1, 2, 3, 4].map(o => (
+                    <div key={o} className="sa-sat-legend-item">
+                        <span className="sa-sat-legend-line" style={{ background: STRATEGY_COLORS[o] }} />
+                        <span className="sa-sat-legend-label">{STRATEGY_NAMES[o]}</span>
+                    </div>
                 ))}
-                <line x1={ML} x2={ML + plotW} y1={toY(BASELINE)} y2={toY(BASELINE)}
-                    stroke="#718096" strokeWidth={1} strokeDasharray="4 3" />
-                <text x={ML + plotW + 4} y={toY(BASELINE) + 3} textAnchor="start" fill="#718096" fontSize={8}>1/9</text>
-                {yTicks.map(wr => (
-                    <text key={wr} x={ML - 5} y={toY(wr) + 4} textAnchor="end" fill="#718096" fontSize={9}>{Math.round(wr * 100)}%</text>
-                ))}
-                {counts.map(c => (
-                    <text key={c} x={toX(c)} y={MT + plotH + 16} textAnchor="middle" fill="#718096" fontSize={9}>{c}</text>
-                ))}
-                {strategyStats.map(st => {
-                    const points = (st.saturation ?? [])
-                        .filter(b => b.raceCount >= minRaceCount && b.count > 0)
-                        .sort((a, b) => a.count - b.count);
-                    if (points.length < 1) return null;
-                    const color = STRATEGY_COLORS[st.strategy];
-                    const ptsStr = points.map(b => `${toX(b.count)},${toY((b.wins / b.raceCount) / b.count)}`).join(" ");
+            </div>
+            <div className="sa-cross-charts">
+                {[1, 2, 3, 4].map(subjectStrat => {
+                    const subjStat = strategyStats.find(s => s.strategy === subjectStrat);
+                    const crossSat = subjStat?.crossSaturation;
+                    if (!crossSat) return null;
+                    const color = STRATEGY_COLORS[subjectStrat];
+
+                    const allOppCounts = new Set<number>();
+                    for (const oStrat of [1, 2, 3, 4]) {
+                        (crossSat[oStrat] ?? []).filter(b => b.raceCount >= minRaceCount).forEach(b => allOppCounts.add(b.count));
+                    }
+                    const oppCounts = Array.from(allOppCounts).sort((a, b) => a - b);
+                    if (oppCounts.length === 0) return null;
+
+                    const allYVals: number[] = [BASELINE];
+                    for (const oStrat of [1, 2, 3, 4]) {
+                        (crossSat[oStrat] ?? []).filter(b => b.raceCount >= minRaceCount && b.subjectCount > 0)
+                            .forEach(b => allYVals.push(b.wins / b.subjectCount));
+                    }
+                    const axisMax = Math.ceil(Math.max(...allYVals, 0.01) / 0.05) * 0.05;
+                    const yTicks = [0, 0.25, 0.5, 0.75, 1.0].map(t => t * axisMax);
+
+                    const minCount = oppCounts[0], maxCount = oppCounts[oppCounts.length - 1];
+                    const xRange = maxCount - minCount || 1;
+                    const toX = (c: number) => ML + ((c - minCount) / xRange) * plotW;
+                    const toY = (wr: number) => MT + plotH - (wr / axisMax) * plotH;
+
                     return (
-                        <g key={st.strategy}>
-                            {points.length > 1 && (
-                                <polyline points={ptsStr} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" />
-                            )}
-                            {points.map(b => {
-                                const wr = (b.wins / b.raceCount) / b.count;
-                                return (
-                                    <circle key={b.count} cx={toX(b.count)} cy={toY(wr)}
-                                        r={3.5} fill={color} stroke="#1a202c" strokeWidth={1.5}>
-                                        <title>{STRATEGY_NAMES[st.strategy]}: {b.count} in room, {(wr * 100).toFixed(1)}% per horse ({b.raceCount} races)</title>
-                                    </circle>
-                                );
-                            })}
-                        </g>
+                        <div key={subjectStrat} className="sa-cross-chart">
+                            <div className="sa-cross-title" style={{ color }}>
+                                {STRATEGY_NAMES[subjectStrat].split(' ')[0]} win%
+                            </div>
+                            <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="sa-cross-svg">
+                                {yTicks.map(wr => (
+                                    <line key={wr} x1={ML} x2={ML + plotW} y1={toY(wr)} y2={toY(wr)} stroke="#2d3748" strokeWidth={1} />
+                                ))}
+                                <line x1={ML} x2={ML + plotW} y1={toY(BASELINE)} y2={toY(BASELINE)} stroke="#718096" strokeWidth={1} strokeDasharray="4 3" />
+                                <text x={ML + plotW + 3} y={toY(BASELINE) + 3} textAnchor="start" fill="#718096" fontSize={8}>1/9</text>
+                                {yTicks.map(wr => (
+                                    <text key={wr} x={ML - 4} y={toY(wr) + 3} textAnchor="end" fill="#718096" fontSize={9}>{Math.round(wr * 100)}%</text>
+                                ))}
+                                {oppCounts.map(c => (
+                                    <text key={c} x={toX(c)} y={MT + plotH + 14} textAnchor="middle" fill="#718096" fontSize={9}>{c}</text>
+                                ))}
+                                {[1, 2, 3, 4].map(oStrat => {
+                                    const buckets = (crossSat[oStrat] ?? [])
+                                        .filter(b => b.raceCount >= minRaceCount && b.subjectCount > 0)
+                                        .sort((a, b) => a.count - b.count);
+                                    if (buckets.length < 1) return null;
+                                    const lineColor = STRATEGY_COLORS[oStrat];
+                                    const ptsStr = buckets.map(b => `${toX(b.count)},${toY(b.wins / b.subjectCount)}`).join(' ');
+                                    return (
+                                        <g key={oStrat}>
+                                            {buckets.length > 1 && <polyline points={ptsStr} fill="none" stroke={lineColor} strokeWidth={1.5} strokeLinejoin="round" />}
+                                            {buckets.map(b => (
+                                                <circle key={b.count} cx={toX(b.count)} cy={toY(b.wins / b.subjectCount)} r={3} fill={lineColor} stroke="#1a202c" strokeWidth={1}>
+                                                    <title>{STRATEGY_NAMES[oStrat]}: {b.count} in room → {(b.wins / b.subjectCount * 100).toFixed(1)}% per horse ({b.raceCount} races)</title>
+                                                </circle>
+                                            ))}
+                                        </g>
+                                    );
+                                })}
+                                <line x1={ML} x2={ML} y1={MT} y2={MT + plotH} stroke="#4a5568" strokeWidth={1} />
+                                <line x1={ML} x2={ML + plotW} y1={MT + plotH} y2={MT + plotH} stroke="#4a5568" strokeWidth={1} />
+                            </svg>
+                        </div>
                     );
                 })}
-                <line x1={ML} x2={ML} y1={MT} y2={MT + plotH} stroke="#4a5568" strokeWidth={1} />
-                <line x1={ML} x2={ML + plotW} y1={MT + plotH} y2={MT + plotH} stroke="#4a5568" strokeWidth={1} />
-            </svg>
+            </div>
         </div>
     );
 }
 
 // ── Panel 3: Room Composition ──────────────────────────────────────────────────
-function CompositionSection({ rawStrategyTotals, totalRaces, roomCompositions }: {
-    rawStrategyTotals: Record<number, number>;
+function CompositionSection({ strategyStats, totalRaces, roomCompositions }: {
+    strategyStats: StrategyStats[];
     totalRaces: number;
     roomCompositions: RoomCompositionEntry[];
 }) {
     const top10 = roomCompositions.slice(0, 10);
-    const avgCounts = [1, 2, 3, 4].map(sId =>
-        totalRaces > 0 ? (rawStrategyTotals[sId] ?? 0) / totalRaces : 0
-    );
+    const avgCounts = [1, 2, 3, 4].map(sId => {
+        const stat = strategyStats.find(s => s.strategy === sId);
+        return totalRaces > 0 ? (stat?.totalRaces ?? 0) / totalRaces : 0;
+    });
     const colMaxes = [0, 1, 2, 3].map(i =>
         Math.max(...top10.map(c => c.counts[i]), avgCounts[i], 1)
     );
@@ -197,7 +302,10 @@ function CompositionSection({ rawStrategyTotals, totalRaces, roomCompositions }:
 
     return (
         <div className="sa-comp-section">
-            <div className="sa-comp-header">Room Composition</div>
+            <div className="sa-comp-header">
+                Room Composition
+                <span title="Top 10 strategy distributions by room frequency. The average row reflects the style totals from Style Breakdown. Frequency % is share of all races with that composition." className="sa-info-icon">i</span>
+            </div>
             <table className="sa-comp-table">
                 <thead>
                     <tr>
@@ -253,6 +361,7 @@ function StyleRepsPanel({ styleReps }: { styleReps: Record<number, StyleRepEntry
         <div className="sa-reps-panel">
             <div className="sa-panel-header">
                 Style Representatives
+                <span title={`Top 5 card+character combos per style ranked by Bayesian-adjusted win rate (prior: 1/9, strength: 54). Requires ≥5 appearances.`} className="sa-info-icon">i</span>
             </div>
             <div className="sa-reps-columns">
                 {[1, 2, 3, 4].map(sId => {
@@ -298,8 +407,6 @@ function StyleRepsPanel({ styleReps }: { styleReps: Record<number, StyleRepEntry
 }
 
 // ── Panel 4: Style Composition Performance ────────────────────────────────────
-const STYLE_BAYES_PRIOR = 1 / 3;
-const STYLE_BAYES_K = 18; // virtual appearances added; prior 1/3 → 6 virtual wins
 const MIN_STYLE_APPEARANCES = 20;
 const MAX_STYLE_ITEMS = 10;
 
@@ -330,7 +437,7 @@ function aggregateStyleTeams(teamStats: TeamCompositionStats[]): StyleTeamEntry[
         appearances: e.appearances,
         wins: e.wins,
         winRate: e.wins / e.appearances,
-        bayesianWinRate: (e.wins + STYLE_BAYES_K * STYLE_BAYES_PRIOR) / (e.appearances + STYLE_BAYES_K),
+        bayesianWinRate: (e.wins + BAYES_TEAM.K * BAYES_TEAM.PRIOR) / (e.appearances + BAYES_TEAM.K),
     }));
 }
 
@@ -339,8 +446,8 @@ function StyleTeamCompositionPanel({ teamStats }: { teamStats: TeamCompositionSt
     if (all.length === 0) return null;
 
     const sorted = [...all].sort((a, b) => b.bayesianWinRate - a.bayesianWinRate);
-    const overperformers = sorted.filter(e => e.bayesianWinRate > STYLE_BAYES_PRIOR).slice(0, MAX_STYLE_ITEMS);
-    const underperformers = sorted.filter(e => e.bayesianWinRate < STYLE_BAYES_PRIOR).slice(-MAX_STYLE_ITEMS).reverse();
+    const overperformers = sorted.filter(e => e.bayesianWinRate > BAYES_TEAM.PRIOR).slice(0, MAX_STYLE_ITEMS);
+    const underperformers = sorted.filter(e => e.bayesianWinRate < BAYES_TEAM.PRIOR).slice(-MAX_STYLE_ITEMS).reverse();
     if (overperformers.length === 0 && underperformers.length === 0) return null;
 
     const renderItem = (e: StyleTeamEntry, positive: boolean) => {
@@ -364,7 +471,10 @@ function StyleTeamCompositionPanel({ teamStats }: { teamStats: TeamCompositionSt
 
     return (
         <div className="sa-stcp-section">
-            <div className="sa-stcp-header">Style Composition Performance</div>
+            <div className="sa-stcp-header">
+                Style Composition Performance
+                <span title="Win rate of 3-player teams grouped by running style trio. A team wins when any of its members finishes in 1st place. Bayesian prior: 1/3, strength: 18 races. Requires ≥20 appearances." className="sa-info-icon">i</span>
+            </div>
             <div className="sa-stcp-columns">
                 {overperformers.length > 0 && (
                     <div className="sa-stcp-col">
@@ -387,7 +497,6 @@ function StyleTeamCompositionPanel({ teamStats }: { teamStats: TeamCompositionSt
 const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
     strategyStats,
     totalRaces,
-    rawStrategyTotals,
     roomCompositions,
     teamStats,
     styleReps,
@@ -402,10 +511,10 @@ const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
                         <StyleBreakdownPanel strategyStats={strategyStats!} totalRaces={totalRaces!} />
                         <SaturationPanel strategyStats={strategyStats!} totalRaces={totalRaces!} />
                     </div>
-                    {rawStrategyTotals && (
+                    {roomCompositions && (
                         <div className="sa-comp-row">
                             <CompositionSection
-                                rawStrategyTotals={rawStrategyTotals}
+                                strategyStats={strategyStats!}
                                 totalRaces={totalRaces!}
                                 roomCompositions={roomCompositions ?? []}
                             />

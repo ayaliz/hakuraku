@@ -24,6 +24,8 @@ const STRATS = [1, 2, 3, 4] as const;
 
 function renderWinBreakdown(skill: SkillStats, horses: HorseEntry[]) {
     const baseId = Math.floor(skill.skillId / 10);
+    // Inherited unique skills (9xxxxx) have baseIds offset by +80000 from their 1xxxxx counterparts
+    const inheritedBaseId = (skill.skillId >= 100000 && skill.skillId < 200000) ? baseId + 80000 : null;
 
     type Cell = { apps: number; wins: number };
     const variantSet = new Set<number>();
@@ -43,7 +45,8 @@ function renderWinBreakdown(skill: SkillStats, horses: HorseEntry[]) {
         const won = h.finishOrder === 1;
         let activatedAny = false;
         for (const id of h.activatedSkillIds) {
-            if (Math.floor(id / 10) !== baseId) continue;
+            const idBase = Math.floor(id / 10);
+            if (idBase !== baseId && idBase !== inheritedBaseId) continue;
             variantSet.add(id);
             bump(byVariantStrat, `${id}:${h.strategy}`, won);
             bump(byVariantAll, id, won);
@@ -72,9 +75,10 @@ function renderWinBreakdown(skill: SkillStats, horses: HorseEntry[]) {
     const rows: { label: string; apps: number; isTotal: boolean; variantId: number | null }[] = [];
     if (showVariants) {
         for (const vid of variantIds) {
-            const name = UMDatabaseWrapper.skills[vid]?.name ?? `#${vid}`;
+            const baseName = UMDatabaseWrapper.skills[vid]?.name ?? `#${vid}`;
+            const label = (vid >= 900000 && vid < 1000000) ? `${baseName} (Inherit)` : baseName;
             const apps = byVariantAll.get(vid)?.apps ?? 0;
-            rows.push({ label: name, apps, isTotal: false, variantId: vid });
+            rows.push({ label, apps, isTotal: false, variantId: vid });
         }
     }
     rows.push({ label: "All", apps: totalApps, isTotal: true, variantId: null });

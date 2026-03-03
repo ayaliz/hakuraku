@@ -13,6 +13,7 @@ import type {
     TeamCompositionStats,
 } from "../MultiRacePage/types";
 import StrategyAnalysis, { type StyleRepEntry } from "../MultiRacePage/components/WinDistributionCharts/StrategyAnalysis";
+import { BAYES_UMA } from "../MultiRacePage/components/WinDistributionCharts/constants";
 import CharacterAnalysis from "../MultiRacePage/components/WinDistributionCharts/CharacterAnalysis";
 import { useWinDistributionData } from "../MultiRacePage/components/WinDistributionCharts/useWinDistributionData";
 import SkillAnalysis from "../MultiRacePage/components/SkillAnalysis";
@@ -120,9 +121,11 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
     const [section, setSection] = useState<Section>('introduction');
     const [cardUsageOpen, setCardUsageOpen] = useState(false);
 
+    const allHorses = group.stats.allHorses;
+
     const winners = useMemo(
-        () => group.stats.allHorses.filter(h => h.finishOrder === 1 && h.finishTime > 0),
-        [group]
+        () => allHorses.filter(h => h.finishOrder === 1 && h.finishTime > 0),
+        [allHorses]
     );
     const scoredWinners = useMemo(() => winners.filter(h => h.rankScore > 0), [winners]);
     const fastestWin = useMemo(() => winners.reduce<HorseEntry | null>((b, h) => !b || h.finishTime < b.finishTime ? h : b, null), [winners]);
@@ -130,15 +133,13 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
     const highestWinner = useMemo(() => scoredWinners.reduce<HorseEntry | null>((b, h) => !b || h.rankScore > b.rankScore ? h : b, null), [scoredWinners]);
     const lowestWinner = useMemo(() => scoredWinners.reduce<HorseEntry | null>((b, h) => !b || h.rankScore < b.rankScore ? h : b, null), [scoredWinners]);
 
-
-
     const styleReps = useMemo<Record<number, StyleRepEntry[]>>(() => {
         const MIN_APPEARANCES = 5;
-        const BAYES_PRIOR = 1 / 9; // 9 horses per race, one winner
-        const BAYES_K = 54; // virtual appearances added; prior 1/9 → 6 virtual wins
+        const BAYES_PRIOR = BAYES_UMA.PRIOR;
+        const BAYES_K = BAYES_UMA.K;
         type Tally = { cardId: number; charaId: number; charaName: string; wins: number; appearances: number };
         const map = new Map<string, Tally>();
-        for (const h of group.stats.allHorses) {
+        for (const h of allHorses) {
             const key = `${h.strategy}_${h.cardId}`;
             if (!map.has(key)) map.set(key, { cardId: h.cardId, charaId: h.charaId, charaName: h.charaName, wins: 0, appearances: 0 });
             const t = map.get(key)!;
@@ -161,13 +162,13 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
             }
         }
         return result;
-    }, [group]);
+    }, [allHorses]);
 
     const {
         rawUnifiedCharacterWinsAll,
         rawUnifiedCharacterWinsOpp,
         rawUnifiedCharacterPop,
-    } = useWinDistributionData(group.stats.allHorses);
+    } = useWinDistributionData(allHorses);
 
     return (
         <>
@@ -250,7 +251,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
                         </div>
                         <div className="uma-score-row">
                             <Histogram
-                                values={group.stats.allHorses
+                                values={allHorses
                                     .filter(h => h.rankScore > 0 && (!scoreWinnersOnly || h.finishOrder === 1))
                                     .map(h => h.rankScore)}
                                 title="Score Distribution"
@@ -324,7 +325,6 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
                     <StrategyAnalysis
                         strategyStats={group.stats.strategyStats}
                         totalRaces={group.stats.totalRaces}
-                        rawStrategyTotals={group.stats.rawStrategyTotals}
                         roomCompositions={group.stats.roomCompositions}
                         teamStats={group.stats.teamStats}
                         styleReps={styleReps}

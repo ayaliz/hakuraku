@@ -3,7 +3,7 @@ import "./SupportCardPanel.css";
 import type { HorseEntry } from "../../types";
 import AssetLoader from "../../../../data/AssetLoader";
 
-const BAYES_K = 54;
+import { BAYES_UMA } from "./constants";
 
 const LB_COLORS = ["#4a5568", "#718096", "#4299e1", "#ed8936", "#ecc94b"];
 const LB_LABELS = ["0", "1", "2", "3", "4"];
@@ -77,7 +77,7 @@ const SupportCardPanel: React.FC<SupportCardPanelProps> = ({ horses }) => {
                 lbDist: d.lbDist,
                 rawWins: wins,
                 rawApps: apps,
-                adjWinRate: (wins + BAYES_K * priorMean) / (apps + BAYES_K),
+                adjWinRate: (wins + BAYES_UMA.K * priorMean) / (apps + BAYES_UMA.K),
             };
         });
     }, [horses]);

@@ -335,6 +335,8 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
                         roomCompositions={group.stats.roomCompositions}
                         teamStats={group.stats.teamStats}
                         styleReps={styleReps}
+                        allHorses={group.stats.allHorses}
+                        skillStats={group.stats.skillStats}
                     />
                 </div>
             )}
@@ -349,8 +351,13 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
                         pairSynergy={group.stats.pairSynergy}
                         characterStats={group.stats.characterStats}
                         allHorses={group.stats.allHorses}
+                        skillStats={group.stats.skillStats}
                     />
-                    <TeamCompositionPanel teamStats={group.stats.teamStats} />
+                    <TeamCompositionPanel
+                        teamStats={group.stats.teamStats}
+                        allHorses={group.stats.allHorses}
+                        skillStats={group.stats.skillStats}
+                    />
                 </div>
             )}
 

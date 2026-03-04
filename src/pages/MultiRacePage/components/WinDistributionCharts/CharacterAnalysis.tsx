@@ -4,10 +4,11 @@ import "./CharacterAnalysis.css";
 import { STRATEGY_COLORS, STRATEGY_NAMES, BAYES_UMA, BAYES_TEAM } from "./constants";
 import { PieSlice } from "./types";
 import { getCharaIcon } from "./utils";
-import type { CharacterStats, HorseEntry, PairSynergyStats } from "../../types";
+import type { CharacterStats, HorseEntry, PairSynergyStats, SkillStats } from "../../types";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import AssetLoader from "../../../../data/AssetLoader";
 import SupportCardPanel from "./SupportCardPanel";
+import { TeamMemberCard } from "./StrategyAnalysis";
 
 
 type SynergyEntityInfo = {
@@ -147,19 +148,23 @@ interface CharacterBreakdownPanelProps {
     rawPopSlices: PieSlice[];
     /** When provided, used instead of rawWinsSlices for adj. win rate computation. */
     rawRatingWinsSlices?: PieSlice[];
+    allHorses?: HorseEntry[];
+    skillStats?: Map<number, SkillStats>;
 }
 
-function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRatingWinsSlices }: CharacterBreakdownPanelProps) {
+function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRatingWinsSlices, allHorses, skillStats }: CharacterBreakdownPanelProps) {
     const [sortMode, setSortMode] = useState<"pop" | "winRate">("pop");
     const [fullDataOpen, setFullDataOpen] = useState(false);
     const [fullDataSort, setFullDataSort] = useState<"pop" | "winRate">("pop");
+    const [selectedCharKey, setSelectedCharKey] = useState<string | null>(null);
+    const [selectedInModal, setSelectedInModal] = useState<string | null>(null);
 
     const rawWinsByKey = new Map(rawWinsSlices.filter(s => s.charaId).map(s => [s.charaId as string, s]));
     const rawPopByKey = new Map(rawPopSlices.filter(s => s.charaId).map(s => [s.charaId as string, s]));
     const ratingWinsSlices = rawRatingWinsSlices ?? rawWinsSlices;
     const ratingWinsByKey = new Map(ratingWinsSlices.filter(s => s.charaId).map(s => [s.charaId as string, s]));
 
-    type CharRow = { key: string; label: string; fullLabel?: string; strategyId?: number; winsPct: number; popPct: number; adjRate: number; winsCount: number; appsCount: number; };
+    type CharRow = { key: string; label: string; fullLabel?: string; strategyId?: number; cardId?: number; winsPct: number; popPct: number; adjRate: number; winsCount: number; appsCount: number; };
 
     const buildCharRow = (key: string): CharRow => {
         const w = rawWinsByKey.get(key);
@@ -172,6 +177,7 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
             label: p?.label ?? w?.label ?? key,
             fullLabel: p?.fullLabel ?? w?.fullLabel,
             strategyId: w?.strategyId ?? p?.strategyId,
+            cardId: w?.cardId ?? p?.cardId,
             winsPct: w?.percentage ?? 0,
             popPct: p?.percentage ?? 0,
             adjRate,
@@ -179,6 +185,37 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
             appsCount: apps,
         };
     };
+
+    const canDrilldown = !!(allHorses && skillStats);
+
+    const buildDrilldown = (charKey: string | null) => {
+        if (!charKey || !allHorses) return [];
+        const parts = charKey.split('_');
+        const cardId = Number(parts[1]);
+        const strategy = Number(parts[2]);
+        const filtered = allHorses.filter(h => h.cardId === cardId && h.strategy === strategy && h.rankScore > 0);
+        const buildMap = new Map<string, { rep: HorseEntry; wins: number; appearances: number }>();
+        for (const h of filtered) {
+            const bkey = `${h.rankScore}_${h.speed}_${h.stamina}_${h.pow}_${h.guts}_${h.wiz}`;
+            if (!buildMap.has(bkey)) buildMap.set(bkey, { rep: h, wins: 0, appearances: 0 });
+            const entry = buildMap.get(bkey)!;
+            entry.appearances++;
+            if (h.finishOrder === 1) entry.wins++;
+        }
+        const PRIOR = 1 / 9, K = 54;
+        return Array.from(buildMap.values())
+            .map(({ rep, wins, appearances }) => ({
+                horse: rep,
+                bayesianWinRate: (wins + K * PRIOR) / (appearances + K),
+                winRate: wins / appearances,
+                appearances,
+            }))
+            .sort((a, b) => b.bayesianWinRate - a.bayesianWinRate)
+            .slice(0, 6);
+    };
+
+    const drilldownHorses = useMemo(() => buildDrilldown(selectedCharKey), [selectedCharKey, allHorses]);
+    const drilldownInModal = useMemo(() => buildDrilldown(selectedInModal), [selectedInModal, allHorses]);
 
     const allPopKeys = rawPopSlices.filter(s => s.charaId && (ratingWinsByKey.get(s.charaId as string)?.value ?? 0) > 0).map(s => s.charaId as string);
 
@@ -204,11 +241,19 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
     const maxPct = Math.max(...chars.flatMap(c => [c.adjRate * 100, c.popPct]), 1);
     const fullDataMaxPct = Math.max(...fullDataChars.flatMap(c => [c.adjRate * 100, c.popPct]), 1);
 
-    const renderBarRow = (c: CharRow, maxP: number) => {
+    const renderBarRow = (c: CharRow, maxP: number, inModal: boolean = false) => {
         const icon = getCharaIcon(c.key);
         const color = STRATEGY_COLORS[c.strategyId ?? 0] ?? "#718096";
+        const isSelected = inModal ? selectedInModal === c.key : selectedCharKey === c.key;
         return (
-            <div key={c.key} className="sa-sb-row">
+            <div
+                key={c.key}
+                className={`sa-sb-row${canDrilldown ? " sa-stcp-item--clickable" : ""}${isSelected ? " ca-row--selected" : ""}`}
+                onClick={canDrilldown ? () => {
+                    if (inModal) setSelectedInModal(k => k === c.key ? null : c.key);
+                    else setSelectedCharKey(k => k === c.key ? null : c.key);
+                } : undefined}
+            >
                 <div className="ca-char-label">
                     <div className="ca-portrait-wrap">
                         <div className="ca-portrait-ring" style={{ background: color }} />
@@ -241,6 +286,37 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
         );
     };
 
+    const renderDrilldown = (horses: typeof drilldownHorses, charKey: string | null) => {
+        if (!charKey || horses.length === 0 || !skillStats) return null;
+        const parts = charKey.split('_');
+        const strategy = Number(parts[2]);
+        const charaName = buildCharRow(charKey).fullLabel ?? buildCharRow(charKey).label;
+        return (
+            <div className="stcp-drilldown">
+                <div className="stcp-drilldown-header">
+                    <div className="stcp-drilldown-title">
+                        Top performers for {charaName} ({STRATEGY_NAMES[strategy]})
+                    </div>
+                    <div className="stcp-drilldown-subtitle">
+                        Unique umas ranked by Bayesian-adjusted win rate across all appearances.
+                    </div>
+                </div>
+                <div className="stcp-team-members-row">
+                    {horses.map(({ horse, bayesianWinRate, winRate, appearances }, i) => (
+                        <div key={i} className="sa-reps-drilldown-card">
+                            <div className="sa-reps-drilldown-winrate">
+                                <span className="sa-adj-pct">{(bayesianWinRate * 100).toFixed(0)}%</span>
+                                <span className="sa-pipe"> | </span>
+                                <span className="sa-raw-pct">{(winRate * 100).toFixed(0)}% ({appearances})</span>
+                            </div>
+                            <TeamMemberCard horse={horse} skillStats={skillStats} />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="sa-panel ca-panel">
             <div className="sa-panel-header">
@@ -263,7 +339,8 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
                 <span className="sa-no-data">No data</span>
             ) : (
                 <>
-                    {chars.map(c => renderBarRow(c, maxPct))}
+                    {chars.map(c => renderBarRow(c, maxPct, false))}
+                    {renderDrilldown(drilldownHorses, selectedCharKey)}
                     <button className="ca-view-all-btn" onClick={() => setFullDataOpen(true)}>
                         View full data
                     </button>
@@ -290,7 +367,12 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
                             <button className="cdt-close-btn" onClick={() => setFullDataOpen(false)}>&times;</button>
                         </div>
                         <div className="cdt-content">
-                            {fullDataChars.map(c => renderBarRow(c, fullDataMaxPct))}
+                            {fullDataChars.map(c => (
+                                <React.Fragment key={c.key}>
+                                    {renderBarRow(c, fullDataMaxPct, true)}
+                                    {selectedInModal === c.key && renderDrilldown(drilldownInModal, selectedInModal)}
+                                </React.Fragment>
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -305,7 +387,7 @@ interface SkillRow {
     appearances: number;
     winAppearances: number;
     popPct: number;
-    adjWinRate: number; // Bayesian-smoothed win rate (0–1), prior = variant base win rate, k=54
+    adjWinRate: number;
 }
 
 interface CharacterBuildsPanelProps {
@@ -617,6 +699,7 @@ interface CharacterAnalysisProps {
     pairSynergy?: PairSynergyStats[];
     characterStats?: CharacterStats[];
     allHorses?: HorseEntry[];
+    skillStats?: Map<number, SkillStats>;
 }
 
 const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
@@ -627,6 +710,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
     pairSynergy,
     characterStats,
     allHorses,
+    skillStats,
 }) => {
     const [synEntityKey, setSynEntityKey] = useState<string | null>(null);
 
@@ -746,12 +830,16 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                     rawWinsSlices={rawWinsAll}
                     rawPopSlices={rawPop}
                     rawRatingWinsSlices={spectatorMode ? undefined : rawWinsOpp}
+                    allHorses={allHorses}
+                    skillStats={skillStats}
                 />
                 {!spectatorMode && (
                     <CharacterBreakdownPanel
                         title="Best Placing Opponent"
                         rawWinsSlices={rawWinsOpp}
                         rawPopSlices={rawPop}
+                        allHorses={allHorses}
+                        skillStats={skillStats}
                     />
                 )}
                 {allHorses && (

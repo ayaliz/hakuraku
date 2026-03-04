@@ -39,6 +39,10 @@ export type HorseEntry = {
     teamId: number; // Room match team (1, 2, 3); 0 = unassigned / NPC
     supportCardIds: number[];       // 6 support card IDs in slot order (empty if unavailable)
     supportCardLimitBreaks: number[]; // parallel to supportCardIds: limit_break_count for each card
+    // Aptitude values extracted during precomputation (see APTITUDE_* constants in precompute-umalogs.mts)
+    aptGround?: number;   // aptitude for the tracked ground type (1=G … 8=S)
+    aptDistance?: number; // aptitude for the tracked distance category
+    aptStyle?: number;    // aptitude for this horse's running style
 };
 
 export type CharacterStats = {

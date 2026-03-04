@@ -175,6 +175,7 @@ const MultiRacePage: React.FC = () => {
                                         <WinDistributionCharts
                                             characterStats={group.stats.characterStats}
                                             allHorses={group.stats.allHorses}
+                                            skillStats={group.stats.skillStats}
                                         />
 
                                         <div className="skill-analysis-section">

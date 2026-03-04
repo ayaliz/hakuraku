@@ -14,6 +14,13 @@ function resolveIconSkillId(id: number): number {
     return s.startsWith("9") ? parseInt("1" + s.slice(1), 10) : id;
 }
 
+// Grade letter map — 1=G … 8=S (mirrors charaProperLabels in UMDatabaseUtils)
+const GRADE_LETTERS: Record<number, string> = { 1: "G", 2: "F", 3: "E", 4: "D", 5: "C", 6: "B", 7: "A", 8: "S" };
+
+// Aptitude display labels — keep in sync with APTITUDE_* constants in precompute-umalogs.mts
+const APT_GROUND_LABEL = "Dirt";
+const APT_DISTANCE_LABEL = "Mile";
+
 interface UmaFeatCardProps {
     horse: HorseEntry;
     label: string;
@@ -142,6 +149,21 @@ const UmaFeatCard: React.FC<UmaFeatCardProps> = ({ horse, label, displayValue, d
                                 <span className="fup-rank-score">{horse.rankScore.toLocaleString()}</span>
                             </div>
                         </div>
+                        {horse.supportCardIds.length > 0 && (
+                            <div className="fup-deck">
+                                {horse.supportCardIds.map((id, i) => (
+                                    <div key={i} className="fup-deck-card">
+                                        <img
+                                            src={AssetLoader.getSupportCardIcon(id)}
+                                            alt=""
+                                            className="fup-deck-card-img"
+                                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                                        />
+                                        <div className="fup-deck-card-lb">LB{horse.supportCardLimitBreaks[i] ?? 0}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     <div className="fup-stat-row">
@@ -158,6 +180,46 @@ const UmaFeatCard: React.FC<UmaFeatCardProps> = ({ horse, label, displayValue, d
                             <img src={styleIcon} alt={strategyName} title={strategyName} className="fup-style-icon" />
                             <img src={moodIcon} alt={moodIconName[horse.motivation]} title={moodIconName[horse.motivation]} className="fup-style-icon" />
                         </div>
+                        {(horse.aptGround !== undefined || horse.aptDistance !== undefined || horse.aptStyle !== undefined) && (
+                            <>
+                                <div className="fup-divider" />
+                                <div className="fup-aptitudes">
+                                    {horse.aptGround !== undefined && (
+                                        <div className="fup-apt-item">
+                                            <span className="fup-apt-cat">{APT_GROUND_LABEL}</span>
+                                            <img
+                                                src={AssetLoader.getGradeIcon(GRADE_LETTERS[horse.aptGround]) ?? ""}
+                                                alt={GRADE_LETTERS[horse.aptGround] ?? "?"}
+                                                className="fup-apt-icon"
+                                                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                                            />
+                                        </div>
+                                    )}
+                                    {horse.aptDistance !== undefined && (
+                                        <div className="fup-apt-item">
+                                            <span className="fup-apt-cat">{APT_DISTANCE_LABEL}</span>
+                                            <img
+                                                src={AssetLoader.getGradeIcon(GRADE_LETTERS[horse.aptDistance]) ?? ""}
+                                                alt={GRADE_LETTERS[horse.aptDistance] ?? "?"}
+                                                className="fup-apt-icon"
+                                                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                                            />
+                                        </div>
+                                    )}
+                                    {horse.aptStyle !== undefined && (
+                                        <div className="fup-apt-item">
+                                            <span className="fup-apt-cat">{strategyName}</span>
+                                            <img
+                                                src={AssetLoader.getGradeIcon(GRADE_LETTERS[horse.aptStyle]) ?? ""}
+                                                alt={GRADE_LETTERS[horse.aptStyle] ?? "?"}
+                                                className="fup-apt-icon"
+                                                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     {activatedIds.length > 0 && (

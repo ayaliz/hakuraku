@@ -328,3 +328,64 @@
 .syn-table-bar-fill { height: 100%; border-radius: 3px; }
 .syn-table-pct { min-width: 30px; text-align: right; }
 .syn-table-raw-pct { color: #718096; font-size: 12px; white-space: nowrap; }
+
+/* Style Trio Synergy composition item rows */
+.syn-comp-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid #2d3748;
+}
+
+.syn-comp-item--clickable {
+    cursor: pointer;
+}
+
+.syn-comp-item--clickable:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.syn-comp-item--selected {
+    background: rgba(255, 255, 255, 0.06);
+    outline: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+}
+
+.syn-comp-dots {
+    display: flex;
+    gap: 3px;
+    flex-shrink: 0;
+}
+
+.syn-comp-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    /* background set inline — dynamic strategy color */
+}
+
+.syn-comp-name {
+    flex: 1;
+    font-size: 12px;
+    color: #e2e8f0;
+}
+
+.syn-comp-stats {
+    display: flex;
+    align-items: baseline;
+    flex-shrink: 0;
+}
+
+.syn-comp-meta {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: normal;
+    letter-spacing: 0;
+}
+
+.syn-comp-meta-adj { font-weight: bold; }
+.syn-comp-meta-adj--best { color: #68d391; }
+.syn-comp-meta-adj--worst { color: #fc8181; }
+.syn-comp-meta-raw { color: #718096; }

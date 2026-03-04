@@ -11,6 +11,7 @@ import type {
     SkillStats,
     StrategyStats,
     TeamCompositionStats,
+    TrueSkillTeamEntry,
 } from "../MultiRacePage/types";
 import StrategyAnalysis, { type StyleRepEntry } from "../MultiRacePage/components/WinDistributionCharts/StrategyAnalysis";
 import { BAYES_UMA } from "../MultiRacePage/components/WinDistributionCharts/constants";
@@ -21,6 +22,7 @@ import Histogram from "./Histogram";
 import UmaFeatCard from "./FastestUmaPanel";
 import { formatTime } from "../../data/UMDatabaseUtils";
 import TeamCompositionPanel from "./TeamCompositionPanel";
+import TrueSkillTeamPanel from "./TrueSkillTeamPanel";
 import SupportCardPanel from "../MultiRacePage/components/WinDistributionCharts/SupportCardPanel";
 import ExplorerTab from "./ExplorerTab";
 import "../MultiRacePage/MultiRacePage.css";
@@ -51,6 +53,7 @@ type SerializedStats = {
     allHorses: SerializedHorseEntry[];
     teamStats: TeamCompositionStats[];
     pairSynergy: PairSynergyStats[];
+    trueskillRanking?: TrueSkillTeamEntry[];
 };
 
 type SerializedGroup = {
@@ -97,6 +100,7 @@ function deserializeStats(s: SerializedStats): AggregatedStats {
         })),
         teamStats: s.teamStats,
         pairSynergy: s.pairSynergy ?? [],
+        trueskillRanking: s.trueskillRanking ?? [],
     };
 }
 
@@ -198,14 +202,12 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
                         Welcome to the initial release of the public room data page, aka UmaLogs.
                         It currently serves stats for <strong>{totalRaces.toLocaleString()}</strong> total
                         CM10 room matches featuring <strong>{totalUniqueUmas.toLocaleString()}</strong> unique umas.
-                        I'm currently no longer excluding debuffers from data since the previous implementation lead to results that were more misleading than helpful, will revisit.
-						Data collection for CM10 is over, the page will still see gradual improvement to prepare for CM11.
                     </p>
-					<p>
+                    <p>
                         I'm currently no longer excluding debuffers from data since the previous implementation lead to results that were more misleading than helpful, will revisit.
                     </p>
-					<p>
-						Data collection for CM10 is over, the page will still see gradual improvement to prepare for CM11.
+                    <p>
+                        Data collection for CM10 is over, the page will still see gradual improvement to prepare for CM11.
                     </p>
                     <h5>Adjusted Win Rates</h5>
                     <p>
@@ -310,6 +312,12 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
                                 View card usage
                             </button>
                         </div>
+                        {group.stats.trueskillRanking && group.stats.trueskillRanking.length > 0 && (
+                            <TrueSkillTeamPanel
+                                ranking={group.stats.trueskillRanking}
+                                skillStats={group.stats.skillStats}
+                            />
+                        )}
                     </div>
                 </div>
             )}
@@ -348,10 +356,10 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
                         rawWinsOpp={rawUnifiedCharacterWinsOpp}
                         rawPop={rawUnifiedCharacterPop}
                         spectatorMode
-                        pairSynergy={group.stats.pairSynergy}
                         characterStats={group.stats.characterStats}
                         allHorses={group.stats.allHorses}
                         skillStats={group.stats.skillStats}
+                        teamStats={group.stats.teamStats}
                     />
                     <TeamCompositionPanel
                         teamStats={group.stats.teamStats}

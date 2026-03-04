@@ -1,15 +1,13 @@
-
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import "./CharacterAnalysis.css";
 import { STRATEGY_COLORS, STRATEGY_NAMES, BAYES_UMA, BAYES_TEAM } from "./constants";
 import { PieSlice } from "./types";
 import { getCharaIcon } from "./utils";
-import type { CharacterStats, HorseEntry, PairSynergyStats, SkillStats } from "../../types";
+import type { CharacterStats, HorseEntry, SkillStats, TeamCompositionStats } from "../../types";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import AssetLoader from "../../../../data/AssetLoader";
 import SupportCardPanel from "./SupportCardPanel";
 import { TeamMemberCard } from "./StrategyAnalysis";
-
 
 type SynergyEntityInfo = {
     key: string;         // `${cardId}_${strategy}`
@@ -21,18 +19,14 @@ type SynergyEntityInfo = {
     totalCoApps: number;
 };
 
-type SynergyDisplayRow = {
-    key: string;
-    cardId: number;
-    strategy: number;
-    charaId: number;
-    cardName: string;
-    charaName: string;
-    coApps: number;
-    teamWins: number;
-    smoothedRate: number;
-    selectedWins: number; // times the selected/filtered entity had finishOrder === 1 in co-appearances
-    teammateWins: number; // times this row's entity had finishOrder === 1 in co-appearances
+type StyleCompEntry = {
+    key: string; // sorted strategies joined by _
+    strategies: number[];
+    label: string;
+    appearances: number;
+    wins: number;
+    winRate: number;
+    bayesianWinRate: number;
 };
 
 interface SynergyEntitySelectProps {
@@ -381,20 +375,20 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
     );
 }
 
-interface SkillRow {
+interface CharacterBuildsPanelProps {
+    rawPopSlices: PieSlice[];
+    allHorses: HorseEntry[];
+    characterStats?: CharacterStats[];
+}
+
+type SkillRow = {
     skillId: number;
     name: string;
     appearances: number;
     winAppearances: number;
     popPct: number;
     adjWinRate: number;
-}
-
-interface CharacterBuildsPanelProps {
-    rawPopSlices: PieSlice[];
-    allHorses: HorseEntry[];
-    characterStats?: CharacterStats[];
-}
+};
 
 type DeckRow = {
     deckKey: string;
@@ -696,131 +690,209 @@ interface CharacterAnalysisProps {
     rawWinsOpp: PieSlice[];
     rawPop: PieSlice[];
     spectatorMode?: boolean;
-    pairSynergy?: PairSynergyStats[];
     characterStats?: CharacterStats[];
     allHorses?: HorseEntry[];
     skillStats?: Map<number, SkillStats>;
+    teamStats?: TeamCompositionStats[];
 }
+
+const MIN_DRILLDOWN_APPEARANCES = 5;
 
 const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
     rawWinsAll,
     rawWinsOpp,
     rawPop,
     spectatorMode,
-    pairSynergy,
     characterStats,
     allHorses,
     skillStats,
+    teamStats,
 }) => {
     const [synEntityKey, setSynEntityKey] = useState<string | null>(null);
+    const [selectedCompKey, setSelectedCompKey] = useState<string | null>(null);
+    const [selectedDrilldownIdx, setSelectedDrilldownIdx] = useState(0);
+
+    useEffect(() => { setSelectedCompKey(null); }, [synEntityKey]);
+    useEffect(() => { setSelectedDrilldownIdx(0); }, [selectedCompKey]);
 
     const synEntities = useMemo((): SynergyEntityInfo[] => {
-        if (!pairSynergy || !characterStats) return [];
+        if (!allHorses || !characterStats) return [];
         const charaNameMap = new Map(characterStats.map(c => [c.charaId, c.charaName]));
         const entityMap = new Map<string, SynergyEntityInfo>();
 
-        const upsert = (cardId: number, strategy: number, charaId: number, coApps: number) => {
+        const upsert = (cardId: number, strategy: number, charaId: number, apps: number) => {
             const key = `${cardId}_${strategy}`;
             if (!entityMap.has(key)) {
                 const cardName = UMDatabaseWrapper.cards[cardId]?.name ?? charaNameMap.get(charaId) ?? `#${charaId}`;
                 entityMap.set(key, { key, cardId, strategy, charaId, cardName, charaName: charaNameMap.get(charaId) ?? `#${charaId}`, totalCoApps: 0 });
             }
-            entityMap.get(key)!.totalCoApps += coApps;
+            entityMap.get(key)!.totalCoApps += apps;
         };
 
-        for (const p of pairSynergy) {
-            upsert(p.cardId_x, p.strategy_x, p.charaId_x, p.coApps);
-            upsert(p.cardId_y, p.strategy_y, p.charaId_y, p.coApps);
+        for (const h of allHorses) {
+            if (h.teamId <= 0) continue;
+            upsert(h.cardId, h.strategy, h.charaId, 1);
         }
 
         return Array.from(entityMap.values()).sort((a, b) => b.totalCoApps - a.totalCoApps);
-    }, [pairSynergy, characterStats]);
+    }, [allHorses, characterStats]);
 
     const effectiveEntityKey = synEntityKey ?? synEntities[0]?.key ?? null;
-    const selectedSynEntity = synEntities.find(e => e.key === effectiveEntityKey) ?? null;
 
-    const { topRows, bottomRows, maxRate } = useMemo((): { topRows: SynergyDisplayRow[]; bottomRows: SynergyDisplayRow[]; maxRate: number } => {
-        const empty = { topRows: [], bottomRows: [], maxRate: 0.01 };
-        if (!pairSynergy || !effectiveEntityKey || !characterStats) return empty;
-        const charaNameMap = new Map(characterStats.map(c => [c.charaId, c.charaName]));
+    const bestHorseByFullComp = useMemo(() => {
+        if (!allHorses) return new Map<string, Map<string, HorseEntry>>();
+        const raceMap = new Map<string, HorseEntry[]>();
+        for (const h of allHorses) {
+            if (!raceMap.has(h.raceId)) raceMap.set(h.raceId, []);
+            raceMap.get(h.raceId)!.push(h);
+        }
+        const result = new Map<string, Map<string, HorseEntry>>();
+        for (const raceHorses of raceMap.values()) {
+            const teamMap = new Map<number, HorseEntry[]>();
+            for (const h of raceHorses) {
+                if (h.teamId <= 0) continue;
+                if (!teamMap.has(h.teamId)) teamMap.set(h.teamId, []);
+                teamMap.get(h.teamId)!.push(h);
+            }
+            for (const team of teamMap.values()) {
+                if (team.length !== 3) continue;
+                const sorted = [...team].sort((a, b) => (a.cardId * 10 + a.strategy) - (b.cardId * 10 + b.strategy));
+                const compKey = sorted.map(h => `${h.cardId}_${h.strategy}`).join("__");
+                if (!result.has(compKey)) result.set(compKey, new Map());
+                const memberMap = result.get(compKey)!;
+                for (const h of sorted) {
+                    const mk = `${h.cardId}_${h.strategy}`;
+                    const ex = memberMap.get(mk);
+                    if (!ex || h.rankScore > ex.rankScore) memberMap.set(mk, h);
+                }
+            }
+        }
+        return result;
+    }, [allHorses]);
 
-        const pairs: SynergyDisplayRow[] = pairSynergy
-            .filter(p => `${p.cardId_x}_${p.strategy_x}` === effectiveEntityKey || `${p.cardId_y}_${p.strategy_y}` === effectiveEntityKey)
-            .map(p => {
-                const isX = `${p.cardId_x}_${p.strategy_x}` === effectiveEntityKey;
-                const cardId = isX ? p.cardId_y : p.cardId_x;
-                const strategy = isX ? p.strategy_y : p.strategy_x;
-                const charaId = isX ? p.charaId_y : p.charaId_x;
-                const cardName = UMDatabaseWrapper.cards[cardId]?.name ?? charaNameMap.get(charaId) ?? `#${charaId}`;
-                const charaName = charaNameMap.get(charaId) ?? `#${charaId}`;
-                const smoothedRate = (p.teamWins + BAYES_TEAM.K * BAYES_TEAM.PRIOR) / (p.coApps + BAYES_TEAM.K);
-                const selectedWins = isX ? p.winsX : p.winsY;
-                const teammateWins = isX ? p.winsY : p.winsX;
-                return { key: `${cardId}_${strategy}`, cardId, strategy, charaId, cardName, charaName, coApps: p.coApps, teamWins: p.teamWins, smoothedRate, selectedWins, teammateWins };
-            });
+    const drilldownTeams = useMemo(() => {
+        if (!selectedCompKey || !teamStats || !effectiveEntityKey) return [];
+        const [selCardIdStr, selStrategyStr] = effectiveEntityKey.split('_');
+        const selCardId = Number(selCardIdStr);
+        const selStrategy = Number(selStrategyStr);
+        return teamStats
+            .filter(t => {
+                const key = t.members.map(m => m.strategy).sort((a, b) => a - b).join('_');
+                return key === selectedCompKey
+                    && t.members.some(m => m.cardId === selCardId && m.strategy === selStrategy);
+            })
+            .filter(t => t.appearances >= MIN_DRILLDOWN_APPEARANCES)
+            .map(t => ({
+                team: t,
+                bayesianWinRate: (t.wins + BAYES_TEAM.K * BAYES_TEAM.PRIOR) / (t.appearances + BAYES_TEAM.K),
+            }))
+            .sort((a, b) => b.bayesianWinRate - a.bayesianWinRate)
+            .slice(0, 6);
+    }, [selectedCompKey, teamStats, effectiveEntityKey]);
 
-        if (pairs.length === 0) return empty;
+    const { overperformers, underperformers } = useMemo((): { overperformers: StyleCompEntry[]; underperformers: StyleCompEntry[] } => {
+        const empty = { overperformers: [], underperformers: [] };
+        if (!allHorses || !effectiveEntityKey) return empty;
 
-        const sorted = [...pairs].sort((a, b) => b.smoothedRate - a.smoothedRate);
-        const topRows = sorted.slice(0, 10);
-        const topKeys = new Set(topRows.map(r => r.key));
-        const bottomRows = [...sorted].reverse().filter(r => !topKeys.has(r.key)).slice(0, 10);
-        const maxRate = Math.max(...topRows.map(r => r.smoothedRate), ...bottomRows.map(r => r.smoothedRate), 0.01);
-        return { topRows, bottomRows, maxRate };
-    }, [pairSynergy, effectiveEntityKey, characterStats]);
+        const [selCardIdStr, selStrategyStr] = effectiveEntityKey.split('_');
+        const selCardId = Number(selCardIdStr);
+        const selStrategy = Number(selStrategyStr);
+        if (!Number.isFinite(selCardId) || !Number.isFinite(selStrategy)) return empty;
 
-    const renderSynergyTable = (rows: SynergyDisplayRow[], accentColor: string, selectedEntityName: string) => (
-        <table className="syn-table">
-            <thead>
-                <tr>
-                    <th>Teammate</th>
-                    <th title="Combined Adj. win% = Bayesian-smoothed team win rate (prior: 33%, strength: 18 races) | Raw win% = raw team wins / co-appearances">
-                        <span className="syn-table-adj-label">Combined Adj. win%</span>
-                        <span className="syn-table-raw-label"> | Raw win% (samples)</span>
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                {rows.map(row => {
-                    const icon = getCharaIcon(`${row.charaId}_${row.cardId}`);
-                    const stratColor = STRATEGY_COLORS[row.strategy] ?? "#718096";
-                    const rawPct = Math.round(100 * row.teamWins / row.coApps);
-                    const smoothedPct = Math.round(row.smoothedRate * 100);
-                    const selectedPct = Math.round(100 * row.selectedWins / row.coApps);
-                    const teammatePct = Math.round(100 * row.teammateWins / row.coApps);
-                    return (
-                        <tr key={row.key}>
-                            <td className="syn-table-name-cell">
-                                <div className="syn-table-name-inner">
-                                    <div className="syn-select-portrait">
-                                        <div className="syn-select-ring" style={{ background: stratColor }} />
-                                        {icon && (
-                                            <img src={icon} alt="" className="syn-select-img"
-                                                onError={evt => { (evt.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                                        )}
-                                    </div>
-                                    <span>
-                                        <span className="syn-table-char-name">{row.charaName}</span>
-                                        <span className="syn-table-char-strategy" style={{ color: stratColor }}>{STRATEGY_NAMES[row.strategy] ?? `Strategy ${row.strategy}`}</span>
-                                        <span className="syn-table-win-split">{selectedEntityName} ({selectedPct}%) · {row.charaName} ({teammatePct}%)</span>
-                                    </span>
-                                </div>
-                            </td>
-                            <td className="syn-table-rate-cell">
-                                <div className="syn-table-rate-inner">
-                                    <div className="syn-table-bar-track">
-                                        <div className="syn-table-bar-fill" style={{ width: `${(row.smoothedRate / maxRate) * 100}%`, background: accentColor }} />
-                                    </div>
-                                    <span className="syn-table-pct">{smoothedPct}%</span>
-                                    <span className="syn-table-raw-pct">| {rawPct}% ({row.coApps})</span>
-                                </div>
-                            </td>
-                        </tr>
-                    );
-                })}
-            </tbody>
-        </table>
-    );
+        // Group by race -> team, tracking if the team won
+        const raceMap = new Map<string, Map<number, { horses: HorseEntry[]; teamWon: boolean }>>();
+        for (const h of allHorses) {
+            if (h.teamId <= 0) continue;
+            if (!raceMap.has(h.raceId)) raceMap.set(h.raceId, new Map());
+            const teamMap = raceMap.get(h.raceId)!;
+            if (!teamMap.has(h.teamId)) teamMap.set(h.teamId, { horses: [], teamWon: false });
+            const t = teamMap.get(h.teamId)!;
+            t.horses.push(h);
+            if (h.finishOrder === 1) t.teamWon = true;
+        }
+
+        type CompTally = { strategies: number[]; appearances: number; wins: number };
+        const compMap = new Map<string, CompTally>();
+
+        for (const teamMap of raceMap.values()) {
+            for (const { horses, teamWon } of teamMap.values()) {
+                // Only include teams that contain the selected (cardId, strategy) entity
+                if (!horses.some(h => h.cardId === selCardId && h.strategy === selStrategy)) continue;
+                if (horses.length !== 3) continue;
+
+                const strategies = horses.map(h => h.strategy).sort((a, b) => a - b);
+                const key = strategies.join('_');
+                if (!compMap.has(key)) compMap.set(key, { strategies, appearances: 0, wins: 0 });
+                const tally = compMap.get(key)!;
+                tally.appearances++;
+                if (teamWon) tally.wins++;
+            }
+        }
+
+        const MIN_APPEARANCES = 5;
+        const MAX_ITEMS = 10;
+
+        const all = Array.from(compMap.entries())
+            .map(([key, t]) => {
+                const winRate = t.appearances > 0 ? t.wins / t.appearances : 0;
+                const bayesianWinRate = (t.wins + BAYES_TEAM.K * BAYES_TEAM.PRIOR) / (t.appearances + BAYES_TEAM.K);
+                const label = t.strategies.map(s => STRATEGY_NAMES[s] ?? `Strategy ${s}`).join('-');
+                return {
+                    key,
+                    strategies: t.strategies,
+                    label,
+                    appearances: t.appearances,
+                    wins: t.wins,
+                    winRate,
+                    bayesianWinRate,
+                };
+            })
+            .filter(e => e.appearances >= MIN_APPEARANCES);
+
+        if (all.length === 0) return empty;
+
+        const sorted = [...all].sort((a, b) => b.bayesianWinRate - a.bayesianWinRate);
+        const overperformers = sorted.filter(e => e.bayesianWinRate > BAYES_TEAM.PRIOR).slice(0, MAX_ITEMS);
+        const underperformers = sorted.filter(e => e.bayesianWinRate < BAYES_TEAM.PRIOR).slice(-MAX_ITEMS).reverse();
+        return { overperformers, underperformers };
+    }, [allHorses, effectiveEntityKey]);
+
+    const canDrilldown = !!(teamStats && allHorses && skillStats);
+
+    const getTeamLabel = (item: { team: TeamCompositionStats; bayesianWinRate: number }) => {
+        const n = item.team.appearances;
+        const parts = item.team.members.map((m, i) => {
+            const wins = item.team.memberWins[i] ?? 0;
+            const pct = n > 0 ? (wins / n) * 100 : 0;
+            const strat = STRATEGY_NAMES[m.strategy]?.split(" ")[0] ?? `S${m.strategy}`;
+            return `${m.charaName} (${strat}) ${pct.toFixed(0)}%`;
+        });
+        return `${parts.join(" · ")} (${n} samples)`;
+    };
+
+    const renderCompItem = (e: StyleCompEntry, positive: boolean) => {
+        const valueColor = positive ? "#68d391" : "#fc8181";
+        const isSelected = selectedCompKey === e.key;
+        return (
+            <div
+                key={e.key}
+                className={`syn-comp-item${canDrilldown ? " syn-comp-item--clickable" : ""}${isSelected ? " syn-comp-item--selected" : ""}`}
+                onClick={canDrilldown ? () => setSelectedCompKey(k => k === e.key ? null : e.key) : undefined}
+            >
+                <div className="syn-comp-dots">
+                    {e.strategies.map((s, i) => (
+                        <span key={i} className="syn-comp-dot" style={{ background: STRATEGY_COLORS[s] ?? "#718096" }} />
+                    ))}
+                </div>
+                <div className="syn-comp-name">{e.label}</div>
+                <div className="syn-comp-stats">
+                    <span className="syn-comp-adj" style={{ color: valueColor }}>{(e.bayesianWinRate * 100).toFixed(0)}%</span>
+                    <span className="syn-comp-pipe"> | </span>
+                    <span className="syn-comp-raw">{(e.winRate * 100).toFixed(0)}% ({e.appearances})</span>
+                </div>
+            </div>
+        );
+    };
 
     return (
         <div className="pie-chart-container">
@@ -851,11 +923,11 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                 )}
             </div>
 
-            {pairSynergy && pairSynergy.length > 0 && synEntities.length > 0 && (
+            {synEntities.length > 0 && (
                 <div className="syn-section">
                     <div className="pie-chart-title syn-section-header">
-                        Pair Synergy
-                        <span title="Combined team win rate when both characters appear on the same 3-player squad. 'Combined Adj. win%' is Bayesian-smoothed (prior: 1/3, strength: 18 races). Individual percentages show each member's own win rate among co-appearances." className="sa-info-icon">i</span>
+                        Style Trio Synergy
+                        <span title="Team win rate for the selected character+style, grouped by the 3-player running style trio (e.g. Front-Front-End). Bayesian prior: 1/3, strength: 18 races. Requires ≥5 appearances." className="sa-info-icon">i</span>
                     </div>
                     <div className="syn-entity-row">
                         <span className="syn-entity-label">Character:</span>
@@ -865,28 +937,73 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                             onChange={setSynEntityKey}
                         />
                     </div>
-                    {topRows.length === 0 && bottomRows.length === 0 ? (
-                        <div className="syn-no-data">No synergy data for this entry.</div>
+                    {overperformers.length === 0 && underperformers.length === 0 ? (
+                        <div className="syn-no-data">No composition data for this entry.</div>
                     ) : (
                         <div className="syn-tables-row">
-                            {topRows.length > 0 && (
+                            {overperformers.length > 0 && (
                                 <div className="syn-table-col">
                                     <div className="syn-table-col-label syn-table-col-label--best">
-                                        <span>▲</span> Best Synergies
+                                        <span>▲</span> Overperformers
+                                        <span className="syn-comp-meta"><span className="syn-comp-meta-adj syn-comp-meta-adj--best">Adj. win%</span><span className="syn-comp-meta-raw"> | Raw win% (samples)</span></span>
                                     </div>
-                                    {renderSynergyTable(topRows, "#68d391", selectedSynEntity?.charaName ?? "")}
+                                    {overperformers.map(e => renderCompItem(e, true))}
                                 </div>
                             )}
-                            {bottomRows.length > 0 && (
+                            {underperformers.length > 0 && (
                                 <div className="syn-table-col">
                                     <div className="syn-table-col-label syn-table-col-label--worst">
-                                        <span>▼</span> Worst Synergies
+                                        <span>▼</span> Underperformers
+                                        <span className="syn-comp-meta"><span className="syn-comp-meta-adj syn-comp-meta-adj--worst">Adj. win%</span><span className="syn-comp-meta-raw"> | Raw win% (samples)</span></span>
                                     </div>
-                                    {renderSynergyTable(bottomRows, "#fc8181", selectedSynEntity?.charaName ?? "")}
+                                    {underperformers.map(e => renderCompItem(e, false))}
                                 </div>
                             )}
                         </div>
                     )}
+                    {canDrilldown && selectedCompKey && drilldownTeams.length > 0 && (() => {
+                        const idx = Math.min(selectedDrilldownIdx, drilldownTeams.length - 1);
+                        const selectedTeam = drilldownTeams[idx];
+                        const compKey = selectedTeam.team.members
+                            .map(mem => `${mem.cardId}_${mem.strategy}`)
+                            .sort((a, b) => {
+                                const [ac, as_] = a.split('_').map(Number);
+                                const [bc, bs_] = b.split('_').map(Number);
+                                return (ac * 10 + as_) - (bc * 10 + bs_);
+                            })
+                            .join("__");
+                        const memberMap = bestHorseByFullComp.get(compKey) ?? new Map<string, HorseEntry>();
+                        return (
+                            <div className="tcp-member-drilldown">
+                                {drilldownTeams.length > 1 && (
+                                    <div className="tcp-rep-team-select">
+                                        <select
+                                            value={idx}
+                                            onChange={e => setSelectedDrilldownIdx(Number(e.target.value))}
+                                        >
+                                            {drilldownTeams.map((item, i) => (
+                                                <option key={i} value={i}>{getTeamLabel(item)}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                                <div className="stcp-team-members-row">
+                                    {selectedTeam.team.members.map((m, i) => {
+                                        const rep = memberMap.get(`${m.cardId}_${m.strategy}`);
+                                        if (!rep) {
+                                            return (
+                                                <div key={i} className="stcp-member-card stcp-member-card--placeholder">
+                                                    <div className="stcp-member-placeholder-label">{m.charaName}</div>
+                                                    <div className="stcp-member-placeholder-note">No sample profile available</div>
+                                                </div>
+                                            );
+                                        }
+                                        return <TeamMemberCard key={i} horse={rep} skillStats={skillStats!} />;
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })()}
                 </div>
             )}
         </div>

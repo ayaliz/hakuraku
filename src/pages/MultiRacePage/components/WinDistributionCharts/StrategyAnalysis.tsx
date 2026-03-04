@@ -1,7 +1,11 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { STRATEGY_COLORS, STRATEGY_NAMES, BAYES_TEAM, SAT_MIN_RACE_FRACTION } from "./constants";
-import type { StrategyStats, RoomCompositionEntry, TeamCompositionStats } from "../../types";
+import type { StrategyStats, RoomCompositionEntry, TeamCompositionStats, HorseEntry, SkillStats } from "../../types";
 import AssetLoader from "../../../../data/AssetLoader";
+import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
+import GameDataLoader from "../../../../data/GameDataLoader";
+import { formatTime } from "../../../../data/UMDatabaseUtils";
+import { getRankIcon } from "../../../../components/RaceDataPresenter/components/CharaList/rankUtils";
 import "./StrategyAnalysis.css";
 
 
@@ -21,9 +25,11 @@ interface StrategyAnalysisProps {
     roomCompositions?: RoomCompositionEntry[];
     teamStats?: TeamCompositionStats[];
     styleReps?: Record<number, StyleRepEntry[]>;
+    /** UmaLogs-only: full horse list + skill stats to enable team drilldown cards */
+    allHorses?: HorseEntry[];
+    skillStats?: Map<number, SkillStats>;
 }
 
-// ── Panel 1: Style Breakdown (bullet chart) ───────────────────────────────────
 function StyleBreakdownPanel({ strategyStats, totalRaces }: { strategyStats: StrategyStats[]; totalRaces: number }) {
     const sumEntries = strategyStats.reduce((s, st) => s + st.totalRaces, 0);
 
@@ -72,7 +78,6 @@ function StyleBreakdownPanel({ strategyStats, totalRaces }: { strategyStats: Str
     );
 }
 
-// ── Panel 2: Effects of style saturation ─────────────────────────────────────
 const BASELINE = 1 / 9;
 
 function SaturationPanel({ strategyStats, totalRaces }: { strategyStats: StrategyStats[]; totalRaces: number }) {
@@ -186,7 +191,6 @@ function SaturationPanel({ strategyStats, totalRaces }: { strategyStats: Strateg
     );
 }
 
-// ── Cross-saturation: 2×2 grid, one chart per subject style ─────────────────
 function CrossSaturationView({ strategyStats, totalRaces }: { strategyStats: StrategyStats[]; totalRaces: number }) {
     const W = 380, H = 150;
     const ML = 34, MB = 22, MT = 8, MR = 12;
@@ -278,7 +282,6 @@ function CrossSaturationView({ strategyStats, totalRaces }: { strategyStats: Str
     );
 }
 
-// ── Panel 3: Room Composition ──────────────────────────────────────────────────
 function CompositionSection({ strategyStats, totalRaces, roomCompositions }: {
     strategyStats: StrategyStats[];
     totalRaces: number;
@@ -355,8 +358,46 @@ function CompositionSection({ strategyStats, totalRaces, roomCompositions }: {
     );
 }
 
-// ── Style Representatives panel ───────────────────────────────────────────────
-function StyleRepsPanel({ styleReps }: { styleReps: Record<number, StyleRepEntry[]> }) {
+function StyleRepsPanel({ styleReps, allHorses, skillStats }: {
+    styleReps: Record<number, StyleRepEntry[]>;
+    allHorses?: HorseEntry[];
+    skillStats?: Map<number, SkillStats>;
+}) {
+    const [selected, setSelected] = useState<{ cardId: number; strategy: number; charaName: string } | null>(null);
+    const canDrilldown = !!(allHorses && skillStats);
+
+    const drilldownHorses = useMemo(() => {
+        if (!selected || !allHorses) return [];
+        const filtered = allHorses.filter(
+            h => h.cardId === selected.cardId && h.strategy === selected.strategy && h.rankScore > 0
+        );
+
+        // Group by build fingerprint (stats + rankScore) to find per-build win rate across all races
+        const buildMap = new Map<string, { rep: HorseEntry; wins: number; appearances: number }>();
+        for (const h of filtered) {
+            const key = `${h.rankScore}_${h.speed}_${h.stamina}_${h.pow}_${h.guts}_${h.wiz}`;
+            if (!buildMap.has(key)) {
+                buildMap.set(key, { rep: h, wins: 0, appearances: 0 });
+            }
+            const entry = buildMap.get(key)!;
+            entry.appearances++;
+            if (h.finishOrder === 1) entry.wins++;
+            // Keep representative with highest rank score (same key means same stats anyway)
+        }
+
+        const PRIOR = 1 / 9;
+        const K = 54;
+        return Array.from(buildMap.values())
+            .map(({ rep, wins, appearances }) => ({
+                horse: rep,
+                bayesianWinRate: (wins + K * PRIOR) / (appearances + K),
+                winRate: wins / appearances,
+                appearances,
+            }))
+            .sort((a, b) => b.bayesianWinRate - a.bayesianWinRate)
+            .slice(0, 6);
+    }, [selected, allHorses]);
+
     return (
         <div className="sa-reps-panel">
             <div className="sa-panel-header">
@@ -378,8 +419,15 @@ function StyleRepsPanel({ styleReps }: { styleReps: Record<number, StyleRepEntry
                             </div>
                             {entries.map(entry => {
                                 const src = AssetLoader.getCharaThumb(entry.cardId);
+                                const isSelected = selected?.cardId === entry.cardId && selected?.strategy === sId;
                                 return (
-                                    <div key={entry.cardId} className="sa-reps-entry">
+                                    <div
+                                        key={entry.cardId}
+                                        className={`sa-reps-entry${canDrilldown ? " sa-stcp-item--clickable" : ""}${isSelected ? " sa-reps-entry--selected" : ""}`}
+                                        onClick={canDrilldown ? () => setSelected(
+                                            isSelected ? null : { cardId: entry.cardId, strategy: sId, charaName: entry.charaName }
+                                        ) : undefined}
+                                    >
                                         <div className="sa-reps-portrait" style={{ border: `1px solid ${color}` }}>
                                             {src && (
                                                 <img
@@ -402,11 +450,34 @@ function StyleRepsPanel({ styleReps }: { styleReps: Record<number, StyleRepEntry
                     );
                 })}
             </div>
+            {selected && drilldownHorses.length > 0 && skillStats && (
+                <div className="stcp-drilldown">
+                    <div className="stcp-drilldown-header">
+                        <div className="stcp-drilldown-title">
+                            Top performers for {selected.charaName} ({STRATEGY_NAMES[selected.strategy]})
+                        </div>
+                        <div className="stcp-drilldown-subtitle">
+                            Unique umas ranked by Bayesian-adjusted win rate across all appearances.
+                        </div>
+                    </div>
+                    <div className="stcp-team-members-row">
+                        {drilldownHorses.map(({ horse, bayesianWinRate, winRate, appearances }, i) => (
+                            <div key={i} className="sa-reps-drilldown-card">
+                                <div className="sa-reps-drilldown-winrate">
+                                    <span className="sa-adj-pct">{(bayesianWinRate * 100).toFixed(0)}%</span>
+                                    <span className="sa-pipe"> | </span>
+                                    <span className="sa-raw-pct">{(winRate * 100).toFixed(0)}% ({appearances})</span>
+                                </div>
+                                <TeamMemberCard horse={horse} skillStats={skillStats} />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
 
-// ── Panel 4: Style Composition Performance ────────────────────────────────────
 const MIN_STYLE_APPEARANCES = 20;
 const MAX_STYLE_ITEMS = 10;
 
@@ -441,7 +512,257 @@ function aggregateStyleTeams(teamStats: TeamCompositionStats[]): StyleTeamEntry[
     }));
 }
 
-function StyleTeamCompositionPanel({ teamStats }: { teamStats: TeamCompositionStats[] }) {
+const MIN_TEAM_APPEARANCES = 5;
+
+function makeMemberKey(h: { charaId: number; cardId: number; strategy: number }): string {
+    return `${h.charaId}_${h.cardId}_${h.strategy}`;
+}
+
+type DrilldownTeam = {
+    team: TeamCompositionStats;
+    bayesianWinRate: number;
+};
+
+function resolveIconSkillId(id: number): number {
+    const s = String(id);
+    return s.startsWith("9") ? parseInt("1" + s.slice(1), 10) : id;
+}
+
+// Grade letter map — 1=G … 8=S (see charaProperLabels in UMDatabaseUtils)
+const GRADE_LETTERS: Record<number, string> = { 1: "G", 2: "F", 3: "E", 4: "D", 5: "C", 6: "B", 7: "A", 8: "S" };
+
+// Aptitude display labels
+const APT_GROUND_LABEL = "Dirt";
+const APT_DISTANCE_LABEL = "Mile";
+
+interface TeamMemberCardProps {
+    horse: HorseEntry;
+    skillStats: Map<number, SkillStats>;
+}
+
+export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStats }) => {
+    const [open, setOpen] = useState(false);
+
+    const skillIconMap = useMemo<Map<number, number>>(() => {
+        const map = new Map<number, number>();
+        try {
+            for (const s of GameDataLoader.skills) {
+                if (s.id && s.iconid) map.set(s.id as number, s.iconid as number);
+            }
+        } catch {
+            // GameDataLoader not ready — icons omitted
+        }
+        return map;
+    }, []);
+
+    const strategyColor = STRATEGY_COLORS[horse.strategy] ?? "#718096";
+    const strategyName = STRATEGY_NAMES[horse.strategy] ?? `Strategy ${horse.strategy}`;
+    const cardName = UMDatabaseWrapper.cards[horse.cardId]?.name ?? null;
+    const rankInfo = getRankIcon(horse.rankScore);
+
+    const portraitUrl = AssetLoader.getCharaThumb(horse.cardId);
+    const iconUrlFallback = AssetLoader.getCharaIcon(horse.charaId);
+
+    const styleIconName: Record<number, string> = { 1: "front", 2: "pace", 3: "late", 4: "end" };
+    const moodIconName: Record<number, string> = { 1: "awful", 2: "bad", 3: "normal", 4: "good", 5: "great" };
+    const styleIcon = AssetLoader.getStatIcon(styleIconName[horse.strategy] ?? "front");
+    const moodIcon = AssetLoader.getStatIcon(moodIconName[horse.motivation] ?? "normal");
+
+    const getSkillName = (id: number) =>
+        skillStats.get(id)?.skillName ?? UMDatabaseWrapper.skillName(id);
+
+    const getSkillIconUrl = (id: number) => {
+        const iconId = skillIconMap.get(resolveIconSkillId(id));
+        return iconId ? AssetLoader.getSkillIcon(iconId) : null;
+    };
+
+    // For profile view we only care about the raw skill list, not whether a skill happened to
+    // activate in a specific match. Merge learned + activated IDs into a single set.
+    const allSkillIds = Array.from(
+        new Set<number>([
+            ...Array.from(horse.learnedSkillIds),
+            ...Array.from(horse.activatedSkillIds),
+        ])
+    );
+
+    const renderSkillChip = (id: number, activated: boolean) => {
+        const name = getSkillName(id);
+        const icon = getSkillIconUrl(id);
+        return (
+            <div
+                key={id}
+                title={`[${id}] ${name}`}
+                className={`fup-skill-chip ${activated ? "fup-skill-chip--activated" : "fup-skill-chip--learned"}`}
+            >
+                {icon && (
+                    <img
+                        src={icon}
+                        alt=""
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                    />
+                )}
+                <span className="fup-skill-chip-name">{name}</span>
+            </div>
+        );
+    };
+
+    const baseStats: [string, string, number][] = [
+        ["speed", "Speed", horse.speed],
+        ["stamina", "Stamina", horse.stamina],
+        ["power", "Power", horse.pow],
+        ["guts", "Guts", horse.guts],
+        ["wit", "Wit", horse.wiz],
+    ];
+
+    const handleImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+        const el = e.currentTarget;
+        if (el.src !== iconUrlFallback) el.src = iconUrlFallback;
+        else el.style.display = "none";
+    };
+
+    return (
+        <>
+            <div
+                role="button"
+                onClick={() => setOpen(true)}
+                className="fastest-card stcp-member-card"
+            >
+                <div className="fastest-card-label">{horse.charaName}</div>
+                <div className="fastest-card-portrait" style={{ border: `2px solid ${strategyColor}` }}>
+                    <img src={portraitUrl} alt={horse.charaName} onError={handleImgError} />
+                </div>
+                <div className="fastest-card-value-row">
+                    <img src={rankInfo.icon} alt={rankInfo.name} className="fup-rank-icon--sm" />
+                    <div className="fastest-card-time">
+                        {horse.rankScore.toLocaleString()}
+                    </div>
+                </div>
+                <div className="fastest-card-hint">Click for full profile →</div>
+            </div>
+
+            {open && (
+                <div className="stcp-overlay" onClick={() => setOpen(false)}>
+                    <div className="stcp-modal" onClick={e => e.stopPropagation()}>
+                        <div className="stcp-modal-header">
+                            <div className="fup-modal-title">Team Member — Full Profile</div>
+                            <button className="stcp-modal-close" onClick={() => setOpen(false)}>×</button>
+                        </div>
+                        <div className="stcp-modal-body">
+                            <div className="fup-identity">
+                                <div className="fup-portrait" style={{ border: `3px solid ${strategyColor}` }}>
+                                    <img src={portraitUrl} alt={horse.charaName} onError={handleImgError} />
+                                </div>
+                                <div className="fup-identity-info">
+                                    <div className="fup-name">{horse.charaName}</div>
+                                    {cardName && <div className="fup-card-name">{cardName}</div>}
+                                    <div className="fup-rank-row">
+                                        <img src={rankInfo.icon} alt={rankInfo.name} className="fup-rank-icon--md" />
+                                        <span className="fup-rank-score">{horse.rankScore.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                                {horse.supportCardIds.length > 0 && (
+                                    <div className="fup-deck">
+                                        {horse.supportCardIds.map((id, i) => (
+                                            <div key={i} className="fup-deck-card">
+                                                <img
+                                                    src={AssetLoader.getSupportCardIcon(id)}
+                                                    alt=""
+                                                    className="fup-deck-card-img"
+                                                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                                                />
+                                                <div className="fup-deck-card-lb">LB{horse.supportCardLimitBreaks[i] ?? 0}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="fup-stat-row">
+                                <div className="fup-stats">
+                                    {baseStats.map(([key, statLabel, value]) => (
+                                        <span key={key} className="fup-stat-item">
+                                            <img src={AssetLoader.getStatIcon(key)} alt={statLabel} width={20} height={20} />
+                                            <span className="fup-stat-value">{value}</span>
+                                        </span>
+                                    ))}
+                                </div>
+                                <div className="fup-divider" />
+                                <div className="fup-style-mood">
+                                    <img src={styleIcon} alt={strategyName} title={strategyName} className="fup-style-icon" />
+                                    <img
+                                        src={moodIcon}
+                                        alt={moodIconName[horse.motivation]}
+                                        title={moodIconName[horse.motivation]}
+                                        className="fup-style-icon"
+                                    />
+                                </div>
+                                {(horse.aptGround !== undefined || horse.aptDistance !== undefined || horse.aptStyle !== undefined) && (
+                                    <>
+                                        <div className="fup-divider" />
+                                        <div className="fup-aptitudes">
+                                            {horse.aptGround !== undefined && (
+                                                <div className="fup-apt-item">
+                                                    <span className="fup-apt-cat">{APT_GROUND_LABEL}</span>
+                                                    <img
+                                                        src={AssetLoader.getGradeIcon(GRADE_LETTERS[horse.aptGround]) ?? ""}
+                                                        alt={GRADE_LETTERS[horse.aptGround] ?? "?"}
+                                                        className="fup-apt-icon"
+                                                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                                                    />
+                                                </div>
+                                            )}
+                                            {horse.aptDistance !== undefined && (
+                                                <div className="fup-apt-item">
+                                                    <span className="fup-apt-cat">{APT_DISTANCE_LABEL}</span>
+                                                    <img
+                                                        src={AssetLoader.getGradeIcon(GRADE_LETTERS[horse.aptDistance]) ?? ""}
+                                                        alt={GRADE_LETTERS[horse.aptDistance] ?? "?"}
+                                                        className="fup-apt-icon"
+                                                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                                                    />
+                                                </div>
+                                            )}
+                                            {horse.aptStyle !== undefined && (
+                                                <div className="fup-apt-item">
+                                                    <span className="fup-apt-cat">{strategyName}</span>
+                                                    <img
+                                                        src={AssetLoader.getGradeIcon(GRADE_LETTERS[horse.aptStyle]) ?? ""}
+                                                        alt={GRADE_LETTERS[horse.aptStyle] ?? "?"}
+                                                        className="fup-apt-icon"
+                                                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            {allSkillIds.length > 0 && (
+                                <div className="fup-skills-section">
+                                    <div className="fup-skills-heading fup-skills-heading--learned">
+                                        Skills ({allSkillIds.length})
+                                    </div>
+                                    <div className="fup-skills-list">
+                                        {allSkillIds.map((id) => renderSkillChip(id, false))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+};
+
+function StyleTeamCompositionPanel({
+    teamStats,
+    onSelectStyle,
+}: {
+    teamStats: TeamCompositionStats[];
+    onSelectStyle?: (entry: StyleTeamEntry) => void;
+}) {
     const all = aggregateStyleTeams(teamStats).filter(e => e.appearances >= MIN_STYLE_APPEARANCES);
     if (all.length === 0) return null;
 
@@ -453,7 +774,11 @@ function StyleTeamCompositionPanel({ teamStats }: { teamStats: TeamCompositionSt
     const renderItem = (e: StyleTeamEntry, positive: boolean) => {
         const valueColor = positive ? "#68d391" : "#fc8181";
         return (
-            <div key={e.key} className="sa-stcp-item">
+            <div
+                key={e.key}
+                className={`sa-stcp-item${onSelectStyle ? " sa-stcp-item--clickable" : ""}`}
+                onClick={onSelectStyle ? () => onSelectStyle(e) : undefined}
+            >
                 <div className="sa-stcp-dots">
                     {e.strategies.map((s, i) => (
                         <span key={i} className="sa-stcp-dot" style={{ background: STRATEGY_COLORS[s] ?? "#718096" }} />
@@ -500,8 +825,50 @@ const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
     roomCompositions,
     teamStats,
     styleReps,
+    allHorses,
+    skillStats,
 }) => {
     const hasData = strategyStats && strategyStats.length > 0 && totalRaces != null && totalRaces > 0;
+
+    const representativeByMemberKey = useMemo(() => {
+        if (!allHorses) return new Map<string, HorseEntry>();
+        const map = new Map<string, HorseEntry>();
+        for (const h of allHorses) {
+            if (h.teamId <= 0) continue;
+            const key = makeMemberKey({ charaId: h.charaId, cardId: h.cardId, strategy: h.strategy });
+            const existing = map.get(key);
+            if (!existing || h.rankScore > existing.rankScore) {
+                map.set(key, h);
+            }
+        }
+        return map;
+    }, [allHorses]);
+
+    const [selectedStyle, setSelectedStyle] = useState<StyleTeamEntry | null>(null);
+    const [drilldownTeams, setDrilldownTeams] = useState<DrilldownTeam[]>([]);
+
+    const canDrilldown = !!(allHorses && skillStats);
+
+    const handleSelectStyle = (entry: StyleTeamEntry) => {
+        if (!teamStats || !canDrilldown) return;
+        const key = entry.key;
+
+        const teamsForStyle: DrilldownTeam[] = teamStats
+            .filter(t => {
+                const strategies = t.members.map(m => m.strategy).sort((a, b) => a - b);
+                return strategies.join("_") === key;
+            })
+            .filter(t => t.appearances >= MIN_TEAM_APPEARANCES)
+            .map(t => ({
+                team: t,
+                bayesianWinRate: (t.wins + BAYES_TEAM.K * BAYES_TEAM.PRIOR) / (t.appearances + BAYES_TEAM.K),
+            }))
+            .sort((a, b) => b.bayesianWinRate - a.bayesianWinRate)
+            .slice(0, 6);
+
+        setSelectedStyle(entry);
+        setDrilldownTeams(teamsForStyle);
+    };
 
     return (
         <div className="pie-chart-container sa-main">
@@ -518,11 +885,85 @@ const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
                                 totalRaces={totalRaces!}
                                 roomCompositions={roomCompositions ?? []}
                             />
-                            {styleReps && <StyleRepsPanel styleReps={styleReps} />}
+                            {styleReps && <StyleRepsPanel styleReps={styleReps} allHorses={allHorses} skillStats={skillStats} />}
                         </div>
                     )}
                     {teamStats && teamStats.length > 0 && (
-                        <StyleTeamCompositionPanel teamStats={teamStats} />
+                        <>
+                            <StyleTeamCompositionPanel
+                                teamStats={teamStats}
+                                onSelectStyle={canDrilldown ? handleSelectStyle : undefined}
+                            />
+                            {canDrilldown && selectedStyle && drilldownTeams.length > 0 && (
+                                <div className="stcp-drilldown">
+                                    <div className="stcp-drilldown-header">
+                                        <div className="stcp-drilldown-title">
+                                            Top teams for {selectedStyle.label}
+                                        </div>
+                                        <div className="stcp-drilldown-subtitle">
+                                            Ranked by Bayesian-adjusted team win rate (prior 1/3, C = 18). Minimum {MIN_TEAM_APPEARANCES} appearances per team.
+                                        </div>
+                                    </div>
+                                    <div className="stcp-team-list">
+                                        {drilldownTeams.map((item, idx) => (
+                                            <div key={idx} className="stcp-team-card">
+                                                <div className="stcp-team-header">
+                                                    <span className="stcp-team-rank">#{idx + 1}</span>
+                                                    <span className="stcp-team-members">
+                                                        {item.team.members.map((m, i) => {
+                                                            const wins = item.team.memberWins[i] ?? 0;
+                                                            const pct = item.team.appearances > 0
+                                                                ? (wins / item.team.appearances) * 100
+                                                                : 0;
+                                                            const strat = STRATEGY_NAMES[m.strategy]?.split(" ")[0] ?? `S${m.strategy}`;
+                                                            return (
+                                                                <span key={i}>
+                                                                    {m.charaName} ({strat}) {pct.toFixed(0)}%
+                                                                    {i < item.team.members.length - 1 ? " · " : ""}
+                                                                </span>
+                                                            );
+                                                        })}
+                                                    </span>
+                                                    <span className="stcp-team-stats">
+                                                        <span className="stcp-team-adj">
+                                                            {(item.bayesianWinRate * 100).toFixed(0)}%
+                                                        </span>
+                                                        <span className="stcp-team-pipe"> | </span>
+                                                        <span className="stcp-team-raw">
+                                                            {(item.team.winRate * 100).toFixed(0)}% ({item.team.appearances})
+                                                        </span>
+                                                    </span>
+                                                </div>
+                                                <div className="stcp-team-members-row">
+                                                    {item.team.members.map((m, i) => {
+                                                        const rep = representativeByMemberKey.get(makeMemberKey(m));
+                                                        if (!rep) {
+                                                            return (
+                                                                <div key={i} className="stcp-member-card stcp-member-card--placeholder">
+                                                                    <div className="stcp-member-placeholder-label">
+                                                                        {m.charaName}
+                                                                    </div>
+                                                                    <div className="stcp-member-placeholder-note">
+                                                                        No sample profile available
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        return (
+                                                            <TeamMemberCard
+                                                                key={i}
+                                                                horse={rep}
+                                                                skillStats={skillStats!}
+                                                            />
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
                 </>
             ) : null}

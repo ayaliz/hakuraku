@@ -7,6 +7,7 @@ import CharacterAnalysis from "./CharacterAnalysis";
 const WinDistributionCharts: React.FC<WinDistributionChartsProps> = ({
     characterStats,
     allHorses,
+    skillStats,
     spectatorMode,
 }) => {
     const {
@@ -25,6 +26,7 @@ const WinDistributionCharts: React.FC<WinDistributionChartsProps> = ({
                 spectatorMode={spectatorMode}
                 characterStats={characterStats}
                 allHorses={allHorses}
+                skillStats={skillStats}
             />
         </div>
     );

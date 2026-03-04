@@ -1,3 +1,9 @@
+.ca-row--selected {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 4px;
+    outline: 1px solid rgba(255, 255, 255, 0.15);
+}
+
 /* Character portrait used in the per-character label row */
 .ca-portrait-wrap {
     position: relative;

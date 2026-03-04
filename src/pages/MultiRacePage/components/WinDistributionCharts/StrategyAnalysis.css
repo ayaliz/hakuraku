@@ -493,6 +493,26 @@
     margin-bottom: 5px;
 }
 
+.sa-reps-entry--selected {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    outline: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.sa-reps-drilldown-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.sa-reps-drilldown-winrate {
+    font-size: 11px;
+    margin-bottom: 4px;
+    white-space: nowrap;
+}
+
 .sa-reps-portrait {
     width: 22px;
     height: 22px;

@@ -551,6 +551,26 @@
     border-left: 2px solid rgba(255, 255, 255, 0.12);
 }
 
+.tcp-rep-team-select {
+    margin-bottom: 8px;
+}
+
+.tcp-rep-team-select select {
+    width: 100%;
+    max-width: 520px;
+    padding: 6px 8px;
+    font-size: 12px;
+    color: #cbd5e0;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid #2d3748;
+    border-radius: 6px;
+}
+
+.tcp-rep-team-select select option {
+    color: #cbd5e0;
+    background: #111827;
+}
+
 .tcp-icons {
     display: flex;
     gap: 2px;

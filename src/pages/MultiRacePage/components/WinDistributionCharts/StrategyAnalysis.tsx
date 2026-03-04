@@ -532,8 +532,8 @@ function resolveIconSkillId(id: number): number {
 const GRADE_LETTERS: Record<number, string> = { 1: "G", 2: "F", 3: "E", 4: "D", 5: "C", 6: "B", 7: "A", 8: "S" };
 
 // Aptitude display labels
-const APT_GROUND_LABEL = "Dirt";
-const APT_DISTANCE_LABEL = "Mile";
+const APT_GROUND_LABEL = "Ground";
+const APT_DISTANCE_LABEL = "Distance";
 
 interface TeamMemberCardProps {
     horse: HorseEntry;
@@ -818,7 +818,6 @@ function StyleTeamCompositionPanel({
     );
 }
 
-// ── Main Component ────────────────────────────────────────────────────────────
 const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
     strategyStats,
     totalRaces,

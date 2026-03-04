@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import type { TeamCompositionStats, HorseEntry, SkillStats } from "../MultiRacePage/types";
 import AssetLoader from "../../data/AssetLoader";
-import { STRATEGY_COLORS, STRATEGY_NAMES } from "../MultiRacePage/components/WinDistributionCharts/constants";
+import { STRATEGY_COLORS, STRATEGY_NAMES, BAYES_TEAM } from "../MultiRacePage/components/WinDistributionCharts/constants";
 import { TeamMemberCard } from "../MultiRacePage/components/WinDistributionCharts/StrategyAnalysis";
 import "./UmaLogsPage.css";
 
@@ -17,17 +17,91 @@ interface TeamCompositionPanelProps {
 
 const TeamCompositionPanel: React.FC<TeamCompositionPanelProps> = ({ teamStats, allHorses, skillStats }) => {
     const [selectedKey, setSelectedKey] = useState<string | null>(null);
+    const [selectedTeamInstanceKey, setSelectedTeamInstanceKey] = useState<string | null>(null);
 
-    const bestHorseByMember = useMemo(() => {
-        if (!allHorses) return new Map<string, HorseEntry>();
-        const map = new Map<string, HorseEntry>();
+    const teamInstancesByCompositionKey = useMemo(() => {
+        type TeamInstance = {
+            instanceKey: string;
+            horses: HorseEntry[];
+            appearances: number;
+            wins: number;
+            memberWins: number[];
+        };
+        const bayesTeamWR = (wins: number, appearances: number) =>
+            (wins + BAYES_TEAM.K * BAYES_TEAM.PRIOR) / (appearances + BAYES_TEAM.K);
+
+        const compMap = new Map<string, Map<string, TeamInstance>>();
+        if (!allHorses) return new Map<string, TeamInstance[]>();
+
+        const raceMap = new Map<string, HorseEntry[]>();
         for (const h of allHorses) {
-            if (h.rankScore <= 0) continue;
-            const key = `${h.cardId}_${h.strategy}`;
-            const existing = map.get(key);
-            if (!existing || h.rankScore > existing.rankScore) map.set(key, h);
+            if (!raceMap.has(h.raceId)) raceMap.set(h.raceId, []);
+            raceMap.get(h.raceId)!.push(h);
         }
-        return map;
+
+        for (const horses of raceMap.values()) {
+            const teamMap = new Map<number, HorseEntry[]>();
+            for (const h of horses) {
+                if (h.teamId === 0) continue;
+                if (!teamMap.has(h.teamId)) teamMap.set(h.teamId, []);
+                teamMap.get(h.teamId)!.push(h);
+            }
+
+            const winningTeamId = horses.find(h => h.finishOrder === 1)?.teamId ?? 0;
+
+            for (const team of teamMap.values()) {
+                if (team.length !== 3) continue;
+                const sorted = [...team].sort((a, b) => (a.cardId * 10 + a.strategy) - (b.cardId * 10 + b.strategy));
+                const compKey = sorted.map(h => `${h.cardId}_${h.strategy}`).join("__");
+                const instanceKey = sorted
+                    .map(h => `${h.speed}_${h.stamina}_${h.pow}_${h.guts}_${h.wiz}_${h.rankScore}`)
+                    .join("__");
+
+                const teamId = sorted[0]?.teamId ?? 0;
+                const teamWon = teamId > 0 && teamId === winningTeamId;
+                const firstPlaceHorse = teamWon ? sorted.find(h => h.finishOrder === 1) ?? null : null;
+
+                if (!compMap.has(compKey)) compMap.set(compKey, new Map());
+                const byFingerprint = compMap.get(compKey)!;
+                if (!byFingerprint.has(instanceKey)) {
+                    byFingerprint.set(instanceKey, {
+                        instanceKey,
+                        horses: sorted,
+                        appearances: 0,
+                        wins: 0,
+                        memberWins: new Array(sorted.length).fill(0),
+                    });
+                }
+
+                const inst = byFingerprint.get(instanceKey)!;
+                inst.appearances++;
+                if (teamWon) {
+                    inst.wins++;
+                    if (firstPlaceHorse) {
+                        const idx = inst.horses.findIndex(h => h.cardId === firstPlaceHorse.cardId && h.strategy === firstPlaceHorse.strategy);
+                        if (idx >= 0) inst.memberWins[idx]++;
+                    }
+                }
+            }
+        }
+
+        const out: Map<string, TeamInstance[]> = new Map();
+        for (const [compKey, byFingerprint] of compMap) {
+            const instances = Array.from(byFingerprint.values());
+            instances.sort((a, b) => {
+                const aBayes = bayesTeamWR(a.wins, a.appearances);
+                const bBayes = bayesTeamWR(b.wins, b.appearances);
+                if (bBayes !== aBayes) return bBayes - aBayes;
+                if (b.appearances !== a.appearances) return b.appearances - a.appearances;
+                const aBest = Math.max(...a.horses.map(h => h.rankScore ?? 0), 0);
+                const bBest = Math.max(...b.horses.map(h => h.rankScore ?? 0), 0);
+                if (bBest !== aBest) return bBest - aBest;
+                return a.instanceKey.localeCompare(b.instanceKey);
+            });
+            out.set(compKey, instances);
+        }
+
+        return out;
     }, [allHorses]);
 
     const canExpand = !!(allHorses && skillStats);
@@ -45,11 +119,35 @@ const TeamCompositionPanel: React.FC<TeamCompositionPanelProps> = ({ teamStats, 
         const valueColor = positive ? "#68d391" : "#fc8181";
         const key = t.members.map(m => `${m.cardId}_${m.strategy}`).join('__');
         const isSelected = selectedKey === key;
+        const instances = canExpand ? (teamInstancesByCompositionKey.get(key) ?? []) : [];
+        const selectedInstance = isSelected
+            ? (instances.find(i => i.instanceKey === selectedTeamInstanceKey) ?? instances[0] ?? null)
+            : null;
+
+        const getInstanceLabel = (inst: { horses: HorseEntry[]; appearances: number; memberWins: number[] }) => {
+            const n = inst.appearances;
+            const parts = inst.horses.map((h, i) => {
+                const pct = n > 0 ? ((inst.memberWins[i] ?? 0) / n) * 100 : 0;
+                return `${h.charaName} ${pct.toFixed(0)}%`;
+            });
+            return `${parts.join(" · ")} (${n} samples)`;
+        };
         return (
             <React.Fragment key={key}>
                 <div
                     className={`tcp-row${canExpand ? " sa-stcp-item--clickable" : ""}${isSelected ? " ca-row--selected" : ""}`}
-                    onClick={canExpand ? () => setSelectedKey(k => k === key ? null : key) : undefined}
+                    onClick={canExpand ? () => {
+                        setSelectedKey(k => {
+                            const next = k === key ? null : key;
+                            if (next === key) {
+                                const first = (teamInstancesByCompositionKey.get(key) ?? [])[0]?.instanceKey ?? null;
+                                setSelectedTeamInstanceKey(first);
+                            } else {
+                                setSelectedTeamInstanceKey(null);
+                            }
+                            return next;
+                        });
+                    } : undefined}
                 >
                     <div className="tcp-icons">
                         {t.members.map((m, i) => {
@@ -89,12 +187,22 @@ const TeamCompositionPanel: React.FC<TeamCompositionPanelProps> = ({ teamStats, 
                 </div>
                 {isSelected && canExpand && (
                     <div className="tcp-member-drilldown">
+                        {instances.length > 1 && (
+                            <div className="tcp-rep-team-select">
+                                <select
+                                    value={selectedInstance?.instanceKey ?? ""}
+                                    onChange={(e) => setSelectedTeamInstanceKey(e.target.value)}
+                                >
+                                    {instances.map(inst => (
+                                        <option key={inst.instanceKey} value={inst.instanceKey}>{getInstanceLabel(inst)}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                         <div className="stcp-team-members-row">
-                            {t.members.map((m, i) => {
-                                const horse = bestHorseByMember.get(`${m.cardId}_${m.strategy}`);
-                                if (!horse) return null;
-                                return <TeamMemberCard key={i} horse={horse} skillStats={skillStats!} />;
-                            })}
+                            {(selectedInstance?.horses ?? []).map((horse, i) => (
+                                <TeamMemberCard key={i} horse={horse} skillStats={skillStats!} />
+                            ))}
                         </div>
                     </div>
                 )}

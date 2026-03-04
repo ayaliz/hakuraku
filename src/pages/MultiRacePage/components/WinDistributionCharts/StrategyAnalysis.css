@@ -427,6 +427,20 @@
     border-bottom: 1px solid #2d3748;
 }
 
+.sa-stcp-item--clickable {
+    cursor: pointer;
+}
+
+.sa-stcp-item--clickable:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.sa-stcp-item--selected {
+    background: rgba(255, 255, 255, 0.06);
+    outline: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+}
+
 .sa-stcp-dots {
     display: flex;
     gap: 3px;

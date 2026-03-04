@@ -133,6 +133,38 @@ export type TeamCompositionStats = {
     bayesianWinRate: number; // Bayesian-smoothed win rate (prior = 1/3, k = 5)
 };
 
+export type TrueSkillMember = {
+    charaId: number;
+    charaName: string;
+    cardId: number;
+    strategy: number;
+    speed: number;
+    stamina: number;
+    pow: number;
+    guts: number;
+    wiz: number;
+    rankScore: number;
+    motivation: number;
+    activatedSkillIds: number[];
+    learnedSkillIds: number[];
+    supportCardIds: number[];
+    supportCardLimitBreaks: number[];
+    aptGround?: number;
+    aptDistance?: number;
+    aptStyle?: number;
+    finishTime?: number;
+    finishOrder?: number;
+};
+
+export type TrueSkillTeamEntry = {
+    members: TrueSkillMember[];  // 3 members, sorted canonically
+    appearances: number;
+    wins: number;
+    mu: number;       // sum of member mu's (team-level mean)
+    sigma: number;    // sqrt of sum of member sigma²'s (team-level uncertainty)
+    conservative: number; // mu − 3σ (team conservative skill estimate)
+};
+
 export type AggregatedStats = {
     totalRaces: number;
     totalHorses: number;
@@ -147,4 +179,5 @@ export type AggregatedStats = {
     allHorses: HorseEntry[];
     teamStats: TeamCompositionStats[];
     pairSynergy: PairSynergyStats[];
+    trueskillRanking?: TrueSkillTeamEntry[];
 };

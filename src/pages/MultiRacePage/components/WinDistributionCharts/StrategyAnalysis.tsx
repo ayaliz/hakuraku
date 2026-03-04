@@ -4,7 +4,6 @@ import type { StrategyStats, RoomCompositionEntry, TeamCompositionStats, HorseEn
 import AssetLoader from "../../../../data/AssetLoader";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import GameDataLoader from "../../../../data/GameDataLoader";
-import { formatTime } from "../../../../data/UMDatabaseUtils";
 import { getRankIcon } from "../../../../components/RaceDataPresenter/components/CharaList/rankUtils";
 import "./StrategyAnalysis.css";
 
@@ -518,11 +517,6 @@ function makeMemberKey(h: { charaId: number; cardId: number; strategy: number })
     return `${h.charaId}_${h.cardId}_${h.strategy}`;
 }
 
-type DrilldownTeam = {
-    team: TeamCompositionStats;
-    bayesianWinRate: number;
-};
-
 function resolveIconSkillId(id: number): number {
     const s = String(id);
     return s.startsWith("9") ? parseInt("1" + s.slice(1), 10) : id;
@@ -567,6 +561,26 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
     const moodIconName: Record<number, string> = { 1: "awful", 2: "bad", 3: "normal", 4: "good", 5: "great" };
     const styleIcon = AssetLoader.getStatIcon(styleIconName[horse.strategy] ?? "front");
     const moodIcon = AssetLoader.getStatIcon(moodIconName[horse.motivation] ?? "normal");
+
+    const totalSkillPoints = useMemo(() => {
+        let total = 0;
+        for (const skillId of horse.learnedSkillIds) {
+            const base = UMDatabaseWrapper.skillNeedPoints[skillId] ?? 0;
+            let upgrade = 0;
+            if (UMDatabaseWrapper.skills[skillId]?.rarity === 2) {
+                const lastDigit = skillId % 10;
+                const flippedId = lastDigit === 1 ? skillId + 1 : skillId - 1;
+                upgrade = UMDatabaseWrapper.skillNeedPoints[flippedId] ?? 0;
+            } else if (UMDatabaseWrapper.skills[skillId]?.rarity === 1 && skillId % 10 === 1) {
+                const pairedId = skillId + 1;
+                if (UMDatabaseWrapper.skills[pairedId]?.rarity === 1) {
+                    upgrade = UMDatabaseWrapper.skillNeedPoints[pairedId] ?? 0;
+                }
+            }
+            total += base + upgrade;
+        }
+        return total;
+    }, [horse.learnedSkillIds]);
 
     const getSkillName = (id: number) =>
         skillStats.get(id)?.skillName ?? UMDatabaseWrapper.skillName(id);
@@ -685,6 +699,12 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
                                             <span className="fup-stat-value">{value}</span>
                                         </span>
                                     ))}
+                                    {totalSkillPoints > 0 && (
+                                        <span className="fup-stat-item" title="Undiscounted SP value of learned skills">
+                                            <img src={AssetLoader.getStatIcon("hint")} alt="Skill Points" width={20} height={20} />
+                                            <span className="fup-stat-value">{totalSkillPoints}</span>
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="fup-divider" />
                                 <div className="fup-style-mood">
@@ -724,7 +744,7 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
                                             )}
                                             {horse.aptStyle !== undefined && (
                                                 <div className="fup-apt-item">
-                                                    <span className="fup-apt-cat">{strategyName}</span>
+                                                    <span className="fup-apt-cat">Style</span>
                                                     <img
                                                         src={AssetLoader.getGradeIcon(GRADE_LETTERS[horse.aptStyle]) ?? ""}
                                                         alt={GRADE_LETTERS[horse.aptStyle] ?? "?"}
@@ -758,11 +778,16 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
 
 function StyleTeamCompositionPanel({
     teamStats,
-    onSelectStyle,
+    allHorses,
+    skillStats,
 }: {
     teamStats: TeamCompositionStats[];
-    onSelectStyle?: (entry: StyleTeamEntry) => void;
+    allHorses?: HorseEntry[];
+    skillStats?: Map<number, SkillStats>;
 }) {
+    const [selectedKey, setSelectedKey] = useState<string | null>(null);
+    const [selectedTeamIdx, setSelectedTeamIdx] = useState(0);
+
     const all = aggregateStyleTeams(teamStats).filter(e => e.appearances >= MIN_STYLE_APPEARANCES);
     if (all.length === 0) return null;
 
@@ -771,13 +796,55 @@ function StyleTeamCompositionPanel({
     const underperformers = sorted.filter(e => e.bayesianWinRate < BAYES_TEAM.PRIOR).slice(-MAX_STYLE_ITEMS).reverse();
     if (overperformers.length === 0 && underperformers.length === 0) return null;
 
+    const canDrilldown = !!(allHorses && skillStats);
+
+    const representativeByMemberKey = useMemo(() => {
+        if (!allHorses) return new Map<string, HorseEntry>();
+        const map = new Map<string, HorseEntry>();
+        for (const h of allHorses) {
+            if (h.teamId <= 0) continue;
+            const key = makeMemberKey({ charaId: h.charaId, cardId: h.cardId, strategy: h.strategy });
+            const existing = map.get(key);
+            if (!existing || h.rankScore > existing.rankScore) map.set(key, h);
+        }
+        return map;
+    }, [allHorses]);
+
+    const drilldownTeams = useMemo(() => {
+        if (!selectedKey) return [];
+        return teamStats
+            .filter(t => t.members.map(m => m.strategy).sort((a, b) => a - b).join("_") === selectedKey)
+            .filter(t => t.appearances >= MIN_TEAM_APPEARANCES)
+            .map(t => ({
+                team: t,
+                bayesianWinRate: (t.wins + BAYES_TEAM.K * BAYES_TEAM.PRIOR) / (t.appearances + BAYES_TEAM.K),
+            }))
+            .sort((a, b) => b.bayesianWinRate - a.bayesianWinRate)
+            .slice(0, 6);
+    }, [selectedKey, teamStats]);
+
+    const getTeamLabel = (item: { team: TeamCompositionStats; bayesianWinRate: number }) => {
+        const n = item.team.appearances;
+        const parts = item.team.members.map((m, i) => {
+            const wins = item.team.memberWins[i] ?? 0;
+            const pct = n > 0 ? (wins / n) * 100 : 0;
+            const strat = STRATEGY_NAMES[m.strategy]?.split(" ")[0] ?? `S${m.strategy}`;
+            return `${m.charaName} (${strat}) ${pct.toFixed(0)}%`;
+        });
+        return `${parts.join(" \u00b7 ")} (${n} samples)`;
+    };
+
     const renderItem = (e: StyleTeamEntry, positive: boolean) => {
         const valueColor = positive ? "#68d391" : "#fc8181";
+        const isSelected = selectedKey === e.key;
         return (
             <div
                 key={e.key}
-                className={`sa-stcp-item${onSelectStyle ? " sa-stcp-item--clickable" : ""}`}
-                onClick={onSelectStyle ? () => onSelectStyle(e) : undefined}
+                className={`sa-stcp-item${canDrilldown ? " sa-stcp-item--clickable" : ""}${isSelected ? " sa-stcp-item--selected" : ""}`}
+                onClick={canDrilldown ? () => {
+                    setSelectedTeamIdx(0);
+                    setSelectedKey(k => k === e.key ? null : e.key);
+                } : undefined}
             >
                 <div className="sa-stcp-dots">
                     {e.strategies.map((s, i) => (
@@ -794,11 +861,14 @@ function StyleTeamCompositionPanel({
         );
     };
 
+    const idx = Math.min(selectedTeamIdx, Math.max(0, drilldownTeams.length - 1));
+    const selectedTeam = drilldownTeams[idx] ?? null;
+
     return (
         <div className="sa-stcp-section">
             <div className="sa-stcp-header">
                 Style Composition Performance
-                <span title="Win rate of 3-player teams grouped by running style trio. A team wins when any of its members finishes in 1st place. Bayesian prior: 1/3, strength: 18 races. Requires ≥20 appearances." className="sa-info-icon">i</span>
+                <span title="Win rate of 3-player teams grouped by running style trio. Bayesian prior: 1/3, strength: 18 races. Requires \u226520 appearances." className="sa-info-icon">i</span>
             </div>
             <div className="sa-stcp-columns">
                 {overperformers.length > 0 && (
@@ -814,6 +884,36 @@ function StyleTeamCompositionPanel({
                     </div>
                 )}
             </div>
+            {canDrilldown && selectedKey && selectedTeam && (
+                <div className="tcp-member-drilldown">
+                    {drilldownTeams.length > 1 && (
+                        <div className="tcp-rep-team-select">
+                            <select
+                                value={idx}
+                                onChange={e => setSelectedTeamIdx(Number(e.target.value))}
+                            >
+                                {drilldownTeams.map((item, i) => (
+                                    <option key={i} value={i}>{getTeamLabel(item)}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                    <div className="stcp-team-members-row">
+                        {selectedTeam.team.members.map((m, i) => {
+                            const rep = representativeByMemberKey.get(makeMemberKey(m));
+                            if (!rep) {
+                                return (
+                                    <div key={i} className="stcp-member-card stcp-member-card--placeholder">
+                                        <div className="stcp-member-placeholder-label">{m.charaName}</div>
+                                        <div className="stcp-member-placeholder-note">No sample profile available</div>
+                                    </div>
+                                );
+                            }
+                            return <TeamMemberCard key={i} horse={rep} skillStats={skillStats!} />;
+                        })}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -828,46 +928,6 @@ const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
     skillStats,
 }) => {
     const hasData = strategyStats && strategyStats.length > 0 && totalRaces != null && totalRaces > 0;
-
-    const representativeByMemberKey = useMemo(() => {
-        if (!allHorses) return new Map<string, HorseEntry>();
-        const map = new Map<string, HorseEntry>();
-        for (const h of allHorses) {
-            if (h.teamId <= 0) continue;
-            const key = makeMemberKey({ charaId: h.charaId, cardId: h.cardId, strategy: h.strategy });
-            const existing = map.get(key);
-            if (!existing || h.rankScore > existing.rankScore) {
-                map.set(key, h);
-            }
-        }
-        return map;
-    }, [allHorses]);
-
-    const [selectedStyle, setSelectedStyle] = useState<StyleTeamEntry | null>(null);
-    const [drilldownTeams, setDrilldownTeams] = useState<DrilldownTeam[]>([]);
-
-    const canDrilldown = !!(allHorses && skillStats);
-
-    const handleSelectStyle = (entry: StyleTeamEntry) => {
-        if (!teamStats || !canDrilldown) return;
-        const key = entry.key;
-
-        const teamsForStyle: DrilldownTeam[] = teamStats
-            .filter(t => {
-                const strategies = t.members.map(m => m.strategy).sort((a, b) => a - b);
-                return strategies.join("_") === key;
-            })
-            .filter(t => t.appearances >= MIN_TEAM_APPEARANCES)
-            .map(t => ({
-                team: t,
-                bayesianWinRate: (t.wins + BAYES_TEAM.K * BAYES_TEAM.PRIOR) / (t.appearances + BAYES_TEAM.K),
-            }))
-            .sort((a, b) => b.bayesianWinRate - a.bayesianWinRate)
-            .slice(0, 6);
-
-        setSelectedStyle(entry);
-        setDrilldownTeams(teamsForStyle);
-    };
 
     return (
         <div className="pie-chart-container sa-main">
@@ -888,81 +948,11 @@ const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
                         </div>
                     )}
                     {teamStats && teamStats.length > 0 && (
-                        <>
-                            <StyleTeamCompositionPanel
-                                teamStats={teamStats}
-                                onSelectStyle={canDrilldown ? handleSelectStyle : undefined}
-                            />
-                            {canDrilldown && selectedStyle && drilldownTeams.length > 0 && (
-                                <div className="stcp-drilldown">
-                                    <div className="stcp-drilldown-header">
-                                        <div className="stcp-drilldown-title">
-                                            Top teams for {selectedStyle.label}
-                                        </div>
-                                        <div className="stcp-drilldown-subtitle">
-                                            Ranked by Bayesian-adjusted team win rate (prior 1/3, C = 18). Minimum {MIN_TEAM_APPEARANCES} appearances per team.
-                                        </div>
-                                    </div>
-                                    <div className="stcp-team-list">
-                                        {drilldownTeams.map((item, idx) => (
-                                            <div key={idx} className="stcp-team-card">
-                                                <div className="stcp-team-header">
-                                                    <span className="stcp-team-rank">#{idx + 1}</span>
-                                                    <span className="stcp-team-members">
-                                                        {item.team.members.map((m, i) => {
-                                                            const wins = item.team.memberWins[i] ?? 0;
-                                                            const pct = item.team.appearances > 0
-                                                                ? (wins / item.team.appearances) * 100
-                                                                : 0;
-                                                            const strat = STRATEGY_NAMES[m.strategy]?.split(" ")[0] ?? `S${m.strategy}`;
-                                                            return (
-                                                                <span key={i}>
-                                                                    {m.charaName} ({strat}) {pct.toFixed(0)}%
-                                                                    {i < item.team.members.length - 1 ? " · " : ""}
-                                                                </span>
-                                                            );
-                                                        })}
-                                                    </span>
-                                                    <span className="stcp-team-stats">
-                                                        <span className="stcp-team-adj">
-                                                            {(item.bayesianWinRate * 100).toFixed(0)}%
-                                                        </span>
-                                                        <span className="stcp-team-pipe"> | </span>
-                                                        <span className="stcp-team-raw">
-                                                            {(item.team.winRate * 100).toFixed(0)}% ({item.team.appearances})
-                                                        </span>
-                                                    </span>
-                                                </div>
-                                                <div className="stcp-team-members-row">
-                                                    {item.team.members.map((m, i) => {
-                                                        const rep = representativeByMemberKey.get(makeMemberKey(m));
-                                                        if (!rep) {
-                                                            return (
-                                                                <div key={i} className="stcp-member-card stcp-member-card--placeholder">
-                                                                    <div className="stcp-member-placeholder-label">
-                                                                        {m.charaName}
-                                                                    </div>
-                                                                    <div className="stcp-member-placeholder-note">
-                                                                        No sample profile available
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        }
-                                                        return (
-                                                            <TeamMemberCard
-                                                                key={i}
-                                                                horse={rep}
-                                                                skillStats={skillStats!}
-                                                            />
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </>
+                        <StyleTeamCompositionPanel
+                            teamStats={teamStats}
+                            allHorses={allHorses}
+                            skillStats={skillStats}
+                        />
                     )}
                 </>
             ) : null}

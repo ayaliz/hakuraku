@@ -316,20 +316,20 @@
 .fup-stat-row {
     display: flex;
     align-items: center;
-    gap: 20px;
-    flex-wrap: wrap;
+    gap: 10px;
+    flex-wrap: nowrap;
     background: rgba(0, 0, 0, 0.25);
     border: 1px solid #2d3748;
     border-radius: var(--haku-radius);
-    padding: 10px 14px;
+    padding: 8px 10px;
     margin-bottom: 20px;
 }
 
 .fup-stats {
     display: flex;
     align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+    gap: 8px;
+    flex-wrap: nowrap;
 }
 
 .fup-stat-item {
@@ -395,15 +395,15 @@
 /* Aptitude items (inline in fup-stat-row) */
 .fup-aptitudes {
     display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
+    gap: 8px;
+    flex-wrap: nowrap;
     align-items: center;
 }
 
 .fup-apt-item {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
 }
 
 .fup-apt-cat {
@@ -1343,4 +1343,124 @@
     text-align: center;
     color: #4a5568;
     font-size: 13px;
+}
+
+/* ── TrueSkill Team Ranking Panel ─────────────────────────── */
+
+.ts-panel {
+    margin-top: 24px;
+}
+
+.ts-heading-link {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+}
+
+.ts-heading-link:hover {
+    color: #90cdf4;
+}
+
+.ts-ranking-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ts-entry {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid #2d3748;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.ts-entry-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+    user-select: none;
+    transition: background var(--haku-transition);
+}
+
+.ts-entry-header:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.ts-entry-header--open {
+    border-bottom: 1px solid #2d3748;
+}
+
+.ts-rank-badge {
+    font-size: 13px;
+    font-weight: bold;
+    color: #f6ad55;
+    min-width: 28px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.ts-entry-portraits {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.ts-portrait-sm {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #4a5568;
+}
+
+.ts-entry-names {
+    flex: 1;
+    font-size: 13px;
+    color: #e2e8f0;
+    font-weight: 500;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ts-entry-stats {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.ts-conservative {
+    font-weight: bold;
+    color: #68d391;
+    font-variant-numeric: tabular-nums;
+}
+
+.ts-mu-sigma {
+    color: #a0aec0;
+    font-variant-numeric: tabular-nums;
+}
+
+.ts-appearances {
+    color: #718096;
+    font-variant-numeric: tabular-nums;
+}
+
+.ts-pipe {
+    color: #4a5568;
+}
+
+.ts-expand-hint {
+    font-size: 10px;
+    color: #4a5568;
+    flex-shrink: 0;
+}
+
+.ts-entry-cards {
+    padding: 12px;
 }

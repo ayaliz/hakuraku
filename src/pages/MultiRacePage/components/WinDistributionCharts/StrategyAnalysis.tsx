@@ -29,8 +29,120 @@ interface StrategyAnalysisProps {
     skillStats?: Map<number, SkillStats>;
 }
 
-function StyleBreakdownPanel({ strategyStats, totalRaces }: { strategyStats: StrategyStats[]; totalRaces: number }) {
+const CHART_BUCKET_SIZE = 1000;
+
+type StratBucket = { bucket: number; strategies: Record<number, { apps: number; wins: number }> };
+
+function trimBuckets(buckets: StratBucket[], roomSampleSize: number): StratBucket[] {
+    const leadingThreshold = Math.max(1, Math.floor(roomSampleSize * 0.005));
+    const trailingThreshold = Math.max(1, Math.floor(roomSampleSize * 0.0005));
+    const hasLeadingData = (b: StratBucket) =>
+        [1, 2, 3, 4].some(sid => (b.strategies[sid]?.apps ?? 0) >= leadingThreshold);
+    const hasTrailingData = (b: StratBucket) =>
+        [1, 2, 3, 4].some(sid => (b.strategies[sid]?.apps ?? 0) >= trailingThreshold);
+    const first = buckets.findIndex(hasLeadingData);
+    if (first < 0) return [];
+    const last = buckets.length - 1 - [...buckets].reverse().findIndex(hasTrailingData);
+    return buckets.slice(first, last + 1);
+}
+
+function computeChartBuckets(horses: HorseEntry[]): StratBucket[] {
+    const map = new Map<number, Record<number, { apps: number; wins: number }>>();
+    for (const h of horses) {
+        const b = Math.floor(h.rankScore / CHART_BUCKET_SIZE) * CHART_BUCKET_SIZE;
+        if (!map.has(b)) map.set(b, {});
+        const strats = map.get(b)!;
+        if (!strats[h.strategy]) strats[h.strategy] = { apps: 0, wins: 0 };
+        strats[h.strategy].apps++;
+        if (h.finishOrder === 1) strats[h.strategy].wins++;
+    }
+    return Array.from(map.entries())
+        .sort(([a], [b]) => a - b)
+        .map(([bucket, strategies]) => ({ bucket, strategies }));
+}
+
+function WinRateLineChart({ buckets }: { buckets: StratBucket[] }) {
+    const W = 460, H = 150;
+    const ML = 36, MB = 26, MT = 10, MR = 10;
+    const plotW = W - ML - MR;
+    const plotH = H - MT - MB;
+    const BASELINE = 1 / 9;
+    const n = buckets.length;
+
+    const trailingThreshold = Math.max(1, Math.floor(buckets.reduce((sum, b) => sum + [1,2,3,4].reduce((s, sid) => s + (b.strategies[sid]?.apps ?? 0), 0), 0) * 0.0005));
+    const allWRs = buckets.flatMap(({ strategies }) =>
+        [1, 2, 3, 4].flatMap(sid => {
+            const d = strategies[sid];
+            return d && d.apps >= trailingThreshold ? [d.wins / d.apps] : [];
+        })
+    );
+    if (allWRs.length === 0) return <span className="sa-no-data">Not enough data (min {trailingThreshold} appearances per bucket)</span>;
+
+    const dataMax = Math.max(...allWRs, BASELINE);
+    const axisMax = Math.ceil(dataMax / 0.05) * 0.05 + 0.05;
+    const yTicks = [0, 0.25, 0.5, 0.75, 1.0].map(t => t * axisMax).filter(t => t <= axisMax + 0.001);
+    const toX = (i: number) => n > 1 ? ML + (i / (n - 1)) * plotW : ML + plotW / 2;
+    const toY = (wr: number) => MT + plotH * (1 - wr / axisMax);
+
+    return (
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="sa-sb-score-svg">
+            {yTicks.map(wr => (
+                <line key={wr} x1={ML} x2={ML + plotW} y1={toY(wr)} y2={toY(wr)} stroke="#2d3748" strokeWidth={1} />
+            ))}
+            <line x1={ML} x2={ML + plotW} y1={toY(BASELINE)} y2={toY(BASELINE)}
+                stroke="#718096" strokeWidth={1} strokeDasharray="4 3" />
+            <text x={ML + plotW + 2} y={toY(BASELINE) + 3} textAnchor="start" fill="#718096" fontSize={8}>1/9</text>
+            {yTicks.map(wr => (
+                <text key={wr} x={ML - 4} y={toY(wr) + 4} textAnchor="end" fill="#718096" fontSize={9}>{Math.round(wr * 100)}%</text>
+            ))}
+            {[1, 2, 3, 4].map(sid => {
+                const color = STRATEGY_COLORS[sid];
+                let pathD = '';
+                let inSeg = false;
+                const dots: { key: string; cx: number; cy: number; label: string }[] = [];
+                buckets.forEach(({ strategies, bucket }, i) => {
+                    const d = strategies[sid];
+                    if (d && d.apps >= trailingThreshold) {
+                        const x = toX(i).toFixed(1), y = toY(d.wins / d.apps).toFixed(1);
+                        pathD += inSeg ? ` L${x},${y}` : `M${x},${y}`;
+                        inSeg = true;
+                        dots.push({ key: `${sid}-${bucket}`, cx: toX(i), cy: toY(d.wins / d.apps), label: `${STRATEGY_NAMES[sid]}: ${((d.wins / d.apps) * 100).toFixed(1)}% (${d.apps} apps)` });
+                    } else {
+                        inSeg = false;
+                    }
+                });
+                return (
+                    <g key={sid}>
+                        {pathD && <path d={pathD} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" />}
+                        {dots.map(({ key, cx, cy, label }) => (
+                            <circle key={key} cx={cx} cy={cy} r={3} fill={color}><title>{label}</title></circle>
+                        ))}
+                    </g>
+                );
+            })}
+            {buckets.map(({ bucket }, i) => (
+                <text key={bucket} x={toX(i)} y={MT + plotH + 16} textAnchor="middle" fill="#718096" fontSize={8}>{bucket}</text>
+            ))}
+            <line x1={ML} x2={ML} y1={MT} y2={MT + plotH} stroke="#4a5568" strokeWidth={1} />
+            <line x1={ML} x2={ML + plotW} y1={MT + plotH} y2={MT + plotH} stroke="#4a5568" strokeWidth={1} />
+        </svg>
+    );
+}
+
+
+function StyleBreakdownPanel({ strategyStats, totalRaces, allHorses }: {
+    strategyStats: StrategyStats[];
+    totalRaces: number;
+    allHorses?: HorseEntry[];
+}) {
+    const [viewMode, setViewMode] = useState<'bars' | 'score'>('bars');
     const sumEntries = strategyStats.reduce((s, st) => s + st.totalRaces, 0);
+    const hasScoreData = !!allHorses && allHorses.length > 0;
+
+    const chartBuckets = useMemo(
+        () => hasScoreData ? trimBuckets(computeChartBuckets(allHorses!), allHorses!.length) : [],
+        [allHorses, hasScoreData]
+    );
 
     const rows = [1, 2, 3, 4].map(sId => {
         const stat = strategyStats.find(s => s.strategy === sId);
@@ -44,35 +156,55 @@ function StyleBreakdownPanel({ strategyStats, totalRaces }: { strategyStats: Str
         <div className="sa-panel">
             <div className="sa-panel-header">
                 Style Breakdown
-            </div>
-            {rows.map(({ sId, winShare, pickRate }) => {
-                const color = STRATEGY_COLORS[sId];
-                const winW = (winShare / globalMax) * 100;
-                const pickW = (pickRate / globalMax) * 100;
-
-                return (
-                    <div key={sId} className="sa-sb-row">
-                        <div className="sa-sb-strategy-label">
-                            <span className="sa-sb-dot" style={{ background: color }} />
-                            <span className="sa-sb-strategy-name">{STRATEGY_NAMES[sId]}</span>
-                        </div>
-                        <div className="sa-sb-bar-row">
-                            <div className="sa-sb-bar-label">Win%</div>
-                            <div className="sa-sb-track sa-sb-track--win">
-                                <div className="sa-sb-bar-fill" style={{ width: `${winW}%`, background: color }} />
-                            </div>
-                            <div className="sa-sb-value sa-sb-value--win">{winShare.toFixed(1)}%</div>
-                        </div>
-                        <div className="sa-sb-bar-row">
-                            <div className="sa-sb-bar-label">Pop%</div>
-                            <div className="sa-sb-track sa-sb-track--pick">
-                                <div className="sa-sb-bar-fill sa-sb-bar-fill--pick" style={{ width: `${pickW}%` }} />
-                            </div>
-                            <div className="sa-sb-value sa-sb-value--pick">{pickRate.toFixed(1)}%</div>
-                        </div>
+                {hasScoreData && (
+                    <div className="sa-sb-view-toggle">
+                        <button className={`sa-sb-toggle-btn${viewMode === 'bars' ? ' sa-sb-toggle-btn--active' : ''}`} onClick={() => setViewMode('bars')}>Overview</button>
+                        <button className={`sa-sb-toggle-btn${viewMode === 'score' ? ' sa-sb-toggle-btn--active' : ''}`} onClick={() => setViewMode('score')}>By Score</button>
                     </div>
-                );
-            })}
+                )}
+            </div>
+            {viewMode === 'bars' ? (
+                rows.map(({ sId, winShare, pickRate }) => {
+                    const color = STRATEGY_COLORS[sId];
+                    const winW = (winShare / globalMax) * 100;
+                    const pickW = (pickRate / globalMax) * 100;
+                    return (
+                        <div key={sId} className="sa-sb-row">
+                            <div className="sa-sb-strategy-label">
+                                <span className="sa-sb-dot" style={{ background: color }} />
+                                <span className="sa-sb-strategy-name">{STRATEGY_NAMES[sId]}</span>
+                            </div>
+                            <div className="sa-sb-bar-row">
+                                <div className="sa-sb-bar-label">Win%</div>
+                                <div className="sa-sb-track sa-sb-track--win">
+                                    <div className="sa-sb-bar-fill" style={{ width: `${winW}%`, background: color }} />
+                                </div>
+                                <div className="sa-sb-value sa-sb-value--win">{winShare.toFixed(1)}%</div>
+                            </div>
+                            <div className="sa-sb-bar-row">
+                                <div className="sa-sb-bar-label">Pop%</div>
+                                <div className="sa-sb-track sa-sb-track--pick">
+                                    <div className="sa-sb-bar-fill sa-sb-bar-fill--pick" style={{ width: `${pickW}%` }} />
+                                </div>
+                                <div className="sa-sb-value sa-sb-value--pick">{pickRate.toFixed(1)}%</div>
+                            </div>
+                        </div>
+                    );
+                })
+            ) : (
+                <div className="sa-sb-score-view">
+                    <div className="sa-sb-score-legend">
+                        {[1, 2, 3, 4].map(sid => (
+                            <span key={sid} className="sa-sb-score-legend-item">
+                                <span className="sa-sb-score-legend-dot" style={{ background: STRATEGY_COLORS[sid] }} />
+                                {STRATEGY_NAMES[sid]}
+                            </span>
+                        ))}
+                    </div>
+                    <div className="sa-sb-chart-label">Win Rate by Score</div>
+                    <WinRateLineChart buckets={chartBuckets} />
+                </div>
+            )}
         </div>
     );
 }
@@ -934,7 +1066,7 @@ const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
             {hasData ? (
                 <>
                     <div className="sa-top-panels-row">
-                        <StyleBreakdownPanel strategyStats={strategyStats!} totalRaces={totalRaces!} />
+                        <StyleBreakdownPanel strategyStats={strategyStats!} totalRaces={totalRaces!} allHorses={allHorses} />
                         <SaturationPanel strategyStats={strategyStats!} totalRaces={totalRaces!} />
                     </div>
                     {roomCompositions && (

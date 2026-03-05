@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import "./CharacterAnalysis.css";
-import { STRATEGY_COLORS, STRATEGY_NAMES, BAYES_UMA, BAYES_TEAM } from "./constants";
+import { STRATEGY_COLORS, STRATEGY_NAMES, STRATEGY_DISPLAY_ORDER, BAYES_UMA, BAYES_TEAM } from "./constants";
 import { PieSlice } from "./types";
 import { getCharaIcon } from "./utils";
 import type { CharacterStats, HorseEntry, SkillStats, TeamCompositionStats } from "../../types";
@@ -29,13 +29,19 @@ type StyleCompEntry = {
     bayesianWinRate: number;
 };
 
+const strategyOrderIndex = (strategy: number) => {
+    const idx = STRATEGY_DISPLAY_ORDER.indexOf(strategy as (typeof STRATEGY_DISPLAY_ORDER)[number]);
+    return idx < 0 ? Number.MAX_SAFE_INTEGER : idx;
+};
+
 interface SynergyEntitySelectProps {
     entities: SynergyEntityInfo[];
     value: string | null;
     onChange: (key: string) => void;
+    strategyColors: Record<number, string>;
 }
 
-const SynergyEntitySelect: React.FC<SynergyEntitySelectProps> = ({ entities, value, onChange }) => {
+const SynergyEntitySelect: React.FC<SynergyEntitySelectProps> = ({ entities, value, onChange, strategyColors }) => {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
     const ref = useRef<HTMLDivElement>(null);
@@ -68,7 +74,7 @@ const SynergyEntitySelect: React.FC<SynergyEntitySelectProps> = ({ entities, val
         : entities;
 
     const selectedIcon = getCharaIcon(`${selected.charaId}_${selected.cardId}`);
-    const selectedStratColor = STRATEGY_COLORS[selected.strategy] ?? "#718096";
+    const selectedStratColor = strategyColors[selected.strategy] ?? "#718096";
 
     return (
         <div ref={ref} className="syn-select">
@@ -104,7 +110,7 @@ const SynergyEntitySelect: React.FC<SynergyEntitySelectProps> = ({ entities, val
                             <div className="syn-select-no-matches">No matches</div>
                         ) : filtered.map(e => {
                             const icon = getCharaIcon(`${e.charaId}_${e.cardId}`);
-                            const stratColor = STRATEGY_COLORS[e.strategy] ?? "#718096";
+                            const stratColor = strategyColors[e.strategy] ?? "#718096";
                             const isSelected = e.key === (value ?? entities[0]?.key);
                             return (
                                 <div
@@ -144,9 +150,10 @@ interface CharacterBreakdownPanelProps {
     rawRatingWinsSlices?: PieSlice[];
     allHorses?: HorseEntry[];
     skillStats?: Map<number, SkillStats>;
+    strategyColors: Record<number, string>;
 }
 
-function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRatingWinsSlices, allHorses, skillStats }: CharacterBreakdownPanelProps) {
+function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRatingWinsSlices, allHorses, skillStats, strategyColors }: CharacterBreakdownPanelProps) {
     const [sortMode, setSortMode] = useState<"pop" | "winRate">("pop");
     const [fullDataOpen, setFullDataOpen] = useState(false);
     const [fullDataSort, setFullDataSort] = useState<"pop" | "winRate">("pop");
@@ -237,7 +244,7 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
 
     const renderBarRow = (c: CharRow, maxP: number, inModal: boolean = false) => {
         const icon = getCharaIcon(c.key);
-        const color = STRATEGY_COLORS[c.strategyId ?? 0] ?? "#718096";
+        const color = strategyColors[c.strategyId ?? 0] ?? "#718096";
         const isSelected = inModal ? selectedInModal === c.key : selectedCharKey === c.key;
         return (
             <div
@@ -303,7 +310,7 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
                                 <span className="sa-pipe"> | </span>
                                 <span className="sa-raw-pct">{(winRate * 100).toFixed(0)}% ({appearances})</span>
                             </div>
-                            <TeamMemberCard horse={horse} skillStats={skillStats} />
+                            <TeamMemberCard horse={horse} skillStats={skillStats} strategyColors={strategyColors} />
                         </div>
                     ))}
                 </div>
@@ -379,6 +386,7 @@ interface CharacterBuildsPanelProps {
     rawPopSlices: PieSlice[];
     allHorses: HorseEntry[];
     characterStats?: CharacterStats[];
+    strategyColors: Record<number, string>;
 }
 
 type SkillRow = {
@@ -399,7 +407,7 @@ type DeckRow = {
     adjWinRate: number;
 };
 
-function CharacterBuildsPanel({ rawPopSlices, allHorses, characterStats }: CharacterBuildsPanelProps) {
+function CharacterBuildsPanel({ rawPopSlices, allHorses, characterStats, strategyColors }: CharacterBuildsPanelProps) {
     const [selectedKey, setSelectedKey] = useState<string | null>(null);
     const [sortMode, setSortMode] = useState<"pop" | "winRate">("pop");
     const [fullDataOpen, setFullDataOpen] = useState(false);
@@ -560,7 +568,7 @@ function CharacterBuildsPanel({ rawPopSlices, allHorses, characterStats }: Chara
                 </div>
             </div>
             <div className="ca-builds-select">
-                <SynergyEntitySelect entities={entities} value={effectiveKey} onChange={setSelectedKey} />
+                <SynergyEntitySelect entities={entities} value={effectiveKey} onChange={setSelectedKey} strategyColors={strategyColors} />
                 <button className="ca-decks-btn" onClick={() => setDecksOpen(true)} title="View support card decks">
                     <img src={AssetLoader.getStatIcon("deck")} alt="" className="ca-decks-btn-icon" />
                     View Decks
@@ -694,6 +702,7 @@ interface CharacterAnalysisProps {
     allHorses?: HorseEntry[];
     skillStats?: Map<number, SkillStats>;
     teamStats?: TeamCompositionStats[];
+    strategyColors?: Record<number, string>;
 }
 
 const MIN_DRILLDOWN_APPEARANCES = 5;
@@ -707,6 +716,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
     allHorses,
     skillStats,
     teamStats,
+    strategyColors,
 }) => {
     const [synEntityKey, setSynEntityKey] = useState<string | null>(null);
     const [selectedCompKey, setSelectedCompKey] = useState<string | null>(null);
@@ -777,7 +787,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
         const selStrategy = Number(selStrategyStr);
         return teamStats
             .filter(t => {
-                const key = t.members.map(m => m.strategy).sort((a, b) => a - b).join('_');
+                const key = t.members.map(m => m.strategy).sort((a, b) => strategyOrderIndex(a) - strategyOrderIndex(b)).join('_');
                 return key === selectedCompKey
                     && t.members.some(m => m.cardId === selCardId && m.strategy === selStrategy);
             })
@@ -820,7 +830,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                 if (!horses.some(h => h.cardId === selCardId && h.strategy === selStrategy)) continue;
                 if (horses.length !== 3) continue;
 
-                const strategies = horses.map(h => h.strategy).sort((a, b) => a - b);
+                const strategies = horses.map(h => h.strategy).sort((a, b) => strategyOrderIndex(a) - strategyOrderIndex(b));
                 const key = strategies.join('_');
                 if (!compMap.has(key)) compMap.set(key, { strategies, appearances: 0, wins: 0 });
                 const tally = compMap.get(key)!;
@@ -858,6 +868,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
     }, [allHorses, effectiveEntityKey]);
 
     const canDrilldown = !!(teamStats && allHorses && skillStats);
+    const activeStrategyColors = strategyColors ?? STRATEGY_COLORS;
 
     const getTeamLabel = (item: { team: TeamCompositionStats; bayesianWinRate: number }) => {
         const n = item.team.appearances;
@@ -881,7 +892,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
             >
                 <div className="syn-comp-dots">
                     {e.strategies.map((s, i) => (
-                        <span key={i} className="syn-comp-dot" style={{ background: STRATEGY_COLORS[s] ?? "#718096" }} />
+                        <span key={i} className="syn-comp-dot" style={{ background: activeStrategyColors[s] ?? "#718096" }} />
                     ))}
                 </div>
                 <div className="syn-comp-name">{e.label}</div>
@@ -904,6 +915,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                     rawRatingWinsSlices={spectatorMode ? undefined : rawWinsOpp}
                     allHorses={allHorses}
                     skillStats={skillStats}
+                    strategyColors={activeStrategyColors}
                 />
                 {!spectatorMode && (
                     <CharacterBreakdownPanel
@@ -912,6 +924,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                         rawPopSlices={rawPop}
                         allHorses={allHorses}
                         skillStats={skillStats}
+                        strategyColors={activeStrategyColors}
                     />
                 )}
                 {allHorses && (
@@ -919,6 +932,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                         rawPopSlices={rawPop}
                         allHorses={allHorses}
                         characterStats={characterStats}
+                        strategyColors={activeStrategyColors}
                     />
                 )}
             </div>
@@ -935,6 +949,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                             entities={synEntities}
                             value={effectiveEntityKey}
                             onChange={setSynEntityKey}
+                            strategyColors={activeStrategyColors}
                         />
                     </div>
                     {overperformers.length === 0 && underperformers.length === 0 ? (
@@ -998,7 +1013,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                                                 </div>
                                             );
                                         }
-                                        return <TeamMemberCard key={i} horse={rep} skillStats={skillStats!} />;
+                                        return <TeamMemberCard key={i} horse={rep} skillStats={skillStats!} strategyColors={activeStrategyColors} />;
                                     })}
                                 </div>
                             </div>

@@ -55,9 +55,102 @@
 }
 
 /* Page-level header (race count + date) */
+.uma-page-header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px 16px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
 .uma-page-header {
     font-size: 0.875rem;
     color: var(--bs-secondary-color);
+    margin-bottom: 0 !important;
+}
+
+.uma-colorblind-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.uma-colorblind-toggle {
+    border: 1px solid #4a5568;
+    background: rgba(255, 255, 255, 0.06);
+    color: #e2e8f0;
+    border-radius: 999px;
+    padding: 4px 10px 4px 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background var(--haku-transition), border-color var(--haku-transition), color var(--haku-transition);
+}
+
+.uma-colorblind-toggle:hover {
+    border-color: #718096;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.uma-colorblind-toggle.is-on {
+    border-color: #56B4E9;
+    background: rgba(86, 180, 233, 0.18);
+    color: #f7fafc;
+}
+
+.uma-colorblind-toggle-knob {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #4a5568;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+    transition: background var(--haku-transition), transform var(--haku-transition);
+}
+
+.uma-colorblind-toggle.is-on .uma-colorblind-toggle-knob {
+    background: #56B4E9;
+}
+
+.uma-colorblind-toggle-state {
+    min-width: 26px;
+    text-align: right;
+    color: #a0aec0;
+}
+
+.uma-colorblind-toggle.is-on .uma-colorblind-toggle-state {
+    color: #bee3f8;
+}
+
+.uma-colorblind-legend {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.uma-colorblind-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #cbd5e0;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #2d3748;
+    border-radius: 999px;
+    padding: 2px 8px;
+}
+
+.uma-colorblind-legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: inline-block;
 }
 
 

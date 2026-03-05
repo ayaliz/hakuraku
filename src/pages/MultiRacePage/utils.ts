@@ -14,14 +14,17 @@ import {
     StrategyStats,
     TeamCompositionStats,
 } from "./types";
-import { BAYES_TEAM } from "./components/WinDistributionCharts/constants";
+import { BAYES_TEAM, STRATEGY_DISPLAY_ORDER } from "./components/WinDistributionCharts/constants";
 
 const STRATEGY_NAMES: Record<number, string> = {
     1: "Front Runner",
     2: "Pace Chaser",
     3: "Late Surger",
     4: "End Closer",
+    5: "Runaway",
 };
+const RUNAWAY_TRIGGER_SKILL_ID = 202051;
+const ALL_STRATEGY_IDS: number[] = [...STRATEGY_DISPLAY_ORDER];
 
 // Map for detailed skill data (condition_groups) logic - imported from skills.json
 let _skillsJsonMap: Map<number, any> | null = null;
@@ -242,7 +245,8 @@ function extractHorseEntries(race: ParsedRace): HorseEntry[] {
             (trainedChara.skills ?? []).map(s => s.skillId)
         );
 
-        const strategy = data.running_style ?? trainedChara.rawData?.param?.runningStyle ?? 1;
+        const rawStrategy = data.running_style ?? trainedChara.rawData?.param?.runningStyle ?? 1;
+        const strategy = rawStrategy === 1 && learnedSkillIds.has(RUNAWAY_TRIGGER_SKILL_ID) ? 5 : rawStrategy;
 
         // Get stats and motivation
         const speed = trainedChara.speed ?? data['speed'] ?? 0;
@@ -609,7 +613,7 @@ export function aggregateStats(races: ParsedRace[]): AggregatedStats {
         for (const [subjectStrat, subjectInfo] of stratInRace.entries()) {
             if (!crossSatBuckets.has(subjectStrat)) crossSatBuckets.set(subjectStrat, new Map());
             const byOppressor = crossSatBuckets.get(subjectStrat)!;
-            for (const oppStrat of [1, 2, 3, 4]) {
+            for (const oppStrat of ALL_STRATEGY_IDS) {
                 if (!byOppressor.has(oppStrat)) byOppressor.set(oppStrat, new Map());
                 const byCount = byOppressor.get(oppStrat)!;
                 const oppCount = stratInRace.get(oppStrat)?.count ?? 0;
@@ -812,16 +816,17 @@ export function aggregateStats(races: ParsedRace[]): AggregatedStats {
     const totalHorses = allHorses.length;
 
     // Room composition frequencies
-    const raceStratCounts = new Map<string, [number, number, number, number]>();
+    const raceStratCounts = new Map<string, number[]>();
     for (const h of allHorses) {
-        if (!raceStratCounts.has(h.raceId)) raceStratCounts.set(h.raceId, [0, 0, 0, 0]);
+        if (!raceStratCounts.has(h.raceId)) raceStratCounts.set(h.raceId, new Array(ALL_STRATEGY_IDS.length).fill(0));
         const c = raceStratCounts.get(h.raceId)!;
-        if (h.strategy >= 1 && h.strategy <= 4) c[h.strategy - 1]++;
+        const strategyIdx = ALL_STRATEGY_IDS.indexOf(h.strategy);
+        if (strategyIdx >= 0) c[strategyIdx]++;
     }
-    const compFreqMap = new Map<string, { counts: [number, number, number, number]; occurrences: number }>();
+    const compFreqMap = new Map<string, { counts: number[]; occurrences: number }>();
     for (const counts of raceStratCounts.values()) {
         const key = counts.join('_');
-        if (!compFreqMap.has(key)) compFreqMap.set(key, { counts: [...counts] as [number, number, number, number], occurrences: 0 });
+        if (!compFreqMap.has(key)) compFreqMap.set(key, { counts: [...counts], occurrences: 0 });
         compFreqMap.get(key)!.occurrences++;
     }
     const roomCompositions = Array.from(compFreqMap.values())

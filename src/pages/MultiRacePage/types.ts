@@ -64,7 +64,7 @@ export type StrategyStats = {
     avgFinishPosition: number;
     winningCharacters: { charaId: number; charaName: string; wins: number }[];
     saturation: { count: number; raceCount: number; wins: number }[];
-    /** keyed by oppressor strategy (1–4); each bucket: wins/subjectCount = per-runner win rate of this style when there are `count` oppressors in room */
+    /** keyed by oppressor strategy; each bucket: wins/subjectCount = per-runner win rate of this style when there are `count` oppressors in room */
     crossSaturation?: Record<number, { count: number; raceCount: number; wins: number; subjectCount: number }[]>;
 };
 
@@ -81,7 +81,7 @@ export type SkillStats = {
     avgFinishPosition: number;
     activationDistances: number[]; // For heatmap
     learnedByCharaIds: Set<number>; // IDs of characters who learned this skill
-    learnedByStrategies: Set<number>; // Strategies (1-4) of horses who learned/used this skill
+    learnedByStrategies: Set<number>; // Strategies of horses who learned/used this skill
     meanDistance: number;
     medianDistance: number;
 };
@@ -99,7 +99,7 @@ export type SkillActivationPoint = {
 export type SkillActivationBuckets = {
     all: number[];                     // counts per distance bucket, all activations
     win: number[];                     // counts per distance bucket, winning horses only
-    byStrategy: Record<string, number[]>; // counts per distance bucket, keyed "1"–"4"
+    byStrategy: Record<string, number[]>; // counts per distance bucket, keyed by strategy ID
 };
 
 export type PairSynergyStats = {
@@ -117,7 +117,7 @@ export type PairSynergyStats = {
 };
 
 export type RoomCompositionEntry = {
-    counts: [number, number, number, number]; // [front, pace, late, end]
+    counts: number[]; // [front, pace, late, end, runaway, ...]
     occurrences: number;
     rate: number; // occurrences / totalRaces
 };

@@ -4,6 +4,15 @@ export const STRATEGY_COLORS: Record<number, string> = {
     2: "rgb(164, 219, 34)",   // Pace Chaser - Green
     3: "rgb(253, 222, 52)",   // Late Surger - Yellow
     4: "rgb(255, 178, 49)",   // End Closer - Orange
+    5: "rgb(178, 102, 255)",
+};
+
+export const COLORBLIND_STRATEGY_COLORS: Record<number, string> = {
+    1: "#648fff",
+    2: "#dc267f",
+    3: "#fe6100",
+    4: "#ffb000",
+    5: "#785ef0",
 };
 
 export const STRATEGY_NAMES: Record<number, string> = {
@@ -11,7 +20,10 @@ export const STRATEGY_NAMES: Record<number, string> = {
     2: "Pace Chaser",
     3: "Late Surger",
     4: "End Closer",
+    5: "Runaway",
 };
+
+export const STRATEGY_DISPLAY_ORDER = [5, 1, 2, 3, 4] as const;
 
 // Unique colors for characters
 export const CHARACTER_COLORS = [

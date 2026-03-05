@@ -14,7 +14,7 @@ import type {
     TrueSkillTeamEntry,
 } from "../MultiRacePage/types";
 import StrategyAnalysis, { type StyleRepEntry } from "../MultiRacePage/components/WinDistributionCharts/StrategyAnalysis";
-import { BAYES_UMA } from "../MultiRacePage/components/WinDistributionCharts/constants";
+import { BAYES_UMA, COLORBLIND_STRATEGY_COLORS, STRATEGY_COLORS, STRATEGY_NAMES, STRATEGY_DISPLAY_ORDER } from "../MultiRacePage/components/WinDistributionCharts/constants";
 import CharacterAnalysis from "../MultiRacePage/components/WinDistributionCharts/CharacterAnalysis";
 import { useWinDistributionData } from "../MultiRacePage/components/WinDistributionCharts/useWinDistributionData";
 import SkillAnalysis from "../MultiRacePage/components/SkillAnalysis";
@@ -119,9 +119,10 @@ interface TrackGroupContentProps {
     setScoreWinnersOnly: (v: boolean) => void;
     totalRaces: number;
     totalUniqueUmas: number;
+    strategyColors: Record<number, string>;
 }
 
-const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinnersOnly, setScoreWinnersOnly, totalRaces, totalUniqueUmas }) => {
+const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinnersOnly, setScoreWinnersOnly, totalRaces, totalUniqueUmas, strategyColors }) => {
     const [section, setSection] = useState<Section>('introduction');
     const [cardUsageOpen, setCardUsageOpen] = useState(false);
 
@@ -247,6 +248,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
                                     label="Fastest Win"
                                     displayValue={formatTime(fastestWin.finishTime)}
                                     skillStats={group.stats.skillStats}
+                                    strategyColors={strategyColors}
                                 />
                             )}
                             {slowestWin && (
@@ -255,6 +257,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
                                     label="Slowest Win"
                                     displayValue={formatTime(slowestWin.finishTime)}
                                     skillStats={group.stats.skillStats}
+                                    strategyColors={strategyColors}
                                 />
                             )}
                         </div>
@@ -293,6 +296,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
                                     displayValueColor="#68d391"
                                     showRankIcon
                                     skillStats={group.stats.skillStats}
+                                    strategyColors={strategyColors}
                                 />
                             )}
                             {lowestWinner && (
@@ -303,6 +307,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
                                     displayValueColor="#68d391"
                                     showRankIcon
                                     skillStats={group.stats.skillStats}
+                                    strategyColors={strategyColors}
                                 />
                             )}
                         </div>
@@ -345,6 +350,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
                         styleReps={styleReps}
                         allHorses={group.stats.allHorses}
                         skillStats={group.stats.skillStats}
+                        strategyColors={strategyColors}
                     />
                 </div>
             )}
@@ -360,11 +366,13 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
                         allHorses={group.stats.allHorses}
                         skillStats={group.stats.skillStats}
                         teamStats={group.stats.teamStats}
+                        strategyColors={strategyColors}
                     />
                     <TeamCompositionPanel
                         teamStats={group.stats.teamStats}
                         allHorses={group.stats.allHorses}
                         skillStats={group.stats.skillStats}
+                        strategyColors={strategyColors}
                     />
                 </div>
             )}
@@ -383,7 +391,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
             )}
 
             {section === 'explorer' && (
-                <ExplorerTab allHorses={group.stats.allHorses} />
+                <ExplorerTab allHorses={group.stats.allHorses} strategyColors={strategyColors} />
             )}
         </>
     );
@@ -395,6 +403,16 @@ const UmaLogsPage: React.FC = () => {
     const [data, setData] = useState<UmaLogsData | null>(null);
     const [activeTab, setActiveTab] = useState<string | null>(null);
     const [scoreWinnersOnly, setScoreWinnersOnly] = useState(false);
+    const [colorblindMode, setColorblindMode] = useState(false);
+
+    useEffect(() => {
+        const stored = localStorage.getItem("umalogsColorblindMode");
+        if (stored === "1") setColorblindMode(true);
+    }, []);
+
+    useEffect(() => {
+        localStorage.setItem("umalogsColorblindMode", colorblindMode ? "1" : "0");
+    }, [colorblindMode]);
 
     useEffect(() => {
         fetch(import.meta.env.BASE_URL + 'data/umalogs-stats.json.gz')
@@ -438,6 +456,7 @@ const UmaLogsPage: React.FC = () => {
         }
         return seen.size;
     }, [trackGroups]);
+    const strategyColors = colorblindMode ? COLORBLIND_STRATEGY_COLORS : STRATEGY_COLORS;
 
     if (loading) {
         return (
@@ -460,12 +479,37 @@ const UmaLogsPage: React.FC = () => {
 
     return (
         <div className="multirace-container">
-            <div className="mb-3 uma-page-header">
-                <strong>Room Match Statistics</strong>
-                {' · '}
-                {totalRaces} races
-                {' · '}
-                Updated {generatedDate}
+            <div className="uma-page-header-row">
+                <div className="mb-3 uma-page-header">
+                    <strong>Room Match Statistics</strong>
+                    {' · '}
+                    {totalRaces} races
+                    {' · '}
+                    Updated {generatedDate}
+                </div>
+                <div className="uma-colorblind-controls">
+                    <button
+                        type="button"
+                        className={`uma-colorblind-toggle${colorblindMode ? " is-on" : ""}`}
+                        onClick={() => setColorblindMode(v => !v)}
+                        aria-pressed={colorblindMode}
+                    >
+                        <span className="uma-colorblind-toggle-knob" />
+                        <span className="uma-colorblind-toggle-label">Colorblind palette</span>
+                        <span className="uma-colorblind-toggle-state">{colorblindMode ? "On" : "Off"}</span>
+                    </button>
+                    <div className="uma-colorblind-legend">
+                        {STRATEGY_DISPLAY_ORDER.map((sid) => (
+                            <span key={sid} className="uma-colorblind-legend-item">
+                                <span
+                                    className="uma-colorblind-legend-dot"
+                                    style={{ background: strategyColors[sid] }}
+                                />
+                                {STRATEGY_NAMES[sid]}
+                            </span>
+                        ))}
+                    </div>
+                </div>
             </div>
 
             {trackGroups.length > 0 && (
@@ -498,6 +542,7 @@ const UmaLogsPage: React.FC = () => {
                                     setScoreWinnersOnly={setScoreWinnersOnly}
                                     totalRaces={totalRaces}
                                     totalUniqueUmas={totalUniqueUmas}
+                                    strategyColors={strategyColors}
                                 />
                             </Tab.Pane>
                         ))}

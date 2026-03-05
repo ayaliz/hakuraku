@@ -13,9 +13,10 @@ interface TeamCompositionPanelProps {
     teamStats: TeamCompositionStats[];
     allHorses?: HorseEntry[];
     skillStats?: Map<number, SkillStats>;
+    strategyColors?: Record<number, string>;
 }
 
-const TeamCompositionPanel: React.FC<TeamCompositionPanelProps> = ({ teamStats, allHorses, skillStats }) => {
+const TeamCompositionPanel: React.FC<TeamCompositionPanelProps> = ({ teamStats, allHorses, skillStats, strategyColors }) => {
     const [selectedKey, setSelectedKey] = useState<string | null>(null);
     const [selectedTeamInstanceKey, setSelectedTeamInstanceKey] = useState<string | null>(null);
 
@@ -152,7 +153,8 @@ const TeamCompositionPanel: React.FC<TeamCompositionPanelProps> = ({ teamStats, 
                     <div className="tcp-icons">
                         {t.members.map((m, i) => {
                             const src = AssetLoader.getCharaThumb(m.cardId);
-                            const stratColor = STRATEGY_COLORS[m.strategy] ?? "#718096";
+                            const activeStrategyColors = strategyColors ?? STRATEGY_COLORS;
+                            const stratColor = activeStrategyColors[m.strategy] ?? "#718096";
                             const label = `${m.charaName} (${STRATEGY_NAMES[m.strategy] ?? m.strategy})`;
                             return (
                                 <div
@@ -201,7 +203,7 @@ const TeamCompositionPanel: React.FC<TeamCompositionPanelProps> = ({ teamStats, 
                         )}
                         <div className="stcp-team-members-row">
                             {(selectedInstance?.horses ?? []).map((horse, i) => (
-                                <TeamMemberCard key={i} horse={horse} skillStats={skillStats!} />
+                                <TeamMemberCard key={i} horse={horse} skillStats={skillStats!} strategyColors={strategyColors} />
                             ))}
                         </div>
                     </div>

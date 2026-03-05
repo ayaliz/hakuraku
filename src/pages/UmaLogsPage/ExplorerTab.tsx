@@ -42,6 +42,7 @@ interface AggRow {
 
 interface ExplorerTabProps {
     allHorses: HorseEntry[];
+    strategyColors?: Record<number, string>;
 }
 
 interface CharaSelectProps {
@@ -225,7 +226,7 @@ function aggregateHorses(
     return result;
 }
 
-const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses }) => {
+const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) => {
     const [conditions, setConditions] = useState<FilterCondition[]>([]);
     const [groupBy, setGroupBy] = useState<GroupBy>("card");
     const [sortKey, setSortKey] = useState<SortKey>("entries");
@@ -356,8 +357,9 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses }) => {
         const iconUrl = row.cardId !== undefined && row.charaId !== undefined
             ? getCharaIcon(`${row.charaId}_${row.cardId}`)
             : null;
+        const activeStrategyColors = strategyColors ?? STRATEGY_COLORS;
         const stratColor = row.strategy !== undefined
-            ? (STRATEGY_COLORS[row.strategy] ?? "#718096")
+            ? (activeStrategyColors[row.strategy] ?? "#718096")
             : undefined;
         return (
             <tr key={row.key} className="exp-row">

@@ -282,7 +282,7 @@
 
 .sa-sat-svg {
     width: 100%;
-    height: 240px;
+    height: 280px;
     overflow: visible;
     display: block;
 }
@@ -690,4 +690,13 @@
     display: flex;
     align-items: baseline;
     flex-shrink: 0;
+}
+
+.sa-panel--breakdown {
+    flex: 1 1 380px;
+}
+
+.sa-panel--saturation {
+    flex: 1.2 1 540px;
+    min-width: 460px;
 }

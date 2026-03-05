@@ -28,9 +28,10 @@ interface UmaFeatCardProps {
     displayValueColor?: string;
     showRankIcon?: boolean;
     skillStats: Map<number, SkillStats>;
+    strategyColors?: Record<number, string>;
 }
 
-const UmaFeatCard: React.FC<UmaFeatCardProps> = ({ horse, label, displayValue, displayValueColor, showRankIcon, skillStats }) => {
+const UmaFeatCard: React.FC<UmaFeatCardProps> = ({ horse, label, displayValue, displayValueColor, showRankIcon, skillStats, strategyColors }) => {
     const [showModal, setShowModal] = useState(false);
 
     const skillIconMap = useMemo<Map<number, number>>(() => {
@@ -43,7 +44,8 @@ const UmaFeatCard: React.FC<UmaFeatCardProps> = ({ horse, label, displayValue, d
         return map;
     }, []);
 
-    const strategyColor = STRATEGY_COLORS[horse.strategy] ?? "#718096";
+    const activeStrategyColors = strategyColors ?? STRATEGY_COLORS;
+    const strategyColor = activeStrategyColors[horse.strategy] ?? "#718096";
     const strategyName = STRATEGY_NAMES[horse.strategy] ?? `Strategy ${horse.strategy}`;
     const cardName = UMDatabaseWrapper.cards[horse.cardId]?.name ?? null;
     const rankInfo = getRankIcon(horse.rankScore);

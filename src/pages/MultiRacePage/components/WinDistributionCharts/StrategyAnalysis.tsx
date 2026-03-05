@@ -679,6 +679,14 @@ function makeMemberKey(h: { charaId: number; cardId: number; strategy: number })
     return `${h.charaId}_${h.cardId}_${h.strategy}`;
 }
 
+function makeCompositionKey(members: { cardId: number; strategy: number }[]): string {
+    return members
+        .slice()
+        .sort((a, b) => (a.cardId * 10 + a.strategy) - (b.cardId * 10 + b.strategy))
+        .map(m => `${m.cardId}_${m.strategy}`)
+        .join("__");
+}
+
 function resolveIconSkillId(id: number): number {
     const s = String(id);
     return s.startsWith("9") ? parseInt("1" + s.slice(1), 10) : id;
@@ -964,16 +972,36 @@ function StyleTeamCompositionPanel({
 
     const canDrilldown = !!(allHorses && skillStats);
 
-    const representativeByMemberKey = useMemo(() => {
-        if (!allHorses) return new Map<string, HorseEntry>();
-        const map = new Map<string, HorseEntry>();
+    const representativeByCompositionAndMemberKey = useMemo(() => {
+        if (!allHorses) return new Map<string, Map<string, HorseEntry>>();
+        const raceMap = new Map<string, HorseEntry[]>();
         for (const h of allHorses) {
-            if (h.teamId <= 0) continue;
-            const key = makeMemberKey({ charaId: h.charaId, cardId: h.cardId, strategy: h.strategy });
-            const existing = map.get(key);
-            if (!existing || h.rankScore > existing.rankScore) map.set(key, h);
+            if (!raceMap.has(h.raceId)) raceMap.set(h.raceId, []);
+            raceMap.get(h.raceId)!.push(h);
         }
-        return map;
+
+        const byComp = new Map<string, Map<string, HorseEntry>>();
+        for (const raceHorses of raceMap.values()) {
+            const teamMap = new Map<number, HorseEntry[]>();
+            for (const h of raceHorses) {
+                if (h.teamId <= 0) continue;
+                if (!teamMap.has(h.teamId)) teamMap.set(h.teamId, []);
+                teamMap.get(h.teamId)!.push(h);
+            }
+
+            for (const team of teamMap.values()) {
+                if (team.length !== 3) continue;
+                const compKey = makeCompositionKey(team.map(h => ({ cardId: h.cardId, strategy: h.strategy })));
+                if (!byComp.has(compKey)) byComp.set(compKey, new Map());
+                const memberMap = byComp.get(compKey)!;
+                for (const h of team) {
+                    const memberKey = makeMemberKey({ charaId: h.charaId, cardId: h.cardId, strategy: h.strategy });
+                    const existing = memberMap.get(memberKey);
+                    if (!existing || h.rankScore > existing.rankScore) memberMap.set(memberKey, h);
+                }
+            }
+        }
+        return byComp;
     }, [allHorses]);
 
     const drilldownTeams = useMemo(() => {
@@ -1029,6 +1057,10 @@ function StyleTeamCompositionPanel({
 
     const idx = Math.min(selectedTeamIdx, Math.max(0, drilldownTeams.length - 1));
     const selectedTeam = drilldownTeams[idx] ?? null;
+    const selectedCompositionKey = selectedTeam ? makeCompositionKey(selectedTeam.team.members) : null;
+    const representativeByMemberKey = selectedCompositionKey
+        ? (representativeByCompositionAndMemberKey.get(selectedCompositionKey) ?? new Map<string, HorseEntry>())
+        : new Map<string, HorseEntry>();
 
     return (
         <div className="sa-stcp-section">

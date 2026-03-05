@@ -10117,6 +10117,15 @@
       "rarity": 4
     },
     {
+      "id": 100331,
+      "name": "Shooting Star of Dioskouroi",
+      "gradeValue": 340,
+      "tagId": [
+        "401"
+      ],
+      "rarity": 5
+    },
+    {
       "id": 100351,
       "name": "Our Ticket to Win!",
       "gradeValue": 340,
@@ -14434,6 +14443,15 @@
       "tagId": [
         "401",
         "402"
+      ],
+      "rarity": 1
+    },
+    {
+      "id": 900331,
+      "name": "Shooting Star of Dioskouroi",
+      "gradeValue": 180,
+      "tagId": [
+        "401"
       ],
       "rarity": 1
     },
@@ -26088,6 +26106,13 @@
       "solvableType": 0
     },
     {
+      "id": 900331,
+      "needSkillPoint": 200,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
       "id": 900351,
       "needSkillPoint": 200,
       "statusType": 0,
@@ -30804,6 +30829,11 @@
       "charaId": 1023
     },
     {
+      "id": 48,
+      "relationType": 105,
+      "charaId": 1033
+    },
+    {
       "id": 49,
       "relationType": 105,
       "charaId": 1035
@@ -31004,6 +31034,11 @@
       "charaId": 1032
     },
     {
+      "id": 100,
+      "relationType": 202,
+      "charaId": 1033
+    },
+    {
       "id": 101,
       "relationType": 202,
       "charaId": 1035
@@ -31192,6 +31227,11 @@
       "id": 150,
       "relationType": 314,
       "charaId": 1019
+    },
+    {
+      "id": 151,
+      "relationType": 315,
+      "charaId": 1033
     },
     {
       "id": 152,
@@ -31717,6 +31757,11 @@
       "id": 266,
       "relationType": 2601,
       "charaId": 1032
+    },
+    {
+      "id": 267,
+      "relationType": 2601,
+      "charaId": 1033
     },
     {
       "id": 269,
@@ -32269,6 +32314,11 @@
       "charaId": 1015
     },
     {
+      "id": 403,
+      "relationType": 2812,
+      "charaId": 1033
+    },
+    {
       "id": 404,
       "relationType": 2812,
       "charaId": 1052
@@ -32539,6 +32589,11 @@
       "charaId": 1021
     },
     {
+      "id": 471,
+      "relationType": 2904,
+      "charaId": 1033
+    },
+    {
       "id": 474,
       "relationType": 2904,
       "charaId": 1050
@@ -32802,6 +32857,11 @@
       "id": 537,
       "relationType": 3003,
       "charaId": 1026
+    },
+    {
+      "id": 540,
+      "relationType": 3003,
+      "charaId": 1033
     },
     {
       "id": 543,
@@ -33094,6 +33154,11 @@
       "charaId": 1028
     },
     {
+      "id": 609,
+      "relationType": 3101,
+      "charaId": 1033
+    },
+    {
       "id": 612,
       "relationType": 3101,
       "charaId": 1037
@@ -33282,6 +33347,11 @@
       "id": 666,
       "relationType": 2510,
       "charaId": 1026
+    },
+    {
+      "id": 668,
+      "relationType": 2510,
+      "charaId": 1033
     },
     {
       "id": 669,
@@ -36084,9 +36154,19 @@
       "charaId": 1060
     },
     {
+      "id": 1303,
+      "relationType": 8235,
+      "charaId": 1033
+    },
+    {
       "id": 1304,
       "relationType": 8235,
       "charaId": 1003
+    },
+    {
+      "id": 1305,
+      "relationType": 8236,
+      "charaId": 1033
     },
     {
       "id": 1306,
@@ -36094,9 +36174,19 @@
       "charaId": 1004
     },
     {
+      "id": 1307,
+      "relationType": 8237,
+      "charaId": 1033
+    },
+    {
       "id": 1308,
       "relationType": 8237,
       "charaId": 1013
+    },
+    {
+      "id": 1309,
+      "relationType": 8238,
+      "charaId": 1033
     },
     {
       "id": 1310,
@@ -36104,9 +36194,19 @@
       "charaId": 1015
     },
     {
+      "id": 1311,
+      "relationType": 8239,
+      "charaId": 1033
+    },
+    {
       "id": 1312,
       "relationType": 8239,
       "charaId": 1017
+    },
+    {
+      "id": 1313,
+      "relationType": 8240,
+      "charaId": 1033
     },
     {
       "id": 1314,
@@ -36114,9 +36214,19 @@
       "charaId": 1022
     },
     {
+      "id": 1315,
+      "relationType": 8241,
+      "charaId": 1033
+    },
+    {
       "id": 1316,
       "relationType": 8241,
       "charaId": 1027
+    },
+    {
+      "id": 1317,
+      "relationType": 8242,
+      "charaId": 1033
     },
     {
       "id": 1318,
@@ -36124,9 +36234,24 @@
       "charaId": 1038
     },
     {
+      "id": 1319,
+      "relationType": 8243,
+      "charaId": 1033
+    },
+    {
       "id": 1320,
       "relationType": 8243,
       "charaId": 1040
+    },
+    {
+      "id": 1321,
+      "relationType": 8244,
+      "charaId": 1033
+    },
+    {
+      "id": 1323,
+      "relationType": 8245,
+      "charaId": 1033
     },
     {
       "id": 1324,
@@ -36134,9 +36259,24 @@
       "charaId": 1045
     },
     {
+      "id": 1325,
+      "relationType": 8246,
+      "charaId": 1033
+    },
+    {
+      "id": 1327,
+      "relationType": 8247,
+      "charaId": 1033
+    },
+    {
       "id": 1328,
       "relationType": 8247,
       "charaId": 1056
+    },
+    {
+      "id": 1329,
+      "relationType": 8248,
+      "charaId": 1033
     },
     {
       "id": 1330,
@@ -36144,9 +36284,19 @@
       "charaId": 1058
     },
     {
+      "id": 1331,
+      "relationType": 8249,
+      "charaId": 1033
+    },
+    {
       "id": 1332,
       "relationType": 8249,
       "charaId": 1059
+    },
+    {
+      "id": 1333,
+      "relationType": 8250,
+      "charaId": 1033
     },
     {
       "id": 1334,
@@ -37919,6 +38069,11 @@
       "charaId": 1069
     },
     {
+      "id": 1818,
+      "relationType": 8451,
+      "charaId": 1033
+    },
+    {
       "id": 1819,
       "relationType": 8452,
       "charaId": 1069
@@ -38169,6 +38324,11 @@
       "charaId": 1071
     },
     {
+      "id": 1892,
+      "relationType": 8487,
+      "charaId": 1033
+    },
+    {
       "id": 1893,
       "relationType": 8488,
       "charaId": 1071
@@ -38294,6 +38454,11 @@
       "charaId": 1032
     },
     {
+      "id": 1956,
+      "relationType": 8519,
+      "charaId": 1033
+    },
+    {
       "id": 1964,
       "relationType": 8523,
       "charaId": 1014
@@ -38372,6 +38537,11 @@
       "id": 2004,
       "relationType": 8543,
       "charaId": 1032
+    },
+    {
+      "id": 2006,
+      "relationType": 8544,
+      "charaId": 1033
     },
     {
       "id": 2016,
@@ -38742,6 +38912,11 @@
       "id": 2212,
       "relationType": 8647,
       "charaId": 1032
+    },
+    {
+      "id": 2214,
+      "relationType": 8648,
+      "charaId": 1033
     },
     {
       "id": 2237,

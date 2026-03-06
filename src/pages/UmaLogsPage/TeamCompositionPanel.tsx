@@ -3,6 +3,7 @@ import type { TeamCompositionStats, HorseEntry, SkillStats } from "../MultiRaceP
 import AssetLoader from "../../data/AssetLoader";
 import { STRATEGY_COLORS, STRATEGY_NAMES, BAYES_TEAM } from "../MultiRacePage/components/WinDistributionCharts/constants";
 import { TeamMemberCard } from "../MultiRacePage/components/WinDistributionCharts/StrategyAnalysis";
+import TeamSampleSelect from "../MultiRacePage/components/WinDistributionCharts/TeamSampleSelect";
 import "./UmaLogsPage.css";
 
 const MIN_APPEARANCES = 5;
@@ -125,14 +126,18 @@ const TeamCompositionPanel: React.FC<TeamCompositionPanelProps> = ({ teamStats, 
             ? (instances.find(i => i.instanceKey === selectedTeamInstanceKey) ?? instances[0] ?? null)
             : null;
 
-        const getInstanceLabel = (inst: { horses: HorseEntry[]; appearances: number; memberWins: number[] }) => {
+        const instanceOptions = instances.map(inst => {
             const n = inst.appearances;
-            const parts = inst.horses.map((h, i) => {
-                const pct = n > 0 ? ((inst.memberWins[i] ?? 0) / n) * 100 : 0;
-                return `${h.charaName} ${pct.toFixed(0)}%`;
-            });
-            return `${parts.join(" · ")} (${n} samples)`;
-        };
+            return {
+                value: inst.instanceKey,
+                samples: n,
+                members: inst.horses.map((h, i) => ({
+                    cardId: h.cardId,
+                    strategy: h.strategy,
+                    winRatePct: n > 0 ? ((inst.memberWins[i] ?? 0) / n) * 100 : 0,
+                })),
+            };
+        });
         return (
             <React.Fragment key={key}>
                 <div
@@ -191,14 +196,12 @@ const TeamCompositionPanel: React.FC<TeamCompositionPanelProps> = ({ teamStats, 
                     <div className="tcp-member-drilldown">
                         {instances.length > 1 && (
                             <div className="tcp-rep-team-select">
-                                <select
-                                    value={selectedInstance?.instanceKey ?? ""}
-                                    onChange={(e) => setSelectedTeamInstanceKey(e.target.value)}
-                                >
-                                    {instances.map(inst => (
-                                        <option key={inst.instanceKey} value={inst.instanceKey}>{getInstanceLabel(inst)}</option>
-                                    ))}
-                                </select>
+                                <TeamSampleSelect
+                                    value={selectedInstance?.instanceKey ?? (instanceOptions[0]?.value ?? "")}
+                                    options={instanceOptions}
+                                    onChange={setSelectedTeamInstanceKey}
+                                    strategyColors={strategyColors ?? STRATEGY_COLORS}
+                                />
                             </div>
                         )}
                         <div className="stcp-team-members-row">

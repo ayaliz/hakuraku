@@ -8,6 +8,7 @@ import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import AssetLoader from "../../../../data/AssetLoader";
 import SupportCardPanel from "./SupportCardPanel";
 import { TeamMemberCard } from "./StrategyAnalysis";
+import TeamSampleSelect from "./TeamSampleSelect";
 
 type SynergyEntityInfo = {
     key: string;         // `${cardId}_${strategy}`
@@ -870,17 +871,6 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
     const canDrilldown = !!(teamStats && allHorses && skillStats);
     const activeStrategyColors = strategyColors ?? STRATEGY_COLORS;
 
-    const getTeamLabel = (item: { team: TeamCompositionStats; bayesianWinRate: number }) => {
-        const n = item.team.appearances;
-        const parts = item.team.members.map((m, i) => {
-            const wins = item.team.memberWins[i] ?? 0;
-            const pct = n > 0 ? (wins / n) * 100 : 0;
-            const strat = STRATEGY_NAMES[m.strategy]?.split(" ")[0] ?? `S${m.strategy}`;
-            return `${m.charaName} (${strat}) ${pct.toFixed(0)}%`;
-        });
-        return `${parts.join(" · ")} (${n} samples)`;
-    };
-
     const renderCompItem = (e: StyleCompEntry, positive: boolean) => {
         const valueColor = positive ? "#68d391" : "#fc8181";
         const isSelected = selectedCompKey === e.key;
@@ -988,18 +978,28 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                             })
                             .join("__");
                         const memberMap = bestHorseByFullComp.get(compKey) ?? new Map<string, HorseEntry>();
+                        const teamSelectOptions = drilldownTeams.map((item, i) => {
+                            const n = item.team.appearances;
+                            return {
+                                value: String(i),
+                                samples: n,
+                                members: item.team.members.map((m, mi) => ({
+                                    cardId: m.cardId,
+                                    strategy: m.strategy,
+                                    winRatePct: n > 0 ? ((item.team.memberWins[mi] ?? 0) / n) * 100 : 0,
+                                })),
+                            };
+                        });
                         return (
                             <div className="tcp-member-drilldown">
                                 {drilldownTeams.length > 1 && (
                                     <div className="tcp-rep-team-select">
-                                        <select
-                                            value={idx}
-                                            onChange={e => setSelectedDrilldownIdx(Number(e.target.value))}
-                                        >
-                                            {drilldownTeams.map((item, i) => (
-                                                <option key={i} value={i}>{getTeamLabel(item)}</option>
-                                            ))}
-                                        </select>
+                                        <TeamSampleSelect
+                                            value={String(idx)}
+                                            options={teamSelectOptions}
+                                            onChange={(v) => setSelectedDrilldownIdx(Number(v))}
+                                            strategyColors={activeStrategyColors}
+                                        />
                                     </div>
                                 )}
                                 <div className="stcp-team-members-row">

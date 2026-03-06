@@ -5,7 +5,6 @@ import {
     RaceSimulateDataSchema,
     RaceSimulateData_EventDataWrapperSchema,
     RaceSimulateEventDataSchema,
-    RaceSimulateEventData_SimulateEventType,
     RaceSimulateFrameDataSchema,
     RaceSimulateHeaderDataSchema,
     RaceSimulateHorseFrameDataSchema,
@@ -146,12 +145,16 @@ function deserialize(input: Uint8Array) {
 }
 
 function normalizeLanePosition(value: number) {
-    const normalized = value <= 1 ? Math.round(value * 10000) : Math.round(value);
+    const normalized = value <= 1 && !Number.isInteger(value)
+        ? Math.round(value * 10000)
+        : Math.round(value);
     return Math.min(10000, Math.max(0, normalized));
 }
 
 function normalizeSpeed(value: number) {
-    const normalized = value <= 30 ? Math.round(value * 100) : Math.round(value);
+    const normalized = value <= 30 && !Number.isInteger(value)
+        ? Math.round(value * 100)
+        : Math.round(value);
     return Math.max(0, normalized);
 }
 
@@ -362,10 +365,8 @@ function findAllHorseResults(view: DataView, horseNum: number) {
     return Array.from(uniqueByOrder.values());
 }
 
-function mapJpEventType(typeId: number, paramCount: number) {
-    if (typeId === 1 || typeId === 3) return RaceSimulateEventData_SimulateEventType.SKILL;
-    if (typeId === 2 || typeId === 4 || paramCount === 2) return RaceSimulateEventData_SimulateEventType.COMPETE_TOP;
-    return typeId as RaceSimulateEventData_SimulateEventType;
+function mapJpEventType(typeId: number) {
+    return typeId;
 }
 
 function readEventJp(view: DataView, offset: number) {
@@ -386,7 +387,7 @@ function readEventJp(view: DataView, offset: number) {
     cursor += 3;
     const event = create(RaceSimulateEventDataSchema, {
         frameTime,
-        type: mapJpEventType(typeId, paramCount),
+        type: mapJpEventType(typeId),
         paramCount,
         param,
     });

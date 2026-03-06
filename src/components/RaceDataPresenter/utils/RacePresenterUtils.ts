@@ -11,6 +11,8 @@ export const otherRaceEventLabels = new Map([
     [RaceSimulateEventData_SimulateEventType.COMPETE_BEFORE_SPURT, 'COMPETE_BEFORE_SPURT'],
     [RaceSimulateEventData_SimulateEventType.STAMINA_KEEP, 'STAMINA_KEEP'],
     [RaceSimulateEventData_SimulateEventType.SECURE_LEAD, 'SECURE_LEAD'],
+    [12, 'Zenkai Spurt'],
+    [13, 'Unknown'],
 ]);
 
 export function getColorForSpurtDelay(delay: number): string {

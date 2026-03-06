@@ -24,6 +24,7 @@ type MarkArea2DDataItemOption = [{ name?: string; xAxis?: number; itemStyle?: ob
 import _ from "lodash";
 import {
     RaceSimulateData,
+    RaceSimulateEventData_SimulateEventType,
     RaceSimulateHorseFrameData_TemptationMode,
 } from "../../../data/race_data_pb";
 import {
@@ -68,6 +69,19 @@ const RaceGraph: React.FC<RaceGraphProps> = ({
     showTemptationMode,
     showOtherRaceEvents,
 }) => {
+    const allOtherRaceEventLabels = React.useMemo(() => {
+        const labels = new Map(otherRaceEventLabels);
+        for (const wrapper of raceData.event) {
+            const event = wrapper.event;
+            if (!event) continue;
+            if (event.type === RaceSimulateEventData_SimulateEventType.SKILL) continue;
+            if (!labels.has(event.type)) {
+                labels.set(event.type, `EVENT_${event.type}`);
+            }
+        }
+        return labels;
+    }, [raceData.event]);
+
     const skillPlotLines = filterCharaSkills(raceData, frameOrder)
         .map(event => {
             return {
@@ -88,7 +102,7 @@ const RaceGraph: React.FC<RaceGraphProps> = ({
             } as MarkLine1DDataItemOption;
         });
 
-    const otherEventsPlotLines = Array.from(otherRaceEventLabels).flatMap(([eventType, name]) =>
+    const otherEventsPlotLines = Array.from(allOtherRaceEventLabels).flatMap(([eventType, name]) =>
         filterRaceEvents(raceData, frameOrder, eventType).map(event => {
             return {
                 xAxis: event.frameTime,
@@ -97,6 +111,22 @@ const RaceGraph: React.FC<RaceGraphProps> = ({
                 lineStyle: { color: 'rgba(0, 255, 0, 0.6)' },
             } as MarkLine1DDataItemOption;
         }));
+    const nonSkillEventsForHorse = React.useMemo(() => {
+        return raceData.event
+            .flatMap(wrapper => {
+                const event = wrapper.event;
+                if (!event) return [];
+                if (event.type === RaceSimulateEventData_SimulateEventType.SKILL) return [];
+                if (event.param.length === 0 || event.param[0] !== frameOrder) return [];
+                return [{
+                    frameTime: event.frameTime,
+                    type: event.type,
+                    label: allOtherRaceEventLabels.get(event.type) ?? `EVENT_${event.type}`,
+                    param: event.param,
+                }];
+            })
+            .sort((a, b) => a.frameTime - b.frameTime);
+    }, [raceData.event, frameOrder, allOtherRaceEventLabels]);
 
     const lastSpurtStartDistance = raceData.horseResult[frameOrder].lastSpurtStartDistance!;
     let lastSpurtStartTime = 0;
@@ -320,6 +350,29 @@ const RaceGraph: React.FC<RaceGraphProps> = ({
 
     return <div>
         <EChartsReactCore echarts={echarts} option={options} style={{ height: '700px' }} theme="dark" />
+        <details style={{ marginTop: '12px' }}>
+            <summary>Non-Skill Race Events ({nonSkillEventsForHorse.length})</summary>
+            <div style={{ marginTop: '8px', overflowX: 'auto' }}>
+                <table className="table table-sm table-dark mb-0">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Type</th>
+                            <th>Params</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {nonSkillEventsForHorse.map((event, index) => (
+                            <tr key={`${event.type}-${event.frameTime}-${index}`}>
+                                <td>{event.frameTime.toFixed(3)}</td>
+                                <td>{event.label}</td>
+                                <td>{JSON.stringify(event.param)}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </details>
     </div>;
 };
 

@@ -299,21 +299,6 @@ function readHorseResultJp(view: DataView, offset: number) {
     return {result, nextOffset};
 }
 
-function isPlausibleHorseResult(horseNum: number, finishOrder: number, finishTime: number, finishDiffTime: number, startDelayTime: number, runningStyle: number, defeat: number) {
-    return finishOrder >= 0
-        && finishOrder < horseNum
-        && finishTime >= 100
-        && finishTime <= 220
-        && finishDiffTime >= 0
-        && finishDiffTime <= 60
-        && startDelayTime >= 0
-        && startDelayTime <= 5
-        && runningStyle >= 0
-        && runningStyle <= 10
-        && defeat >= -32
-        && defeat <= 32;
-}
-
 function parseHorseResultsNearOffset(view: DataView, startGuess: number, horseNum: number) {
     for (let startOffset = startGuess; startOffset < Math.min(startGuess + 128, view.byteLength - 1); startOffset += 4) {
         const results: RaceSimulateData["horseResult"] = [];
@@ -322,12 +307,7 @@ function parseHorseResultsNearOffset(view: DataView, startGuess: number, horseNu
         for (let i = 0; i < horseNum; i++) {
             try {
                 const parsed = readHorseResultJp(view, offset);
-                const r = parsed.result;
-                if (!isPlausibleHorseResult(horseNum, r.finishOrder, r.finishTime, r.finishDiffTime, r.startDelayTime, r.runningStyle, r.defeat)) {
-                    ok = false;
-                    break;
-                }
-                results.push(r);
+                results.push(parsed.result);
                 offset = parsed.nextOffset;
             } catch {
                 ok = false;
@@ -342,15 +322,12 @@ function parseHorseResultsNearOffset(view: DataView, startGuess: number, horseNu
     return {results: [] as RaceSimulateData["horseResult"], endOffset: null as number | null};
 }
 
-function findAllHorseResults(view: DataView, horseNum: number) {
+function findAllHorseResults(view: DataView) {
     const found: {offset: number, result: RaceSimulateData["horseResult"][number]}[] = [];
     for (let offset = 32; offset <= view.byteLength - JP_HORSE_RESULT_CORE_SIZE; offset++) {
         try {
             const parsed = readHorseResultJp(view, offset);
-            const r = parsed.result;
-            if (isPlausibleHorseResult(horseNum, r.finishOrder, r.finishTime, r.finishDiffTime, r.startDelayTime, r.runningStyle, r.defeat)) {
-                found.push({offset, result: r});
-            }
+            found.push({offset, result: parsed.result});
         } catch {
             continue;
         }
@@ -452,7 +429,7 @@ function deserializeJp(input: Uint8Array) {
         resultsEndOffset = near.endOffset;
     }
     if (horseResult.length === 0) {
-        horseResult = findAllHorseResults(view, horseNum);
+        horseResult = findAllHorseResults(view);
     }
     if (horseResult.length === 0) {
         throw new Error("Failed to parse JP horse results");

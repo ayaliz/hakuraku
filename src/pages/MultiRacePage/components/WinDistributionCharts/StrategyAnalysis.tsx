@@ -5,6 +5,7 @@ import AssetLoader from "../../../../data/AssetLoader";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import GameDataLoader from "../../../../data/GameDataLoader";
 import { getRankIcon } from "../../../../components/RaceDataPresenter/components/CharaList/rankUtils";
+import TeamSampleSelect from "./TeamSampleSelect";
 import "./StrategyAnalysis.css";
 
 
@@ -1017,17 +1018,6 @@ function StyleTeamCompositionPanel({
             .slice(0, 6);
     }, [selectedKey, teamStats]);
 
-    const getTeamLabel = (item: { team: TeamCompositionStats; bayesianWinRate: number }) => {
-        const n = item.team.appearances;
-        const parts = item.team.members.map((m, i) => {
-            const wins = item.team.memberWins[i] ?? 0;
-            const pct = n > 0 ? (wins / n) * 100 : 0;
-            const strat = STRATEGY_NAMES[m.strategy]?.split(" ")[0] ?? `S${m.strategy}`;
-            return `${m.charaName} (${strat}) ${pct.toFixed(0)}%`;
-        });
-        return `${parts.join(" \u00b7 ")} (${n} samples)`;
-    };
-
     const renderItem = (e: StyleTeamEntry, positive: boolean) => {
         const valueColor = positive ? "#68d391" : "#fc8181";
         const isSelected = selectedKey === e.key;
@@ -1057,6 +1047,18 @@ function StyleTeamCompositionPanel({
 
     const idx = Math.min(selectedTeamIdx, Math.max(0, drilldownTeams.length - 1));
     const selectedTeam = drilldownTeams[idx] ?? null;
+    const teamSelectOptions = drilldownTeams.map((item, i) => {
+        const n = item.team.appearances;
+        return {
+            value: String(i),
+            samples: n,
+            members: item.team.members.map((m, mi) => ({
+                cardId: m.cardId,
+                strategy: m.strategy,
+                winRatePct: n > 0 ? ((item.team.memberWins[mi] ?? 0) / n) * 100 : 0,
+            })),
+        };
+    });
     const selectedCompositionKey = selectedTeam ? makeCompositionKey(selectedTeam.team.members) : null;
     const representativeByMemberKey = selectedCompositionKey
         ? (representativeByCompositionAndMemberKey.get(selectedCompositionKey) ?? new Map<string, HorseEntry>())
@@ -1086,14 +1088,12 @@ function StyleTeamCompositionPanel({
                 <div className="tcp-member-drilldown">
                     {drilldownTeams.length > 1 && (
                         <div className="tcp-rep-team-select">
-                            <select
-                                value={idx}
-                                onChange={e => setSelectedTeamIdx(Number(e.target.value))}
-                            >
-                                {drilldownTeams.map((item, i) => (
-                                    <option key={i} value={i}>{getTeamLabel(item)}</option>
-                                ))}
-                            </select>
+                            <TeamSampleSelect
+                                value={String(idx)}
+                                options={teamSelectOptions}
+                                onChange={(v) => setSelectedTeamIdx(Number(v))}
+                                strategyColors={strategyColors}
+                            />
                         </div>
                     )}
                     <div className="stcp-team-members-row">

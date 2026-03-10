@@ -4,6 +4,7 @@ import { SkillStats, SkillActivationPoint, SkillActivationBuckets, CharacterStat
 import { CharaHpSpurtStats } from "./HpSpurtAnalysis/types";
 import AssetLoader from "../../../data/AssetLoader";
 import UMDatabaseWrapper from "../../../data/UMDatabaseWrapper";
+import GameDataLoader from "../../../data/GameDataLoader";
 import PortraitSelect, { PortraitSelectOption } from "./PortraitSelect";
 
 interface SkillAnalysisProps {
@@ -21,6 +22,35 @@ type SortKey = "skillName" | "timesActivated" | "learnedByHorses" | "uniqueRaces
 
 const STRAT_LABELS: Record<number, string> = { 1: "FR", 2: "PC", 3: "LS", 4: "EC" };
 const STRATS = [1, 2, 3, 4] as const;
+let _skillsJsonMap: Map<number, any> | null = null;
+
+function getSkillsJsonMap() {
+    if (!_skillsJsonMap) {
+        _skillsJsonMap = new Map((GameDataLoader.skills as any[]).map(s => [s.id, s]));
+    }
+    return _skillsJsonMap;
+}
+
+function getSkillGroupBaseIds(representativeSkillId: number): Set<number> {
+    const baseId = Math.floor(representativeSkillId / 10);
+    const ids = new Set<number>([baseId]);
+    if (baseId >= 10000 && baseId < 20000) ids.add(baseId + 80000);
+    if (baseId >= 90000 && baseId < 100000) ids.add(baseId - 80000);
+    return ids;
+}
+
+function matchesRepresentativeSkillGroup(candidateSkillId: number, representativeSkillId: number): boolean {
+    const candidateBaseId = Math.floor(candidateSkillId / 10);
+    return getSkillGroupBaseIds(representativeSkillId).has(candidateBaseId);
+}
+
+function isGuaranteedSkill(skillId: number): boolean {
+    if (skillId >= 100000 && skillId < 200000) return true;
+    const data = getSkillsJsonMap().get(skillId);
+    return !!data?.condition_groups?.some((group: any) =>
+        group.effects?.some((effect: any) => [1, 2, 3, 4, 5].includes(effect.type))
+    );
+}
 
 function renderWinBreakdown(skill: SkillStats, horses: HorseEntry[]) {
     const baseId = Math.floor(skill.skillId / 10);
@@ -258,17 +288,16 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                 if (!stratBuckets.some(c => c > 0)) continue;
 
                 const timesActivated = stratBuckets.reduce((s, c) => s + c, 0);
-                const baseId = Math.floor(skill.skillId / 10);
 
                 const learnedByHorses = filteredHorses.filter(h => {
                     for (const sid of h.learnedSkillIds)
-                        if (Math.floor(sid / 10) === baseId) return true;
+                        if (matchesRepresentativeSkillGroup(sid, skill.skillId)) return true;
                     return false;
                 }).length;
 
                 const horsesWhoActivated = filteredHorses.filter(h => {
                     for (const sid of h.activatedSkillIds)
-                        if (Math.floor(sid / 10) === baseId) return true;
+                        if (matchesRepresentativeSkillGroup(sid, skill.skillId)) return true;
                     return false;
                 });
                 const uniqueHorses = horsesWhoActivated.length;
@@ -301,11 +330,10 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                 (maxD === Number.MAX_SAFE_INTEGER || p.distance <= maxD)
             );
 
-            // A horse learned this "Representative Skill" if it has any skill ID s.t. floor(s/10) == floor(repId/10)
-            const baseId = Math.floor(baseStat.skillId / 10);
+            // A horse learned this representative skill group if it has any matching rank/inherit variant.
             const horsesWhoLearned = filteredHorses.filter(h => {
                 for (const learnedId of h.learnedSkillIds) {
-                    if (Math.floor(learnedId / 10) === baseId) return true;
+                    if (matchesRepresentativeSkillGroup(learnedId, baseStat.skillId)) return true;
                 }
                 return false;
             });
@@ -321,15 +349,13 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
 
             const horsesWhoActivated = filteredHorses.filter(h => {
                 for (const actId of h.activatedSkillIds) {
-                    if (Math.floor(actId / 10) === baseId) return true;
+                    if (matchesRepresentativeSkillGroup(actId, baseStat.skillId)) return true;
                 }
                 return false;
             });
 
             const winsWithSkill = horsesWhoActivated.filter(h => h.finishOrder === 1).length;
             const winRate = horsesWhoActivated.length > 0 ? (winsWithSkill / horsesWhoActivated.length) * 100 : 0;
-
-            const isUnique = baseStat.skillId >= 100000 && baseStat.skillId < 200000;
 
             const uniqueParticipations = new Map<string, SkillActivationPoint>();
             filteredActivations.forEach(p => {
@@ -341,7 +367,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                 return sum + (1 / p.activationChance);
             }, 0);
 
-            if (isUnique) normalizedActivations = uniqueParticipations.size;
+            if (isGuaranteedSkill(baseStat.skillId)) normalizedActivations = uniqueParticipations.size;
 
             const avgFinishPosition = horsesWhoActivated.length > 0
                 ? horsesWhoActivated.reduce((sum, h) => sum + h.finishOrder, 0) / horsesWhoActivated.length
@@ -472,7 +498,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                                 <span style={{ position: "absolute", left: "83.33%", transform: "translateX(-50%)" }}>Spurt</span>
                                 <span style={{ position: "absolute", right: 0 }}>{Math.round(avgRaceDistance)}m</span>
                             </div>
-                            {renderWinBreakdown(skill, allHorses)}
+                            {renderWinBreakdown(skill, filteredHorses)}
                         </div>
                     </td>
                 </tr>
@@ -583,7 +609,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                             <span style={{ position: "absolute", right: 0 }}>{Math.round(avgRaceDistance)}m</span>
                         </div>
 
-                        {renderWinBreakdown(skill, allHorses)}
+                        {renderWinBreakdown(skill, filteredHorses)}
                     </div>
                 </td>
             </tr>

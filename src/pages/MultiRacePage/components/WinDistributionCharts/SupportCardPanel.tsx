@@ -29,6 +29,7 @@ interface SupportCardPanelProps {
 
 const SupportCardPanel: React.FC<SupportCardPanelProps> = ({ horses }) => {
     const [sortMode, setSortMode] = useState<"pop" | "winRate">("pop");
+    const [minPopPct, setMinPopPct] = useState<0 | 0.5 | 1 | 2>(0.5);
 
     const rows = useMemo((): SupportCardRow[] => {
         if (horses.length === 0) return [];
@@ -82,10 +83,15 @@ const SupportCardPanel: React.FC<SupportCardPanelProps> = ({ horses }) => {
         });
     }, [horses]);
 
+    const effectiveMinPopPct = sortMode === "pop" ? 0 : minPopPct;
+    const filteredRows = useMemo(
+        () => rows.filter(r => r.popPct >= effectiveMinPopPct),
+        [rows, effectiveMinPopPct]
+    );
     const sorted = useMemo(() => {
-        if (sortMode === "pop") return [...rows].sort((a, b) => b.appearances - a.appearances);
-        return [...rows].filter(r => r.rawWins > 0).sort((a, b) => b.adjWinRate - a.adjWinRate);
-    }, [rows, sortMode]);
+        if (sortMode === "pop") return [...filteredRows].sort((a, b) => b.appearances - a.appearances);
+        return [...filteredRows].filter(r => r.rawWins > 0).sort((a, b) => b.adjWinRate - a.adjWinRate);
+    }, [filteredRows, sortMode]);
 
     const maxPct = Math.max(...sorted.flatMap(r => [r.popPct, r.adjWinRate * 100]), 1);
 
@@ -106,6 +112,24 @@ const SupportCardPanel: React.FC<SupportCardPanelProps> = ({ horses }) => {
                 </div>
                 <span className="scp-info-icon" title="Card population and limit breaks are counted per unique uma. Win rate reflects all match appearances.">ⓘ</span>
             </div>
+            {sortMode === "winRate" && (
+                <div className="histogram-toggle scp-pop-filter-toggle">
+                    {([
+                        { value: 0.5 as const, label: "≥0.5% pop" },
+                        { value: 1 as const, label: "≥1% pop" },
+                        { value: 2 as const, label: "≥2% pop" },
+                        { value: 0 as const, label: "No minimum pop" },
+                    ]).map((opt) => (
+                        <button
+                            key={opt.value}
+                            className={`histogram-toggle-btn scp-pop-filter-btn${minPopPct === opt.value ? " active" : ""}`}
+                            onClick={() => setMinPopPct(opt.value)}
+                        >
+                            {opt.label}
+                        </button>
+                    ))}
+                </div>
+            )}
             {sorted.length === 0 ? (
                 <span className="sa-no-data">No card data.</span>
             ) : sorted.map(row => {

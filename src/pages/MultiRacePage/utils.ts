@@ -25,6 +25,13 @@ const STRATEGY_NAMES: Record<number, string> = {
 };
 const RUNAWAY_TRIGGER_SKILL_ID = 202051;
 const ALL_STRATEGY_IDS: number[] = [...STRATEGY_DISPLAY_ORDER];
+const GATE_FLAVOR_TO_STRATEGIES = {
+    total: null,
+    front: new Set([1, 5]),
+    pace: new Set([2]),
+    late: new Set([3]),
+    end: new Set([4]),
+} as const;
 
 // Map for detailed skill data (condition_groups) logic - imported from skills.json
 let _skillsJsonMap: Map<number, any> | null = null;
@@ -491,6 +498,45 @@ function computePairSynergy(allHorses: HorseEntry[]): PairSynergyStats[] {
     return Array.from(pairMap.values()).filter(p => p.coApps >= 3);
 }
 
+function getStrategyForHorseData(data: any) {
+    const trainedChara = fromRaceHorseData(data);
+    const learnedSkillIds = new Set((trainedChara.skills ?? []).map(s => s.skillId));
+    const rawStrategy = data.running_style ?? trainedChara.rawData?.param?.runningStyle ?? 1;
+    return rawStrategy === 1 && learnedSkillIds.has(RUNAWAY_TRIGGER_SKILL_ID) ? 5 : rawStrategy;
+}
+
+function buildGateWinRatesForFlavor(races: ParsedRace[], strategyFilter: Set<number> | null) {
+    const gateStatsMap = new Map<number, { appearances: number; wins: number }>();
+    for (const race of races) {
+        const strategyByGate = new Map<number, number>();
+        race.horseInfo.forEach((data, index) => {
+            const gateNumber = data?.['frame_order'] ?? (index + 1);
+            strategyByGate.set(gateNumber, getStrategyForHorseData(data));
+        });
+        race.raceData.horseResult.forEach((result, index) => {
+            const gateNumber = index + 1;
+            const strategy = strategyByGate.get(gateNumber);
+            if (strategyFilter && (!strategy || !strategyFilter.has(strategy))) return;
+            if (!gateStatsMap.has(gateNumber)) {
+                gateStatsMap.set(gateNumber, {appearances: 0, wins: 0});
+            }
+            const gateStats = gateStatsMap.get(gateNumber)!;
+            gateStats.appearances++;
+            if (result.finishOrder === 1) {
+                gateStats.wins++;
+            }
+        });
+    }
+    return Array.from(gateStatsMap.entries())
+        .map(([gateNumber, stats]) => ({
+            gateNumber,
+            appearances: stats.appearances,
+            wins: stats.wins,
+            winRate: stats.appearances > 0 ? stats.wins / stats.appearances : 0,
+        }))
+        .sort((a, b) => a.gateNumber - b.gateNumber);
+}
+
 export function aggregateStats(races: ParsedRace[]): AggregatedStats {
     const allHorses: HorseEntry[] = [];
     const allSkillActivations = new Map<number, SkillActivationPoint[]>();
@@ -841,6 +887,14 @@ export function aggregateStats(races: ParsedRace[]): AggregatedStats {
             return sum + (trackDist ?? r.raceDistance);
         }, 0) / races.length
         : 0;
+    const gateWinRatesByFlavor = {
+        total: buildGateWinRatesForFlavor(races, GATE_FLAVOR_TO_STRATEGIES.total),
+        front: buildGateWinRatesForFlavor(races, GATE_FLAVOR_TO_STRATEGIES.front),
+        pace: buildGateWinRatesForFlavor(races, GATE_FLAVOR_TO_STRATEGIES.pace),
+        late: buildGateWinRatesForFlavor(races, GATE_FLAVOR_TO_STRATEGIES.late),
+        end: buildGateWinRatesForFlavor(races, GATE_FLAVOR_TO_STRATEGIES.end),
+    };
+    const gateWinRates = gateWinRatesByFlavor.total;
 
     return {
         totalRaces,
@@ -855,5 +909,7 @@ export function aggregateStats(races: ParsedRace[]): AggregatedStats {
         allHorses,
         teamStats: computeTeamStats(allHorses),
         pairSynergy: computePairSynergy(allHorses),
+        gateWinRates,
+        gateWinRatesByFlavor,
     };
 }

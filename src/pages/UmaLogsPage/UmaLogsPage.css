@@ -52,6 +52,20 @@
     display: flex;
     gap: 10px;
     margin-top: 16px;
+    justify-content: center;
+    width: 100%;
+}
+
+.uma-overview-action-btn {
+    padding: 8px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+}
+
+.uma-overview-action-btn .ca-decks-btn-icon {
+    width: 22px;
+    height: 22px;
 }
 
 /* Page-level header (race count + date) */
@@ -182,8 +196,21 @@
 
 .uma-stats-top {
     width: 100%;
-    max-width: 900px;
+    max-width: 1600px;
     margin-bottom: 20px;
+}
+
+.uma-overview-main {
+    display: flex;
+    gap: 12px;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    margin-bottom: 16px;
+}
+
+.uma-overview-left {
+    flex: 1 1 620px;
+    min-width: 0;
 }
 
 /* Each row: histogram + feat cards side by side */
@@ -191,9 +218,16 @@
 .uma-score-row {
     display: flex;
     gap: 12px;
-    align-items: stretch;
-    margin-bottom: 16px;
     flex-wrap: wrap;
+}
+
+.uma-win-row {
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.uma-score-row {
+    align-items: stretch;
 }
 
 .uma-win-row .uma-histogram,
@@ -204,6 +238,16 @@
 
 .uma-histogram {
     max-width: 620px;
+}
+
+.uma-overview-mid {
+    flex: 0 0 332px;
+}
+
+.uma-overview-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(160px, 1fr));
+    gap: 12px;
 }
 
 /* ── Histogram ───────────────────────────────────────────────── */
@@ -343,6 +387,123 @@
 .fastest-card-hint {
     font-size: 11px;
     color: #4a5568;
+}
+
+.uma-gate-panel {
+    min-width: 280px;
+    flex: 0 0 280px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid #4a5568;
+    border-radius: var(--haku-radius);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+}
+
+.uma-gate-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #718096;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.uma-gate-toggle {
+    display: flex;
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.uma-gate-toggle-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    text-align: center;
+    padding: 2px 6px;
+}
+
+.uma-gate-table-wrap {
+    overflow-x: auto;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.uma-gate-head-row,
+.uma-gate-body-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    align-items: center;
+    column-gap: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.uma-gate-head-row {
+    flex: 0 0 auto;
+    font-size: 10px;
+    color: #718096;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #2d3748;
+    padding: 5px 4px;
+}
+
+.uma-gate-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.uma-gate-body-row {
+    flex: 1;
+    font-size: 12px;
+    color: #cbd5e0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 5px 4px;
+}
+
+.uma-gate-body-row:last-child {
+    border-bottom: none;
+}
+
+.uma-gate-cell--r {
+    text-align: right;
+}
+
+@media (max-width: 1400px) {
+    .uma-overview-main {
+        flex-wrap: wrap;
+    }
+
+    .uma-overview-left {
+        flex-basis: 100%;
+    }
+
+    .uma-overview-mid {
+        flex-basis: 100%;
+    }
+
+    .uma-overview-cards-grid {
+        grid-template-columns: repeat(2, minmax(160px, 1fr));
+    }
+
+    .uma-gate-panel {
+        min-width: 100%;
+        flex-basis: 100%;
+    }
+}
+
+@media (max-width: 760px) {
+    .uma-overview-cards-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* ── Fastest Uma modal ───────────────────────────────────────── */

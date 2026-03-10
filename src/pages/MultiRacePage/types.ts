@@ -165,6 +165,17 @@ export type TrueSkillTeamEntry = {
     conservative: number; // mu − 3σ (team conservative skill estimate)
 };
 
+export type GateWinRateStats = {
+    gateNumber: number;
+    appearances: number;
+    wins: number;
+    winRate: number;
+};
+
+export type GateWinRateFlavor = "total" | "front" | "pace" | "late" | "end";
+
+export type GateWinRateSplitStats = Record<GateWinRateFlavor, GateWinRateStats[]>;
+
 export type AggregatedStats = {
     totalRaces: number;
     totalHorses: number;
@@ -179,5 +190,7 @@ export type AggregatedStats = {
     allHorses: HorseEntry[];
     teamStats: TeamCompositionStats[];
     pairSynergy: PairSynergyStats[];
+    gateWinRates: GateWinRateStats[];
+    gateWinRatesByFlavor: GateWinRateSplitStats;
     trueskillRanking?: TrueSkillTeamEntry[];
 };

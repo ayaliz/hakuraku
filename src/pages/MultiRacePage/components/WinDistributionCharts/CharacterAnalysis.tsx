@@ -570,10 +570,6 @@ function CharacterBuildsPanel({ rawPopSlices, allHorses, characterStats, strateg
             </div>
             <div className="ca-builds-select">
                 <SynergyEntitySelect entities={entities} value={effectiveKey} onChange={setSelectedKey} strategyColors={strategyColors} />
-                <button className="ca-decks-btn" onClick={() => setDecksOpen(true)} title="View support card decks">
-                    <img src={AssetLoader.getStatIcon("deck")} alt="" className="ca-decks-btn-icon" />
-                    View Decks
-                </button>
                 <button className="ca-decks-btn" onClick={() => setCardsOpen(true)} title="View support card usage">
                     <img src={AssetLoader.getStatIcon("card")} alt="" className="ca-decks-btn-icon" />
                     View Cards
@@ -917,7 +913,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                         strategyColors={activeStrategyColors}
                     />
                 )}
-                {allHorses && (
+                {spectatorMode && allHorses && (
                     <CharacterBuildsPanel
                         rawPopSlices={rawPop}
                         allHorses={allHorses}
@@ -927,7 +923,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                 )}
             </div>
 
-            {synEntities.length > 0 && (
+            {spectatorMode && synEntities.length > 0 && (
                 <div className="syn-section">
                     <div className="pie-chart-title syn-section-header">
                         Style Trio Synergy

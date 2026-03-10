@@ -4,6 +4,9 @@ import { Nav, Spinner, Tab, Alert } from "react-bootstrap";
 import type {
     AggregatedStats,
     CharacterStats,
+    GateWinRateFlavor,
+    GateWinRateStats,
+    GateWinRateSplitStats,
     HorseEntry,
     PairSynergyStats,
     RoomCompositionEntry,
@@ -21,6 +24,7 @@ import SkillAnalysis from "../MultiRacePage/components/SkillAnalysis";
 import Histogram from "./Histogram";
 import UmaFeatCard from "./FastestUmaPanel";
 import { formatTime } from "../../data/UMDatabaseUtils";
+import AssetLoader from "../../data/AssetLoader";
 import TeamCompositionPanel from "./TeamCompositionPanel";
 import TrueSkillTeamPanel from "./TrueSkillTeamPanel";
 import SupportCardPanel from "../MultiRacePage/components/WinDistributionCharts/SupportCardPanel";
@@ -53,6 +57,8 @@ type SerializedStats = {
     allHorses: SerializedHorseEntry[];
     teamStats: TeamCompositionStats[];
     pairSynergy: PairSynergyStats[];
+    gateWinRates?: GateWinRateStats[];
+    gateWinRatesByFlavor?: GateWinRateSplitStats;
     trueskillRanking?: TrueSkillTeamEntry[];
 };
 
@@ -100,6 +106,14 @@ function deserializeStats(s: SerializedStats): AggregatedStats {
         })),
         teamStats: s.teamStats,
         pairSynergy: s.pairSynergy ?? [],
+        gateWinRates: s.gateWinRates ?? [],
+        gateWinRatesByFlavor: s.gateWinRatesByFlavor ?? {
+            total: s.gateWinRates ?? [],
+            front: [],
+            pace: [],
+            late: [],
+            end: [],
+        },
         trueskillRanking: s.trueskillRanking ?? [],
     };
 }
@@ -122,9 +136,22 @@ interface TrackGroupContentProps {
     strategyColors: Record<number, string>;
 }
 
+type StyleDeckRow = {
+    deckKey: string;
+    cardIds: number[];
+    appearances: number;
+    wins: number;
+    popPct: number;
+    adjWinRate: number;
+};
+
 const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinnersOnly, setScoreWinnersOnly, totalRaces, totalUniqueUmas, strategyColors }) => {
     const [section, setSection] = useState<Section>('introduction');
     const [cardUsageOpen, setCardUsageOpen] = useState(false);
+    const [styleDecksOpen, setStyleDecksOpen] = useState(false);
+    const [styleDeckSort, setStyleDeckSort] = useState<"pop" | "winRate">("pop");
+    const [styleDeckMinPopPct, setStyleDeckMinPopPct] = useState<0 | 0.5 | 1 | 2>(0.5);
+    const [gateFlavor, setGateFlavor] = useState<GateWinRateFlavor>('total');
 
     const allHorses = group.stats.allHorses;
 
@@ -174,6 +201,91 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
         rawUnifiedCharacterWinsOpp,
         rawUnifiedCharacterPop,
     } = useWinDistributionData(allHorses);
+    const gateFlavorLabels: Record<GateWinRateFlavor, string> = {
+        total: 'Total',
+        front: 'Front',
+        pace: 'Pace',
+        late: 'Late',
+        end: 'End',
+    };
+    const displayedGateWinRates = group.stats.gateWinRatesByFlavor[gateFlavor] ?? [];
+    const gateWinRateBaseline = useMemo(() => {
+        const totals = displayedGateWinRates.reduce((acc, gate) => {
+            acc.wins += gate.wins;
+            acc.appearances += gate.appearances;
+            return acc;
+        }, { wins: 0, appearances: 0 });
+        return totals.appearances > 0 ? totals.wins / totals.appearances : 1 / 9;
+    }, [displayedGateWinRates]);
+    const gateWinRateColor = (winRate: number) => {
+        const delta = winRate - gateWinRateBaseline;
+        const t = Math.min(Math.abs(delta) / 0.03, 1);
+        const from = [203, 213, 224];
+        const to = delta >= 0 ? [104, 211, 145] : [252, 129, 129];
+        const r = Math.round(from[0] + (to[0] - from[0]) * t);
+        const g = Math.round(from[1] + (to[1] - from[1]) * t);
+        const b = Math.round(from[2] + (to[2] - from[2]) * t);
+        return `rgb(${r}, ${g}, ${b})`;
+    };
+    const availableDeckStyleIds = useMemo(() => {
+        const present = new Set(allHorses.filter(h => h.supportCardIds.length === 6).map(h => h.strategy));
+        const ordered = STRATEGY_DISPLAY_ORDER.filter(sid => present.has(sid)) as number[];
+        for (const sid of present) {
+            if (!ordered.includes(sid)) ordered.push(sid);
+        }
+        return ordered;
+    }, [allHorses]);
+    const [selectedDeckStyle, setSelectedDeckStyle] = useState<number>(availableDeckStyleIds[0] ?? 1);
+    useEffect(() => {
+        if (!availableDeckStyleIds.includes(selectedDeckStyle)) {
+            setSelectedDeckStyle(availableDeckStyleIds[0] ?? 1);
+        }
+    }, [availableDeckStyleIds, selectedDeckStyle]);
+    const styleDeckRowsByStyle = useMemo(() => {
+        const result: Record<number, StyleDeckRow[]> = {};
+        for (const sid of availableDeckStyleIds) {
+            const horses = allHorses.filter(h => h.strategy === sid && h.supportCardIds.length === 6);
+            const total = horses.length;
+            if (total === 0) {
+                result[sid] = [];
+                continue;
+            }
+            const stat = group.stats.strategyStats.find(s => s.strategy === sid);
+            const priorMean = stat && stat.totalRaces > 0 ? stat.wins / stat.totalRaces : horses.filter(h => h.finishOrder === 1).length / total;
+            const deckMap = new Map<string, { cardIds: number[]; apps: number; wins: number }>();
+            for (const h of horses) {
+                const sortedCardIds = [...h.supportCardIds].sort((a, b) => a - b);
+                const key = sortedCardIds.join('_');
+                if (!deckMap.has(key)) deckMap.set(key, { cardIds: sortedCardIds, apps: 0, wins: 0 });
+                const d = deckMap.get(key)!;
+                d.apps++;
+                if (h.finishOrder === 1) d.wins++;
+            }
+            result[sid] = Array.from(deckMap.values()).map(({ cardIds, apps, wins }) => ({
+                deckKey: cardIds.join('_'),
+                cardIds,
+                appearances: apps,
+                wins,
+                popPct: (apps / total) * 100,
+                adjWinRate: (wins + BAYES_UMA.K * priorMean) / (apps + BAYES_UMA.K),
+            }));
+        }
+        return result;
+    }, [allHorses, availableDeckStyleIds, group.stats.strategyStats]);
+    const selectedStyleDeckRows = styleDeckRowsByStyle[selectedDeckStyle] ?? [];
+    const effectiveStyleDeckMinPopPct = styleDeckSort === "pop" ? 0 : styleDeckMinPopPct;
+    const filteredStyleDeckRows = useMemo(
+        () => selectedStyleDeckRows.filter(r => r.popPct >= effectiveStyleDeckMinPopPct),
+        [selectedStyleDeckRows, effectiveStyleDeckMinPopPct]
+    );
+    const selectedStyleDeckList = useMemo(() => {
+        if (styleDeckSort === "pop") return [...filteredStyleDeckRows].sort((a, b) => b.appearances - a.appearances);
+        return [...filteredStyleDeckRows].filter(r => r.wins > 0).sort((a, b) => b.adjWinRate - a.adjWinRate);
+    }, [filteredStyleDeckRows, styleDeckSort]);
+    const selectedStyleDeckMaxPct = useMemo(
+        () => Math.max(...selectedStyleDeckList.slice(0, 20).flatMap(r => [r.popPct, r.adjWinRate * 100]), 1),
+        [selectedStyleDeckList]
+    );
 
     return (
         <>
@@ -230,89 +342,154 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
             {section === 'overview' && (
                 <div className="uma-overview-tab">
                     <div className="uma-stats-top">
-                        <div className="uma-win-row">
-                            <Histogram
-                                values={winners.map(h => h.finishTime)}
-                                title="Winning Time Distribution"
-                                formatX={(v) => {
-                                    const m = Math.floor(v / 60);
-                                    const s = v - m * 60;
-                                    return `${m}:${s.toFixed(2).padStart(5, "0")}`;
-                                }}
-                                xAxisLabel="Finish time (M:SS.ss)"
-                                tooltipUnit="race"
-                            />
-                            {fastestWin && (
-                                <UmaFeatCard
-                                    horse={fastestWin}
-                                    label="Fastest Win"
-                                    displayValue={formatTime(fastestWin.finishTime)}
-                                    skillStats={group.stats.skillStats}
-                                    strategyColors={strategyColors}
-                                />
-                            )}
-                            {slowestWin && (
-                                <UmaFeatCard
-                                    horse={slowestWin}
-                                    label="Slowest Win"
-                                    displayValue={formatTime(slowestWin.finishTime)}
-                                    skillStats={group.stats.skillStats}
-                                    strategyColors={strategyColors}
-                                />
-                            )}
-                        </div>
-                        <div className="uma-score-row">
-                            <Histogram
-                                values={allHorses
-                                    .filter(h => h.rankScore > 0 && (!scoreWinnersOnly || h.finishOrder === 1))
-                                    .map(h => h.rankScore)}
-                                title="Score Distribution"
-                                formatX={(v) => Math.round(v).toLocaleString()}
-                                xAxisLabel="Score"
-                                barColor="#68d391"
-                                tooltipUnit="entry"
-                                headerRight={
-                                    <div className="histogram-toggle">
-                                        <button
-                                            className={`histogram-toggle-btn${!scoreWinnersOnly ? " active" : ""}`}
-                                            onClick={() => setScoreWinnersOnly(false)}
-                                        >
-                                            All
-                                        </button>
-                                        <button
-                                            className={`histogram-toggle-btn${scoreWinnersOnly ? " active" : ""}`}
-                                            onClick={() => setScoreWinnersOnly(true)}
-                                        >
-                                            Winners
-                                        </button>
+                        <div className="uma-overview-main">
+                            <div className="uma-overview-left">
+                                <div className="uma-win-row">
+                                    <Histogram
+                                        values={winners.map(h => h.finishTime)}
+                                        title="Winning Time Distribution"
+                                        formatX={(v) => {
+                                            const m = Math.floor(v / 60);
+                                            const s = v - m * 60;
+                                            return `${m}:${s.toFixed(2).padStart(5, "0")}`;
+                                        }}
+                                        xAxisLabel="Finish time (M:SS.ss)"
+                                        tooltipUnit="race"
+                                    />
+                                </div>
+                                <div className="uma-score-row">
+                                    <Histogram
+                                        values={allHorses
+                                            .filter(h => h.rankScore > 0 && (!scoreWinnersOnly || h.finishOrder === 1))
+                                            .map(h => h.rankScore)}
+                                        title="Score Distribution"
+                                        formatX={(v) => Math.round(v).toLocaleString()}
+                                        xAxisLabel="Score"
+                                        barColor="#68d391"
+                                        tooltipUnit="entry"
+                                        headerRight={
+                                            <div className="histogram-toggle">
+                                                <button
+                                                    className={`histogram-toggle-btn${!scoreWinnersOnly ? " active" : ""}`}
+                                                    onClick={() => setScoreWinnersOnly(false)}
+                                                >
+                                                    All
+                                                </button>
+                                                <button
+                                                    className={`histogram-toggle-btn${scoreWinnersOnly ? " active" : ""}`}
+                                                    onClick={() => setScoreWinnersOnly(true)}
+                                                >
+                                                    Winners
+                                                </button>
+                                            </div>
+                                        }
+                                    />
+                                </div>
+                            </div>
+                            {(fastestWin || slowestWin || highestWinner || lowestWinner) && (
+                                <div className="uma-overview-mid">
+                                    <div className="uma-overview-cards-grid">
+                                        {fastestWin && (
+                                            <UmaFeatCard
+                                                horse={fastestWin}
+                                                label="Fastest Win"
+                                                displayValue={formatTime(fastestWin.finishTime)}
+                                                skillStats={group.stats.skillStats}
+                                                strategyColors={strategyColors}
+                                            />
+                                        )}
+                                        {slowestWin && (
+                                            <UmaFeatCard
+                                                horse={slowestWin}
+                                                label="Slowest Win"
+                                                displayValue={formatTime(slowestWin.finishTime)}
+                                                skillStats={group.stats.skillStats}
+                                                strategyColors={strategyColors}
+                                            />
+                                        )}
+                                        {highestWinner && (
+                                            <UmaFeatCard
+                                                horse={highestWinner}
+                                                label="Highest Winner"
+                                                displayValue={highestWinner.rankScore.toLocaleString()}
+                                                displayValueColor="#68d391"
+                                                showRankIcon
+                                                skillStats={group.stats.skillStats}
+                                                strategyColors={strategyColors}
+                                            />
+                                        )}
+                                        {lowestWinner && (
+                                            <UmaFeatCard
+                                                horse={lowestWinner}
+                                                label="Lowest Winner"
+                                                displayValue={lowestWinner.rankScore.toLocaleString()}
+                                                displayValueColor="#68d391"
+                                                showRankIcon
+                                                skillStats={group.stats.skillStats}
+                                                strategyColors={strategyColors}
+                                            />
+                                        )}
                                     </div>
-                                }
-                            />
-                            {highestWinner && (
-                                <UmaFeatCard
-                                    horse={highestWinner}
-                                    label="Highest Winner"
-                                    displayValue={highestWinner.rankScore.toLocaleString()}
-                                    displayValueColor="#68d391"
-                                    showRankIcon
-                                    skillStats={group.stats.skillStats}
-                                    strategyColors={strategyColors}
-                                />
+                                </div>
                             )}
-                            {lowestWinner && (
-                                <UmaFeatCard
-                                    horse={lowestWinner}
-                                    label="Lowest Winner"
-                                    displayValue={lowestWinner.rankScore.toLocaleString()}
-                                    displayValueColor="#68d391"
-                                    showRankIcon
-                                    skillStats={group.stats.skillStats}
-                                    strategyColors={strategyColors}
-                                />
+                            {group.stats.gateWinRatesByFlavor.total.length > 0 && (
+                                <div className="uma-gate-panel">
+                                    <div className="uma-gate-panel-title">
+                                        Gate Number Win Rates
+                                        <span
+                                            className="sa-info-icon"
+                                            title="Runaway is included in Front"
+                                        >
+                                            i
+                                        </span>
+                                    </div>
+                                    <div className="histogram-toggle uma-gate-toggle">
+                                        {(Object.keys(gateFlavorLabels) as GateWinRateFlavor[]).map((flavor) => (
+                                            <button
+                                                key={flavor}
+                                                className={`histogram-toggle-btn uma-gate-toggle-btn${gateFlavor === flavor ? " active" : ""}`}
+                                                onClick={() => setGateFlavor(flavor)}
+                                            >
+                                                {gateFlavorLabels[flavor]}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="uma-gate-table-wrap" style={{ ['--gate-row-count' as any]: displayedGateWinRates.length }}>
+                                        <div className="uma-gate-head-row">
+                                            <div>Gate</div>
+                                            <div className="uma-gate-cell--r">Wins</div>
+                                            <div className="uma-gate-cell--r">Entries</div>
+                                            <div className="uma-gate-cell--r">Win%</div>
+                                        </div>
+                                        <div className="uma-gate-body">
+                                            {displayedGateWinRates.map((gate) => (
+                                                <div key={gate.gateNumber} className="uma-gate-body-row">
+                                                    <div>{gate.gateNumber}</div>
+                                                    <div className="uma-gate-cell--r">{gate.wins}</div>
+                                                    <div className="uma-gate-cell--r">{gate.appearances}</div>
+                                                    <div className="uma-gate-cell--r" style={{ color: gateWinRateColor(gate.winRate) }}>
+                                                        {(gate.winRate * 100).toFixed(1)}%
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {displayedGateWinRates.length === 0 && (
+                                                <div className="uma-gate-body-row">
+                                                    <div style={{ gridColumn: '1 / span 4', textAlign: 'center', color: '#718096' }}>
+                                                        No data
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
                             )}
                         </div>
                         <div className="uma-overview-actions">
-                            <button className="ca-decks-btn" onClick={() => setCardUsageOpen(true)}>
+                            <button className="ca-decks-btn uma-overview-action-btn" onClick={() => setStyleDecksOpen(true)} title="View style support decks">
+                                <img src={AssetLoader.getStatIcon("deck")} alt="" className="ca-decks-btn-icon" />
+                                View decks
+                            </button>
+                            <button className="ca-decks-btn uma-overview-action-btn" onClick={() => setCardUsageOpen(true)}>
                                 <img src={`${import.meta.env.BASE_URL}assets/textures/card.webp`} alt="" className="ca-decks-btn-icon" />
                                 View card usage
                             </button>
@@ -335,6 +512,96 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
                         </div>
                         <div className="cdt-content">
                             <SupportCardPanel horses={group.stats.allHorses} />
+                        </div>
+                    </div>
+                </div>
+            )}
+            {styleDecksOpen && (
+                <div className="cdt-overlay" onClick={() => setStyleDecksOpen(false)}>
+                    <div className="cdt-modal ca-decks-modal" onClick={e => e.stopPropagation()}>
+                        <div className="cdt-header">
+                            <h3 className="cdt-title">Style Decks</h3>
+                            <div className="ca-sort-toggle ca-sort-toggle--modal">
+                                <button
+                                    className={`ca-sort-btn${styleDeckSort === "pop" ? " ca-sort-btn--active" : ""}`}
+                                    onClick={() => setStyleDeckSort("pop")}>
+                                    By Population
+                                </button>
+                                <button
+                                    className={`ca-sort-btn${styleDeckSort === "winRate" ? " ca-sort-btn--active" : ""}`}
+                                    onClick={() => setStyleDeckSort("winRate")}>
+                                    By Adj. Win%
+                                </button>
+                            </div>
+                            <button className="cdt-close-btn" onClick={() => setStyleDecksOpen(false)}>&times;</button>
+                        </div>
+                        <div className="cdt-content">
+                            <div className="histogram-toggle uma-gate-toggle" style={{ marginBottom: "10px" }}>
+                                {availableDeckStyleIds.map((sid) => (
+                                    <button
+                                        key={sid}
+                                        className={`histogram-toggle-btn uma-gate-toggle-btn${selectedDeckStyle === sid ? " active" : ""}`}
+                                        onClick={() => setSelectedDeckStyle(sid)}
+                                    >
+                                        {STRATEGY_NAMES[sid] ?? `Style ${sid}`}
+                                    </button>
+                                ))}
+                            </div>
+                            {styleDeckSort === "winRate" && (
+                                <div className="histogram-toggle uma-gate-toggle" style={{ marginBottom: "10px" }}>
+                                    {([
+                                        { value: 0.5 as const, label: "≥0.5% pop" },
+                                        { value: 1 as const, label: "≥1% pop" },
+                                        { value: 2 as const, label: "≥2% pop" },
+                                        { value: 0 as const, label: "No minimum pop" },
+                                    ]).map((opt) => (
+                                        <button
+                                            key={opt.value}
+                                            className={`histogram-toggle-btn uma-gate-toggle-btn${styleDeckMinPopPct === opt.value ? " active" : ""}`}
+                                            onClick={() => setStyleDeckMinPopPct(opt.value)}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                            {selectedStyleDeckList.length === 0 ? (
+                                <span className="sa-no-data">No deck data for this style.</span>
+                            ) : selectedStyleDeckList.slice(0, 20).map(row => (
+                                <div key={`${selectedDeckStyle}_${row.deckKey}`} className="sa-sb-row deck-row">
+                                    <div className="deck-cards-grid">
+                                        {row.cardIds.map((id, i) => (
+                                            <img
+                                                key={i}
+                                                src={AssetLoader.getSupportCardIcon(id)}
+                                                alt={`Card ${id}`}
+                                                className="deck-card-icon"
+                                                onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                                            />
+                                        ))}
+                                    </div>
+                                    <div className="deck-bars">
+                                        <div className="sa-sb-bar-row">
+                                            <div className="sa-sb-bar-label">Pop%</div>
+                                            <div className="sa-sb-track sa-sb-track--pick">
+                                                <div className="sa-sb-bar-fill sa-sb-bar-fill--pick" style={{ width: `${(row.popPct / selectedStyleDeckMaxPct) * 100}%` }} />
+                                            </div>
+                                            <div className="sa-sb-value sa-sb-value--pick" style={{ width: "auto", minWidth: "72px" }}>
+                                                {row.popPct.toFixed(1)}% <span className="ca-abs-count">({row.appearances})</span>
+                                            </div>
+                                        </div>
+                                        <div className="sa-sb-bar-row">
+                                            <div className="sa-sb-bar-label">Win%</div>
+                                            <div className="sa-sb-track sa-sb-track--win">
+                                                <div className="sa-sb-bar-fill" style={{ width: `${(row.adjWinRate * 100 / selectedStyleDeckMaxPct) * 100}%`, background: "#68d391" }} />
+                                            </div>
+                                            <div className="sa-sb-value sa-sb-value--win" style={{ width: "auto", minWidth: "72px" }}>
+                                                {(row.adjWinRate * 100).toFixed(1)}% <span className="ca-abs-count">({row.wins})</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>

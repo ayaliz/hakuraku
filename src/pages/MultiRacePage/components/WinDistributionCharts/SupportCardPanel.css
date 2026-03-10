@@ -1,6 +1,31 @@
 .scp-panel { display: flex; flex-direction: column; }
 .scp-controls { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-bottom: 12px; }
 .scp-info-icon { color: #718096; font-size: 14px; cursor: default; }
+.scp-pop-filter-toggle {
+    display: flex;
+    width: 100%;
+    border: 1px solid #4a5568;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+.scp-pop-filter-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    text-align: center;
+    padding: 2px 6px;
+}
+.scp-pop-filter-btn:not(:last-child) {
+    border-right: 1px solid #4a5568;
+}
+.scp-pop-filter-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #a0aec0;
+}
+.scp-pop-filter-btn.active {
+    background: rgba(66, 153, 225, 0.2);
+    color: #90cdf4;
+}
 .scp-row { display: flex; align-items: flex-start; gap: 12px; }
 .scp-card-icon {
     width: 44px;

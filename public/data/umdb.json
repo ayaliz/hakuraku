@@ -8309,6 +8309,867 @@
       "courseSetId": 10815
     },
     {
+      "id": 920001,
+      "name": "TS Climax Race 1",
+      "distance": 1200,
+      "groundType": "TURF",
+      "courseSetId": 10701
+    },
+    {
+      "id": 920002,
+      "name": "TS Climax Race 1",
+      "distance": 1400,
+      "groundType": "TURF",
+      "courseSetId": 10702
+    },
+    {
+      "id": 920003,
+      "name": "TS Climax Race 1",
+      "distance": 1200,
+      "groundType": "TURF",
+      "courseSetId": 10501
+    },
+    {
+      "id": 920004,
+      "name": "TS Climax Race 1",
+      "distance": 1200,
+      "groundType": "TURF",
+      "courseSetId": 10801
+    },
+    {
+      "id": 920005,
+      "name": "TS Climax Race 1",
+      "distance": 1400,
+      "groundType": "TURF",
+      "courseSetId": 10803
+    },
+    {
+      "id": 920006,
+      "name": "TS Climax Race 1",
+      "distance": 1400,
+      "groundType": "TURF",
+      "courseSetId": 10902
+    },
+    {
+      "id": 920007,
+      "name": "TS Climax Race 1",
+      "distance": 1400,
+      "groundType": "TURF",
+      "courseSetId": 10601
+    },
+    {
+      "id": 920008,
+      "name": "TS Climax Race 1",
+      "distance": 1600,
+      "groundType": "TURF",
+      "courseSetId": 10903
+    },
+    {
+      "id": 920009,
+      "name": "TS Climax Race 1",
+      "distance": 1800,
+      "groundType": "TURF",
+      "courseSetId": 10904
+    },
+    {
+      "id": 920010,
+      "name": "TS Climax Race 1",
+      "distance": 1600,
+      "groundType": "TURF",
+      "courseSetId": 10602
+    },
+    {
+      "id": 920011,
+      "name": "TS Climax Race 1",
+      "distance": 1600,
+      "groundType": "TURF",
+      "courseSetId": 10805
+    },
+    {
+      "id": 920012,
+      "name": "TS Climax Race 1",
+      "distance": 1800,
+      "groundType": "TURF",
+      "courseSetId": 10806
+    },
+    {
+      "id": 920013,
+      "name": "TS Climax Race 1",
+      "distance": 1600,
+      "groundType": "TURF",
+      "courseSetId": 10502
+    },
+    {
+      "id": 920014,
+      "name": "TS Climax Race 1",
+      "distance": 1800,
+      "groundType": "TURF",
+      "courseSetId": 10503
+    },
+    {
+      "id": 920015,
+      "name": "TS Climax Race 1",
+      "distance": 1800,
+      "groundType": "TURF",
+      "courseSetId": 10603
+    },
+    {
+      "id": 920016,
+      "name": "TS Climax Race 1",
+      "distance": 2000,
+      "groundType": "TURF",
+      "courseSetId": 10905
+    },
+    {
+      "id": 920017,
+      "name": "TS Climax Race 1",
+      "distance": 2200,
+      "groundType": "TURF",
+      "courseSetId": 10906
+    },
+    {
+      "id": 920018,
+      "name": "TS Climax Race 1",
+      "distance": 2000,
+      "groundType": "TURF",
+      "courseSetId": 10504
+    },
+    {
+      "id": 920019,
+      "name": "TS Climax Race 1",
+      "distance": 2200,
+      "groundType": "TURF",
+      "courseSetId": 10505
+    },
+    {
+      "id": 920020,
+      "name": "TS Climax Race 1",
+      "distance": 2400,
+      "groundType": "TURF",
+      "courseSetId": 10606
+    },
+    {
+      "id": 920021,
+      "name": "TS Climax Race 1",
+      "distance": 2000,
+      "groundType": "TURF",
+      "courseSetId": 10604
+    },
+    {
+      "id": 920022,
+      "name": "TS Climax Race 1",
+      "distance": 2000,
+      "groundType": "TURF",
+      "courseSetId": 10807
+    },
+    {
+      "id": 920023,
+      "name": "TS Climax Race 1",
+      "distance": 2200,
+      "groundType": "TURF",
+      "courseSetId": 10808
+    },
+    {
+      "id": 920024,
+      "name": "TS Climax Race 1",
+      "distance": 2400,
+      "groundType": "TURF",
+      "courseSetId": 10809
+    },
+    {
+      "id": 920025,
+      "name": "TS Climax Race 1",
+      "distance": 2000,
+      "groundType": "TURF",
+      "courseSetId": 10704
+    },
+    {
+      "id": 920026,
+      "name": "TS Climax Race 1",
+      "distance": 3200,
+      "groundType": "TURF",
+      "courseSetId": 10811
+    },
+    {
+      "id": 920027,
+      "name": "TS Climax Race 1",
+      "distance": 3000,
+      "groundType": "TURF",
+      "courseSetId": 10810
+    },
+    {
+      "id": 920028,
+      "name": "TS Climax Race 1",
+      "distance": 2500,
+      "groundType": "TURF",
+      "courseSetId": 10506
+    },
+    {
+      "id": 920029,
+      "name": "TS Climax Race 1",
+      "distance": 3600,
+      "groundType": "TURF",
+      "courseSetId": 10507
+    },
+    {
+      "id": 920030,
+      "name": "TS Climax Race 1",
+      "distance": 2500,
+      "groundType": "TURF",
+      "courseSetId": 10607
+    },
+    {
+      "id": 920031,
+      "name": "TS Climax Race 1",
+      "distance": 3400,
+      "groundType": "TURF",
+      "courseSetId": 10608
+    },
+    {
+      "id": 920032,
+      "name": "TS Climax Race 1",
+      "distance": 3000,
+      "groundType": "TURF",
+      "courseSetId": 10909
+    },
+    {
+      "id": 920033,
+      "name": "TS Climax Race 1",
+      "distance": 1400,
+      "groundType": "DIRT",
+      "courseSetId": 10610
+    },
+    {
+      "id": 920034,
+      "name": "TS Climax Race 1",
+      "distance": 1400,
+      "groundType": "DIRT",
+      "courseSetId": 10707
+    },
+    {
+      "id": 920035,
+      "name": "TS Climax Race 1",
+      "distance": 1200,
+      "groundType": "DIRT",
+      "courseSetId": 10812
+    },
+    {
+      "id": 920036,
+      "name": "TS Climax Race 1",
+      "distance": 1400,
+      "groundType": "DIRT",
+      "courseSetId": 10813
+    },
+    {
+      "id": 920037,
+      "name": "TS Climax Race 1",
+      "distance": 1600,
+      "groundType": "DIRT",
+      "courseSetId": 10611
+    },
+    {
+      "id": 920038,
+      "name": "TS Climax Race 1",
+      "distance": 1800,
+      "groundType": "DIRT",
+      "courseSetId": 10708
+    },
+    {
+      "id": 920039,
+      "name": "TS Climax Race 1",
+      "distance": 1800,
+      "groundType": "DIRT",
+      "courseSetId": 10814
+    },
+    {
+      "id": 920040,
+      "name": "TS Climax Race 1",
+      "distance": 2100,
+      "groundType": "DIRT",
+      "courseSetId": 10612
+    },
+    {
+      "id": 920041,
+      "name": "TS Climax Race 1",
+      "distance": 1900,
+      "groundType": "DIRT",
+      "courseSetId": 10815
+    },
+    {
+      "id": 920042,
+      "name": "TS Climax Race 2",
+      "distance": 1200,
+      "groundType": "TURF",
+      "courseSetId": 10701
+    },
+    {
+      "id": 920043,
+      "name": "TS Climax Race 2",
+      "distance": 1400,
+      "groundType": "TURF",
+      "courseSetId": 10702
+    },
+    {
+      "id": 920044,
+      "name": "TS Climax Race 2",
+      "distance": 1200,
+      "groundType": "TURF",
+      "courseSetId": 10501
+    },
+    {
+      "id": 920045,
+      "name": "TS Climax Race 2",
+      "distance": 1200,
+      "groundType": "TURF",
+      "courseSetId": 10801
+    },
+    {
+      "id": 920046,
+      "name": "TS Climax Race 2",
+      "distance": 1400,
+      "groundType": "TURF",
+      "courseSetId": 10803
+    },
+    {
+      "id": 920047,
+      "name": "TS Climax Race 2",
+      "distance": 1400,
+      "groundType": "TURF",
+      "courseSetId": 10902
+    },
+    {
+      "id": 920048,
+      "name": "TS Climax Race 2",
+      "distance": 1400,
+      "groundType": "TURF",
+      "courseSetId": 10601
+    },
+    {
+      "id": 920049,
+      "name": "TS Climax Race 2",
+      "distance": 1600,
+      "groundType": "TURF",
+      "courseSetId": 10903
+    },
+    {
+      "id": 920050,
+      "name": "TS Climax Race 2",
+      "distance": 1800,
+      "groundType": "TURF",
+      "courseSetId": 10904
+    },
+    {
+      "id": 920051,
+      "name": "TS Climax Race 2",
+      "distance": 1600,
+      "groundType": "TURF",
+      "courseSetId": 10602
+    },
+    {
+      "id": 920052,
+      "name": "TS Climax Race 2",
+      "distance": 1600,
+      "groundType": "TURF",
+      "courseSetId": 10805
+    },
+    {
+      "id": 920053,
+      "name": "TS Climax Race 2",
+      "distance": 1800,
+      "groundType": "TURF",
+      "courseSetId": 10806
+    },
+    {
+      "id": 920054,
+      "name": "TS Climax Race 2",
+      "distance": 1600,
+      "groundType": "TURF",
+      "courseSetId": 10502
+    },
+    {
+      "id": 920055,
+      "name": "TS Climax Race 2",
+      "distance": 1800,
+      "groundType": "TURF",
+      "courseSetId": 10503
+    },
+    {
+      "id": 920056,
+      "name": "TS Climax Race 2",
+      "distance": 1800,
+      "groundType": "TURF",
+      "courseSetId": 10603
+    },
+    {
+      "id": 920057,
+      "name": "TS Climax Race 2",
+      "distance": 2000,
+      "groundType": "TURF",
+      "courseSetId": 10905
+    },
+    {
+      "id": 920058,
+      "name": "TS Climax Race 2",
+      "distance": 2200,
+      "groundType": "TURF",
+      "courseSetId": 10906
+    },
+    {
+      "id": 920059,
+      "name": "TS Climax Race 2",
+      "distance": 2000,
+      "groundType": "TURF",
+      "courseSetId": 10504
+    },
+    {
+      "id": 920060,
+      "name": "TS Climax Race 2",
+      "distance": 2200,
+      "groundType": "TURF",
+      "courseSetId": 10505
+    },
+    {
+      "id": 920061,
+      "name": "TS Climax Race 2",
+      "distance": 2400,
+      "groundType": "TURF",
+      "courseSetId": 10606
+    },
+    {
+      "id": 920062,
+      "name": "TS Climax Race 2",
+      "distance": 2000,
+      "groundType": "TURF",
+      "courseSetId": 10604
+    },
+    {
+      "id": 920063,
+      "name": "TS Climax Race 2",
+      "distance": 2000,
+      "groundType": "TURF",
+      "courseSetId": 10807
+    },
+    {
+      "id": 920064,
+      "name": "TS Climax Race 2",
+      "distance": 2200,
+      "groundType": "TURF",
+      "courseSetId": 10808
+    },
+    {
+      "id": 920065,
+      "name": "TS Climax Race 2",
+      "distance": 2400,
+      "groundType": "TURF",
+      "courseSetId": 10809
+    },
+    {
+      "id": 920066,
+      "name": "TS Climax Race 2",
+      "distance": 2000,
+      "groundType": "TURF",
+      "courseSetId": 10704
+    },
+    {
+      "id": 920067,
+      "name": "TS Climax Race 2",
+      "distance": 3200,
+      "groundType": "TURF",
+      "courseSetId": 10811
+    },
+    {
+      "id": 920068,
+      "name": "TS Climax Race 2",
+      "distance": 3000,
+      "groundType": "TURF",
+      "courseSetId": 10810
+    },
+    {
+      "id": 920069,
+      "name": "TS Climax Race 2",
+      "distance": 2500,
+      "groundType": "TURF",
+      "courseSetId": 10506
+    },
+    {
+      "id": 920070,
+      "name": "TS Climax Race 2",
+      "distance": 3600,
+      "groundType": "TURF",
+      "courseSetId": 10507
+    },
+    {
+      "id": 920071,
+      "name": "TS Climax Race 2",
+      "distance": 2500,
+      "groundType": "TURF",
+      "courseSetId": 10607
+    },
+    {
+      "id": 920072,
+      "name": "TS Climax Race 2",
+      "distance": 3400,
+      "groundType": "TURF",
+      "courseSetId": 10608
+    },
+    {
+      "id": 920073,
+      "name": "TS Climax Race 2",
+      "distance": 3000,
+      "groundType": "TURF",
+      "courseSetId": 10909
+    },
+    {
+      "id": 920074,
+      "name": "TS Climax Race 2",
+      "distance": 1400,
+      "groundType": "DIRT",
+      "courseSetId": 10610
+    },
+    {
+      "id": 920075,
+      "name": "TS Climax Race 2",
+      "distance": 1400,
+      "groundType": "DIRT",
+      "courseSetId": 10707
+    },
+    {
+      "id": 920076,
+      "name": "TS Climax Race 2",
+      "distance": 1200,
+      "groundType": "DIRT",
+      "courseSetId": 10812
+    },
+    {
+      "id": 920077,
+      "name": "TS Climax Race 2",
+      "distance": 1400,
+      "groundType": "DIRT",
+      "courseSetId": 10813
+    },
+    {
+      "id": 920078,
+      "name": "TS Climax Race 2",
+      "distance": 1600,
+      "groundType": "DIRT",
+      "courseSetId": 10611
+    },
+    {
+      "id": 920079,
+      "name": "TS Climax Race 2",
+      "distance": 1800,
+      "groundType": "DIRT",
+      "courseSetId": 10708
+    },
+    {
+      "id": 920080,
+      "name": "TS Climax Race 2",
+      "distance": 1800,
+      "groundType": "DIRT",
+      "courseSetId": 10814
+    },
+    {
+      "id": 920081,
+      "name": "TS Climax Race 2",
+      "distance": 2100,
+      "groundType": "DIRT",
+      "courseSetId": 10612
+    },
+    {
+      "id": 920082,
+      "name": "TS Climax Race 2",
+      "distance": 1900,
+      "groundType": "DIRT",
+      "courseSetId": 10815
+    },
+    {
+      "id": 920083,
+      "name": "TS Climax Race 3",
+      "distance": 1200,
+      "groundType": "TURF",
+      "courseSetId": 10701
+    },
+    {
+      "id": 920084,
+      "name": "TS Climax Race 3",
+      "distance": 1400,
+      "groundType": "TURF",
+      "courseSetId": 10702
+    },
+    {
+      "id": 920085,
+      "name": "TS Climax Race 3",
+      "distance": 1200,
+      "groundType": "TURF",
+      "courseSetId": 10501
+    },
+    {
+      "id": 920086,
+      "name": "TS Climax Race 3",
+      "distance": 1200,
+      "groundType": "TURF",
+      "courseSetId": 10801
+    },
+    {
+      "id": 920087,
+      "name": "TS Climax Race 3",
+      "distance": 1400,
+      "groundType": "TURF",
+      "courseSetId": 10803
+    },
+    {
+      "id": 920088,
+      "name": "TS Climax Race 3",
+      "distance": 1400,
+      "groundType": "TURF",
+      "courseSetId": 10902
+    },
+    {
+      "id": 920089,
+      "name": "TS Climax Race 3",
+      "distance": 1400,
+      "groundType": "TURF",
+      "courseSetId": 10601
+    },
+    {
+      "id": 920090,
+      "name": "TS Climax Race 3",
+      "distance": 1600,
+      "groundType": "TURF",
+      "courseSetId": 10903
+    },
+    {
+      "id": 920091,
+      "name": "TS Climax Race 3",
+      "distance": 1800,
+      "groundType": "TURF",
+      "courseSetId": 10904
+    },
+    {
+      "id": 920092,
+      "name": "TS Climax Race 3",
+      "distance": 1600,
+      "groundType": "TURF",
+      "courseSetId": 10602
+    },
+    {
+      "id": 920093,
+      "name": "TS Climax Race 3",
+      "distance": 1600,
+      "groundType": "TURF",
+      "courseSetId": 10805
+    },
+    {
+      "id": 920094,
+      "name": "TS Climax Race 3",
+      "distance": 1800,
+      "groundType": "TURF",
+      "courseSetId": 10806
+    },
+    {
+      "id": 920095,
+      "name": "TS Climax Race 3",
+      "distance": 1600,
+      "groundType": "TURF",
+      "courseSetId": 10502
+    },
+    {
+      "id": 920096,
+      "name": "TS Climax Race 3",
+      "distance": 1800,
+      "groundType": "TURF",
+      "courseSetId": 10503
+    },
+    {
+      "id": 920097,
+      "name": "TS Climax Race 3",
+      "distance": 1800,
+      "groundType": "TURF",
+      "courseSetId": 10603
+    },
+    {
+      "id": 920098,
+      "name": "TS Climax Race 3",
+      "distance": 2000,
+      "groundType": "TURF",
+      "courseSetId": 10905
+    },
+    {
+      "id": 920099,
+      "name": "TS Climax Race 3",
+      "distance": 2200,
+      "groundType": "TURF",
+      "courseSetId": 10906
+    },
+    {
+      "id": 920100,
+      "name": "TS Climax Race 3",
+      "distance": 2000,
+      "groundType": "TURF",
+      "courseSetId": 10504
+    },
+    {
+      "id": 920101,
+      "name": "TS Climax Race 3",
+      "distance": 2200,
+      "groundType": "TURF",
+      "courseSetId": 10505
+    },
+    {
+      "id": 920102,
+      "name": "TS Climax Race 3",
+      "distance": 2400,
+      "groundType": "TURF",
+      "courseSetId": 10606
+    },
+    {
+      "id": 920103,
+      "name": "TS Climax Race 3",
+      "distance": 2000,
+      "groundType": "TURF",
+      "courseSetId": 10604
+    },
+    {
+      "id": 920104,
+      "name": "TS Climax Race 3",
+      "distance": 2000,
+      "groundType": "TURF",
+      "courseSetId": 10807
+    },
+    {
+      "id": 920105,
+      "name": "TS Climax Race 3",
+      "distance": 2200,
+      "groundType": "TURF",
+      "courseSetId": 10808
+    },
+    {
+      "id": 920106,
+      "name": "TS Climax Race 3",
+      "distance": 2400,
+      "groundType": "TURF",
+      "courseSetId": 10809
+    },
+    {
+      "id": 920107,
+      "name": "TS Climax Race 3",
+      "distance": 2000,
+      "groundType": "TURF",
+      "courseSetId": 10704
+    },
+    {
+      "id": 920108,
+      "name": "TS Climax Race 3",
+      "distance": 3200,
+      "groundType": "TURF",
+      "courseSetId": 10811
+    },
+    {
+      "id": 920109,
+      "name": "TS Climax Race 3",
+      "distance": 3000,
+      "groundType": "TURF",
+      "courseSetId": 10810
+    },
+    {
+      "id": 920110,
+      "name": "TS Climax Race 3",
+      "distance": 2500,
+      "groundType": "TURF",
+      "courseSetId": 10506
+    },
+    {
+      "id": 920111,
+      "name": "TS Climax Race 3",
+      "distance": 3600,
+      "groundType": "TURF",
+      "courseSetId": 10507
+    },
+    {
+      "id": 920112,
+      "name": "TS Climax Race 3",
+      "distance": 2500,
+      "groundType": "TURF",
+      "courseSetId": 10607
+    },
+    {
+      "id": 920113,
+      "name": "TS Climax Race 3",
+      "distance": 3400,
+      "groundType": "TURF",
+      "courseSetId": 10608
+    },
+    {
+      "id": 920114,
+      "name": "TS Climax Race 3",
+      "distance": 3000,
+      "groundType": "TURF",
+      "courseSetId": 10909
+    },
+    {
+      "id": 920115,
+      "name": "TS Climax Race 3",
+      "distance": 1400,
+      "groundType": "DIRT",
+      "courseSetId": 10610
+    },
+    {
+      "id": 920116,
+      "name": "TS Climax Race 3",
+      "distance": 1400,
+      "groundType": "DIRT",
+      "courseSetId": 10707
+    },
+    {
+      "id": 920117,
+      "name": "TS Climax Race 3",
+      "distance": 1200,
+      "groundType": "DIRT",
+      "courseSetId": 10812
+    },
+    {
+      "id": 920118,
+      "name": "TS Climax Race 3",
+      "distance": 1400,
+      "groundType": "DIRT",
+      "courseSetId": 10813
+    },
+    {
+      "id": 920119,
+      "name": "TS Climax Race 3",
+      "distance": 1600,
+      "groundType": "DIRT",
+      "courseSetId": 10611
+    },
+    {
+      "id": 920120,
+      "name": "TS Climax Race 3",
+      "distance": 1800,
+      "groundType": "DIRT",
+      "courseSetId": 10708
+    },
+    {
+      "id": 920121,
+      "name": "TS Climax Race 3",
+      "distance": 1800,
+      "groundType": "DIRT",
+      "courseSetId": 10814
+    },
+    {
+      "id": 920122,
+      "name": "TS Climax Race 3",
+      "distance": 2100,
+      "groundType": "DIRT",
+      "courseSetId": 10612
+    },
+    {
+      "id": 920123,
+      "name": "TS Climax Race 3",
+      "distance": 1900,
+      "groundType": "DIRT",
+      "courseSetId": 10815
+    },
+    {
       "id": 999901,
       "name": "URA Finale Finals",
       "distance": 2400,
@@ -9839,6 +10700,16 @@
       "rarity": 3
     },
     {
+      "id": 10621,
+      "name": "Ready, Go!",
+      "gradeValue": 240,
+      "tagId": [
+        "401",
+        "402"
+      ],
+      "rarity": 3
+    },
+    {
       "id": 100011,
       "name": "Shooting Star",
       "gradeValue": 340,
@@ -10272,6 +11143,26 @@
         "401"
       ],
       "rarity": 4
+    },
+    {
+      "id": 100621,
+      "name": "Go, Go, Mun!",
+      "gradeValue": 340,
+      "tagId": [
+        "401",
+        "402"
+      ],
+      "rarity": 4
+    },
+    {
+      "id": 100681,
+      "name": "Victory Cheer!",
+      "gradeValue": 340,
+      "tagId": [
+        "401",
+        "403"
+      ],
+      "rarity": 5
     },
     {
       "id": 100691,
@@ -10882,6 +11773,16 @@
         "403"
       ],
       "rarity": 1
+    },
+    {
+      "id": 200154,
+      "name": "Firm Course Menace",
+      "gradeValue": 461,
+      "tagId": [
+        "401",
+        "403"
+      ],
+      "rarity": 2
     },
     {
       "id": 200161,
@@ -12852,6 +13753,16 @@
       "rarity": 1
     },
     {
+      "id": 201173,
+      "name": "Blast Forward",
+      "gradeValue": 508,
+      "tagId": [
+        "204",
+        "401"
+      ],
+      "rarity": 2
+    },
+    {
       "id": 201181,
       "name": "Long Corners ◎",
       "gradeValue": 262,
@@ -14079,6 +14990,30 @@
       "rarity": 1
     },
     {
+      "id": 210061,
+      "name": "Radiant Star",
+      "gradeValue": 633,
+      "tagId": [
+        "401",
+        "402",
+        "403",
+        "804"
+      ],
+      "rarity": 2
+    },
+    {
+      "id": 210062,
+      "name": "Glittering Star",
+      "gradeValue": 263,
+      "tagId": [
+        "401",
+        "402",
+        "403",
+        "804"
+      ],
+      "rarity": 1
+    },
+    {
       "id": 300011,
       "name": "Unquenched Thirst",
       "gradeValue": 0,
@@ -14600,6 +15535,26 @@
       "gradeValue": 180,
       "tagId": [
         "401"
+      ],
+      "rarity": 1
+    },
+    {
+      "id": 900621,
+      "name": "Go, Go, Mun!",
+      "gradeValue": 180,
+      "tagId": [
+        "401",
+        "402"
+      ],
+      "rarity": 1
+    },
+    {
+      "id": 900681,
+      "name": "Victory Cheer!",
+      "gradeValue": 180,
+      "tagId": [
+        "401",
+        "403"
       ],
       "rarity": 1
     },
@@ -15547,6 +16502,16 @@
       "charaId": 1033
     },
     {
+      "id": 10076,
+      "name": "[Tracen Academy] Mejiro Bright",
+      "charaId": 1074
+    },
+    {
+      "id": 10077,
+      "name": "[Tracen Academy] Narita Top Road",
+      "charaId": 1077
+    },
+    {
       "id": 20001,
       "name": "[Well, Look Who's Home] Fuji Kiseki",
       "charaId": 1005
@@ -15730,6 +16695,26 @@
       "id": 20039,
       "name": "[An Annoying Supervisor] Vodka",
       "charaId": 1008
+    },
+    {
+      "id": 20040,
+      "name": "[Hot Hearts and Cool Drinks] Mejiro Ryan",
+      "charaId": 1027
+    },
+    {
+      "id": 20041,
+      "name": "[Aim for the Brightest] Admire Vega",
+      "charaId": 1033
+    },
+    {
+      "id": 20042,
+      "name": "[The Perfect Morning Greeting!] Sakura Bakushin O",
+      "charaId": 1041
+    },
+    {
+      "id": 20043,
+      "name": "[At the End of the Day] Special Week",
+      "charaId": 1001
     },
     {
       "id": 30001,
@@ -16110,6 +17095,21 @@
       "id": 30085,
       "name": "[A Fan's Joy] Agnes Digital",
       "charaId": 1019
+    },
+    {
+      "id": 30086,
+      "name": "[Peachy Silhouette] Narita Top Road",
+      "charaId": 1077
+    },
+    {
+      "id": 30087,
+      "name": "[Little by Little] Mejiro Bright",
+      "charaId": 1074
+    },
+    {
+      "id": 30088,
+      "name": "[Special Dreamers!] Satono Diamond",
+      "charaId": 1067
     }
   ],
   "textData": [
@@ -23698,6 +24698,13 @@
       "solvableType": 0
     },
     {
+      "id": 200154,
+      "needSkillPoint": 130,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
       "id": 200161,
       "needSkillPoint": 110,
       "statusType": 0,
@@ -25070,6 +26077,13 @@
       "solvableType": 0
     },
     {
+      "id": 201173,
+      "needSkillPoint": 150,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
       "id": 201181,
       "needSkillPoint": 110,
       "statusType": 0,
@@ -25896,6 +26910,20 @@
       "solvableType": 0
     },
     {
+      "id": 210061,
+      "needSkillPoint": 200,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
+      "id": 210062,
+      "needSkillPoint": 200,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
       "id": 900011,
       "needSkillPoint": 200,
       "statusType": 0,
@@ -26219,6 +27247,20 @@
     },
     {
       "id": 900611,
+      "needSkillPoint": 200,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
+      "id": 900621,
+      "needSkillPoint": 200,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
+      "id": 900681,
       "needSkillPoint": 200,
       "statusType": 0,
       "statusValue": 0,
@@ -38164,6 +39206,11 @@
       "charaId": 1046
     },
     {
+      "id": 1850,
+      "relationType": 8466,
+      "charaId": 1068
+    },
+    {
       "id": 1852,
       "relationType": 8467,
       "charaId": 1050
@@ -38389,6 +39436,11 @@
       "charaId": 1046
     },
     {
+      "id": 1922,
+      "relationType": 8502,
+      "charaId": 1068
+    },
+    {
       "id": 1924,
       "relationType": 8503,
       "charaId": 1006
@@ -38479,9 +39531,19 @@
       "charaId": 1037
     },
     {
+      "id": 1975,
+      "relationType": 8529,
+      "charaId": 1062
+    },
+    {
       "id": 1976,
       "relationType": 8529,
       "charaId": 1006
+    },
+    {
+      "id": 1977,
+      "relationType": 8530,
+      "charaId": 1062
     },
     {
       "id": 1978,
@@ -38489,9 +39551,24 @@
       "charaId": 1050
     },
     {
+      "id": 1979,
+      "relationType": 8531,
+      "charaId": 1062
+    },
+    {
       "id": 1980,
       "relationType": 8531,
       "charaId": 1020
+    },
+    {
+      "id": 1981,
+      "relationType": 8532,
+      "charaId": 1062
+    },
+    {
+      "id": 1983,
+      "relationType": 8533,
+      "charaId": 1062
     },
     {
       "id": 1984,
@@ -38499,9 +39576,29 @@
       "charaId": 1041
     },
     {
+      "id": 1985,
+      "relationType": 8534,
+      "charaId": 1062
+    },
+    {
+      "id": 1987,
+      "relationType": 8535,
+      "charaId": 1062
+    },
+    {
+      "id": 1989,
+      "relationType": 8536,
+      "charaId": 1062
+    },
+    {
       "id": 1990,
       "relationType": 8536,
       "charaId": 1001
+    },
+    {
+      "id": 1991,
+      "relationType": 8537,
+      "charaId": 1062
     },
     {
       "id": 1992,
@@ -38509,9 +39606,19 @@
       "charaId": 1002
     },
     {
+      "id": 1993,
+      "relationType": 8538,
+      "charaId": 1062
+    },
+    {
       "id": 1994,
       "relationType": 8538,
       "charaId": 1005
+    },
+    {
+      "id": 1995,
+      "relationType": 8539,
+      "charaId": 1062
     },
     {
       "id": 1996,
@@ -38519,9 +39626,19 @@
       "charaId": 1010
     },
     {
+      "id": 1997,
+      "relationType": 8540,
+      "charaId": 1062
+    },
+    {
       "id": 1998,
       "relationType": 8540,
       "charaId": 1016
+    },
+    {
+      "id": 1999,
+      "relationType": 8541,
+      "charaId": 1062
     },
     {
       "id": 2000,
@@ -38529,9 +39646,19 @@
       "charaId": 1025
     },
     {
+      "id": 2001,
+      "relationType": 8542,
+      "charaId": 1062
+    },
+    {
       "id": 2002,
       "relationType": 8542,
       "charaId": 1030
+    },
+    {
+      "id": 2003,
+      "relationType": 8543,
+      "charaId": 1062
     },
     {
       "id": 2004,
@@ -38539,9 +39666,34 @@
       "charaId": 1032
     },
     {
+      "id": 2005,
+      "relationType": 8544,
+      "charaId": 1062
+    },
+    {
       "id": 2006,
       "relationType": 8544,
       "charaId": 1033
+    },
+    {
+      "id": 2007,
+      "relationType": 8545,
+      "charaId": 1062
+    },
+    {
+      "id": 2009,
+      "relationType": 8546,
+      "charaId": 1062
+    },
+    {
+      "id": 2011,
+      "relationType": 8547,
+      "charaId": 1062
+    },
+    {
+      "id": 2013,
+      "relationType": 8548,
+      "charaId": 1062
     },
     {
       "id": 2016,
@@ -38654,6 +39806,11 @@
       "charaId": 1046
     },
     {
+      "id": 2080,
+      "relationType": 8581,
+      "charaId": 1068
+    },
+    {
       "id": 2082,
       "relationType": 8582,
       "charaId": 1050
@@ -38674,9 +39831,19 @@
       "charaId": 1017
     },
     {
+      "id": 2091,
+      "relationType": 8587,
+      "charaId": 1068
+    },
+    {
       "id": 2092,
       "relationType": 8587,
       "charaId": 1018
+    },
+    {
+      "id": 2093,
+      "relationType": 8588,
+      "charaId": 1068
     },
     {
       "id": 2094,
@@ -38684,9 +39851,19 @@
       "charaId": 1021
     },
     {
+      "id": 2095,
+      "relationType": 8589,
+      "charaId": 1068
+    },
+    {
       "id": 2096,
       "relationType": 8589,
       "charaId": 1023
+    },
+    {
+      "id": 2097,
+      "relationType": 8590,
+      "charaId": 1068
     },
     {
       "id": 2098,
@@ -38694,9 +39871,19 @@
       "charaId": 1035
     },
     {
+      "id": 2099,
+      "relationType": 8591,
+      "charaId": 1068
+    },
+    {
       "id": 2100,
       "relationType": 8591,
       "charaId": 1048
+    },
+    {
+      "id": 2101,
+      "relationType": 8592,
+      "charaId": 1068
     },
     {
       "id": 2102,
@@ -38704,9 +39891,19 @@
       "charaId": 1004
     },
     {
+      "id": 2103,
+      "relationType": 8593,
+      "charaId": 1068
+    },
+    {
       "id": 2104,
       "relationType": 8593,
       "charaId": 1045
+    },
+    {
+      "id": 2105,
+      "relationType": 8594,
+      "charaId": 1068
     },
     {
       "id": 2106,
@@ -38714,9 +39911,19 @@
       "charaId": 1069
     },
     {
+      "id": 2109,
+      "relationType": 8596,
+      "charaId": 1068
+    },
+    {
       "id": 2110,
       "relationType": 8596,
       "charaId": 1003
+    },
+    {
+      "id": 2111,
+      "relationType": 8597,
+      "charaId": 1068
     },
     {
       "id": 2112,
@@ -38724,9 +39931,19 @@
       "charaId": 1013
     },
     {
+      "id": 2113,
+      "relationType": 8598,
+      "charaId": 1068
+    },
+    {
       "id": 2114,
       "relationType": 8598,
       "charaId": 1017
+    },
+    {
+      "id": 2115,
+      "relationType": 8599,
+      "charaId": 1068
     },
     {
       "id": 2116,
@@ -38734,9 +39951,19 @@
       "charaId": 1014
     },
     {
+      "id": 2117,
+      "relationType": 8600,
+      "charaId": 1068
+    },
+    {
       "id": 2118,
       "relationType": 8600,
       "charaId": 1019
+    },
+    {
+      "id": 2119,
+      "relationType": 8601,
+      "charaId": 1068
     },
     {
       "id": 2120,
@@ -38744,9 +39971,29 @@
       "charaId": 1028
     },
     {
+      "id": 2121,
+      "relationType": 8602,
+      "charaId": 1068
+    },
+    {
       "id": 2122,
       "relationType": 8602,
       "charaId": 1037
+    },
+    {
+      "id": 2123,
+      "relationType": 8603,
+      "charaId": 1068
+    },
+    {
+      "id": 2125,
+      "relationType": 8604,
+      "charaId": 1068
+    },
+    {
+      "id": 2127,
+      "relationType": 8605,
+      "charaId": 1068
     },
     {
       "id": 2128,
@@ -38754,9 +40001,19 @@
       "charaId": 1039
     },
     {
+      "id": 2129,
+      "relationType": 8606,
+      "charaId": 1068
+    },
+    {
       "id": 2130,
       "relationType": 8606,
       "charaId": 1052
+    },
+    {
+      "id": 2131,
+      "relationType": 8607,
+      "charaId": 1068
     },
     {
       "id": 2132,
@@ -38919,9 +40176,19 @@
       "charaId": 1033
     },
     {
+      "id": 2231,
+      "relationType": 2901,
+      "charaId": 1068
+    },
+    {
       "id": 2237,
       "relationType": 2902,
       "charaId": 1071
+    },
+    {
+      "id": 2245,
+      "relationType": 2903,
+      "charaId": 1062
     },
     {
       "id": 2270,
@@ -38929,9 +40196,34 @@
       "charaId": 1071
     },
     {
+      "id": 2275,
+      "relationType": 3003,
+      "charaId": 1068
+    },
+    {
+      "id": 2279,
+      "relationType": 3004,
+      "charaId": 1062
+    },
+    {
+      "id": 2281,
+      "relationType": 3004,
+      "charaId": 1068
+    },
+    {
       "id": 2286,
       "relationType": 3101,
       "charaId": 1071
+    },
+    {
+      "id": 2288,
+      "relationType": 3101,
+      "charaId": 1062
+    },
+    {
+      "id": 2294,
+      "relationType": 3101,
+      "charaId": 1068
     },
     {
       "id": 2296,
@@ -38939,9 +40231,44 @@
       "charaId": 1069
     },
     {
+      "id": 2302,
+      "relationType": 2523,
+      "charaId": 1068
+    },
+    {
+      "id": 2310,
+      "relationType": 2506,
+      "charaId": 1068
+    },
+    {
+      "id": 2314,
+      "relationType": 2516,
+      "charaId": 1068
+    },
+    {
+      "id": 2323,
+      "relationType": 2515,
+      "charaId": 1068
+    },
+    {
+      "id": 2328,
+      "relationType": 2519,
+      "charaId": 1068
+    },
+    {
       "id": 2337,
       "relationType": 3203,
       "charaId": 1071
+    },
+    {
+      "id": 2339,
+      "relationType": 3203,
+      "charaId": 1068
+    },
+    {
+      "id": 2352,
+      "relationType": 3205,
+      "charaId": 1062
     },
     {
       "id": 2361,
@@ -38949,9 +40276,34 @@
       "charaId": 1071
     },
     {
+      "id": 2363,
+      "relationType": 2404,
+      "charaId": 1062
+    },
+    {
       "id": 2372,
       "relationType": 2603,
       "charaId": 1071
+    },
+    {
+      "id": 2385,
+      "relationType": 2604,
+      "charaId": 1062
+    },
+    {
+      "id": 2388,
+      "relationType": 2604,
+      "charaId": 1068
+    },
+    {
+      "id": 2392,
+      "relationType": 101,
+      "charaId": 1068
+    },
+    {
+      "id": 2407,
+      "relationType": 103,
+      "charaId": 1062
     },
     {
       "id": 2423,
@@ -38964,6 +40316,16 @@
       "charaId": 1071
     },
     {
+      "id": 2441,
+      "relationType": 202,
+      "charaId": 1062
+    },
+    {
+      "id": 2446,
+      "relationType": 202,
+      "charaId": 1068
+    },
+    {
       "id": 2455,
       "relationType": 326,
       "charaId": 1071
@@ -38974,14 +40336,34 @@
       "charaId": 1056
     },
     {
+      "id": 2458,
+      "relationType": 327,
+      "charaId": 1062
+    },
+    {
       "id": 2459,
       "relationType": 328,
       "charaId": 1013
     },
     {
+      "id": 2468,
+      "relationType": 332,
+      "charaId": 1068
+    },
+    {
       "id": 2485,
       "relationType": 513,
       "charaId": 1060
+    },
+    {
+      "id": 2486,
+      "relationType": 513,
+      "charaId": 1062
+    },
+    {
+      "id": 2492,
+      "relationType": 515,
+      "charaId": 1068
     },
     {
       "id": 2493,
@@ -38992,6 +40374,11 @@
       "id": 2495,
       "relationType": 517,
       "charaId": 1003
+    },
+    {
+      "id": 2496,
+      "relationType": 517,
+      "charaId": 1068
     },
     {
       "id": 2501,
@@ -39014,6 +40401,11 @@
       "charaId": 1041
     },
     {
+      "id": 2508,
+      "relationType": 2203,
+      "charaId": 1068
+    },
+    {
       "id": 2509,
       "relationType": 2204,
       "charaId": 1027
@@ -39034,14 +40426,39 @@
       "charaId": 1071
     },
     {
+      "id": 2517,
+      "relationType": 2601,
+      "charaId": 1062
+    },
+    {
+      "id": 2522,
+      "relationType": 2601,
+      "charaId": 1068
+    },
+    {
       "id": 2531,
       "relationType": 7028,
       "charaId": 1003
     },
     {
+      "id": 2534,
+      "relationType": 7029,
+      "charaId": 1068
+    },
+    {
       "id": 2535,
       "relationType": 7030,
       "charaId": 1059
+    },
+    {
+      "id": 2541,
+      "relationType": 2703,
+      "charaId": 1068
+    },
+    {
+      "id": 2552,
+      "relationType": 2805,
+      "charaId": 1062
     },
     {
       "id": 2556,

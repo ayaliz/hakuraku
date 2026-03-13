@@ -134,6 +134,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 skillActivations={this.skillActivations(this.props.raceData)}
                 otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.state.activeCourseId, this.skillActivations(this.props.raceData))}
                 raceType={this.props.raceType}
+                groundCondition={this.props.trackDetails?.condition != null ? Number(this.props.trackDetails.condition) : undefined}
             />
 
             <div style={sectionDividerStyle} />

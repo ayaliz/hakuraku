@@ -260,8 +260,11 @@ export const charaTableColumns: CharaColumnDef[] = [
                 ? row.maxAdjustedSpeed - row.lastSpurtTargetSpeed : 0;
             const speedReached = speedDiff >= -0.05;
 
-            return (
-                <div style={{ lineHeight: 1.3 }}>
+            const hasHpInfo = row.hpAtPhase3Start !== undefined || row.requiredSpurtHp !== undefined;
+            const startHp = row.hpOutcome?.startHp;
+
+            const cellContent = (
+                <div style={{ lineHeight: 1.3, cursor: hasHpInfo ? 'help' : undefined }}>
                     <span>Delay: <span style={{ color: spurtColor, fontWeight: 600 }}>{spurtDelay.toFixed(1)}m</span></span>
                     {row.maxAdjustedSpeed && row.lastSpurtTargetSpeed && (
                         <>
@@ -275,6 +278,44 @@ export const charaTableColumns: CharaColumnDef[] = [
                         </>
                     )}
                 </div>
+            );
+
+            if (!hasHpInfo) return cellContent;
+
+            const hpPct = (row.hpAtPhase3Start !== undefined && startHp)
+                ? ` (${((row.hpAtPhase3Start / startHp) * 100).toFixed(1)}%)`
+                : '';
+            const hasBoth = row.hpAtPhase3Start !== undefined && row.requiredSpurtHp !== undefined;
+            const met = hasBoth ? row.hpAtPhase3Start! >= row.requiredSpurtHp! : undefined;
+
+            const diff = (met !== undefined)
+                ? Math.round(row.hpAtPhase3Start! - row.requiredSpurtHp!)
+                : undefined;
+
+            const hpTooltip = (
+                <Tooltip id={`spurt-hp-${row.frameOrder}`}>
+                    <div style={{ textAlign: 'left', fontSize: '0.85em', lineHeight: 1.6 }}>
+                        {row.hpAtPhase3Start !== undefined && (
+                            <div>HP at 2/3: <strong>{Math.round(row.hpAtPhase3Start)}</strong>{hpPct}</div>
+                        )}
+                        {row.requiredSpurtHp !== undefined && (
+                            <div>
+                                Required HP: <strong>{Math.round(row.requiredSpurtHp)}</strong>
+                                {diff !== undefined && (
+                                    <span style={{ color: diff >= 0 ? '#4ade80' : '#f87171' }}>
+                                        {' '}({diff >= 0 ? '+' : ''}{diff})
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </Tooltip>
+            );
+
+            return (
+                <OverlayTrigger placement="top" overlay={hpTooltip}>
+                    {cellContent}
+                </OverlayTrigger>
             );
         },
     },

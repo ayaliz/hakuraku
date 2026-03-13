@@ -59,6 +59,8 @@ export type CharaTableData = {
     lastSpurtTargetSpeed?: number;
     maxAdjustedSpeed?: number;
     hpOutcome?: { type: 'died'; distance: number; deficit: number; startHp: number } | { type: 'survived'; hp: number; startHp: number };
+    hpAtPhase3Start?: number;
+    requiredSpurtHp?: number;
     duelingTime?: number;
     downhillModeTime?: number;
     paceUpTime?: number;

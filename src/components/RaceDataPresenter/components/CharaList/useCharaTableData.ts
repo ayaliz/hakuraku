@@ -7,7 +7,11 @@ import { useAvailableTracks } from "../../../RaceReplay/hooks/useAvailableTracks
 import { useGuessTrack } from "../../../RaceReplay/hooks/useGuessTrack";
 import { getPassiveStatModifiers, getSkillDurationSecs, getSkillBaseTime } from "../../../RaceReplay/utils/SkillDataUtils";
 import { adjustStat, calculateTargetSpeed, getDistanceCategory, calculateReferenceHpConsumption } from "../../../RaceReplay/utils/speedCalculations";
-import { CAREER_RACE_STAT_BONUS, DOWNHILL_HP_RATIO_THRESHOLD } from "../../../RaceReplay/utils/raceConstants";
+import {
+    CAREER_RACE_STAT_BONUS, DOWNHILL_HP_RATIO_THRESHOLD,
+    BASE_SPEED_CONSTANT, BASE_SPEED_COURSE_OFFSET, BASE_SPEED_COURSE_SCALE,
+    HP_CONSUMPTION_SCALE, HP_CONSUMPTION_SPEED_OFFSET, HP_CONSUMPTION_DIVISOR,
+} from "../../../RaceReplay/utils/raceConstants";
 
 const LATE_START_ACCEL_THRESHOLD = 0.0001; // Acceleration (m/s²) below which a horse is considered a late starter
 import { computeHeuristicEvents } from "../../../RaceReplay/utils/computeHeuristicEvents";
@@ -46,13 +50,25 @@ function interpolateDistance(frames: RaceSimulateFrameData[], horseIndex: number
 
 import { calculateMaxAdjustedSpeed, calculateHpOutcome } from "../../../RaceReplay/utils/analysisUtils";
 
+// GroundModifier for HP drain: 1.02 for 重/不良 on turf, 1.01 for 重 on dirt, 1.02 for 不良 on dirt
+function computeGroundModifier(surface: number, condition: number): number {
+    if (surface === 1) { // Turf
+        if (condition === 3 || condition === 4) return 1.02;
+    } else if (surface === 2) { // Dirt
+        if (condition === 3) return 1.01;
+        if (condition === 4) return 1.02;
+    }
+    return 1.0;
+}
+
 export const computeCharaTableData = (
     raceHorseInfo: any[],
     raceData: RaceSimulateData,
     effectiveCourseId: number | undefined,
     skillActivations: Record<number, { time: number; name: string; param: number[] }[]> | undefined,
     otherEvents: Record<number, { time: number; duration: number; name: string }[]> | undefined,
-    raceType?: string
+    raceType?: string,
+    groundCondition?: number
 ): CharaTableData[] => {
     const raceDistance = calculateRaceDistance(raceData);
 
@@ -62,6 +78,8 @@ export const computeCharaTableData = (
 
     const distanceCategory = getDistanceCategory(raceDistance);
     const trackSlopes = effectiveCourseId ? (GameDataLoader.courseData as any)[effectiveCourseId]?.slopes ?? [] : [];
+    const surface: number = effectiveCourseId ? (GameDataLoader.courseData as any)[effectiveCourseId]?.surface ?? 0 : 0;
+    const groundModifier = computeGroundModifier(surface, groundCondition ?? 0);
 
     // Prepare data for heuristic events calculation
     const trainedCharaByIdx: Record<number, TrainedCharaData> = {};
@@ -223,6 +241,27 @@ export const computeCharaTableData = (
                 adjustedGuts,
                 lastSpurtStartDistances[frameOrder] ?? -1
             );
+        }
+
+        // HP at phase 3 start (2/3 point) and required HP for full spurt
+        let hpAtPhase3Start: number | undefined = undefined;
+        let requiredSpurtHp: number | undefined = undefined;
+        const phase3StartDist = raceDistance * 2 / 3;
+        if (raceData.frame) {
+            for (const frame of raceData.frame) {
+                const h = frame.horseFrame?.[frameOrder];
+                if (h && (h.distance ?? 0) >= phase3StartDist) {
+                    hpAtPhase3Start = h.hp ?? undefined;
+                    break;
+                }
+            }
+        }
+        if (lastSpurtTargetSpeed > 0 && adjustedGuts > 0) {
+            const baseSpeed = BASE_SPEED_CONSTANT - (raceDistance - BASE_SPEED_COURSE_OFFSET) / BASE_SPEED_COURSE_SCALE;
+            const gutsModifier = 1.0 + 200 / Math.sqrt(600 * adjustedGuts);
+            const baseHpDrain = HP_CONSUMPTION_SCALE * Math.pow(lastSpurtTargetSpeed - baseSpeed + HP_CONSUMPTION_SPEED_OFFSET, 2) / HP_CONSUMPTION_DIVISOR;
+            const totalHpDrain = baseHpDrain * groundModifier * gutsModifier;
+            requiredSpurtHp = ((raceDistance / 3 - 62) / lastSpurtTargetSpeed) * totalHpDrain;
         }
 
         // Calculate Skill Events
@@ -483,6 +522,8 @@ export const computeCharaTableData = (
             isLateStart,
             lastSpurtTargetSpeed,
             maxAdjustedSpeed: maxAdjSpeed,
+            hpAtPhase3Start,
+            requiredSpurtHp,
             duelingTime,
             downhillModeTime,
             paceUpTime,
@@ -517,14 +558,15 @@ export const useCharaTableData = (
     detectedCourseId: number | undefined,
     skillActivations: Record<number, { time: number; name: string; param: number[] }[]> | undefined,
     otherEvents: Record<number, { time: number; duration: number; name: string }[]> | undefined,
-    raceType?: string
+    raceType?: string,
+    groundCondition?: number
 ) => {
     const raceDistance = calculateRaceDistance(raceData);
     const availableTracks = useAvailableTracks(raceDistance);
     const { selectedTrackId } = useGuessTrack(detectedCourseId, raceDistance, availableTracks);
     const effectiveCourseId = selectedTrackId ? parseInt(selectedTrackId) : undefined;
 
-    const tableData = computeCharaTableData(raceHorseInfo, raceData, effectiveCourseId, skillActivations, otherEvents, raceType);
+    const tableData = computeCharaTableData(raceHorseInfo, raceData, effectiveCourseId, skillActivations, otherEvents, raceType, groundCondition);
 
     return { tableData, effectiveCourseId };
 };

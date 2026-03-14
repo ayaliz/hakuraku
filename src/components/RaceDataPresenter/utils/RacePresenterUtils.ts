@@ -55,6 +55,15 @@ function bisectFrameIndex(frames: RaceSimulateData["frame"], t: number) {
     return lo;
 }
 
+const GROUND_CONDITION_NAME_MAP: Record<string, number> = { Good: 1, Soft: 2, Hard: 3, Bad: 4 };
+
+export function parseGroundCondition(condition: string | undefined): number | undefined {
+    if (condition == null) return undefined;
+    const n = Number(condition);
+    if (!isNaN(n) && n > 0) return n;
+    return GROUND_CONDITION_NAME_MAP[condition];
+}
+
 export function calculateRaceDistance(raceData: RaceSimulateData) {
     const frames = raceData.frame ?? [];
     let winnerIndex = -1, winnerFinish = Number.POSITIVE_INFINITY;

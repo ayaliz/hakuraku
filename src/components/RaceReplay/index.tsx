@@ -51,6 +51,7 @@ import {
     ECOption,
 } from "./utils/chartBuilders";
 import GameDataLoader from "../../data/GameDataLoader";
+import { parseGroundCondition } from "../RaceDataPresenter/utils/RacePresenterUtils";
 
 echarts.use([
     ScatterChart,
@@ -112,7 +113,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
 
     const { t: toggles, bind } = useToggles();
 
-    const groundCondition = trackDetails?.condition != null ? Number(trackDetails.condition) : undefined;
+    const groundCondition = parseGroundCondition(trackDetails?.condition);
 
     const {
         maxHpByIdx,

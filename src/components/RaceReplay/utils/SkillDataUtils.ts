@@ -66,7 +66,14 @@ export function getPassiveStatModifiers(skillId: number): { [key: string]: numbe
     return mods;
 }
 
+const HARDCODED_SPEED_MODIFIERS: Record<number, number> = {
+    210061: 0.3,
+    210062: 0.06,
+};
+
 export function getActiveSpeedModifier(skillId: number): number {
+    if (skillId in HARDCODED_SPEED_MODIFIERS) return HARDCODED_SPEED_MODIFIERS[skillId];
+
     const def = getSkillDef(skillId);
     if (!def || !def.condition_groups || def.condition_groups.length === 0) return 0;
 

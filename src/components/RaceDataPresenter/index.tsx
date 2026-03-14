@@ -19,6 +19,7 @@ import CharaList from "./components/CharaList";
 import RaceGraph from "./components/RaceGraph";
 import {
     calculateRaceDistance,
+    parseGroundCondition,
     otherRaceEventLabels,
     unknownCharaTag,
 } from "./utils/RacePresenterUtils";
@@ -132,9 +133,9 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 raceData={this.props.raceData}
                 detectedCourseId={this.state.activeCourseId}
                 skillActivations={this.skillActivations(this.props.raceData)}
-                otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.state.activeCourseId, this.skillActivations(this.props.raceData), this.props.trackDetails?.condition != null ? Number(this.props.trackDetails.condition) : undefined)}
+                otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.state.activeCourseId, this.skillActivations(this.props.raceData), parseGroundCondition(this.props.trackDetails?.condition))}
                 raceType={this.props.raceType}
-                groundCondition={this.props.trackDetails?.condition != null ? Number(this.props.trackDetails.condition) : undefined}
+                groundCondition={parseGroundCondition(this.props.trackDetails?.condition)}
             />
 
             <div style={sectionDividerStyle} />
@@ -145,7 +146,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                     raceHorseInfo={this.props.raceHorseInfo}
                     displayNames={this.displayNames(this.props.raceHorseInfo, this.props.raceData)}
                     skillActivations={this.skillActivations(this.props.raceData)}
-                    otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.state.activeCourseId, this.skillActivations(this.props.raceData), this.props.trackDetails?.condition != null ? Number(this.props.trackDetails.condition) : undefined)}
+                    otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.state.activeCourseId, this.skillActivations(this.props.raceData), parseGroundCondition(this.props.trackDetails?.condition))}
                     detectedCourseId={this.props.detectedCourseId}
                     raceType={this.props.raceType}
                     trackDetails={this.props.trackDetails}

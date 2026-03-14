@@ -1,6 +1,6 @@
 import { RaceSimulateData, RaceSimulateEventData_SimulateEventType } from "../../../data/race_data_pb";
 import { fromRaceHorseData, TrainedCharaData } from "../../../data/TrainedCharaData";
-import { getDistanceCategory, calculateTargetSpeed, adjustStat, calculateReferenceHpConsumption } from "./speedCalculations";
+import { getDistanceCategory, calculateTargetSpeed, adjustStat, calculateReferenceHpConsumption, computeGroundPowerBonus } from "./speedCalculations";
 import { getPassiveStatModifiers, getSkillBaseTime, getActiveSpeedModifier, hasSkillEffect } from "./SkillDataUtils";
 import { filterCharaSkills } from "../../../data/RaceDataUtils";
 import GameDataLoader from "../../../data/GameDataLoader";
@@ -44,7 +44,8 @@ export function computeOtherEvents(
     raceHorseInfo: any[],
     detectedCourseId: number | undefined,
     skillActivations: Record<number, { time: number; name: string; param: number[] }[]>,
-    goalInX: number
+    goalInX: number,
+    groundCondition?: number
 ): Record<number, { time: number; duration: number; name: string }[]> {
     const allOtherEvents: Record<number, { time: number; duration: number; name: string }[]> = {};
     if (!raceData.frame || raceData.frame.length === 0) {
@@ -63,6 +64,8 @@ export function computeOtherEvents(
 
     const distanceCategory = getDistanceCategory(goalInX);
     const trackSlopes = detectedCourseId ? (GameDataLoader.courseData as any)[detectedCourseId]?.slopes ?? [] : [];
+    const surface: number = detectedCourseId ? (GameDataLoader.courseData as any)[detectedCourseId]?.surface ?? 0 : 0;
+    const groundPowerBonus = computeGroundPowerBonus(surface, groundCondition ?? 0);
 
     for (const event of raceData.event) {
         const e = event.event!;
@@ -171,7 +174,7 @@ export function computeOtherEvents(
                     const currentSlope = currentSlopeObj?.slope ?? 0;
                     if (currentSlope > 0) {
                         const slopePer = currentSlope / SLOPE_SCALE;
-                        const adjustedPower = adjustStat(trainedChara.pow, rawData['motivation'], passiveStats.power);
+                        const adjustedPower = adjustStat(trainedChara.pow, rawData['motivation'], passiveStats.power + groundPowerBonus);
                         const penalty = (slopePer * SLOPE_PENALTY_COEFF) / adjustedPower;
                         targetRes.base -= penalty;
                     }
@@ -231,7 +234,7 @@ export function computeOtherEvents(
                             const futureSlope = futureSlopeObj?.slope ?? 0;
                             if (futureSlope > 0) {
                                 const slopePer = futureSlope / SLOPE_SCALE;
-                                const adjustedPower = adjustStat(trainedChara.pow, rawData['motivation'], passiveStats.power);
+                                const adjustedPower = adjustStat(trainedChara.pow, rawData['motivation'], passiveStats.power + groundPowerBonus);
                                 futureTargetRes.base -= (slopePer * SLOPE_PENALTY_COEFF) / adjustedPower;
                             }
 

@@ -105,6 +105,15 @@ const WISDOM_LOG_SCALE = 0.1;
 const WISDOM_MIN_PCT_OFFSET = 0.65;
 
 
+export function computeGroundPowerBonus(surface: number, condition: number): number {
+    if (surface === 2) { // Dirt
+        return condition === 2 ? -50 : -100; // 稍重 → -50, all others → -100
+    } else if (surface === 1) { // Turf
+        return condition === 1 ? 0 : -50; // 良 → 0, all others → -50
+    }
+    return 0;
+}
+
 export function adjustStat(stat: number, mood: number, bonus: number = 0): number {
     let val = stat;
     if (val > STAT_CAP) {

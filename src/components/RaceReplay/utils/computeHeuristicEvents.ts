@@ -1,6 +1,7 @@
 import { TrainedCharaData } from "../../../data/TrainedCharaData";
-import { calculateTargetSpeed, getDistanceCategory, calculateReferenceHpConsumption } from "./speedCalculations";
+import { calculateTargetSpeed, getDistanceCategory, calculateReferenceHpConsumption, computeGroundPowerBonus } from "./speedCalculations";
 import { getActiveSpeedModifier, getSkillBaseTime } from "./SkillDataUtils";
+import GameDataLoader from "../../../data/GameDataLoader";
 import { RaceSimulateHorseResultData_RunningStyle } from "../../../data/race_data_pb";
 import {
     SKILL_TIME_SCALE,
@@ -64,6 +65,7 @@ type ComputeHeuristicEventsParams = {
     otherEvents: Record<number, any[]>;
     lastSpurtStartDistances: Record<number, number>;
     detectedCourseId?: number;
+    groundCondition?: number;
 };
 
 export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Record<number, HeuristicEvent[]> {
@@ -78,11 +80,15 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
         skillActivations,
         otherEvents,
         lastSpurtStartDistances,
-        detectedCourseId
+        detectedCourseId,
+        groundCondition
     } = params;
 
     const events: Record<number, HeuristicEvent[]> = {};
     if (!frames || frames.length < 2 || goalInX <= 0) return events;
+
+    const surface: number = detectedCourseId ? (GameDataLoader.courseData as any)[detectedCourseId]?.surface ?? 0 : 0;
+    const groundPowerBonus = computeGroundPowerBonus(surface, groundCondition ?? 0);
 
     const distanceCategory = getDistanceCategory(goalInX);
     const positionKeepEnd = POSITION_KEEP_END_RATIO * goalInX;
@@ -251,7 +257,7 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
                 isOonige,
                 inLastSpurt,
                 slope: currentSlope,
-                greenSkillBonuses: greenStats,
+                greenSkillBonuses: greenStats ? { ...greenStats, power: greenStats.power + groundPowerBonus } : { speed: 0, stamina: 0, power: groundPowerBonus, guts: 0, wisdom: 0 },
                 activeSpeedBuff,
                 isSpotStruggle,
                 isDueling,

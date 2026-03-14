@@ -2,7 +2,8 @@ import { useRef, useCallback, useEffect, type MutableRefObject, type RefObject }
 import { bisectFrameIndex, clamp01, lerp, getCharaIcon, formatSigned, mixWithWhite } from "../RaceReplay.utils";
 import { buildPositionKeepSeries, teamColorFor } from "../utils/chartBuilders";
 import { getSkillDurationSecs, getActiveSpeedDebuff, hasSkillEffect, getSkillBaseTime, getActiveSpeedModifier } from "../utils/SkillDataUtils";
-import { calculateTargetSpeed, getDistanceCategory } from "../utils/speedCalculations";
+import { calculateTargetSpeed, getDistanceCategory, computeGroundPowerBonus } from "../utils/speedCalculations";
+import GameDataLoader from "../../../data/GameDataLoader";
 import { InterpolatedFrame } from "../RaceReplay.types";
 import { TrainedCharaData } from "../../../data/TrainedCharaData";
 import {
@@ -105,6 +106,7 @@ interface CanvasOverlayParams {
     startDelayByIdx: Record<number, number>;
     cameraWindow: number;
     yMaxWithHeadroom: number;
+    groundCondition?: number;
 }
 
 export type HorseHoverEntry = {
@@ -269,6 +271,8 @@ export function useCanvasOverlay(
                 const currentSlopeObj = p.trackSlopes.find((s: any) => currentDistance >= s.start && currentDistance < s.start + s.length);
                 const currentSlope = currentSlopeObj?.slope ?? 0;
                 const greenStats = p.passiveStatModifiers?.[idx];
+                const trackSurface: number = p.selectedTrackId ? (GameDataLoader.courseData as any)[+p.selectedTrackId]?.surface ?? 0 : 0;
+                const groundPowerBonus = computeGroundPowerBonus(trackSurface, p.groundCondition ?? 0);
 
                 let activeSpeedBuff = 0;
                 (p.skillActivations?.[idx] ?? []).forEach((s: any) => {
@@ -326,7 +330,7 @@ export function useCanvasOverlay(
                     isOonige,
                     inLastSpurt,
                     slope: currentSlope,
-                    greenSkillBonuses: greenStats,
+                    greenSkillBonuses: greenStats ? { ...greenStats, power: greenStats.power + groundPowerBonus } : { speed: 0, stamina: 0, power: groundPowerBonus, guts: 0, wisdom: 0 },
                     activeSpeedBuff,
                     activeSpeedDebuff,
                     isSpotStruggle,

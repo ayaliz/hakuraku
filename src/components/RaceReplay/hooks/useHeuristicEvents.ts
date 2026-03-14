@@ -14,7 +14,8 @@ export function useHeuristicEvents(
     otherEvents: Record<number, any[]>,
     _consumptionRateByIdx: Record<number, number>,
     lastSpurtStartDistances: Record<number, number>,
-    detectedCourseId?: number
+    detectedCourseId?: number,
+    groundCondition?: number
 ): Record<number, HeuristicEvent[]> {
     return useMemo(() => {
         return computeHeuristicEvents({
@@ -28,8 +29,9 @@ export function useHeuristicEvents(
             skillActivations,
             otherEvents,
             lastSpurtStartDistances,
-            detectedCourseId
+            detectedCourseId,
+            groundCondition
         });
-    }, [frames, goalInX, trainedCharaByIdx, oonigeByIdx, horseInfoByIdx, trackSlopes, passiveStatModifiers, skillActivations, otherEvents, lastSpurtStartDistances, detectedCourseId]);
+    }, [frames, goalInX, trainedCharaByIdx, oonigeByIdx, horseInfoByIdx, trackSlopes, passiveStatModifiers, skillActivations, otherEvents, lastSpurtStartDistances, detectedCourseId, groundCondition]);
 }
 

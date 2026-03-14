@@ -107,9 +107,9 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
         return allSkillActivations;
     });
 
-    otherEvents = memoize((raceData: RaceSimulateData, raceHorseInfo: any[], detectedCourseId: number | undefined, skillActivations: Record<number, { time: number; name: string; param: number[] }[]>) => {
+    otherEvents = memoize((raceData: RaceSimulateData, raceHorseInfo: any[], detectedCourseId: number | undefined, skillActivations: Record<number, { time: number; name: string; param: number[] }[]>, groundCondition: number | undefined) => {
         const goalInX = calculateRaceDistance(raceData);
-        return computeOtherEvents(raceData, raceHorseInfo, detectedCourseId, skillActivations, goalInX);
+        return computeOtherEvents(raceData, raceHorseInfo, detectedCourseId, skillActivations, goalInX, groundCondition);
     });
 
 
@@ -132,7 +132,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 raceData={this.props.raceData}
                 detectedCourseId={this.state.activeCourseId}
                 skillActivations={this.skillActivations(this.props.raceData)}
-                otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.state.activeCourseId, this.skillActivations(this.props.raceData))}
+                otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.state.activeCourseId, this.skillActivations(this.props.raceData), this.props.trackDetails?.condition != null ? Number(this.props.trackDetails.condition) : undefined)}
                 raceType={this.props.raceType}
                 groundCondition={this.props.trackDetails?.condition != null ? Number(this.props.trackDetails.condition) : undefined}
             />
@@ -145,7 +145,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                     raceHorseInfo={this.props.raceHorseInfo}
                     displayNames={this.displayNames(this.props.raceHorseInfo, this.props.raceData)}
                     skillActivations={this.skillActivations(this.props.raceData)}
-                    otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.state.activeCourseId, this.skillActivations(this.props.raceData))}
+                    otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.state.activeCourseId, this.skillActivations(this.props.raceData), this.props.trackDetails?.condition != null ? Number(this.props.trackDetails.condition) : undefined)}
                     detectedCourseId={this.props.detectedCourseId}
                     raceType={this.props.raceType}
                     trackDetails={this.props.trackDetails}

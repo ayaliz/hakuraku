@@ -112,6 +112,8 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
 
     const { t: toggles, bind } = useToggles();
 
+    const groundCondition = trackDetails?.condition != null ? Number(trackDetails.condition) : undefined;
+
     const {
         maxHpByIdx,
         trainedCharaByIdx,
@@ -130,6 +132,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         selectedTrackId,
         toggles,
         raceType,
+        groundCondition,
     );
 
     const legendNames = useMemo(() => Object.values(displayNames), [displayNames]);
@@ -175,6 +178,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         startDelayByIdx,
         cameraWindow,
         yMaxWithHeadroom,
+        groundCondition,
     });
     tickRef.current = tick;
 

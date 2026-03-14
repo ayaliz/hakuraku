@@ -6,7 +6,7 @@ import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import { useAvailableTracks } from "../../../RaceReplay/hooks/useAvailableTracks";
 import { useGuessTrack } from "../../../RaceReplay/hooks/useGuessTrack";
 import { getPassiveStatModifiers, getSkillDurationSecs, getSkillBaseTime } from "../../../RaceReplay/utils/SkillDataUtils";
-import { adjustStat, calculateTargetSpeed, getDistanceCategory, calculateReferenceHpConsumption } from "../../../RaceReplay/utils/speedCalculations";
+import { adjustStat, calculateTargetSpeed, getDistanceCategory, calculateReferenceHpConsumption, computeGroundPowerBonus } from "../../../RaceReplay/utils/speedCalculations";
 import {
     CAREER_RACE_STAT_BONUS, DOWNHILL_HP_RATIO_THRESHOLD,
     BASE_SPEED_CONSTANT, BASE_SPEED_COURSE_OFFSET, BASE_SPEED_COURSE_SCALE,
@@ -80,6 +80,8 @@ export const computeCharaTableData = (
     const trackSlopes = effectiveCourseId ? (GameDataLoader.courseData as any)[effectiveCourseId]?.slopes ?? [] : [];
     const surface: number = effectiveCourseId ? (GameDataLoader.courseData as any)[effectiveCourseId]?.surface ?? 0 : 0;
     const groundModifier = computeGroundModifier(surface, groundCondition ?? 0);
+    const groundSpeedBonus = (groundCondition ?? 0) === 4 ? -50 : 0;
+    const groundPowerBonus = computeGroundPowerBonus(surface, groundCondition ?? 0);
 
     // Prepare data for heuristic events calculation
     const trainedCharaByIdx: Record<number, TrainedCharaData> = {};
@@ -218,7 +220,7 @@ export const computeCharaTableData = (
             isOonige,
             inLastSpurt: true, // Force last spurt
             slope: 0,
-            greenSkillBonuses: passiveStats,
+            greenSkillBonuses: { ...passiveStats, speed: passiveStats.speed + groundSpeedBonus, power: passiveStats.power + groundPowerBonus },
             activeSpeedBuff: 0,
             courseId: effectiveCourseId
         });

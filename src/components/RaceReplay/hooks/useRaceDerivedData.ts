@@ -21,6 +21,7 @@ export function useRaceDerivedData(
     selectedTrackId: string | null,
     toggles: { heuristics: boolean },
     raceType?: string,
+    groundCondition?: number,
 ) {
     const horseInfoByIdx = useMemo(() => {
         const map: Record<number, any> = {};
@@ -192,7 +193,8 @@ export function useRaceDerivedData(
         otherEvents,
         {},
         lastSpurtStartDistances,
-        selectedTrackId ? +selectedTrackId : undefined
+        selectedTrackId ? +selectedTrackId : undefined,
+        groundCondition
     );
 
     const combinedOtherEvents = useMemo(() => {

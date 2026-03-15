@@ -295,6 +295,22 @@ export const charaTableColumns: CharaColumnDef[] = [
             const hpTooltip = (
                 <Tooltip id={`spurt-hp-${row.frameOrder}`}>
                     <div style={{ textAlign: 'left', fontSize: '0.85em', lineHeight: 1.6 }}>
+                        {row.maxAdjustedSpeedTime !== undefined && row.maxAdjustedSpeedDebug && (() => {
+                            const d = row.maxAdjustedSpeedDebug!;
+                            const totalBuff = d.skillBuffs.reduce((s, b) => s + b.value, 0) + d.spotStruggleBuff + d.duelingBuff + d.downhillBuff;
+                            return (
+                                <>
+                                    <div>Speed sample: <strong>t={row.maxAdjustedSpeedTime!.toFixed(2)}s</strong>, raw={d.rawSpeed.toFixed(3)}</div>
+                                    {d.skillBuffs.map((b, i) => (
+                                        <div key={i}>- Skill ({b.name}): <strong>-{b.value.toFixed(3)}</strong></div>
+                                    ))}
+                                    {d.spotStruggleBuff > 0 && <div>- Spot Struggle: <strong>-{d.spotStruggleBuff.toFixed(3)}</strong></div>}
+                                    {d.duelingBuff > 0 && <div>- Dueling: <strong>-{d.duelingBuff.toFixed(3)}</strong></div>}
+                                    {d.downhillBuff > 0 && <div>- Downhill: <strong>-{d.downhillBuff.toFixed(3)}</strong></div>}
+                                    {totalBuff > 0 && <div>= Adjusted: <strong>{(d.rawSpeed - totalBuff).toFixed(3)}</strong></div>}
+                                </>
+                            );
+                        })()}
                         {row.hpAtPhase3Start !== undefined && (
                             <div>HP at 2/3: <strong>{Math.round(row.hpAtPhase3Start)}</strong>{hpPct}</div>
                         )}

@@ -7,6 +7,7 @@ import { useAvailableTracks } from "../../../RaceReplay/hooks/useAvailableTracks
 import { useGuessTrack } from "../../../RaceReplay/hooks/useGuessTrack";
 import { getPassiveStatModifiers, getSkillDurationSecs, getSkillBaseTime } from "../../../RaceReplay/utils/SkillDataUtils";
 import { adjustStat, calculateTargetSpeed, getDistanceCategory, calculateReferenceHpConsumption, computeGroundPowerBonus } from "../../../RaceReplay/utils/speedCalculations";
+import type { MaxAdjustedSpeedDebug } from "../../../RaceReplay/utils/analysisUtils";
 import {
     CAREER_RACE_STAT_BONUS, DOWNHILL_HP_RATIO_THRESHOLD,
     BASE_SPEED_CONSTANT, BASE_SPEED_COURSE_OFFSET, BASE_SPEED_COURSE_SCALE,
@@ -229,11 +230,13 @@ export const computeCharaTableData = (
 
 
         let maxAdjSpeed = 0;
+        let maxAdjSpeedTime = 0;
+        let maxAdjSpeedDebug: MaxAdjustedSpeedDebug | undefined;
         let adjustedGuts = 0;
         if (raceData.frame) {
             adjustedGuts = adjustStat(trainedCharaData.guts, data['motivation'], passiveStats.guts);
 
-            maxAdjSpeed = calculateMaxAdjustedSpeed(
+            const maxAdj = calculateMaxAdjustedSpeed(
                 raceData.frame,
                 frameOrder,
                 raceDistance,
@@ -243,6 +246,9 @@ export const computeCharaTableData = (
                 adjustedGuts,
                 lastSpurtStartDistances[frameOrder] ?? -1
             );
+            maxAdjSpeed = maxAdj.speed;
+            maxAdjSpeedTime = maxAdj.time;
+            maxAdjSpeedDebug = maxAdj.debug;
         }
 
         // HP at phase 3 start (2/3 point) and required HP for full spurt
@@ -524,6 +530,8 @@ export const computeCharaTableData = (
             isLateStart,
             lastSpurtTargetSpeed,
             maxAdjustedSpeed: maxAdjSpeed,
+            maxAdjustedSpeedTime: maxAdjSpeedTime || undefined,
+            maxAdjustedSpeedDebug: maxAdjSpeedDebug,
             hpAtPhase3Start,
             requiredSpurtHp,
             duelingTime,

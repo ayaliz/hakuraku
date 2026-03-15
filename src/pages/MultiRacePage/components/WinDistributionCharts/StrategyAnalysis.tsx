@@ -3,7 +3,6 @@ import { STRATEGY_COLORS, STRATEGY_NAMES, STRATEGY_DISPLAY_ORDER, BAYES_TEAM, SA
 import type { StrategyStats, RoomCompositionEntry, TeamCompositionStats, HorseEntry, SkillStats } from "../../types";
 import AssetLoader from "../../../../data/AssetLoader";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
-import GameDataLoader from "../../../../data/GameDataLoader";
 import { getRankIcon } from "../../../../components/RaceDataPresenter/components/CharaList/rankUtils";
 import TeamSampleSelect from "./TeamSampleSelect";
 import "./StrategyAnalysis.css";
@@ -711,12 +710,8 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
 
     const skillIconMap = useMemo<Map<number, number>>(() => {
         const map = new Map<number, number>();
-        try {
-            for (const s of GameDataLoader.skills) {
-                if (s.id && s.iconid) map.set(s.id as number, s.iconid as number);
-            }
-        } catch {
-            // GameDataLoader not ready — icons omitted
+        for (const [id, s] of Object.entries(UMDatabaseWrapper.skills)) {
+            if (s.iconId) map.set(+id, s.iconId);
         }
         return map;
     }, []);

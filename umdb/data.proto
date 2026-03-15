@@ -57,6 +57,17 @@ message RaceInstance {
     optional int32 course_set_id = 5;
 }
 
+message SkillEffect {
+    optional int32 type = 1;
+    optional int32 value = 2;
+}
+
+message SkillConditionGroup {
+    optional string condition = 1;
+    optional int32 base_time = 2;
+    repeated SkillEffect effects = 3;
+}
+
 message Skill {
     optional int32 id = 1;
     optional string name = 2;
@@ -90,6 +101,8 @@ message Skill {
     //    ScenarioEnd = 899;
     repeated string tag_id = 4;
     optional int32 rarity = 5;
+    repeated SkillConditionGroup condition_groups = 6;
+    optional int32 icon_id = 7;
 }
 
 message TextData {

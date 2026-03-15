@@ -171,7 +171,7 @@ const CharaTable: React.FC<CharaTableProps> = ({ data, courseId }) => {
 
                                                         const aDef = getSkillDef(a.skillId);
                                                         const bDef = getSkillDef(b.skillId);
-                                                        return (aDef?.iconid || 0) - (bDef?.iconid || 0);
+                                                        return (aDef?.iconId || 0) - (bDef?.iconId || 0);
                                                     });
 
                                                     const sortedSkills = inherentSkill ? [inherentSkill, ...otherSkills] : otherSkills;
@@ -182,9 +182,9 @@ const CharaTable: React.FC<CharaTableProps> = ({ data, courseId }) => {
                                                         return (
                                                             <div key={idx} className="skill-item">
                                                                 <div className="skill-info">
-                                                                    {skillDef?.iconid ? (
+                                                                    {skillDef?.iconId ? (
                                                                         <img
-                                                                            src={AssetLoader.getSkillIcon(skillDef.iconid)}
+                                                                            src={AssetLoader.getSkillIcon(skillDef.iconId)}
                                                                             alt=""
                                                                             className="skill-icon"
                                                                         />

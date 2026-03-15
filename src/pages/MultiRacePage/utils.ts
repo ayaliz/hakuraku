@@ -1,8 +1,8 @@
 import { RaceSimulateData, RaceSimulateEventData_SimulateEventType } from "../../data/race_data_pb";
 import { deserializeFromBase64 } from "../../data/RaceDataParser";
 import { fromRaceHorseData } from "../../data/TrainedCharaData";
-import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 import GameDataLoader from "../../data/GameDataLoader";
+import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 import {
     AggregatedStats,
     CharacterStats,
@@ -33,14 +33,6 @@ const GATE_FLAVOR_TO_STRATEGIES = {
     end: new Set([4]),
 } as const;
 
-// Map for detailed skill data (condition_groups) logic - imported from skills.json
-let _skillsJsonMap: Map<number, any> | null = null;
-function getSkillsJsonMap() {
-    if (!_skillsJsonMap) {
-        _skillsJsonMap = new Map((GameDataLoader.skills as any[]).map(s => [s.id, s]));
-    }
-    return _skillsJsonMap;
-}
 
 // Get track info from course ID
 function getTrackInfo(courseId: number | undefined): { label: string; id: number; length: number } | null {
@@ -745,7 +737,7 @@ export function aggregateStats(races: ParsedRace[]): AggregatedStats {
         const distinctNames = new Map<string, number>(); // Name -> Rarity
 
         groupSkillIds.forEach(id => {
-            const data = getSkillsJsonMap().get(id);
+            const data = UMDatabaseWrapper.skills[id];
             const rarity = data?.rarity ?? 0;
             const isInherited = id >= 900000 && id < 1000000;
             const repIsInherited = representativeId >= 900000 && representativeId < 1000000;
@@ -797,11 +789,9 @@ export function aggregateStats(races: ParsedRace[]): AggregatedStats {
 
         // Check metadata on representative ID
         const isUnique = representativeId >= 100000 && representativeId < 200000;
-        const detailedSkillData = getSkillsJsonMap().get(representativeId);
-        const isPassive = detailedSkillData?.condition_groups?.some((group: any) =>
-            group.effects?.some((effect: any) =>
-                [1, 2, 3, 4, 5].includes(effect.type)
-            )
+        const detailedSkillData = UMDatabaseWrapper.skills[representativeId];
+        const isPassive = detailedSkillData?.conditionGroups?.some(group =>
+            group.effects?.some(effect => [1, 2, 3, 4, 5].includes(effect.type))
         );
         const isGuaranteed = isUnique || isPassive;
 

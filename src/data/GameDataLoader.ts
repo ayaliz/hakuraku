@@ -23,11 +23,6 @@ class GameDataLoaderClass {
         }
     }
 
-    get skills(): any[] {
-        this.ensureLoaded();
-        return this.data!["skills"];
-    }
-
     get enums(): any {
         this.ensureLoaded();
         return this.data!["Enums"];

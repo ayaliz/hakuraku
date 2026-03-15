@@ -296,6 +296,14 @@ export function computeOtherEvents(
     return allOtherEvents;
 }
 
+export type MaxAdjustedSpeedDebug = {
+    rawSpeed: number;
+    skillBuffs: { name: string; value: number }[];
+    spotStruggleBuff: number;
+    duelingBuff: number;
+    downhillBuff: number;
+};
+
 export function calculateMaxAdjustedSpeed(
     frames: any[],
     frameOrder: number,
@@ -305,8 +313,10 @@ export function calculateMaxAdjustedSpeed(
     trackSlopes: any[],
     adjustedGuts: number,
     lastSpurtStartDistance: number = -1
-): number {
+): { speed: number; time: number; debug: MaxAdjustedSpeedDebug } {
     let maxAdjSpeed = 0;
+    let maxAdjSpeedTime = 0;
+    let maxAdjDebug: MaxAdjustedSpeedDebug = { rawSpeed: 0, skillBuffs: [], spotStruggleBuff: 0, duelingBuff: 0, downhillBuff: 0 };
     let wasType28Active = false;
     let lastDuelingActiveFrameIndex = -100;
 
@@ -321,6 +331,7 @@ export function calculateMaxAdjustedSpeed(
         const time = frame.time ?? 0;
         let buff = 0;
         let isType28Active = false;
+        const frameSkillBuffs: { name: string; value: number }[] = [];
 
         // Skills
         if (skillActivations && skillActivations[frameOrder]) {
@@ -328,7 +339,11 @@ export function calculateMaxAdjustedSpeed(
                 const baseTime = getSkillBaseTime(s.param[1]);
                 const duration = baseTime > 0 ? (baseTime / SKILL_TIME_SCALE) * (raceDistance / 1000) : DEFAULT_SKILL_DURATION;
                 if (time >= s.time && time < s.time + duration) {
-                    buff += getActiveSpeedModifier(s.param[1]);
+                    const mod = getActiveSpeedModifier(s.param[1]);
+                    if (mod !== 0) {
+                        buff += mod;
+                        frameSkillBuffs.push({ name: s.name || String(s.param[1]), value: mod });
+                    }
                     if (hasSkillEffect(s.param[1], 28)) {
                         isType28Active = true;
                     }
@@ -341,16 +356,22 @@ export function calculateMaxAdjustedSpeed(
         if (shouldSkip) continue;
 
         let isDuelingActive = false;
+        let frameSpotStruggleBuff = 0;
+        let frameDuelingBuff = 0;
         // Other Events
         if (otherEvents && otherEvents[frameOrder]) {
             otherEvents[frameOrder].forEach(e => {
                 if (time >= e.time && time < e.time + e.duration) {
                     const name = e.name || "";
                     if (name.includes("Spot Struggle") || name.includes("Competes (Pos)")) {
-                        buff += Math.pow(SPOT_STRUGGLE_GUTS_BASE * adjustedGuts, SPOT_STRUGGLE_GUTS_EXPONENT) * SPOT_STRUGGLE_GUTS_SCALE;
+                        const b = Math.pow(SPOT_STRUGGLE_GUTS_BASE * adjustedGuts, SPOT_STRUGGLE_GUTS_EXPONENT) * SPOT_STRUGGLE_GUTS_SCALE;
+                        buff += b;
+                        frameSpotStruggleBuff += b;
                     }
                     if (name.includes("Dueling") || name.includes("Competes (Speed)")) {
-                        buff += Math.pow(DUELING_GUTS_BASE * adjustedGuts, DUELING_GUTS_EXPONENT) * DUELING_GUTS_SCALE;
+                        const b = Math.pow(DUELING_GUTS_BASE * adjustedGuts, DUELING_GUTS_EXPONENT) * DUELING_GUTS_SCALE;
+                        buff += b;
+                        frameDuelingBuff += b;
                         isDuelingActive = true;
                     }
                 }
@@ -368,10 +389,12 @@ export function calculateMaxAdjustedSpeed(
         const currentSlopeObj = trackSlopes.find((s: any) => dist >= s.start && dist < s.start + s.length);
         const currentSlope = currentSlopeObj?.slope ?? 0;
 
+        let frameDownhillBuff = 0;
         if (currentSlope < 0) {
             const isInLastSpurt = lastSpurtStartDistance > 0 && dist >= lastSpurtStartDistance;
             if (isInLastSpurt) {
-                buff += DOWNHILL_BONUS_BASE + Math.abs(currentSlope) / DOWNHILL_BONUS_DIVISOR;
+                frameDownhillBuff = DOWNHILL_BONUS_BASE + Math.abs(currentSlope) / DOWNHILL_BONUS_DIVISOR;
+                buff += frameDownhillBuff;
             } else {
                 const nextFrame = frames[fIdx + 1];
                 if (nextFrame) {
@@ -382,7 +405,8 @@ export function calculateMaxAdjustedSpeed(
                             const rate = ((h.hp ?? 0) - (hNext.hp ?? 0)) / dt;
                             const expected = calculateReferenceHpConsumption(speed, raceDistance);
                             if (expected > 0 && rate > 0 && rate < expected * DOWNHILL_HP_RATIO_THRESHOLD) {
-                                buff += DOWNHILL_BONUS_BASE + Math.abs(currentSlope) / DOWNHILL_BONUS_DIVISOR;
+                                frameDownhillBuff = DOWNHILL_BONUS_BASE + Math.abs(currentSlope) / DOWNHILL_BONUS_DIVISOR;
+                                buff += frameDownhillBuff;
                             }
                         }
                     }
@@ -420,10 +444,20 @@ export function calculateMaxAdjustedSpeed(
         if (isDecelerating) continue;
 
         const adj = speed - buff;
-        if (adj > maxAdjSpeed) maxAdjSpeed = adj;
+        if (adj > maxAdjSpeed) {
+            maxAdjSpeed = adj;
+            maxAdjSpeedTime = time;
+            maxAdjDebug = {
+                rawSpeed: speed,
+                skillBuffs: frameSkillBuffs,
+                spotStruggleBuff: frameSpotStruggleBuff,
+                duelingBuff: frameDuelingBuff,
+                downhillBuff: frameDownhillBuff,
+            };
+        }
     }
 
-    return maxAdjSpeed;
+    return { speed: maxAdjSpeed, time: maxAdjSpeedTime, debug: maxAdjDebug };
 }
 
 export function calculateHpOutcome(

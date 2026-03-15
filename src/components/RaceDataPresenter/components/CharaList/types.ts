@@ -1,6 +1,7 @@
 import { Chara } from "../../../../data/data_pb";
 import { RaceSimulateHorseResultData } from "../../../../data/race_data_pb";
 import { TrainedCharaData } from "../../../../data/TrainedCharaData";
+import type { MaxAdjustedSpeedDebug } from "../../../RaceReplay/utils/analysisUtils";
 
 export type SupportCardEntry = {
     position: number;
@@ -58,6 +59,8 @@ export type CharaTableData = {
     isLateStart?: boolean;
     lastSpurtTargetSpeed?: number;
     maxAdjustedSpeed?: number;
+    maxAdjustedSpeedTime?: number;
+    maxAdjustedSpeedDebug?: MaxAdjustedSpeedDebug;
     hpOutcome?: { type: 'died'; distance: number; deficit: number; startHp: number } | { type: 'survived'; hp: number; startHp: number };
     hpAtPhase3Start?: number;
     requiredSpurtHp?: number;

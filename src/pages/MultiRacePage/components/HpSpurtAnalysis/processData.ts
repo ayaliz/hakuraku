@@ -18,9 +18,9 @@ export const computeHpSpurtStats = (
 
     const getRecoveryValue = (skillId: number): number | null => {
         const def = getSkillDef(skillId);
-        if (!def || !def.condition_groups) return null;
+        if (!def || !def.conditionGroups) return null;
 
-        for (const group of def.condition_groups) {
+        for (const group of def.conditionGroups) {
             if (group.effects) {
                 for (const effect of group.effects) {
                     if (effect.type === 9 && effect.value > 0) { // Type 9 is HP Recovery, exclude debuffs (< 0)
@@ -143,7 +143,7 @@ export const computeHpSpurtStats = (
                 // Normalized Calculation
                 const isUnique = skillId >= 100000 && skillId < 200000;
                 const def = getSkillDef(skillId);
-                const isPassive = def?.condition_groups?.some((group: any) =>
+                const isPassive = def?.conditionGroups?.some((group: any) =>
                     group.effects?.some((effect: any) =>
                         [1, 2, 3, 4, 5].includes(effect.type)
                     )

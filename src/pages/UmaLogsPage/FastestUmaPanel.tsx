@@ -3,7 +3,6 @@ import { Modal } from "react-bootstrap";
 import type { HorseEntry, SkillStats } from "../MultiRacePage/types";
 import AssetLoader from "../../data/AssetLoader";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
-import GameDataLoader from "../../data/GameDataLoader";
 import { formatTime } from "../../data/UMDatabaseUtils";
 import { STRATEGY_COLORS, STRATEGY_NAMES } from "../MultiRacePage/components/WinDistributionCharts/constants";
 import { getRankIcon } from "../../components/RaceDataPresenter/components/CharaList/rankUtils";
@@ -36,11 +35,9 @@ const UmaFeatCard: React.FC<UmaFeatCardProps> = ({ horse, label, displayValue, d
 
     const skillIconMap = useMemo<Map<number, number>>(() => {
         const map = new Map<number, number>();
-        try {
-            for (const s of GameDataLoader.skills) {
-                if (s.id && s.iconid) map.set(s.id as number, s.iconid as number);
-            }
-        } catch { /* GameDataLoader not ready — icons omitted */ }
+        for (const [id, s] of Object.entries(UMDatabaseWrapper.skills)) {
+            if (s.iconId) map.set(+id, s.iconId);
+        }
         return map;
     }, []);
 

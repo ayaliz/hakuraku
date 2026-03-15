@@ -288,7 +288,7 @@ const SkillBreakdownModal: React.FC<SkillBreakdownModalProps> = ({ show, onHide,
                                         <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                                             {evt.events.map((e: any, i: number) => {
                                                 const skillDef = getSkillDef(e.skillId);
-                                                const iconUrl = e.iconId ? AssetLoader.getSkillIcon(e.iconId) : (skillDef?.iconid ? AssetLoader.getSkillIcon(skillDef.iconid) : null);
+                                                const iconUrl = e.iconId ? AssetLoader.getSkillIcon(e.iconId) : (skillDef?.iconId ? AssetLoader.getSkillIcon(skillDef.iconId) : null);
                                                 return iconUrl ? (
                                                     <OverlayTrigger key={i} placement="top" overlay={<Tooltip id={`tt-${idx}-${i}`}>{e.name}</Tooltip>}>
                                                         <img src={iconUrl} alt="skill" className="sbm-item-icon" style={{ margin: 0, width: '24px', height: '24px' }} />
@@ -337,7 +337,7 @@ const SkillBreakdownModal: React.FC<SkillBreakdownModalProps> = ({ show, onHide,
 
                         const skillDef = getSkillDef(evt.skillId);
                         const isGold = skillDef?.rarity === 2 || skillDef?.rarity === 3;
-                        const iconUrl = evt.iconId ? AssetLoader.getSkillIcon(evt.iconId) : (skillDef?.iconid ? AssetLoader.getSkillIcon(skillDef.iconid) : null);
+                        const iconUrl = evt.iconId ? AssetLoader.getSkillIcon(evt.iconId) : (skillDef?.iconId ? AssetLoader.getSkillIcon(skillDef.iconId) : null);
 
                         const startPct = Math.min(100, Math.max(0, (evt.startDistance / totalDistance) * 100));
                         const endPct = Math.min(100, Math.max(0, (evt.endDistance / totalDistance) * 100));

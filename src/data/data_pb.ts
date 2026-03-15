@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file data.proto.
  */
 export const file_data: GenFile = /*@__PURE__*/
-  fileDesc("CgpkYXRhLnByb3RvEghoYWt1cmFrdSLABAoKVU1EYXRhYmFzZRIPCgd2ZXJzaW9uGAEgASgJEh4KBWNoYXJhGAIgAygLMg8uaGFrdXJha3UuQ2hhcmESHAoEY2FyZBgJIAMoCzIOLmhha3VyYWt1LkNhcmQSKwoMc3VwcG9ydF9jYXJkGAsgAygLMhUuaGFrdXJha3UuU3VwcG9ydENhcmQSLQoNcmFjZV9pbnN0YW5jZRgEIAMoCzIWLmhha3VyYWt1LlJhY2VJbnN0YW5jZRIeCgVza2lsbBgHIAMoCzIPLmhha3VyYWt1LlNraWxsEiUKCXRleHRfZGF0YRgMIAMoCzISLmhha3VyYWt1LlRleHREYXRhEkgKHHNpbmdsZV9tb2RlX3NraWxsX25lZWRfcG9pbnQYDSADKAsyIi5oYWt1cmFrdS5TaW5nbGVNb2RlU2tpbGxOZWVkUG9pbnQSMgoQc2luZ2xlX21vZGVfcmFuaxgOIAMoCzIYLmhha3VyYWt1LlNpbmdsZU1vZGVSYW5rEjkKE3N1Y2Nlc3Npb25fcmVsYXRpb24YDyADKAsyHC5oYWt1cmFrdS5TdWNjZXNzaW9uUmVsYXRpb24SRgoac3VjY2Vzc2lvbl9yZWxhdGlvbl9tZW1iZXIYECADKAsyIi5oYWt1cmFrdS5TdWNjZXNzaW9uUmVsYXRpb25NZW1iZXISPwoXc2luZ2xlX21vZGVfd2luc19zYWRkbGUYESADKAsyHi5oYWt1cmFrdS5TaW5nbGVNb2RlV2luc1NhZGRsZSI0CgVDaGFyYRIKCgJpZBgBIAEoBRIMCgRuYW1lGAIgASgJEhEKCWNhc3RfbmFtZRgDIAEoCSIgCgRDYXJkEgoKAmlkGAEgASgFEgwKBG5hbWUYAiABKAkiOQoLU3VwcG9ydENhcmQSCgoCaWQYASABKAUSDAoEbmFtZRgCIAEoCRIQCghjaGFyYV9pZBgDIAEoBSLEAQoMUmFjZUluc3RhbmNlEgoKAmlkGAEgASgFEgwKBG5hbWUYAiABKAkSEAoIZGlzdGFuY2UYAyABKAUSNgoLZ3JvdW5kX3R5cGUYBCABKA4yIS5oYWt1cmFrdS5SYWNlSW5zdGFuY2UuR3JvdW5kVHlwZRIVCg1jb3Vyc2Vfc2V0X2lkGAUgASgFIjkKCkdyb3VuZFR5cGUSFwoTVU5LTk9XTl9HUk9VTkRfVFlQRRAAEggKBFRVUkYQARIICgRESVJUEAIiVgoFU2tpbGwSCgoCaWQYASABKAUSDAoEbmFtZRgCIAEoCRITCgtncmFkZV92YWx1ZRgDIAEoERIOCgZ0YWdfaWQYBCADKAkSDgoGcmFyaXR5GAUgASgFIkUKCFRleHREYXRhEgoKAmlkGAEgASgFEhAKCGNhdGVnb3J5GAIgASgFEg0KBWluZGV4GAMgASgFEgwKBHRleHQYBCABKAkiggEKGFNpbmdsZU1vZGVTa2lsbE5lZWRQb2ludBIKCgJpZBgBIAEoBRIYChBuZWVkX3NraWxsX3BvaW50GAIgASgFEhMKC3N0YXR1c190eXBlGAMgASgFEhQKDHN0YXR1c192YWx1ZRgEIAEoBRIVCg1zb2x2YWJsZV90eXBlGAUgASgFIkIKDlNpbmdsZU1vZGVSYW5rEgoKAmlkGAEgASgFEhEKCW1pbl92YWx1ZRgCIAEoBRIRCgltYXhfdmFsdWUYAyABKAUiQwoSU3VjY2Vzc2lvblJlbGF0aW9uEhUKDXJlbGF0aW9uX3R5cGUYASABKAUSFgoOcmVsYXRpb25fcG9pbnQYAiABKAUiTwoYU3VjY2Vzc2lvblJlbGF0aW9uTWVtYmVyEgoKAmlkGAEgASgFEhUKDXJlbGF0aW9uX3R5cGUYAiABKAUSEAoIY2hhcmFfaWQYAyABKAUiVwoUU2luZ2xlTW9kZVdpbnNTYWRkbGUSCgoCaWQYASABKAUSGAoQcmFjZV9pbnN0YW5jZV9pZBgCIAEoBRIZChFyYWNlX2luc3RhbmNlX2lkcxgDIAMoBQ");
+  fileDesc("CgpkYXRhLnByb3RvEghoYWt1cmFrdSLABAoKVU1EYXRhYmFzZRIPCgd2ZXJzaW9uGAEgASgJEh4KBWNoYXJhGAIgAygLMg8uaGFrdXJha3UuQ2hhcmESHAoEY2FyZBgJIAMoCzIOLmhha3VyYWt1LkNhcmQSKwoMc3VwcG9ydF9jYXJkGAsgAygLMhUuaGFrdXJha3UuU3VwcG9ydENhcmQSLQoNcmFjZV9pbnN0YW5jZRgEIAMoCzIWLmhha3VyYWt1LlJhY2VJbnN0YW5jZRIeCgVza2lsbBgHIAMoCzIPLmhha3VyYWt1LlNraWxsEiUKCXRleHRfZGF0YRgMIAMoCzISLmhha3VyYWt1LlRleHREYXRhEkgKHHNpbmdsZV9tb2RlX3NraWxsX25lZWRfcG9pbnQYDSADKAsyIi5oYWt1cmFrdS5TaW5nbGVNb2RlU2tpbGxOZWVkUG9pbnQSMgoQc2luZ2xlX21vZGVfcmFuaxgOIAMoCzIYLmhha3VyYWt1LlNpbmdsZU1vZGVSYW5rEjkKE3N1Y2Nlc3Npb25fcmVsYXRpb24YDyADKAsyHC5oYWt1cmFrdS5TdWNjZXNzaW9uUmVsYXRpb24SRgoac3VjY2Vzc2lvbl9yZWxhdGlvbl9tZW1iZXIYECADKAsyIi5oYWt1cmFrdS5TdWNjZXNzaW9uUmVsYXRpb25NZW1iZXISPwoXc2luZ2xlX21vZGVfd2luc19zYWRkbGUYESADKAsyHi5oYWt1cmFrdS5TaW5nbGVNb2RlV2luc1NhZGRsZSI0CgVDaGFyYRIKCgJpZBgBIAEoBRIMCgRuYW1lGAIgASgJEhEKCWNhc3RfbmFtZRgDIAEoCSIgCgRDYXJkEgoKAmlkGAEgASgFEgwKBG5hbWUYAiABKAkiOQoLU3VwcG9ydENhcmQSCgoCaWQYASABKAUSDAoEbmFtZRgCIAEoCRIQCghjaGFyYV9pZBgDIAEoBSLEAQoMUmFjZUluc3RhbmNlEgoKAmlkGAEgASgFEgwKBG5hbWUYAiABKAkSEAoIZGlzdGFuY2UYAyABKAUSNgoLZ3JvdW5kX3R5cGUYBCABKA4yIS5oYWt1cmFrdS5SYWNlSW5zdGFuY2UuR3JvdW5kVHlwZRIVCg1jb3Vyc2Vfc2V0X2lkGAUgASgFIjkKCkdyb3VuZFR5cGUSFwoTVU5LTk9XTl9HUk9VTkRfVFlQRRAAEggKBFRVUkYQARIICgRESVJUEAIiKgoLU2tpbGxFZmZlY3QSDAoEdHlwZRgBIAEoBRINCgV2YWx1ZRgCIAEoBSJjChNTa2lsbENvbmRpdGlvbkdyb3VwEhEKCWNvbmRpdGlvbhgBIAEoCRIRCgliYXNlX3RpbWUYAiABKAUSJgoHZWZmZWN0cxgDIAMoCzIVLmhha3VyYWt1LlNraWxsRWZmZWN0IqABCgVTa2lsbBIKCgJpZBgBIAEoBRIMCgRuYW1lGAIgASgJEhMKC2dyYWRlX3ZhbHVlGAMgASgREg4KBnRhZ19pZBgEIAMoCRIOCgZyYXJpdHkYBSABKAUSNwoQY29uZGl0aW9uX2dyb3VwcxgGIAMoCzIdLmhha3VyYWt1LlNraWxsQ29uZGl0aW9uR3JvdXASDwoHaWNvbl9pZBgHIAEoBSJFCghUZXh0RGF0YRIKCgJpZBgBIAEoBRIQCghjYXRlZ29yeRgCIAEoBRINCgVpbmRleBgDIAEoBRIMCgR0ZXh0GAQgASgJIoIBChhTaW5nbGVNb2RlU2tpbGxOZWVkUG9pbnQSCgoCaWQYASABKAUSGAoQbmVlZF9za2lsbF9wb2ludBgCIAEoBRITCgtzdGF0dXNfdHlwZRgDIAEoBRIUCgxzdGF0dXNfdmFsdWUYBCABKAUSFQoNc29sdmFibGVfdHlwZRgFIAEoBSJCCg5TaW5nbGVNb2RlUmFuaxIKCgJpZBgBIAEoBRIRCgltaW5fdmFsdWUYAiABKAUSEQoJbWF4X3ZhbHVlGAMgASgFIkMKElN1Y2Nlc3Npb25SZWxhdGlvbhIVCg1yZWxhdGlvbl90eXBlGAEgASgFEhYKDnJlbGF0aW9uX3BvaW50GAIgASgFIk8KGFN1Y2Nlc3Npb25SZWxhdGlvbk1lbWJlchIKCgJpZBgBIAEoBRIVCg1yZWxhdGlvbl90eXBlGAIgASgFEhAKCGNoYXJhX2lkGAMgASgFIlcKFFNpbmdsZU1vZGVXaW5zU2FkZGxlEgoKAmlkGAEgASgFEhgKEHJhY2VfaW5zdGFuY2VfaWQYAiABKAUSGQoRcmFjZV9pbnN0YW5jZV9pZHMYAyADKAU");
 
 /**
  * @generated from message hakuraku.UMDatabase
@@ -226,6 +226,55 @@ export const RaceInstance_GroundTypeSchema: GenEnum<RaceInstance_GroundType> = /
   enumDesc(file_data, 4, 0);
 
 /**
+ * @generated from message hakuraku.SkillEffect
+ */
+export type SkillEffect = Message<"hakuraku.SkillEffect"> & {
+  /**
+   * @generated from field: optional int32 type = 1;
+   */
+  type: number;
+
+  /**
+   * @generated from field: optional int32 value = 2;
+   */
+  value: number;
+};
+
+/**
+ * Describes the message hakuraku.SkillEffect.
+ * Use `create(SkillEffectSchema)` to create a new message.
+ */
+export const SkillEffectSchema: GenMessage<SkillEffect> = /*@__PURE__*/
+  messageDesc(file_data, 5);
+
+/**
+ * @generated from message hakuraku.SkillConditionGroup
+ */
+export type SkillConditionGroup = Message<"hakuraku.SkillConditionGroup"> & {
+  /**
+   * @generated from field: optional string condition = 1;
+   */
+  condition: string;
+
+  /**
+   * @generated from field: optional int32 base_time = 2;
+   */
+  baseTime: number;
+
+  /**
+   * @generated from field: repeated hakuraku.SkillEffect effects = 3;
+   */
+  effects: SkillEffect[];
+};
+
+/**
+ * Describes the message hakuraku.SkillConditionGroup.
+ * Use `create(SkillConditionGroupSchema)` to create a new message.
+ */
+export const SkillConditionGroupSchema: GenMessage<SkillConditionGroup> = /*@__PURE__*/
+  messageDesc(file_data, 6);
+
+/**
  * @generated from message hakuraku.Skill
  */
 export type Skill = Message<"hakuraku.Skill"> & {
@@ -280,6 +329,16 @@ export type Skill = Message<"hakuraku.Skill"> & {
    * @generated from field: optional int32 rarity = 5;
    */
   rarity: number;
+
+  /**
+   * @generated from field: repeated hakuraku.SkillConditionGroup condition_groups = 6;
+   */
+  conditionGroups: SkillConditionGroup[];
+
+  /**
+   * @generated from field: optional int32 icon_id = 7;
+   */
+  iconId: number;
 };
 
 /**
@@ -287,7 +346,7 @@ export type Skill = Message<"hakuraku.Skill"> & {
  * Use `create(SkillSchema)` to create a new message.
  */
 export const SkillSchema: GenMessage<Skill> = /*@__PURE__*/
-  messageDesc(file_data, 5);
+  messageDesc(file_data, 7);
 
 /**
  * @generated from message hakuraku.TextData
@@ -319,7 +378,7 @@ export type TextData = Message<"hakuraku.TextData"> & {
  * Use `create(TextDataSchema)` to create a new message.
  */
 export const TextDataSchema: GenMessage<TextData> = /*@__PURE__*/
-  messageDesc(file_data, 6);
+  messageDesc(file_data, 8);
 
 /**
  * @generated from message hakuraku.SingleModeSkillNeedPoint
@@ -356,7 +415,7 @@ export type SingleModeSkillNeedPoint = Message<"hakuraku.SingleModeSkillNeedPoin
  * Use `create(SingleModeSkillNeedPointSchema)` to create a new message.
  */
 export const SingleModeSkillNeedPointSchema: GenMessage<SingleModeSkillNeedPoint> = /*@__PURE__*/
-  messageDesc(file_data, 7);
+  messageDesc(file_data, 9);
 
 /**
  * @generated from message hakuraku.SingleModeRank
@@ -383,7 +442,7 @@ export type SingleModeRank = Message<"hakuraku.SingleModeRank"> & {
  * Use `create(SingleModeRankSchema)` to create a new message.
  */
 export const SingleModeRankSchema: GenMessage<SingleModeRank> = /*@__PURE__*/
-  messageDesc(file_data, 8);
+  messageDesc(file_data, 10);
 
 /**
  * @generated from message hakuraku.SuccessionRelation
@@ -405,7 +464,7 @@ export type SuccessionRelation = Message<"hakuraku.SuccessionRelation"> & {
  * Use `create(SuccessionRelationSchema)` to create a new message.
  */
 export const SuccessionRelationSchema: GenMessage<SuccessionRelation> = /*@__PURE__*/
-  messageDesc(file_data, 9);
+  messageDesc(file_data, 11);
 
 /**
  * @generated from message hakuraku.SuccessionRelationMember
@@ -432,7 +491,7 @@ export type SuccessionRelationMember = Message<"hakuraku.SuccessionRelationMembe
  * Use `create(SuccessionRelationMemberSchema)` to create a new message.
  */
 export const SuccessionRelationMemberSchema: GenMessage<SuccessionRelationMember> = /*@__PURE__*/
-  messageDesc(file_data, 10);
+  messageDesc(file_data, 12);
 
 /**
  * @generated from message hakuraku.SingleModeWinsSaddle
@@ -459,5 +518,5 @@ export type SingleModeWinsSaddle = Message<"hakuraku.SingleModeWinsSaddle"> & {
  * Use `create(SingleModeWinsSaddleSchema)` to create a new message.
  */
 export const SingleModeWinsSaddleSchema: GenMessage<SingleModeWinsSaddle> = /*@__PURE__*/
-  messageDesc(file_data, 11);
+  messageDesc(file_data, 13);
 

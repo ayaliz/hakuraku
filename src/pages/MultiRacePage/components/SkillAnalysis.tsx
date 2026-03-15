@@ -4,7 +4,6 @@ import { SkillStats, SkillActivationPoint, SkillActivationBuckets, CharacterStat
 import { CharaHpSpurtStats } from "./HpSpurtAnalysis/types";
 import AssetLoader from "../../../data/AssetLoader";
 import UMDatabaseWrapper from "../../../data/UMDatabaseWrapper";
-import GameDataLoader from "../../../data/GameDataLoader";
 import PortraitSelect, { PortraitSelectOption } from "./PortraitSelect";
 
 interface SkillAnalysisProps {
@@ -22,15 +21,6 @@ type SortKey = "skillName" | "timesActivated" | "learnedByHorses" | "uniqueRaces
 
 const STRAT_LABELS: Record<number, string> = { 1: "FR", 2: "PC", 3: "LS", 4: "EC" };
 const STRATS = [1, 2, 3, 4] as const;
-let _skillsJsonMap: Map<number, any> | null = null;
-
-function getSkillsJsonMap() {
-    if (!_skillsJsonMap) {
-        _skillsJsonMap = new Map((GameDataLoader.skills as any[]).map(s => [s.id, s]));
-    }
-    return _skillsJsonMap;
-}
-
 function getSkillGroupBaseIds(representativeSkillId: number): Set<number> {
     const baseId = Math.floor(representativeSkillId / 10);
     const ids = new Set<number>([baseId]);
@@ -46,9 +36,9 @@ function matchesRepresentativeSkillGroup(candidateSkillId: number, representativ
 
 function isGuaranteedSkill(skillId: number): boolean {
     if (skillId >= 100000 && skillId < 200000) return true;
-    const data = getSkillsJsonMap().get(skillId);
-    return !!data?.condition_groups?.some((group: any) =>
-        group.effects?.some((effect: any) => [1, 2, 3, 4, 5].includes(effect.type))
+    const data = UMDatabaseWrapper.skills[skillId];
+    return !!data?.conditionGroups?.some(group =>
+        group.effects?.some(effect => [1, 2, 3, 4, 5].includes(effect.type))
     );
 }
 

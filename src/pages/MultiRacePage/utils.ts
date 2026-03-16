@@ -6,6 +6,8 @@ import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 import {
     AggregatedStats,
     CharacterStats,
+    GateBlockedStats,
+    GateSkillActivationStats,
     HorseEntry,
     PairSynergyStats,
     ParsedRace,
@@ -32,6 +34,8 @@ const GATE_FLAVOR_TO_STRATEGIES = {
     late: new Set([3]),
     end: new Set([4]),
 } as const;
+const DODGING_DANGER_SKILL_IDS = [201261, 201262] as const;
+const DODGING_DANGER_SKILL_BASE_IDS = new Set(DODGING_DANGER_SKILL_IDS.map((id) => Math.floor(id / 10)));
 
 
 // Get track info from course ID
@@ -490,34 +494,30 @@ function computePairSynergy(allHorses: HorseEntry[]): PairSynergyStats[] {
     return Array.from(pairMap.values()).filter(p => p.coApps >= 3);
 }
 
-function getStrategyForHorseData(data: any) {
-    const trainedChara = fromRaceHorseData(data);
-    const learnedSkillIds = new Set((trainedChara.skills ?? []).map(s => s.skillId));
-    const rawStrategy = data.running_style ?? trainedChara.rawData?.param?.runningStyle ?? 1;
-    return rawStrategy === 1 && learnedSkillIds.has(RUNAWAY_TRIGGER_SKILL_ID) ? 5 : rawStrategy;
+function matchesSkillBase(skillId: number, baseIds: Set<number>) {
+    return baseIds.has(Math.floor(skillId / 10));
 }
 
-function buildGateWinRatesForFlavor(races: ParsedRace[], strategyFilter: Set<number> | null) {
+function setHasMatchingSkillBase(skillIds: Set<number>, baseIds: Set<number>) {
+    for (const skillId of skillIds) {
+        if (matchesSkillBase(skillId, baseIds)) return true;
+    }
+    return false;
+}
+
+function buildGateWinRatesForFlavor(allHorses: HorseEntry[], strategyFilter: Set<number> | null) {
     const gateStatsMap = new Map<number, { appearances: number; wins: number }>();
-    for (const race of races) {
-        const strategyByGate = new Map<number, number>();
-        race.horseInfo.forEach((data, index) => {
-            const gateNumber = data?.['frame_order'] ?? (index + 1);
-            strategyByGate.set(gateNumber, getStrategyForHorseData(data));
-        });
-        race.raceData.horseResult.forEach((result, index) => {
-            const gateNumber = index + 1;
-            const strategy = strategyByGate.get(gateNumber);
-            if (strategyFilter && (!strategy || !strategyFilter.has(strategy))) return;
-            if (!gateStatsMap.has(gateNumber)) {
-                gateStatsMap.set(gateNumber, {appearances: 0, wins: 0});
-            }
-            const gateStats = gateStatsMap.get(gateNumber)!;
-            gateStats.appearances++;
-            if (result.finishOrder === 1) {
-                gateStats.wins++;
-            }
-        });
+    for (const horse of allHorses) {
+        if (strategyFilter && !strategyFilter.has(horse.strategy)) continue;
+        const gateNumber = horse.frameOrder + 1;
+        if (!gateStatsMap.has(gateNumber)) {
+            gateStatsMap.set(gateNumber, { appearances: 0, wins: 0 });
+        }
+        const gateStats = gateStatsMap.get(gateNumber)!;
+        gateStats.appearances++;
+        if (horse.finishOrder === 1) {
+            gateStats.wins++;
+        }
     }
     return Array.from(gateStatsMap.entries())
         .map(([gateNumber, stats]) => ({
@@ -525,6 +525,89 @@ function buildGateWinRatesForFlavor(races: ParsedRace[], strategyFilter: Set<num
             appearances: stats.appearances,
             wins: stats.wins,
             winRate: stats.appearances > 0 ? stats.wins / stats.appearances : 0,
+        }))
+        .sort((a, b) => a.gateNumber - b.gateNumber);
+}
+
+function buildBlockedHorseLookup(races: ParsedRace[]) {
+    const blockedHorseKeys = new Set<string>();
+    for (const race of races) {
+        for (const frame of race.raceData.frame ?? []) {
+            frame.horseFrame?.forEach((horseFrame, index) => {
+                if ((horseFrame?.blockFrontHorseIndex ?? -1) !== -1) {
+                    blockedHorseKeys.add(`${race.id}_${index}`);
+                }
+            });
+        }
+    }
+    return blockedHorseKeys;
+}
+
+function buildBlockedGateStats(
+    allHorses: HorseEntry[],
+    blockedHorseKeys: Set<string>,
+    strategyFilter: Set<number> | null
+): GateBlockedStats[] {
+    const gateStatsMap = new Map<number, { appearances: number; blockedCount: number; blockedWins: number }>();
+    for (const horse of allHorses) {
+        if (strategyFilter && !strategyFilter.has(horse.strategy)) continue;
+        const gateNumber = horse.frameOrder + 1;
+        if (!gateStatsMap.has(gateNumber)) {
+            gateStatsMap.set(gateNumber, { appearances: 0, blockedCount: 0, blockedWins: 0 });
+        }
+        const gateStats = gateStatsMap.get(gateNumber)!;
+        gateStats.appearances++;
+        if (!blockedHorseKeys.has(`${horse.raceId}_${horse.frameOrder}`)) continue;
+        gateStats.blockedCount++;
+        if (horse.finishOrder === 1) {
+            gateStats.blockedWins++;
+        }
+    }
+
+    return Array.from(gateStatsMap.entries())
+        .map(([gateNumber, stats]) => ({
+            gateNumber,
+            appearances: stats.appearances,
+            blockedCount: stats.blockedCount,
+            blockedWins: stats.blockedWins,
+            blockedRate: stats.appearances > 0 ? stats.blockedCount / stats.appearances : 0,
+            winRateAfterBlock: stats.blockedCount > 0 ? stats.blockedWins / stats.blockedCount : 0,
+        }))
+        .sort((a, b) => a.gateNumber - b.gateNumber);
+}
+
+function buildDodgingDangerGateStats(allHorses: HorseEntry[]): GateSkillActivationStats[] {
+    const gateStatsMap = new Map<number, { opportunities: number; activations: number; activationWins: number }>();
+    for (const horse of allHorses) {
+        if (!GATE_FLAVOR_TO_STRATEGIES.front.has(horse.strategy)) continue;
+
+        const gateNumber = horse.frameOrder + 1;
+        if (!gateStatsMap.has(gateNumber)) {
+            gateStatsMap.set(gateNumber, { opportunities: 0, activations: 0, activationWins: 0 });
+        }
+        const gateStats = gateStatsMap.get(gateNumber)!;
+
+        const learnedDodgingDanger = setHasMatchingSkillBase(horse.learnedSkillIds, DODGING_DANGER_SKILL_BASE_IDS);
+        if (!learnedDodgingDanger) continue;
+
+        gateStats.opportunities++;
+        const activatedDodgingDanger = setHasMatchingSkillBase(horse.activatedSkillIds, DODGING_DANGER_SKILL_BASE_IDS);
+        if (!activatedDodgingDanger) continue;
+
+        gateStats.activations++;
+        if (horse.finishOrder === 1) {
+            gateStats.activationWins++;
+        }
+    }
+
+    return Array.from(gateStatsMap.entries())
+        .map(([gateNumber, stats]) => ({
+            gateNumber,
+            opportunities: stats.opportunities,
+            activations: stats.activations,
+            activationWins: stats.activationWins,
+            activationRate: stats.opportunities > 0 ? stats.activations / stats.opportunities : 0,
+            winRateAfterActivation: stats.activations > 0 ? stats.activationWins / stats.activations : 0,
         }))
         .sort((a, b) => a.gateNumber - b.gateNumber);
 }
@@ -877,14 +960,24 @@ export function aggregateStats(races: ParsedRace[]): AggregatedStats {
             return sum + (trackDist ?? r.raceDistance);
         }, 0) / races.length
         : 0;
-    const gateWinRatesByFlavor = {
-        total: buildGateWinRatesForFlavor(races, GATE_FLAVOR_TO_STRATEGIES.total),
-        front: buildGateWinRatesForFlavor(races, GATE_FLAVOR_TO_STRATEGIES.front),
-        pace: buildGateWinRatesForFlavor(races, GATE_FLAVOR_TO_STRATEGIES.pace),
-        late: buildGateWinRatesForFlavor(races, GATE_FLAVOR_TO_STRATEGIES.late),
-        end: buildGateWinRatesForFlavor(races, GATE_FLAVOR_TO_STRATEGIES.end),
+    const blockedHorseKeys = buildBlockedHorseLookup(races);
+    const gateStats = {
+        winRatesByFlavor: {
+            total: buildGateWinRatesForFlavor(allHorses, GATE_FLAVOR_TO_STRATEGIES.total),
+            front: buildGateWinRatesForFlavor(allHorses, GATE_FLAVOR_TO_STRATEGIES.front),
+            pace: buildGateWinRatesForFlavor(allHorses, GATE_FLAVOR_TO_STRATEGIES.pace),
+            late: buildGateWinRatesForFlavor(allHorses, GATE_FLAVOR_TO_STRATEGIES.late),
+            end: buildGateWinRatesForFlavor(allHorses, GATE_FLAVOR_TO_STRATEGIES.end),
+        },
+        blockedRatesByFlavor: {
+            total: buildBlockedGateStats(allHorses, blockedHorseKeys, GATE_FLAVOR_TO_STRATEGIES.total),
+            front: buildBlockedGateStats(allHorses, blockedHorseKeys, GATE_FLAVOR_TO_STRATEGIES.front),
+            pace: buildBlockedGateStats(allHorses, blockedHorseKeys, GATE_FLAVOR_TO_STRATEGIES.pace),
+            late: buildBlockedGateStats(allHorses, blockedHorseKeys, GATE_FLAVOR_TO_STRATEGIES.late),
+            end: buildBlockedGateStats(allHorses, blockedHorseKeys, GATE_FLAVOR_TO_STRATEGIES.end),
+        },
+        dodgingDangerRates: buildDodgingDangerGateStats(allHorses),
     };
-    const gateWinRates = gateWinRatesByFlavor.total;
 
     return {
         totalRaces,
@@ -899,7 +992,6 @@ export function aggregateStats(races: ParsedRace[]): AggregatedStats {
         allHorses,
         teamStats: computeTeamStats(allHorses),
         pairSynergy: computePairSynergy(allHorses),
-        gateWinRates,
-        gateWinRatesByFlavor,
+        gateStats,
     };
 }

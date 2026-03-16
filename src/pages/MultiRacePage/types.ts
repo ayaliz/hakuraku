@@ -172,9 +172,34 @@ export type GateWinRateStats = {
     winRate: number;
 };
 
+export type GateBlockedStats = {
+    gateNumber: number;
+    appearances: number;
+    blockedCount: number;
+    blockedWins: number;
+    blockedRate: number;
+    winRateAfterBlock: number;
+};
+
+export type GateSkillActivationStats = {
+    gateNumber: number;
+    opportunities: number;
+    activations: number;
+    activationWins: number;
+    activationRate: number;
+    winRateAfterActivation: number;
+};
+
 export type GateWinRateFlavor = "total" | "front" | "pace" | "late" | "end";
+export type GateStatsMode = "winRate" | "blocked" | "dodgingDanger";
 
 export type GateWinRateSplitStats = Record<GateWinRateFlavor, GateWinRateStats[]>;
+
+export type GateStats = {
+    winRatesByFlavor: GateWinRateSplitStats;
+    blockedRatesByFlavor: Record<GateWinRateFlavor, GateBlockedStats[]>;
+    dodgingDangerRates: GateSkillActivationStats[];
+};
 
 export type AggregatedStats = {
     totalRaces: number;
@@ -190,7 +215,6 @@ export type AggregatedStats = {
     allHorses: HorseEntry[];
     teamStats: TeamCompositionStats[];
     pairSynergy: PairSynergyStats[];
-    gateWinRates: GateWinRateStats[];
-    gateWinRatesByFlavor: GateWinRateSplitStats;
+    gateStats: GateStats;
     trueskillRanking?: TrueSkillTeamEntry[];
 };

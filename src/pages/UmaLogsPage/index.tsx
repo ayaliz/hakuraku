@@ -4,6 +4,9 @@ import { Nav, Spinner, Tab, Alert } from "react-bootstrap";
 import type {
     AggregatedStats,
     CharacterStats,
+    GateBlockedStats,
+    GateStats,
+    GateStatsMode,
     GateWinRateFlavor,
     GateWinRateStats,
     GateWinRateSplitStats,
@@ -44,6 +47,10 @@ type SerializedHorseEntry = Omit<HorseEntry, 'activatedSkillIds' | 'learnedSkill
     supportCardLimitBreaks: number[];
 };
 
+type SerializedGateStats = Partial<GateStats> & {
+    blockedRates?: GateBlockedStats[];
+};
+
 type SerializedStats = {
     totalRaces: number;
     totalHorses: number;
@@ -57,6 +64,8 @@ type SerializedStats = {
     allHorses: SerializedHorseEntry[];
     teamStats: TeamCompositionStats[];
     pairSynergy: PairSynergyStats[];
+    gateStats?: SerializedGateStats;
+    blockedRates?: GateBlockedStats[];
     gateWinRates?: GateWinRateStats[];
     gateWinRatesByFlavor?: GateWinRateSplitStats;
     trueskillRanking?: TrueSkillTeamEntry[];
@@ -76,6 +85,25 @@ type UmaLogsData = {
 };
 
 function deserializeStats(s: SerializedStats): AggregatedStats {
+    const legacyGateWinRatesByFlavor = s.gateWinRatesByFlavor ?? {
+        total: s.gateWinRates ?? [],
+        front: [],
+        pace: [],
+        late: [],
+        end: [],
+    };
+    const gateStats = {
+        winRatesByFlavor: s.gateStats?.winRatesByFlavor ?? legacyGateWinRatesByFlavor,
+        blockedRatesByFlavor: s.gateStats?.blockedRatesByFlavor ?? {
+            total: s.gateStats?.blockedRates ?? s.blockedRates ?? [],
+            front: [],
+            pace: [],
+            late: [],
+            end: [],
+        },
+        dodgingDangerRates: s.gateStats?.dodgingDangerRates ?? [],
+    };
+
     return {
         totalRaces: s.totalRaces,
         totalHorses: s.totalHorses,
@@ -106,14 +134,7 @@ function deserializeStats(s: SerializedStats): AggregatedStats {
         })),
         teamStats: s.teamStats,
         pairSynergy: s.pairSynergy ?? [],
-        gateWinRates: s.gateWinRates ?? [],
-        gateWinRatesByFlavor: s.gateWinRatesByFlavor ?? {
-            total: s.gateWinRates ?? [],
-            front: [],
-            pace: [],
-            late: [],
-            end: [],
-        },
+        gateStats,
         trueskillRanking: s.trueskillRanking ?? [],
     };
 }
@@ -151,6 +172,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
     const [styleDecksOpen, setStyleDecksOpen] = useState(false);
     const [styleDeckSort, setStyleDeckSort] = useState<"pop" | "winRate">("pop");
     const [styleDeckMinPopPct, setStyleDeckMinPopPct] = useState<0 | 0.5 | 1 | 2>(0.5);
+    const [gateMode, setGateMode] = useState<GateStatsMode>('winRate');
     const [gateFlavor, setGateFlavor] = useState<GateWinRateFlavor>('total');
 
     const allHorses = group.stats.allHorses;
@@ -208,17 +230,49 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
         late: 'Late',
         end: 'End',
     };
-    const displayedGateWinRates = group.stats.gateWinRatesByFlavor[gateFlavor] ?? [];
-    const gateWinRateBaseline = useMemo(() => {
-        const totals = displayedGateWinRates.reduce((acc, gate) => {
+    const gateModeLabels: Record<GateStatsMode, string> = {
+        winRate: 'Win Rate',
+        blocked: 'Blocked',
+        dodgingDanger: 'Dodging Danger',
+    };
+    const displayedGateWinRates = group.stats.gateStats.winRatesByFlavor[gateFlavor] ?? [];
+    const displayedBlockedRates = group.stats.gateStats.blockedRatesByFlavor[gateFlavor] ?? [];
+    const displayedDodgingDangerRates = group.stats.gateStats.dodgingDangerRates ?? [];
+    const gateWinBaseline = useMemo(() => {
+        const totals = group.stats.gateStats.winRatesByFlavor.total.reduce((acc, gate) => {
             acc.wins += gate.wins;
             acc.appearances += gate.appearances;
             return acc;
         }, { wins: 0, appearances: 0 });
         return totals.appearances > 0 ? totals.wins / totals.appearances : 1 / 9;
-    }, [displayedGateWinRates]);
-    const gateWinRateColor = (winRate: number) => {
-        const delta = winRate - gateWinRateBaseline;
+    }, [group.stats.gateStats.winRatesByFlavor]);
+    const gateModeBaseline = useMemo(() => {
+        if (gateMode === 'blocked') {
+            const totals = displayedBlockedRates.reduce((acc, gate) => {
+                acc.blocked += gate.blockedCount;
+                acc.appearances += gate.appearances;
+                return acc;
+            }, { blocked: 0, appearances: 0 });
+            return totals.appearances > 0 ? totals.blocked / totals.appearances : 0;
+        }
+        if (gateMode === 'dodgingDanger') {
+            const totals = displayedDodgingDangerRates.reduce((acc, gate) => {
+                acc.activations += gate.activations;
+                acc.opportunities += gate.opportunities;
+                return acc;
+            }, { activations: 0, opportunities: 0 });
+            return totals.opportunities > 0 ? totals.activations / totals.opportunities : 0;
+        }
+        const totals = displayedGateWinRates.reduce((acc, gate) => {
+            acc.wins += gate.wins;
+            acc.appearances += gate.appearances;
+            return acc;
+        }, { wins: 0, appearances: 0 });
+        return totals.appearances > 0 ? totals.wins / totals.appearances : gateWinBaseline;
+    }, [displayedBlockedRates, displayedDodgingDangerRates, displayedGateWinRates, gateMode, gateWinBaseline]);
+    const gateRateColor = (value: number, baseline: number, invert = false) => {
+        const rawDelta = value - baseline;
+        const delta = invert ? -rawDelta : rawDelta;
         const t = Math.min(Math.abs(delta) / 0.03, 1);
         const from = [203, 213, 224];
         const to = delta >= 0 ? [104, 211, 145] : [252, 129, 129];
@@ -227,6 +281,11 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
         const b = Math.round(from[2] + (to[2] - from[2]) * t);
         return `rgb(${r}, ${g}, ${b})`;
     };
+    const gateGridColumns = gateMode === 'winRate' ? '1fr 1fr 1fr 1fr' : '1fr 1fr 1fr';
+    const hasGateStats =
+        group.stats.gateStats.winRatesByFlavor.total.length > 0 ||
+        group.stats.gateStats.blockedRatesByFlavor.total.length > 0 ||
+        group.stats.gateStats.dodgingDangerRates.length > 0;
     const availableDeckStyleIds = useMemo(() => {
         const present = new Set(allHorses.filter(h => h.supportCardIds.length === 6).map(h => h.strategy));
         const ordered = STRATEGY_DISPLAY_ORDER.filter(sid => present.has(sid)) as number[];
@@ -241,6 +300,11 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
             setSelectedDeckStyle(availableDeckStyleIds[0] ?? 1);
         }
     }, [availableDeckStyleIds, selectedDeckStyle]);
+    useEffect(() => {
+        if (gateMode === 'dodgingDanger' && gateFlavor !== 'front') {
+            setGateFlavor('front');
+        }
+    }, [gateFlavor, gateMode]);
     const styleDeckRowsByStyle = useMemo(() => {
         const result: Record<number, StyleDeckRow[]> = {};
         for (const sid of availableDeckStyleIds) {
@@ -432,54 +496,133 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
                                     </div>
                                 </div>
                             )}
-                            {group.stats.gateWinRatesByFlavor.total.length > 0 && (
+                            {hasGateStats && (
                                 <div className="uma-gate-panel">
                                     <div className="uma-gate-panel-title">
-                                        Gate Number Win Rates
+                                        Gate Stats
                                         <span
                                             className="sa-info-icon"
-                                            title="Runaway is included in Front"
+                                            title="Runaway is included in Front."
                                         >
                                             i
                                         </span>
                                     </div>
                                     <div className="histogram-toggle uma-gate-toggle">
-                                        {(Object.keys(gateFlavorLabels) as GateWinRateFlavor[]).map((flavor) => (
+                                        {(Object.keys(gateModeLabels) as GateStatsMode[]).map((mode) => (
                                             <button
-                                                key={flavor}
-                                                className={`histogram-toggle-btn uma-gate-toggle-btn${gateFlavor === flavor ? " active" : ""}`}
-                                                onClick={() => setGateFlavor(flavor)}
+                                                key={mode}
+                                                className={`histogram-toggle-btn uma-gate-toggle-btn${gateMode === mode ? " active" : ""}`}
+                                                onClick={() => setGateMode(mode)}
                                             >
-                                                {gateFlavorLabels[flavor]}
+                                                {gateModeLabels[mode]}
                                             </button>
                                         ))}
                                     </div>
-                                    <div className="uma-gate-table-wrap" style={{ ['--gate-row-count' as any]: displayedGateWinRates.length }}>
-                                        <div className="uma-gate-head-row">
-                                            <div>Gate</div>
-                                            <div className="uma-gate-cell--r">Wins</div>
-                                            <div className="uma-gate-cell--r">Entries</div>
-                                            <div className="uma-gate-cell--r">Win%</div>
+                                    {(gateMode === 'winRate' || gateMode === 'blocked' || gateMode === 'dodgingDanger') && (
+                                        <div className="histogram-toggle uma-gate-toggle">
+                                            {(Object.keys(gateFlavorLabels) as GateWinRateFlavor[]).map((flavor) => {
+                                                const disabled = gateMode === 'dodgingDanger' && flavor !== 'front';
+                                                return (
+                                                    <button
+                                                        key={flavor}
+                                                        className={`histogram-toggle-btn uma-gate-toggle-btn${gateFlavor === flavor ? " active" : ""}`}
+                                                        onClick={() => !disabled && setGateFlavor(flavor)}
+                                                        disabled={disabled}
+                                                    >
+                                                        {gateFlavorLabels[flavor]}
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
-                                        <div className="uma-gate-body">
-                                            {displayedGateWinRates.map((gate) => (
-                                                <div key={gate.gateNumber} className="uma-gate-body-row">
-                                                    <div>{gate.gateNumber}</div>
-                                                    <div className="uma-gate-cell--r">{gate.wins}</div>
-                                                    <div className="uma-gate-cell--r">{gate.appearances}</div>
-                                                    <div className="uma-gate-cell--r" style={{ color: gateWinRateColor(gate.winRate) }}>
-                                                        {(gate.winRate * 100).toFixed(1)}%
-                                                    </div>
+                                    )}
+                                    <div className="uma-gate-table-wrap">
+                                        {gateMode === 'winRate' && (
+                                            <>
+                                                <div className="uma-gate-head-row" style={{ gridTemplateColumns: gateGridColumns }}>
+                                                    <div>Gate</div>
+                                                    <div className="uma-gate-cell--r">Wins</div>
+                                                    <div className="uma-gate-cell--r">Entries</div>
+                                                    <div className="uma-gate-cell--r">Win%</div>
                                                 </div>
-                                            ))}
-                                            {displayedGateWinRates.length === 0 && (
-                                                <div className="uma-gate-body-row">
-                                                    <div style={{ gridColumn: '1 / span 4', textAlign: 'center', color: '#718096' }}>
-                                                        No data
-                                                    </div>
+                                                <div className="uma-gate-body">
+                                                    {displayedGateWinRates.map((gate) => (
+                                                        <div key={gate.gateNumber} className="uma-gate-body-row" style={{ gridTemplateColumns: gateGridColumns }}>
+                                                            <div>{gate.gateNumber}</div>
+                                                            <div className="uma-gate-cell--r">{gate.wins}</div>
+                                                            <div className="uma-gate-cell--r">{gate.appearances}</div>
+                                                            <div className="uma-gate-cell--r" style={{ color: gateRateColor(gate.winRate, gateModeBaseline) }}>
+                                                                {(gate.winRate * 100).toFixed(1)}%
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {displayedGateWinRates.length === 0 && (
+                                                        <div className="uma-gate-body-row" style={{ gridTemplateColumns: gateGridColumns }}>
+                                                            <div style={{ gridColumn: '1 / span 4', textAlign: 'center', color: '#718096' }}>
+                                                                No data
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
-                                        </div>
+                                            </>
+                                        )}
+                                        {gateMode === 'blocked' && (
+                                            <>
+                                                <div className="uma-gate-head-row" style={{ gridTemplateColumns: gateGridColumns }}>
+                                                    <div>Gate</div>
+                                                    <div className="uma-gate-cell--r">Blocked%</div>
+                                                    <div className="uma-gate-cell--r">Win% after block</div>
+                                                </div>
+                                                <div className="uma-gate-body">
+                                                    {displayedBlockedRates.map((gate) => (
+                                                        <div key={gate.gateNumber} className="uma-gate-body-row" style={{ gridTemplateColumns: gateGridColumns }}>
+                                                            <div>{gate.gateNumber}</div>
+                                                            <div className="uma-gate-cell--r" style={{ color: gateRateColor(gate.blockedRate, gateModeBaseline, true) }}>
+                                                                {(gate.blockedRate * 100).toFixed(1)}%
+                                                            </div>
+                                                            <div className="uma-gate-cell--r" style={{ color: gateRateColor(gate.winRateAfterBlock, gateWinBaseline) }}>
+                                                                {(gate.winRateAfterBlock * 100).toFixed(1)}%
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {displayedBlockedRates.length === 0 && (
+                                                        <div className="uma-gate-body-row" style={{ gridTemplateColumns: gateGridColumns }}>
+                                                            <div style={{ gridColumn: '1 / span 3', textAlign: 'center', color: '#718096' }}>
+                                                                No data
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
+                                        {gateMode === 'dodgingDanger' && (
+                                            <>
+                                                <div className="uma-gate-head-row" style={{ gridTemplateColumns: gateGridColumns }}>
+                                                    <div>Gate</div>
+                                                    <div className="uma-gate-cell--r">Activation%</div>
+                                                    <div className="uma-gate-cell--r">Win% after activation</div>
+                                                </div>
+                                                <div className="uma-gate-body">
+                                                    {displayedDodgingDangerRates.map((gate) => (
+                                                        <div key={gate.gateNumber} className="uma-gate-body-row" style={{ gridTemplateColumns: gateGridColumns }}>
+                                                            <div>{gate.gateNumber}</div>
+                                                            <div className="uma-gate-cell--r" style={{ color: gateRateColor(gate.activationRate, gateModeBaseline) }}>
+                                                                {(gate.activationRate * 100).toFixed(1)}%
+                                                            </div>
+                                                            <div className="uma-gate-cell--r" style={{ color: gateRateColor(gate.winRateAfterActivation, gateWinBaseline) }}>
+                                                                {(gate.winRateAfterActivation * 100).toFixed(1)}%
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {displayedDodgingDangerRates.length === 0 && (
+                                                        <div className="uma-gate-body-row" style={{ gridTemplateColumns: gateGridColumns }}>
+                                                            <div style={{ gridColumn: '1 / span 3', textAlign: 'center', color: '#718096' }}>
+                                                                No data
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             )}

@@ -84,6 +84,29 @@
     margin-bottom: 0 !important;
 }
 
+.uma-cm-selector {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: #a0aec0;
+}
+
+.uma-cm-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.uma-cm-select {
+    background: #1a202c;
+    border: 1px solid #4a5568;
+    border-radius: 4px;
+    color: #e2e8f0;
+    font-size: 0.8rem;
+    padding: 2px 6px;
+}
+
 .uma-colorblind-controls {
     display: flex;
     align-items: center;
@@ -863,7 +886,7 @@
     overflow: hidden;
     background: #2d3748;
     box-sizing: border-box;
-    /* border set inline — dynamic strategy color */
+    /* border color is set inline based on strategy */
 }
 
 .tcp-portrait img {
@@ -1171,6 +1194,11 @@
     white-space: nowrap;
 }
 
+.exp-filter-winpct {
+    color: #68d391;
+    font-weight: 600;
+}
+
 .exp-conditions {
     display: flex;
     flex-direction: column;
@@ -1266,7 +1294,8 @@
     color: #a0aec0;
 }
 
-.exp-as-label {
+.exp-as-label,
+.exp-with-label {
     font-size: 11px;
     color: #4a5568;
     flex-shrink: 0;
@@ -1296,6 +1325,17 @@
 
 .exp-chara-select-btn:hover {
     border-color: #718096;
+}
+
+.exp-chara-select-btn--skill {
+    min-width: 220px;
+    padding-left: 8px;
+}
+
+.exp-skill-inherit-tag {
+    font-size: 0.8em;
+    color: #9ca3af;
+    margin-left: 4px;
 }
 
 .exp-chara-select-portrait {
@@ -1616,6 +1656,23 @@
     font-size: 13px;
 }
 
+.exp-stat-input {
+    width: 88px;
+    background: #1a202c;
+    border: 1px solid #4a5568;
+    border-radius: 6px;
+    color: #a0aec0;
+    font-size: 12px;
+    padding: 3px 8px;
+    flex-shrink: 0;
+}
+
+.exp-stat-input:focus {
+    outline: none;
+    border-color: #718096;
+    color: #e2e8f0;
+}
+
 /* ── TrueSkill Team Ranking Panel ─────────────────────────── */
 
 .ts-panel {
@@ -1734,4 +1791,167 @@
 
 .ts-entry-cards {
     padding: 12px;
+}
+
+/* ── Debuffer Tab ─────────────────────────────────────────── */
+
+.deb-container {
+    max-width: 680px;
+    padding: 8px 0;
+}
+
+.deb-header {
+    margin-bottom: 20px;
+}
+
+.deb-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #e2e8f0;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.deb-title-id {
+    font-size: 12px;
+    color: #4a5568;
+    font-weight: normal;
+}
+
+.deb-subtitle {
+    font-size: 13px;
+    color: #718096;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.deb-total {
+    font-size: 12px;
+    color: #4a5568;
+}
+
+.deb-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.deb-th {
+    padding: 7px 12px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #4a5568;
+    border-bottom: 1px solid #2d3748;
+    white-space: nowrap;
+}
+
+.deb-th--r {
+    text-align: right;
+}
+
+.deb-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.deb-row:last-child {
+    border-bottom: none;
+}
+
+.deb-row:hover {
+    background: rgba(255, 255, 255, 0.025);
+}
+
+.deb-td {
+    padding: 10px 12px;
+    color: #a0aec0;
+    vertical-align: middle;
+}
+
+.deb-td--r {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.deb-td--muted {
+    color: #4a5568;
+}
+
+.deb-td--carriers {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.deb-td--bar {
+    min-width: 200px;
+}
+
+.deb-carriers-label {
+    color: #e2e8f0;
+    font-weight: 500;
+}
+
+.deb-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.deb-badge--none {
+    background: rgba(255, 255, 255, 0.06);
+    color: #4a5568;
+    width: auto;
+    padding: 0 6px;
+    font-size: 10px;
+}
+
+.deb-badge--carrier {
+    background: rgba(252, 129, 129, 0.18);
+    color: #fc8181;
+    border: 1px solid rgba(252, 129, 129, 0.3);
+}
+
+.deb-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.deb-bar-track {
+    flex: 1;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.deb-bar {
+    height: 100%;
+    border-radius: 4px;
+    background: #4299e1;
+    opacity: 0.75;
+    min-width: 1px;
+    transition: width 0.2s;
+}
+
+.deb-bar-val {
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    color: #e2e8f0;
+    font-weight: 600;
+    min-width: 44px;
+    text-align: right;
 }

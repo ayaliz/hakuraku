@@ -13,12 +13,11 @@ function resolveIconSkillId(id: number): number {
     return s.startsWith("9") ? parseInt("1" + s.slice(1), 10) : id;
 }
 
-// Grade letter map — 1=G … 8=S (mirrors charaProperLabels in UMDatabaseUtils)
+// Grade letters: 1=G through 8=S (mirrors charaProperLabels in UMDatabaseUtils)
 const GRADE_LETTERS: Record<number, string> = { 1: "G", 2: "F", 3: "E", 4: "D", 5: "C", 6: "B", 7: "A", 8: "S" };
 
-// Aptitude display labels — keep in sync with APTITUDE_* constants in precompute-umalogs.mts
-const APT_GROUND_LABEL = "Dirt";
-const APT_DISTANCE_LABEL = "Mile";
+const APT_GROUND_LABEL = "Ground";
+const APT_DISTANCE_LABEL = "Distance";
 
 interface UmaFeatCardProps {
     horse: HorseEntry;
@@ -130,7 +129,7 @@ const UmaFeatCard: React.FC<UmaFeatCardProps> = ({ horse, label, displayValue, d
 
             <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
                 <Modal.Header closeButton>
-                    <Modal.Title className="fup-modal-title">{label} — Full Profile</Modal.Title>
+                    <Modal.Title className="fup-modal-title">{label} - Full Profile</Modal.Title>
                 </Modal.Header>
 
                 <Modal.Body>

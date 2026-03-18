@@ -826,7 +826,7 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
                 <div className="stcp-overlay" onClick={() => setOpen(false)}>
                     <div className="stcp-modal" onClick={e => e.stopPropagation()}>
                         <div className="stcp-modal-header">
-                            <div className="fup-modal-title">Team Member — Full Profile</div>
+                            <div className="fup-modal-title">Team Member - Full Profile</div>
                             <button className="stcp-modal-close" onClick={() => setOpen(false)}>×</button>
                         </div>
                         <div className="stcp-modal-body">
@@ -912,7 +912,7 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
                                             )}
                                             {horse.aptStyle !== undefined && (
                                                 <div className="fup-apt-item">
-                                                    <span className="fup-apt-cat">Style</span>
+                                                    <span className="fup-apt-cat">{strategyName}</span>
                                                     <img
                                                         src={AssetLoader.getGradeIcon(GRADE_LETTERS[horse.aptStyle]) ?? ""}
                                                         alt={GRADE_LETTERS[horse.aptStyle] ?? "?"}

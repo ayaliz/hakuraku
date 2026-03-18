@@ -166,6 +166,39 @@
 }
 .deck-bars { flex: 1; min-width: 0; }
 
+/* Race bonus overview table */
+.rb-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.875rem;
+    color: #e5e7eb;
+}
+.rb-th {
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #9ca3af;
+    border-bottom: 2px solid rgba(99, 102, 241, 0.3);
+    white-space: nowrap;
+}
+.rb-th--r { text-align: right; }
+.rb-th--bars { text-align: left; min-width: 260px; }
+.rb-row:nth-child(odd) { background: rgba(30, 35, 44, 0.5); }
+.rb-row:nth-child(even) { background: rgba(40, 45, 55, 0.5); }
+.rb-td {
+    padding: 6px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    vertical-align: middle;
+    white-space: nowrap;
+}
+.rb-td--bonus { font-weight: 700; color: #fbbf24; font-variant-numeric: tabular-nums; }
+.rb-td--r { text-align: right; font-variant-numeric: tabular-nums; }
+.rb-td--bars { min-width: 260px; }
+
 /* SynergyEntitySelect dropdown */
 .syn-select {
     position: relative;

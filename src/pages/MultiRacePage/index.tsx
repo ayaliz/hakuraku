@@ -11,6 +11,7 @@ import SkillAnalysis from "./components/SkillAnalysis";
 import HpSpurtAnalysis from "./components/HpSpurtAnalysis";
 import { computeHpSpurtStats } from "./components/HpSpurtAnalysis/processData";
 import { CharaHpSpurtStats } from "./components/HpSpurtAnalysis/types";
+import ExplorerTab from "../UmaLogsPage/ExplorerTab";
 
 // Group races by track
 interface TrackGroup {
@@ -191,6 +192,13 @@ const MultiRacePage: React.FC = () => {
                                                 allHorses={group.stats.allHorses}
                                                 ownCharas={group.hpSpurtStats}
                                             />
+                                        </div>
+
+                                        <div className="skill-analysis-section">
+                                            <h4 className="section-heading">
+                                                Explorer
+                                            </h4>
+                                            <ExplorerTab allHorses={group.stats.allHorses} />
                                         </div>
                                     </Tab.Pane>
                                 ))}

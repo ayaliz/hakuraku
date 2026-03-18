@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import pako from "pako";
-import { Nav, Spinner, Tab, Alert } from "react-bootstrap";
+import { Nav, Spinner, Alert } from "react-bootstrap";
 import type {
     AggregatedStats,
     CharacterStats,
@@ -27,6 +27,7 @@ import SkillAnalysis from "../MultiRacePage/components/SkillAnalysis";
 import Histogram from "./Histogram";
 import UmaFeatCard from "./FastestUmaPanel";
 import { formatTime } from "../../data/UMDatabaseUtils";
+import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 import AssetLoader from "../../data/AssetLoader";
 import TeamCompositionPanel from "./TeamCompositionPanel";
 import TrueSkillTeamPanel from "./TrueSkillTeamPanel";
@@ -40,7 +41,7 @@ type SerializedSkillStats = Omit<SkillStats, 'learnedByCharaIds' | 'learnedByStr
     learnedByStrategies: number[];
 };
 
-type SerializedHorseEntry = Omit<HorseEntry, 'activatedSkillIds' | 'learnedSkillIds' | 'trainerName'> & {
+type SerializedHorseEntry = Omit<HorseEntry, 'activatedSkillIds' | 'learnedSkillIds' | 'trainerName' | 'raceDistance' | 'isPlayer' | 'charaName'> & {
     activatedSkillIds: number[];
     learnedSkillIds: number[];
     supportCardIds: number[];
@@ -81,7 +82,21 @@ type SerializedGroup = {
 
 type UmaLogsData = {
     generatedAt: string;
+    cmId?: string;
+    cmLabel?: string;
     groups: SerializedGroup[];
+};
+
+type ManifestEntry = {
+    cmId: string;
+    cmLabel: string;
+    generatedAt: string;
+    totalRaces: number;
+    trackSummary?: string;
+};
+
+type Manifest = {
+    datasets: ManifestEntry[];
 };
 
 function deserializeStats(s: SerializedStats): AggregatedStats {
@@ -126,7 +141,10 @@ function deserializeStats(s: SerializedStats): AggregatedStats {
         skillActivationBuckets: new Map(s.skillBuckets),
         allHorses: s.allHorses.map((h) => ({
             ...h,
+            charaName: UMDatabaseWrapper.charas[h.charaId]?.name ?? `Unknown (${h.charaId})`,
             trainerName: '',
+            raceDistance: 0,
+            isPlayer: false,
             activatedSkillIds: new Set(h.activatedSkillIds),
             learnedSkillIds: new Set(h.learnedSkillIds),
             supportCardIds: h.supportCardIds ?? [],
@@ -150,6 +168,7 @@ type Section = 'introduction' | 'overview' | 'strategy' | 'character' | 'skill' 
 
 interface TrackGroupContentProps {
     group: TrackGroup;
+    cmLabel: string;
     scoreWinnersOnly: boolean;
     setScoreWinnersOnly: (v: boolean) => void;
     totalRaces: number;
@@ -166,10 +185,11 @@ type StyleDeckRow = {
     adjWinRate: number;
 };
 
-const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinnersOnly, setScoreWinnersOnly, totalRaces, totalUniqueUmas, strategyColors }) => {
+const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmLabel, scoreWinnersOnly, setScoreWinnersOnly, totalRaces, totalUniqueUmas, strategyColors }) => {
     const [section, setSection] = useState<Section>('introduction');
     const [cardUsageOpen, setCardUsageOpen] = useState(false);
     const [styleDecksOpen, setStyleDecksOpen] = useState(false);
+    const [deckModalTab, setDeckModalTab] = useState<"overview" | "decks">("overview");
     const [styleDeckSort, setStyleDeckSort] = useState<"pop" | "winRate">("pop");
     const [styleDeckMinPopPct, setStyleDeckMinPopPct] = useState<0 | 0.5 | 1 | 2>(0.5);
     const [gateMode, setGateMode] = useState<GateStatsMode>('winRate');
@@ -305,6 +325,29 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
             setGateFlavor('front');
         }
     }, [gateFlavor, gateMode]);
+    const raceBonusRows = useMemo(() => {
+        const horses = allHorses.filter(h => h.supportCardIds.length === 6);
+        const map = new Map<number, { appearances: number; wins: number }>();
+        for (const h of horses) {
+            const rb = h.supportCardIds.reduce((sum, id) => sum + (UMDatabaseWrapper.supportCardRaceBonus[id] ?? 0), 0);
+            if (!map.has(rb)) map.set(rb, { appearances: 0, wins: 0 });
+            const e = map.get(rb)!;
+            e.appearances++;
+            if (h.finishOrder === 1) e.wins++;
+        }
+        const total = horses.length;
+        const priorMean = total > 0 ? horses.filter(h => h.finishOrder === 1).length / total : 1 / 9;
+        return Array.from(map.entries())
+            .map(([rb, { appearances, wins }]) => ({
+                rb,
+                appearances,
+                wins,
+                popPct: (appearances / total) * 100,
+                adjWinRate: (wins + BAYES_UMA.K * priorMean) / (appearances + BAYES_UMA.K),
+            }))
+            .sort((a, b) => a.rb - b.rb);
+    }, [allHorses]);
+
     const styleDeckRowsByStyle = useMemo(() => {
         const result: Record<number, StyleDeckRow[]> = {};
         for (const sid of availableDeckStyleIds) {
@@ -374,17 +417,10 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
 
             {section === 'introduction' && (
                 <div className="uma-intro-tab">
-                    <h4>Welcome to UmaLogs</h4>
                     <p>
-                        Welcome to the initial release of the public room data page, aka UmaLogs.
-                        It currently serves stats for <strong>{totalRaces.toLocaleString()}</strong> total
-                        CM10 room matches featuring <strong>{totalUniqueUmas.toLocaleString()}</strong> unique umas.
-                    </p>
-                    <p>
-                        I'm currently no longer excluding debuffers from data since the previous implementation lead to results that were more misleading than helpful, will revisit.
-                    </p>
-                    <p>
-                        Data collection for CM10 is over, the page will still see gradual improvement to prepare for CM11.
+                        Welcome to the public room data page, aka UmaLogs.
+                        It currently serves stats for <strong>{totalRaces.toLocaleString()}</strong> total{' '}
+                        {cmLabel} room matches featuring <strong>{totalUniqueUmas.toLocaleString()}</strong> unique umas.
                     </p>
                     <h5>Adjusted Win Rates</h5>
                     <p>
@@ -399,7 +435,6 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
                         <li>Per-team data: prior m = 1/3, C = 18</li>
                         <li>Per-skill win rates: prior m = uma's base win rate in the data, C = 54</li>
                     </ul>
-                    <p>More content to come when I have time.</p>
                 </div>
             )}
 
@@ -666,85 +701,143 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
                             <h3 className="cdt-title">Style Decks</h3>
                             <div className="ca-sort-toggle ca-sort-toggle--modal">
                                 <button
-                                    className={`ca-sort-btn${styleDeckSort === "pop" ? " ca-sort-btn--active" : ""}`}
-                                    onClick={() => setStyleDeckSort("pop")}>
-                                    By Population
+                                    className={`ca-sort-btn${deckModalTab === "overview" ? " ca-sort-btn--active" : ""}`}
+                                    onClick={() => setDeckModalTab("overview")}>
+                                    Overview
                                 </button>
                                 <button
-                                    className={`ca-sort-btn${styleDeckSort === "winRate" ? " ca-sort-btn--active" : ""}`}
-                                    onClick={() => setStyleDeckSort("winRate")}>
-                                    By Adj. Win%
+                                    className={`ca-sort-btn${deckModalTab === "decks" ? " ca-sort-btn--active" : ""}`}
+                                    onClick={() => setDeckModalTab("decks")}>
+                                    Decks
                                 </button>
                             </div>
                             <button className="cdt-close-btn" onClick={() => setStyleDecksOpen(false)}>&times;</button>
                         </div>
                         <div className="cdt-content">
-                            <div className="histogram-toggle uma-gate-toggle" style={{ marginBottom: "10px" }}>
-                                {availableDeckStyleIds.map((sid) => (
-                                    <button
-                                        key={sid}
-                                        className={`histogram-toggle-btn uma-gate-toggle-btn${selectedDeckStyle === sid ? " active" : ""}`}
-                                        onClick={() => setSelectedDeckStyle(sid)}
-                                    >
-                                        {STRATEGY_NAMES[sid] ?? `Style ${sid}`}
-                                    </button>
-                                ))}
-                            </div>
-                            {styleDeckSort === "winRate" && (
-                                <div className="histogram-toggle uma-gate-toggle" style={{ marginBottom: "10px" }}>
-                                    {([
-                                        { value: 0.5 as const, label: "≥0.5% pop" },
-                                        { value: 1 as const, label: "≥1% pop" },
-                                        { value: 2 as const, label: "≥2% pop" },
-                                        { value: 0 as const, label: "No minimum pop" },
-                                    ]).map((opt) => (
-                                        <button
-                                            key={opt.value}
-                                            className={`histogram-toggle-btn uma-gate-toggle-btn${styleDeckMinPopPct === opt.value ? " active" : ""}`}
-                                            onClick={() => setStyleDeckMinPopPct(opt.value)}
-                                        >
-                                            {opt.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                            {selectedStyleDeckList.length === 0 ? (
-                                <span className="sa-no-data">No deck data for this style.</span>
-                            ) : selectedStyleDeckList.slice(0, 20).map(row => (
-                                <div key={`${selectedDeckStyle}_${row.deckKey}`} className="sa-sb-row deck-row">
-                                    <div className="deck-cards-grid">
-                                        {row.cardIds.map((id, i) => (
-                                            <img
-                                                key={i}
-                                                src={AssetLoader.getSupportCardIcon(id)}
-                                                alt={`Card ${id}`}
-                                                className="deck-card-icon"
-                                                onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                                            />
+                            {deckModalTab === "overview" && (() => {
+                                const maxPct = Math.max(...raceBonusRows.map(r => Math.max(r.popPct, r.adjWinRate * 100)), 1);
+                                return raceBonusRows.length === 0
+                                    ? <span className="sa-no-data">No deck data available.</span>
+                                    : (
+                                        <table className="rb-table">
+                                            <thead>
+                                                <tr>
+                                                    <th className="rb-th">Race Bonus</th>
+                                                    <th className="rb-th rb-th--r">Entries</th>
+                                                    <th className="rb-th rb-th--r">Wins</th>
+                                                    <th className="rb-th rb-th--bars">Pop% / Adj. Win%</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {raceBonusRows.map(row => (
+                                                    <tr key={row.rb} className="rb-row">
+                                                        <td className="rb-td rb-td--bonus">{row.rb}%</td>
+                                                        <td className="rb-td rb-td--r">{row.appearances}</td>
+                                                        <td className="rb-td rb-td--r">{row.wins}</td>
+                                                        <td className="rb-td rb-td--bars">
+                                                            <div className="sa-sb-bar-row">
+                                                                <div className="sa-sb-bar-label">Pop%</div>
+                                                                <div className="sa-sb-track sa-sb-track--pick">
+                                                                    <div className="sa-sb-bar-fill sa-sb-bar-fill--pick" style={{ width: `${(row.popPct / maxPct) * 100}%` }} />
+                                                                </div>
+                                                                <div className="sa-sb-value sa-sb-value--pick">{row.popPct.toFixed(1)}%</div>
+                                                            </div>
+                                                            <div className="sa-sb-bar-row">
+                                                                <div className="sa-sb-bar-label">Win%</div>
+                                                                <div className="sa-sb-track sa-sb-track--win">
+                                                                    <div className="sa-sb-bar-fill" style={{ width: `${(row.adjWinRate * 100 / maxPct) * 100}%`, background: "#68d391" }} />
+                                                                </div>
+                                                                <div className="sa-sb-value sa-sb-value--win">{(row.adjWinRate * 100).toFixed(1)}%</div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    );
+                            })()}
+                            {deckModalTab === "decks" && (
+                                <>
+                                    <div className="histogram-toggle uma-gate-toggle" style={{ marginBottom: "10px" }}>
+                                        {availableDeckStyleIds.map((sid) => (
+                                            <button
+                                                key={sid}
+                                                className={`histogram-toggle-btn uma-gate-toggle-btn${selectedDeckStyle === sid ? " active" : ""}`}
+                                                onClick={() => setSelectedDeckStyle(sid)}
+                                            >
+                                                {STRATEGY_NAMES[sid] ?? `Style ${sid}`}
+                                            </button>
                                         ))}
                                     </div>
-                                    <div className="deck-bars">
-                                        <div className="sa-sb-bar-row">
-                                            <div className="sa-sb-bar-label">Pop%</div>
-                                            <div className="sa-sb-track sa-sb-track--pick">
-                                                <div className="sa-sb-bar-fill sa-sb-bar-fill--pick" style={{ width: `${(row.popPct / selectedStyleDeckMaxPct) * 100}%` }} />
-                                            </div>
-                                            <div className="sa-sb-value sa-sb-value--pick" style={{ width: "auto", minWidth: "72px" }}>
-                                                {row.popPct.toFixed(1)}% <span className="ca-abs-count">({row.appearances})</span>
-                                            </div>
-                                        </div>
-                                        <div className="sa-sb-bar-row">
-                                            <div className="sa-sb-bar-label">Win%</div>
-                                            <div className="sa-sb-track sa-sb-track--win">
-                                                <div className="sa-sb-bar-fill" style={{ width: `${(row.adjWinRate * 100 / selectedStyleDeckMaxPct) * 100}%`, background: "#68d391" }} />
-                                            </div>
-                                            <div className="sa-sb-value sa-sb-value--win" style={{ width: "auto", minWidth: "72px" }}>
-                                                {(row.adjWinRate * 100).toFixed(1)}% <span className="ca-abs-count">({row.wins})</span>
-                                            </div>
-                                        </div>
+                                    <div className="ca-sort-toggle" style={{ marginBottom: "10px" }}>
+                                        <button
+                                            className={`ca-sort-btn${styleDeckSort === "pop" ? " ca-sort-btn--active" : ""}`}
+                                            onClick={() => setStyleDeckSort("pop")}>
+                                            By Population
+                                        </button>
+                                        <button
+                                            className={`ca-sort-btn${styleDeckSort === "winRate" ? " ca-sort-btn--active" : ""}`}
+                                            onClick={() => setStyleDeckSort("winRate")}>
+                                            By Adj. Win%
+                                        </button>
                                     </div>
-                                </div>
-                            ))}
+                                    {styleDeckSort === "winRate" && (
+                                        <div className="histogram-toggle uma-gate-toggle" style={{ marginBottom: "10px" }}>
+                                            {([
+                                                { value: 0.5 as const, label: "≥0.5% pop" },
+                                                { value: 1 as const, label: "≥1% pop" },
+                                                { value: 2 as const, label: "≥2% pop" },
+                                                { value: 0 as const, label: "No minimum pop" },
+                                            ]).map((opt) => (
+                                                <button
+                                                    key={opt.value}
+                                                    className={`histogram-toggle-btn uma-gate-toggle-btn${styleDeckMinPopPct === opt.value ? " active" : ""}`}
+                                                    onClick={() => setStyleDeckMinPopPct(opt.value)}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {selectedStyleDeckList.length === 0 ? (
+                                        <span className="sa-no-data">No deck data for this style.</span>
+                                    ) : selectedStyleDeckList.slice(0, 20).map(row => (
+                                        <div key={`${selectedDeckStyle}_${row.deckKey}`} className="sa-sb-row deck-row">
+                                            <div className="deck-cards-grid">
+                                                {row.cardIds.map((id, i) => (
+                                                    <img
+                                                        key={i}
+                                                        src={AssetLoader.getSupportCardIcon(id)}
+                                                        alt={`Card ${id}`}
+                                                        className="deck-card-icon"
+                                                        onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <div className="deck-bars">
+                                                <div className="sa-sb-bar-row">
+                                                    <div className="sa-sb-bar-label">Pop%</div>
+                                                    <div className="sa-sb-track sa-sb-track--pick">
+                                                        <div className="sa-sb-bar-fill sa-sb-bar-fill--pick" style={{ width: `${(row.popPct / selectedStyleDeckMaxPct) * 100}%` }} />
+                                                    </div>
+                                                    <div className="sa-sb-value sa-sb-value--pick" style={{ width: "auto", minWidth: "72px" }}>
+                                                        {row.popPct.toFixed(1)}% <span className="ca-abs-count">({row.appearances})</span>
+                                                    </div>
+                                                </div>
+                                                <div className="sa-sb-bar-row">
+                                                    <div className="sa-sb-bar-label">Win%</div>
+                                                    <div className="sa-sb-track sa-sb-track--win">
+                                                        <div className="sa-sb-bar-fill" style={{ width: `${(row.adjWinRate * 100 / selectedStyleDeckMaxPct) * 100}%`, background: "#68d391" }} />
+                                                    </div>
+                                                    <div className="sa-sb-value sa-sb-value--win" style={{ width: "auto", minWidth: "72px" }}>
+                                                        {(row.adjWinRate * 100).toFixed(1)}% <span className="ca-abs-count">({row.wins})</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -803,15 +896,18 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, scoreWinne
             {section === 'explorer' && (
                 <ExplorerTab allHorses={group.stats.allHorses} strategyColors={strategyColors} />
             )}
+
         </>
     );
 };
 
 const UmaLogsPage: React.FC = () => {
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [data, setData] = useState<UmaLogsData | null>(null);
-    const [activeTab, setActiveTab] = useState<string | null>(null);
+    const [manifest, setManifest] = useState<Manifest | null>(null);
+    const [manifestError, setManifestError] = useState<string | null>(null);
+    const [selectedCmId, setSelectedCmId] = useState<string | null>(null);
+    const [loadedDatasets, setLoadedDatasets] = useState<Record<string, UmaLogsData>>({});
+    const [loadingCmId, setLoadingCmId] = useState<string | null>(null);
+    const [datasetError, setDatasetError] = useState<string | null>(null);
     const [scoreWinnersOnly, setScoreWinnersOnly] = useState(false);
     const [colorblindMode, setColorblindMode] = useState(false);
 
@@ -825,21 +921,50 @@ const UmaLogsPage: React.FC = () => {
     }, [colorblindMode]);
 
     useEffect(() => {
-        fetch(import.meta.env.BASE_URL + 'data/umalogs-stats.json.gz')
+        fetch(import.meta.env.BASE_URL + 'data/umalogs-manifest.json')
+            .then((r) => {
+                if (!r.ok) throw new Error(`HTTP ${r.status} — manifest not found`);
+                return r.json() as Promise<Manifest>;
+            })
+            .then((m) => {
+                setManifest(m);
+                // Auto-select the latest dataset (last in the list).
+                const latest = m.datasets[m.datasets.length - 1];
+                if (latest) setSelectedCmId(latest.cmId);
+            })
+            .catch((err: Error) => setManifestError(err.message));
+    }, []);
+
+    // Lazy-load a dataset's stats file when it's selected and not yet cached.
+    useEffect(() => {
+        if (!selectedCmId || loadedDatasets[selectedCmId] || loadingCmId === selectedCmId) return;
+        setLoadingCmId(selectedCmId);
+        setDatasetError(null);
+        const url = import.meta.env.BASE_URL + `data/umalogs-${selectedCmId}-stats.json.gz`;
+        fetch(url)
             .then((r) => {
                 if (!r.ok) throw new Error(`HTTP ${r.status} — stats file not found`);
                 return r.arrayBuffer();
             })
             .then((buf) => {
                 const json = JSON.parse(pako.inflate(new Uint8Array(buf), { to: 'string' })) as UmaLogsData;
-                setData(json);
-                setLoading(false);
+                setLoadedDatasets((prev) => ({ ...prev, [selectedCmId]: json }));
+                setLoadingCmId(null);
             })
             .catch((err: Error) => {
-                setError(err.message);
-                setLoading(false);
+                setDatasetError(err.message);
+                setLoadingCmId(null);
             });
-    }, []);
+    }, [selectedCmId, loadedDatasets, loadingCmId]);
+
+    const handleSelectCm = (newCmId: string) => {
+        if (newCmId === selectedCmId) return;
+        setSelectedCmId(newCmId);
+    };
+
+    const data = selectedCmId ? (loadedDatasets[selectedCmId] ?? null) : null;
+    const loading = manifest === null || (selectedCmId !== null && !loadedDatasets[selectedCmId]);
+    const error = manifestError ?? datasetError;
 
     const trackGroups: TrackGroup[] = useMemo(() => {
         if (!data) return [];
@@ -851,11 +976,11 @@ const UmaLogsPage: React.FC = () => {
         }));
     }, [data]);
 
-    const defaultTab = trackGroups.length > 0 ? `track-${trackGroups[0].courseId}` : null;
-    const currentTab = activeTab ?? defaultTab;
-
     const totalRaces = useMemo(() => data?.groups.reduce((s, g) => s + g.raceCount, 0) ?? 0, [data]);
     const generatedDate = data ? new Date(data.generatedAt).toLocaleDateString() : '';
+    const cmLabel = manifest?.datasets.find((d) => d.cmId === selectedCmId)?.cmLabel
+        ?? data?.cmLabel
+        ?? (selectedCmId?.toUpperCase() ?? '');
     const totalUniqueUmas = useMemo(() => {
         const seen = new Set<string>();
         for (const g of trackGroups) {
@@ -893,9 +1018,27 @@ const UmaLogsPage: React.FC = () => {
                 <div className="mb-3 uma-page-header">
                     <strong>Room Match Statistics</strong>
                     {' · '}
+                    {cmLabel}
+                    {' · '}
                     {totalRaces} races
                     {' · '}
                     Updated {generatedDate}
+                </div>
+                <div className="uma-cm-selector">
+                    <label className="uma-cm-label">
+                        Dataset:
+                        <select
+                            className="uma-cm-select"
+                            value={selectedCmId ?? ''}
+                            onChange={(e) => handleSelectCm(e.target.value)}
+                        >
+                            {manifest?.datasets.map((d) => (
+                                <option key={d.cmId} value={d.cmId}>
+                                    {d.trackSummary ? `${d.cmLabel} - ${d.trackSummary}` : d.cmLabel}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
                 </div>
                 <div className="uma-colorblind-controls">
                     <button
@@ -922,43 +1065,18 @@ const UmaLogsPage: React.FC = () => {
                 </div>
             </div>
 
-            {trackGroups.length > 0 && (
-                <Tab.Container
-                    activeKey={currentTab ?? undefined}
-                    onSelect={(key) => setActiveTab(key as string)}
-                >
-                    <div className="analysis-tabs">
-                        <Nav variant="tabs">
-                            {trackGroups.map((group) => (
-                                <Nav.Item key={group.courseId}>
-                                    <Nav.Link eventKey={`track-${group.courseId}`}>
-                                        {group.trackLabel} ({group.raceCount})
-                                    </Nav.Link>
-                                </Nav.Item>
-                            ))}
-                        </Nav>
-                    </div>
-
-                    <Tab.Content>
-                        {trackGroups.map((group) => (
-                            <Tab.Pane
-                                key={group.courseId}
-                                eventKey={`track-${group.courseId}`}
-                                transition={false}
-                            >
-                                <TrackGroupContent
-                                    group={group}
-                                    scoreWinnersOnly={scoreWinnersOnly}
-                                    setScoreWinnersOnly={setScoreWinnersOnly}
-                                    totalRaces={totalRaces}
-                                    totalUniqueUmas={totalUniqueUmas}
-                                    strategyColors={strategyColors}
-                                />
-                            </Tab.Pane>
-                        ))}
-                    </Tab.Content>
-                </Tab.Container>
-            )}
+            {trackGroups.map((group) => (
+                <TrackGroupContent
+                    key={group.courseId}
+                    group={group}
+                    cmLabel={cmLabel}
+                    scoreWinnersOnly={scoreWinnersOnly}
+                    setScoreWinnersOnly={setScoreWinnersOnly}
+                    totalRaces={totalRaces}
+                    totalUniqueUmas={totalUniqueUmas}
+                    strategyColors={strategyColors}
+                />
+            ))}
         </div>
     );
 };

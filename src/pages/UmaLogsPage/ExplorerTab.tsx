@@ -7,8 +7,9 @@ import "./UmaLogsPage.css";
 
 type FilterMode = "includes" | "excludes";
 type FilterKind = "character" | "strategy";
-type GroupBy = "card" | "strategy";
-type SortKey = "label" | "entries" | "teams" | "wins" | "awPct" | "twPct";
+type FilterProperty = "none" | "speed" | "stamina" | "pow" | "guts" | "wiz" | "totalSkillPoints" | "rankScore" | "skill";
+type StatOp = ">=" | "<";
+type SortKey = "label" | "entries" | "teams" | "wins" | "awPct";
 
 interface CharaVariant {
     cardId: number;
@@ -18,12 +19,28 @@ interface CharaVariant {
     count: number;
 }
 
+interface SkillVariant {
+    skillId: number;
+    skillName: string;
+    isInherit: boolean;
+    count: number;
+}
+
 interface FilterCondition {
     id: string;
     mode: FilterMode;
     kind: FilterKind;
+    // character kind
     cardId: number | null;
+    cardStrategy: number | null;
+    // strategy kind
     strategy: number | null;
+    // optional "with" clause — applies to the matched candidates
+    property: FilterProperty;
+    statOp: StatOp;
+    statValue: number;
+    skillId: number | null;
+    skillPresent: boolean;
 }
 
 interface AggRow {
@@ -37,7 +54,6 @@ interface AggRow {
     teams: number;
     wins: number;
     awPct: number;
-    twPct: number;
 }
 
 interface ExplorerTabProps {
@@ -50,6 +66,24 @@ interface CharaSelectProps {
     value: number | null;
     onChange: (cardId: number) => void;
 }
+
+interface SkillSelectProps {
+    variants: SkillVariant[];
+    value: number | null;
+    onChange: (skillId: number) => void;
+}
+
+const PROPERTY_LABELS: Record<FilterProperty, string> = {
+    none: "—",
+    speed: "Speed",
+    stamina: "Stamina",
+    pow: "Power",
+    guts: "Guts",
+    wiz: "Wit",
+    totalSkillPoints: "Skill pts",
+    rankScore: "Score",
+    skill: "Skill",
+};
 
 const CharaSelect: React.FC<CharaSelectProps> = ({ variants, value, onChange }) => {
     const [open, setOpen] = useState(false);
@@ -145,7 +179,106 @@ const CharaSelect: React.FC<CharaSelectProps> = ({ variants, value, onChange }) 
     );
 };
 
+const SkillSelect: React.FC<SkillSelectProps> = ({ variants, value, onChange }) => {
+    const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState("");
+    const ref = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const selected = variants.find(v => v.skillId === value) ?? variants[0] ?? null;
+
+    useEffect(() => {
+        if (!open) return;
+        const handler = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [open]);
+
+    useEffect(() => {
+        if (open) inputRef.current?.focus();
+        else setSearch("");
+    }, [open]);
+
+    if (!selected) return null;
+
+    const q = search.toLowerCase();
+    const filtered = q
+        ? variants.filter(v => {
+            const label = v.isInherit ? `${v.skillName} inherit` : v.skillName;
+            return label.toLowerCase().includes(q);
+        })
+        : variants;
+
+    const renderSkillLabel = (v: SkillVariant) => (
+        <>
+            <span>{v.skillName}</span>
+            {v.isInherit && <span className="exp-skill-inherit-tag">(inherit)</span>}
+        </>
+    );
+
+    return (
+        <div className="exp-chara-select" ref={ref}>
+            <button type="button" className="exp-chara-select-btn exp-chara-select-btn--skill" onClick={() => setOpen(o => !o)}>
+                <span className="exp-name-block">
+                    {renderSkillLabel(selected)}
+                </span>
+                <span className="exp-chara-select-arrow">▾</span>
+            </button>
+
+            {open && (
+                <div className="exp-chara-select-dropdown">
+                    <div className="exp-chara-search">
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            className="exp-chara-search-input"
+                            placeholder="Search…"
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                        />
+                    </div>
+                    {filtered.length === 0 ? (
+                        <div className="exp-chara-search-empty">No matches</div>
+                    ) : filtered.map(v => (
+                        <div
+                            key={v.skillId}
+                            className={`exp-chara-select-option${v.skillId === value ? " active" : ""}`}
+                            onClick={() => { onChange(v.skillId); setOpen(false); }}
+                        >
+                            <span className="exp-name-block">
+                                {renderSkillLabel(v)}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const STRATEGIES = [1, 2, 3, 4] as const;
+
+function computeSkillPoints(learnedSkillIds: Set<number>): number {
+    let total = 0;
+    for (const skillId of learnedSkillIds) {
+        const base = UMDatabaseWrapper.skillNeedPoints[skillId] ?? 0;
+        let upgrade = 0;
+        if (UMDatabaseWrapper.skills[skillId]?.rarity === 2) {
+            const lastDigit = skillId % 10;
+            const flippedId = lastDigit === 1 ? skillId + 1 : skillId - 1;
+            upgrade = UMDatabaseWrapper.skillNeedPoints[flippedId] ?? 0;
+        } else if (UMDatabaseWrapper.skills[skillId]?.rarity === 1 && skillId % 10 === 1) {
+            const pairedId = skillId + 1;
+            if (UMDatabaseWrapper.skills[pairedId]?.rarity === 1) {
+                upgrade = UMDatabaseWrapper.skillNeedPoints[pairedId] ?? 0;
+            }
+        }
+        total += base + upgrade;
+    }
+    return total;
+}
 
 function buildTeamMap(horses: HorseEntry[]): Map<string, HorseEntry[]> {
     const map = new Map<string, HorseEntry[]>();
@@ -158,22 +291,38 @@ function buildTeamMap(horses: HorseEntry[]): Map<string, HorseEntry[]> {
     return map;
 }
 
+function matchProperty(cond: FilterCondition, h: HorseEntry): boolean {
+    if (cond.property === "none") return true;
+    if (cond.property === "skill") {
+        const has = cond.skillId !== null && h.learnedSkillIds.has(cond.skillId);
+        return cond.skillPresent ? has : !has;
+    }
+    const val = cond.property === "totalSkillPoints"
+        ? computeSkillPoints(h.learnedSkillIds)
+        : h[cond.property as Exclude<FilterProperty, "none" | "skill" | "totalSkillPoints">] as number;
+    return cond.statOp === ">=" ? val >= cond.statValue : val < cond.statValue;
+}
+
 function matchCondition(cond: FilterCondition, teammates: HorseEntry[]): boolean {
     let hasMatch: boolean;
     if (cond.kind === "character") {
         hasMatch = teammates.some(h =>
             h.cardId === cond.cardId &&
-            (cond.strategy === null || h.strategy === cond.strategy)
+            (cond.cardStrategy === null || h.strategy === cond.cardStrategy) &&
+            matchProperty(cond, h)
         );
     } else {
-        hasMatch = teammates.some(h => h.strategy === cond.strategy);
+        hasMatch = teammates.some(h =>
+            h.strategy === cond.strategy &&
+            matchProperty(cond, h)
+        );
     }
     return cond.mode === "includes" ? hasMatch : !hasMatch;
 }
 
 function aggregateHorses(
     horses: HorseEntry[],
-    groupBy: GroupBy,
+    mode: "strategy" | "card-strategy",
     sortKey: SortKey,
     sortDesc: boolean,
 ): AggRow[] {
@@ -184,23 +333,27 @@ function aggregateHorses(
     }>();
 
     for (const h of horses) {
-        let key: string, label: string, sublabel: string | undefined;
-        let charaId: number | undefined, cardId: number | undefined, strategy: number | undefined;
+        const key = mode === "card-strategy"
+            ? `cd${h.cardId}_s${h.strategy}`
+            : `s${h.strategy}`;
 
-        if (groupBy === "card") {
-            key = `cd${h.cardId}`;
-            label = UMDatabaseWrapper.cards[h.cardId]?.name ?? h.charaName;
-            sublabel = h.charaName;
-            charaId = h.charaId;
-            cardId = h.cardId;
-        } else {
-            key = `s${h.strategy}`;
-            label = STRATEGY_NAMES[h.strategy] ?? `Strategy ${h.strategy}`;
-            strategy = h.strategy;
+        if (!groups.has(key)) {
+            if (mode === "card-strategy") {
+                const cardName = UMDatabaseWrapper.cards[h.cardId]?.name ?? h.charaName;
+                const stratName = STRATEGY_NAMES[h.strategy] ?? `Strategy ${h.strategy}`;
+                groups.set(key, {
+                    label: cardName, sublabel: stratName,
+                    charaId: h.charaId, cardId: h.cardId, strategy: h.strategy,
+                    entries: 0, teams: new Set(), wins: 0,
+                });
+            } else {
+                groups.set(key, {
+                    label: STRATEGY_NAMES[h.strategy] ?? `Strategy ${h.strategy}`,
+                    strategy: h.strategy,
+                    entries: 0, teams: new Set(), wins: 0,
+                });
+            }
         }
-
-        if (!groups.has(key))
-            groups.set(key, { label, sublabel, charaId, cardId, strategy, entries: 0, teams: new Set(), wins: 0 });
         const g = groups.get(key)!;
         g.entries++;
         g.teams.add(`${h.raceId}|${h.teamId}`);
@@ -208,12 +361,11 @@ function aggregateHorses(
     }
 
     const result: AggRow[] = Array.from(groups.values()).map(g => ({
-        key: g.cardId !== undefined ? `cd${g.cardId}` : `s${g.strategy}`,
+        key: g.cardId !== undefined ? `cd${g.cardId}_s${g.strategy}` : `s${g.strategy}`,
         label: g.label, sublabel: g.sublabel,
         charaId: g.charaId, cardId: g.cardId, strategy: g.strategy,
         entries: g.entries, teams: g.teams.size, wins: g.wins,
         awPct: g.entries > 0 ? Math.round(100 * g.wins / g.entries) : 0,
-        twPct: g.teams.size > 0 ? Math.round(100 * g.wins / g.teams.size) : 0,
     }));
 
     result.sort((a, b) => {
@@ -228,7 +380,6 @@ function aggregateHorses(
 
 const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) => {
     const [conditions, setConditions] = useState<FilterCondition[]>([]);
-    const [groupBy, setGroupBy] = useState<GroupBy>("card");
     const [sortKey, setSortKey] = useState<SortKey>("entries");
     const [sortDesc, setSortDesc] = useState(true);
 
@@ -250,6 +401,24 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
         return Array.from(map.values()).sort((a, b) => b.count - a.count);
     }, [allHorses]);
 
+    const skillVariants = useMemo((): SkillVariant[] => {
+        const map = new Map<number, number>();
+        for (const h of allHorses) {
+            if (h.teamId <= 0) continue;
+            for (const skillId of h.learnedSkillIds) {
+                map.set(skillId, (map.get(skillId) ?? 0) + 1);
+            }
+        }
+        return Array.from(map.entries())
+            .map(([skillId, count]) => ({
+                skillId,
+                skillName: UMDatabaseWrapper.skillName(skillId),
+                isInherit: skillId >= 900000 && skillId < 1000000,
+                count,
+            }))
+            .sort((a, b) => b.count - a.count);
+    }, [allHorses]);
+
     const teamMap = useMemo(() => buildTeamMap(allHorses), [allHorses]);
     const playerHorses = useMemo(() => allHorses.filter(h => h.teamId > 0), [allHorses]);
 
@@ -268,54 +437,44 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
         [conditions]
     );
     const hasCharFilter = includeCharConds.length > 0;
-    const showSplit = hasCharFilter && groupBy === "strategy";
 
-    const selfHorses = useMemo(() => {
-        if (!hasCharFilter) return [];
+    const displayHorses = useMemo(() => {
+        if (!hasCharFilter) return filteredHorses;
         return filteredHorses.filter(h =>
             includeCharConds.some(c =>
                 h.cardId === c.cardId &&
-                (c.strategy === null || h.strategy === c.strategy)
+                (c.cardStrategy === null || h.strategy === c.cardStrategy)
             )
         );
     }, [filteredHorses, includeCharConds, hasCharFilter]);
 
-    const teammateHorses = useMemo(() => {
-        if (!hasCharFilter) return [];
-        return filteredHorses.filter(h =>
-            !includeCharConds.some(c =>
-                h.cardId === c.cardId &&
-                (c.strategy === null || h.strategy === c.strategy)
-            )
-        );
-    }, [filteredHorses, includeCharConds, hasCharFilter]);
-
+    const aggMode = hasCharFilter ? "card-strategy" : "strategy";
     const rows = useMemo(
-        () => showSplit ? [] : aggregateHorses(filteredHorses, groupBy, sortKey, sortDesc),
-        [filteredHorses, groupBy, sortKey, sortDesc, showSplit]
+        () => aggregateHorses(displayHorses, aggMode, sortKey, sortDesc),
+        [displayHorses, aggMode, sortKey, sortDesc]
     );
-    const selfRows = useMemo(
-        () => showSplit ? aggregateHorses(selfHorses, "strategy", sortKey, sortDesc) : [],
-        [selfHorses, sortKey, sortDesc, showSplit]
-    );
-    const teammateRows = useMemo(
-        () => showSplit ? aggregateHorses(teammateHorses, "strategy", sortKey, sortDesc) : [],
-        [teammateHorses, sortKey, sortDesc, showSplit]
-    );
-
 
     const totalTeams = teamMap.size;
-    const filteredTeams = useMemo(() => {
+    const { filteredTeams, filteredTeamWins } = useMemo(() => {
         const keys = new Set(filteredHorses.map(h => `${h.raceId}|${h.teamId}`));
-        return keys.size;
+        const winKeys = new Set(filteredHorses.filter(h => h.finishOrder === 1).map(h => `${h.raceId}|${h.teamId}`));
+        return { filteredTeams: keys.size, filteredTeamWins: winKeys.size };
     }, [filteredHorses]);
+    const filteredTeamWinPct = filteredTeams > 0 ? Math.round(100 * filteredTeamWins / filteredTeams) : 0;
+
 
     const addCondition = () => setConditions(prev => [...prev, {
         id: `${Date.now()}-${Math.random()}`,
         mode: "includes",
         kind: "character",
         cardId: cardVariants[0]?.cardId ?? null,
-        strategy: null,
+        cardStrategy: null,
+        strategy: 1,
+        property: "none",
+        statOp: ">=",
+        statValue: 1200,
+        skillId: skillVariants[0]?.skillId ?? null,
+        skillPresent: true,
     }]);
 
     const removeCondition = (id: string) => setConditions(prev => prev.filter(c => c.id !== id));
@@ -325,9 +484,11 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
             if (c.id !== id) return c;
             const next = { ...c, ...patch };
             if (patch.kind !== undefined && patch.kind !== c.kind) {
-                if (patch.kind === "character") { next.cardId = cardVariants[0]?.cardId ?? null; next.strategy = null; }
-                else { next.cardId = null; next.strategy = 1; }
+                if (patch.kind === "character") { next.cardId = cardVariants[0]?.cardId ?? null; next.cardStrategy = null; }
+                else if (patch.kind === "strategy") { next.strategy = 1; }
             }
+            if (patch.property === "skill" && next.skillId === null)
+                next.skillId = skillVariants[0]?.skillId ?? null;
             return next;
         }));
 
@@ -336,31 +497,19 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
         else { setSortKey(key); setSortDesc(true); }
     };
 
-    const allDisplayRows = showSplit ? [...selfRows, ...teammateRows] : rows;
-    const maxTwPct = Math.max(...allDisplayRows.map(r => r.twPct), 1);
-    const maxAwPct = Math.max(...allDisplayRows.map(r => r.awPct), 1);
-
-    let selfSectionLabel = "Filtered Characters";
-    let selfSectionIcon: string | null = null;
-    if (includeCharConds.length === 1) {
-        const v = cardVariants.find(cv => cv.cardId === includeCharConds[0].cardId);
-        if (v) {
-            selfSectionLabel = v.cardName;
-            selfSectionIcon = getCharaIcon(`${v.charaId}_${v.cardId}`);
-        }
-    }
+    const maxAwPct = Math.max(...rows.map(r => r.awPct), 1);
 
     const SortArrow = ({ col }: { col: SortKey }) =>
         sortKey === col ? <span className="exp-sort-arrow">{sortDesc ? "↓" : "↑"}</span> : null;
 
     const renderRow = (row: AggRow) => {
-        const iconUrl = row.cardId !== undefined && row.charaId !== undefined
-            ? getCharaIcon(`${row.charaId}_${row.cardId}`)
-            : null;
         const activeStrategyColors = strategyColors ?? STRATEGY_COLORS;
         const stratColor = row.strategy !== undefined
             ? (activeStrategyColors[row.strategy] ?? "#718096")
             : undefined;
+        const iconUrl = row.charaId !== undefined && row.cardId !== undefined
+            ? getCharaIcon(`${row.charaId}_${row.cardId}`)
+            : null;
         return (
             <tr key={row.key} className="exp-row">
                 <td className="exp-td exp-td--name">
@@ -373,15 +522,11 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                     {stratColor && <span className="exp-dot" style={{ background: stratColor }} />}
                     <span className="exp-name-block">
                         <span>{row.label}</span>
-                        {row.sublabel && row.sublabel !== row.label && (
-                            <span className="exp-sublabel">{row.sublabel}</span>
-                        )}
+                        {row.sublabel && <span className="exp-sublabel">{row.sublabel}</span>}
                     </span>
                 </td>
                 <td className="exp-td exp-td--r">{row.entries}</td>
-                {groupBy === "strategy" && (
-                    <td className="exp-td exp-td--r">{row.teams}</td>
-                )}
+                <td className="exp-td exp-td--r">{row.teams}</td>
                 <td className="exp-td exp-td--r">
                     {row.wins}
                     {row.entries > 0 && <span className="exp-wins-pct"> ({row.awPct}%)</span>}
@@ -394,25 +539,9 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                         <span className="exp-pct-val">{row.awPct}%</span>
                     </div>
                 </td>
-                {groupBy === "strategy" && (
-                    <td className="exp-td exp-td--r">
-                        <div className="exp-pct-cell">
-                            <div className="exp-bar-track">
-                                <div className="exp-bar exp-bar--tw" style={{ width: `${(row.twPct / maxTwPct) * 100}%` }} />
-                            </div>
-                            <span className="exp-pct-val">{row.twPct}%</span>
-                        </div>
-                    </td>
-                )}
             </tr>
         );
     };
-
-    const isEmpty = showSplit
-        ? selfRows.length === 0 && teammateRows.length === 0
-        : rows.length === 0;
-
-    const colSpan = groupBy === "strategy" ? 6 : 4;
 
     return (
         <div className="exp-container">
@@ -424,6 +553,8 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                     </span>
                     <span className="exp-filter-summary">
                         {filteredTeams.toLocaleString()} / {totalTeams.toLocaleString()} teams
+                        {' · '}{filteredTeamWins.toLocaleString()} wins
+                        {' · '}<span className="exp-filter-winpct">{filteredTeamWinPct}% team win rate</span>
                         {conditions.length > 0 && <> · {filteredHorses.length.toLocaleString()} entries</>}
                     </span>
                 </div>
@@ -431,6 +562,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                 <div className="exp-conditions">
                     {conditions.map(cond => (
                         <div key={cond.id} className="exp-condition-row">
+                            {/* contains / excludes */}
                             <div className="exp-toggle">
                                 <button className={`exp-toggle-btn${cond.mode === "includes" ? " active" : ""}`}
                                     onClick={() => updateCondition(cond.id, { mode: "includes" })}>contains</button>
@@ -438,13 +570,15 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                                     onClick={() => updateCondition(cond.id, { mode: "excludes" })}>excludes</button>
                             </div>
 
+                            {/* kind */}
                             <select className="exp-select" value={cond.kind}
                                 onChange={e => updateCondition(cond.id, { kind: e.target.value as FilterKind })}>
-                                <option value="character">Character</option>
-                                <option value="strategy">Strategy</option>
+                                <option value="character">character</option>
+                                <option value="strategy">strategy</option>
                             </select>
 
-                            {cond.kind === "character" ? (
+                            {/* subject selector */}
+                            {cond.kind === "character" && (
                                 <>
                                     <CharaSelect
                                         variants={cardVariants}
@@ -453,17 +587,19 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                                     />
                                     <span className="exp-as-label">as</span>
                                     <select className="exp-select"
-                                        value={cond.strategy ?? ""}
+                                        value={cond.cardStrategy ?? ""}
                                         onChange={e => updateCondition(cond.id, {
-                                            strategy: e.target.value === "" ? null : Number(e.target.value)
+                                            cardStrategy: e.target.value === "" ? null : Number(e.target.value)
                                         })}>
-                                        <option value="">Any strategy</option>
+                                        <option value="">any strategy</option>
                                         {STRATEGIES.map(s => (
                                             <option key={s} value={s}>{STRATEGY_NAMES[s] ?? `Strategy ${s}`}</option>
                                         ))}
                                     </select>
                                 </>
-                            ) : (
+                            )}
+
+                            {cond.kind === "strategy" && (
                                 <select className="exp-select exp-select--wide"
                                     value={cond.strategy ?? 1}
                                     onChange={e => updateCondition(cond.id, { strategy: Number(e.target.value) })}>
@@ -471,6 +607,50 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                                         <option key={s} value={s}>{STRATEGY_NAMES[s] ?? `Strategy ${s}`}</option>
                                     ))}
                                 </select>
+                            )}
+
+                            {/* optional "with" clause */}
+                            <span className="exp-with-label">with</span>
+                            <select className="exp-select" value={cond.property}
+                                onChange={e => updateCondition(cond.id, { property: e.target.value as FilterProperty })}>
+                                {(Object.keys(PROPERTY_LABELS) as FilterProperty[]).map(k => (
+                                    <option key={k} value={k}>{PROPERTY_LABELS[k]}</option>
+                                ))}
+                            </select>
+
+                            {/* property controls */}
+                            {cond.property !== "none" && cond.property !== "skill" && (
+                                <>
+                                    <div className="exp-toggle">
+                                        <button className={`exp-toggle-btn${cond.statOp === ">=" ? " active" : ""}`}
+                                            onClick={() => updateCondition(cond.id, { statOp: ">=" })}>≥</button>
+                                        <button className={`exp-toggle-btn${cond.statOp === "<" ? " active" : ""}`}
+                                            onClick={() => updateCondition(cond.id, { statOp: "<" })}>&lt;</button>
+                                    </div>
+                                    <input
+                                        type="number"
+                                        className="exp-stat-input"
+                                        value={cond.statValue}
+                                        min={0}
+                                        onChange={e => updateCondition(cond.id, { statValue: Number(e.target.value) })}
+                                    />
+                                </>
+                            )}
+
+                            {cond.property === "skill" && (
+                                <>
+                                    <div className="exp-toggle">
+                                        <button className={`exp-toggle-btn${cond.skillPresent ? " active" : ""}`}
+                                            onClick={() => updateCondition(cond.id, { skillPresent: true })}>has</button>
+                                        <button className={`exp-toggle-btn${!cond.skillPresent ? " active" : ""}`}
+                                            onClick={() => updateCondition(cond.id, { skillPresent: false })}>hasn't</button>
+                                    </div>
+                                    <SkillSelect
+                                        variants={skillVariants}
+                                        value={cond.skillId}
+                                        onChange={skillId => updateCondition(cond.id, { skillId })}
+                                    />
+                                </>
                             )}
 
                             <button className="exp-remove-btn" onClick={() => removeCondition(cond.id)}>×</button>
@@ -482,68 +662,22 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
             </div>
 
             <div className="exp-panel exp-panel--results">
-                <div className="exp-panel-header">
-                    <span className="exp-panel-label">Group by</span>
-                    <div className="exp-toggle">
-                        <button className={`exp-toggle-btn${groupBy === "card" ? " active" : ""}`}
-                            onClick={() => setGroupBy("card")}>Character</button>
-                        <button className={`exp-toggle-btn${groupBy === "strategy" ? " active" : ""}`}
-                            onClick={() => setGroupBy("strategy")}>Strategy</button>
-                    </div>
-                </div>
-
-                {isEmpty ? (
+                {rows.length === 0 ? (
                     <div className="exp-empty">No teams match the current filter.</div>
                 ) : (
                     <table className="exp-table">
                         <thead>
                             <tr>
-                                <th className="exp-th" onClick={() => handleSort("label")}>Name <SortArrow col="label" /></th>
+                                <th className="exp-th" onClick={() => handleSort("label")}>{hasCharFilter ? "Character / Style" : "Style"} <SortArrow col="label" /></th>
                                 <th className="exp-th exp-th--r" onClick={() => handleSort("entries")} title="Total horse-race appearances">Entries <SortArrow col="entries" /></th>
-                                {groupBy === "strategy" && (
-                                    <th className="exp-th exp-th--r" onClick={() => handleSort("teams")} title="Distinct teams that ran this strategy">Teams <SortArrow col="teams" /></th>
-                                )}
+                                <th className="exp-th exp-th--r" onClick={() => handleSort("teams")} title="Distinct teams that ran this strategy">Teams <SortArrow col="teams" /></th>
                                 <th className="exp-th exp-th--r" onClick={() => handleSort("wins")} title="1st place finishes">Wins <SortArrow col="wins" /></th>
-                                <th className="exp-th exp-th--r" onClick={() => handleSort("awPct")} title={groupBy === "card" ? "Win Rate — wins ÷ entries" : "Entry Win Rate — wins ÷ entries"}>
-                                    {groupBy === "card" ? "Win%" : "Entry Win%"} <SortArrow col="awPct" />
-                                </th>
-                                {groupBy === "strategy" && (
-                                    <th className="exp-th exp-th--r" onClick={() => handleSort("twPct")} title="Team Win Rate — wins ÷ teams entered">Team Win% <SortArrow col="twPct" /></th>
-                                )}
+                                <th className="exp-th exp-th--r" onClick={() => handleSort("awPct")} title="Entry Win Rate — wins ÷ entries">Entry Win% <SortArrow col="awPct" /></th>
                             </tr>
                         </thead>
-                        {showSplit ? (
-                            <>
-                                <tbody>
-                                    <tr className="exp-section-hdr">
-                                        <td colSpan={colSpan}>
-                                            <div className="exp-section-hdr-content">
-                                                {selfSectionIcon && (
-                                                    <div className="exp-section-portrait">
-                                                        <img src={selfSectionIcon} alt=""
-                                                            onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                                                    </div>
-                                                )}
-                                                {selfSectionLabel}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {selfRows.map(renderRow)}
-                                </tbody>
-                                <tbody>
-                                    <tr className="exp-section-hdr exp-section-hdr--teammates">
-                                        <td colSpan={colSpan}>
-                                            <div className="exp-section-hdr-content">Teammates</div>
-                                        </td>
-                                    </tr>
-                                    {teammateRows.map(renderRow)}
-                                </tbody>
-                            </>
-                        ) : (
-                            <tbody>
-                                {rows.map(renderRow)}
-                            </tbody>
-                        )}
+                        <tbody>
+                            {rows.map(renderRow)}
+                        </tbody>
                     </table>
                 )}
             </div>

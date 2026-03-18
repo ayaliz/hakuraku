@@ -12,7 +12,16 @@ import { CharaTableData } from "./types";
 import { getRankIcon } from "./rankUtils";
 
 import AssetLoader from "../../../../data/AssetLoader";
+import { getSkillDef } from "../../../RaceReplay/utils/SkillDataUtils";
 import "./CharaList.css";
+
+function hasHpRecoveryEffect(skillId: number): boolean {
+    const def = getSkillDef(skillId);
+    if (!def) return false;
+    return def.conditionGroups.some(group =>
+        group.effects.some(eff => eff.type === 9 && eff.value > 0)
+    );
+}
 let _statIcons: Record<string, string> | null = null;
 function getStatIcons() {
     if (!_statIcons) {
@@ -65,7 +74,7 @@ const InfoIcon = ({ id, tip }: { id: string; tip: string }) => (
         placement="bottom"
         overlay={<Tooltip id={id}>{tip}</Tooltip>}
     >
-        <span className="header-info" style={{ cursor: 'help', borderBottom: '1px dotted #fff' }}>ⓘ</span>
+        <span className="header-info col-info-icon">ⓘ</span>
     </OverlayTrigger>
 );
 
@@ -90,7 +99,7 @@ const StatsCell: React.FC<{ row: CharaTableData }> = ({ row }) => {
 
     const spTooltip = (
         <Tooltip id={`sp-breakdown-${row.frameOrder}`}>
-            <div style={{ textAlign: 'left', fontSize: '0.85em' }}>
+            <div className="col-tooltip-sm">
                 {skillBreakdown.map((s, i) => (
                     <div key={i}>{s.name}: {s.upgrade > 0 ? `${s.base}+${s.upgrade}` : s.base}</div>
                 ))}
@@ -99,7 +108,7 @@ const StatsCell: React.FC<{ row: CharaTableData }> = ({ row }) => {
     );
 
     return (
-        <div style={{ lineHeight: 1.4 }}>
+        <div className="col-stats-grid">
             <div>
                 <span className="stat-label-item"><img src={getStatIcons().speed} alt="Speed" className="stat-icon" />{row.trainedChara.speed}</span>
                 <span className="stat-label-item"><img src={getStatIcons().stamina} alt="Stamina" className="stat-icon" />{row.trainedChara.stamina}</span>
@@ -109,7 +118,7 @@ const StatsCell: React.FC<{ row: CharaTableData }> = ({ row }) => {
                 <span className="stat-label-item"><img src={getStatIcons().power} alt="Power" className="stat-icon" />{row.trainedChara.pow}</span>
                 <span className="stat-label-item"><img src={getStatIcons().guts} alt="Guts" className="stat-icon" />{row.trainedChara.guts}</span>
                 <OverlayTrigger placement="bottom" overlay={spTooltip}>
-                    <span className="stat-label-item" style={{ cursor: 'help' }}><img src={getStatIcons().hint} alt="Skill Points" className="stat-icon" />{row.totalSkillPoints}</span>
+                    <span className="stat-label-item col-stat-sp-help"><img src={getStatIcons().hint} alt="Skill Points" className="stat-icon" />{row.totalSkillPoints}</span>
                 </OverlayTrigger>
             </div>
         </div>
@@ -150,19 +159,19 @@ export const charaTableColumns: CharaColumnDef[] = [
             const rankInfo = getRankIcon(row.trainedChara.rankScore);
             const charaThumb = AssetLoader.getCharaThumb(row.trainedChara.cardId);
             return row.chara ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div className="col-chara-ident">
                     <img
                         src={rankInfo.icon}
                         alt={rankInfo.name}
                         title={String(row.trainedChara.rankScore)}
-                        style={{ height: 20, width: 'auto' }}
+                        className="col-rank-icon"
                     />
                     {charaThumb && (
                         <img
                             src={charaThumb}
                             alt={UMDatabaseWrapper.cards[row.trainedChara.cardId]?.name ?? String(row.trainedChara.cardId)}
                             title={UMDatabaseWrapper.cards[row.trainedChara.cardId]?.name ?? String(row.trainedChara.cardId)}
-                            style={{ height: 40, width: 'auto', objectFit: 'contain' }}
+                            className="col-chara-thumb"
                             onError={(e) => { e.currentTarget.style.display = 'none'; }}
                         />
                     )}
@@ -191,7 +200,7 @@ export const charaTableColumns: CharaColumnDef[] = [
         renderCell: (row) => (
             <>
                 <span className="time-primary">{UMDatabaseUtils.formatTime(row.horseResultData.finishTimeRaw!)}</span>
-                <span className="time-secondary" style={{ color: '#9ca3af' }}>
+                <span className="time-secondary col-time-diff">
                     {row.timeDiffToPrev !== undefined && row.timeDiffToPrev > 0
                         ? `+${UMDatabaseUtils.formatTime(row.timeDiffToPrev)}`
                         : ''}
@@ -207,9 +216,9 @@ export const charaTableColumns: CharaColumnDef[] = [
             const moodName = UMDatabaseUtils.motivationLabels[row.motivation] ?? "";
             const icons = getStyleMoodIcons();
             return (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <img src={icons.style[row.horseResultData.runningStyle!]} alt={styleName} title={styleName} style={{ height: 40, width: 'auto' }} />
-                    <img src={icons.mood[row.motivation]} alt={moodName} title={moodName} style={{ height: 40, width: 'auto' }} />
+                <div className="col-style-mood">
+                    <img src={icons.style[row.horseResultData.runningStyle!]} alt={styleName} title={styleName} className="col-mood-icon" />
+                    <img src={icons.mood[row.motivation]} alt={moodName} title={moodName} className="col-mood-icon" />
                 </div>
             );
         },
@@ -226,7 +235,7 @@ export const charaTableColumns: CharaColumnDef[] = [
             </span>
         ),
         renderCell: (row) => (
-            <div style={{ lineHeight: 1.2 }}>
+            <div className="col-start-delay">
                 {row.startDelay !== undefined ? (row.startDelay * 1000).toFixed(1) + 'ms' : '-'}
                 <br />
                 <span className={`mini-badge ${row.isLateStart ? 'danger' : 'success'}`}>
@@ -263,24 +272,41 @@ export const charaTableColumns: CharaColumnDef[] = [
             const hasHpInfo = row.hpAtPhase3Start !== undefined || row.requiredSpurtHp !== undefined;
             const startHp = row.hpOutcome?.startHp;
 
+            // Detect late-race HP recovery: HP was insufficient at 2/3 AND a healing skill fired in the last 1/3
+            const hpInsufficient = row.hpAtPhase3Start !== undefined &&
+                row.requiredSpurtHp !== undefined &&
+                row.hpAtPhase3Start < row.requiredSpurtHp;
+            const lateHealEvents = hpInsufficient
+                ? row.skillEvents.filter(evt =>
+                    !evt.isMode &&
+                    evt.startDistance >= phase3Start &&
+                    hasHpRecoveryEffect(evt.skillId)
+                )
+                : [];
+            const hasLateHeal = lateHealEvents.length > 0;
+            const blockedIconUrl = hasLateHeal ? AssetLoader.getBlockedIcon() : null;
+
             const cellContent = (
-                <div style={{ lineHeight: 1.3, cursor: hasHpInfo ? 'help' : undefined }}>
-                    <span>Delay: <span style={{ color: spurtColor, fontWeight: 600 }}>{spurtDelay.toFixed(1)}m</span></span>
+                <div className={`col-spurt-cell${hasHpInfo || hasLateHeal ? ' col-spurt-help' : ''}`}>
+                    <span>Delay: <span className="col-spurt-delay-val" style={{ color: spurtColor }}>{spurtDelay.toFixed(1)}m</span></span>
                     {row.maxAdjustedSpeed && row.lastSpurtTargetSpeed && (
                         <>
                             <br />
-                            <span style={{ fontSize: '0.85em' }}>
-                                <span style={{ color: '#e5e7eb' }}>Speed: </span>
-                                <span style={{ color: speedReached ? '#4ade80' : '#f87171' }}>
+                            <span className="col-spurt-speed">
+                                <span className="col-spurt-speed-label">Speed: </span>
+                                <span className={speedReached ? 'col-speed-ok' : 'col-speed-bad'}>
                                     {row.maxAdjustedSpeed.toFixed(1)}{Math.abs(speedDiff) >= 0.05 && ` (${speedDiff > 0 ? '+' : ''}${speedDiff.toFixed(1)})`}
                                 </span>
+                                {blockedIconUrl && (
+                                    <img src={blockedIconUrl} alt="Potential spurt issue" className="late-heal-icon" />
+                                )}
                             </span>
                         </>
                     )}
                 </div>
             );
 
-            if (!hasHpInfo) return cellContent;
+            if (!hasHpInfo && !hasLateHeal) return cellContent;
 
             const hpPct = (row.hpAtPhase3Start !== undefined && startHp)
                 ? ` (${((row.hpAtPhase3Start / startHp) * 100).toFixed(1)}%)`
@@ -294,7 +320,7 @@ export const charaTableColumns: CharaColumnDef[] = [
 
             const hpTooltip = (
                 <Tooltip id={`spurt-hp-${row.frameOrder}`}>
-                    <div style={{ textAlign: 'left', fontSize: '0.85em', lineHeight: 1.6 }}>
+                    <div className="col-hp-tooltip">
                         {row.maxAdjustedSpeedTime !== undefined && row.maxAdjustedSpeedDebug && (() => {
                             const d = row.maxAdjustedSpeedDebug!;
                             const totalBuff = d.skillBuffs.reduce((s, b) => s + b.value, 0) + d.spotStruggleBuff + d.duelingBuff + d.downhillBuff;
@@ -318,10 +344,18 @@ export const charaTableColumns: CharaColumnDef[] = [
                             <div>
                                 Required HP: <strong>{Math.round(row.requiredSpurtHp)}</strong>
                                 {diff !== undefined && (
-                                    <span style={{ color: diff >= 0 ? '#4ade80' : '#f87171' }}>
+                                    <span className={diff >= 0 ? 'col-diff-pos' : 'col-diff-neg'}>
                                         {' '}({diff >= 0 ? '+' : ''}{diff})
                                     </span>
                                 )}
+                            </div>
+                        )}
+                        {hasLateHeal && (
+                            <div className="late-heal-warning">
+                                <strong>Potential spurt issue</strong>
+                                <div className="late-heal-warning-text">
+                                    Last spurt speed may have been reduced prior to the activation of {lateHealEvents.map(e => e.name).join(', ')} in the late-race.
+                                </div>
                             </div>
                         )}
                     </div>
@@ -350,20 +384,20 @@ export const charaTableColumns: CharaColumnDef[] = [
             if (!row.hpOutcome) return '-';
             if (row.hpOutcome.type === 'died') {
                 return (
-                    <div style={{ lineHeight: 1.3 }}>
+                    <div className="col-hp-outcome">
                         <span className="status-bad">Died (-{row.hpOutcome.distance.toFixed(0)}m)</span>
                         <br />
-                        <span style={{ fontSize: '0.85em', color: '#f87171' }}>
+                        <span className="col-hp-deficit">
                             -{row.hpOutcome.deficit.toFixed(0)} HP ({((row.hpOutcome.deficit / row.hpOutcome.startHp) * 100).toFixed(1)}%)
                         </span>
                     </div>
                 );
             } else {
                 return (
-                    <div style={{ lineHeight: 1.3 }}>
+                    <div className="col-hp-outcome">
                         <span className="status-good">Survived</span>
                         <br />
-                        <span style={{ fontSize: '0.85em', color: '#4ade80' }}>
+                        <span className="col-hp-survived">
                             {Math.round(row.hpOutcome.hp)} HP ({((row.hpOutcome.hp / row.hpOutcome.startHp) * 100).toFixed(1)}%)
                         </span>
                     </div>
@@ -385,7 +419,7 @@ export const charaTableColumns: CharaColumnDef[] = [
         cellClassName: 'stat-cell',
         renderCell: (row) => {
             if (!row.duelingTime || row.duelingTime < 0.01) return '-';
-            return <span style={{ color: '#fbbf24' }}>{row.duelingTime.toFixed(1)}s</span>;
+            return <span className="col-dueling-time">{row.duelingTime.toFixed(1)}s</span>;
         },
     },
     {
@@ -402,7 +436,7 @@ export const charaTableColumns: CharaColumnDef[] = [
         cellClassName: 'stat-cell',
         renderCell: (row) => {
             if (!row.downhillModeTime || row.downhillModeTime < 0.01) return '-';
-            return <span style={{ color: '#60a5fa' }}>{Math.round(row.downhillModeTime * 15 / 16)}s</span>;
+            return <span className="col-downhill-time">{Math.round(row.downhillModeTime * 15 / 16)}s</span>;
         },
     },
     {
@@ -422,13 +456,13 @@ export const charaTableColumns: CharaColumnDef[] = [
             const hasDown = (row.paceDownTime ?? 0) >= 0.01;
             if (!hasUp && !hasDown) return '-';
             return (
-                <div style={{ lineHeight: 1.3 }}>
+                <div className="col-pace-cell">
                     {hasUp && (
-                        <span style={{ color: '#4ade80' }}>↑{Math.round(row.paceUpTime! * 15 / 16)}s</span>
+                        <span className="col-pace-up">↑{Math.round(row.paceUpTime! * 15 / 16)}s</span>
                     )}
                     {hasUp && hasDown && <br />}
                     {hasDown && (
-                        <span style={{ color: '#f87171' }}>↓{Math.round(row.paceDownTime! * 15 / 16)}s</span>
+                        <span className="col-pace-down">↓{Math.round(row.paceDownTime! * 15 / 16)}s</span>
                     )}
                 </div>
             );

@@ -61,7 +61,12 @@ export default function App() {
                         <Nav.Link as={Link} to="/multirace">Multi-Race Analysis</Nav.Link>
                         <Nav.Link as={Link} to="/masterdata">Master Data</Nav.Link>
                         <Nav.Link as={Link} to="/notes">Research Notes</Nav.Link>
-                        <Nav.Link as={Link} to="/umalogs">UmaLogs</Nav.Link>
+                        <Nav.Link as={Link} to="/umalogs">
+                            <span className="haku-nav-link-with-badge">
+                                <span>UmaLogs</span>
+                                <span className="haku-nav-badge">CM11 update!</span>
+                            </span>
+                        </Nav.Link>
                     </Nav>
                     <Nav className="ms-auto">
                         <Nav.Link as={Link} to="/setup">Setup Guide</Nav.Link>

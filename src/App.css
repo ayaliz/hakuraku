@@ -31,3 +31,25 @@
 .hover-scale:hover {
     transform: scale(1.05);
 }
+
+.haku-nav-link-with-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.haku-nav-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(101, 210, 131, 0.16);
+    border: 1px solid rgba(168, 230, 184, 0.55);
+    color: #a8e6b8;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+    text-transform: none;
+}

@@ -507,7 +507,7 @@ function aggregateHorses(
 }
 
 const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) => {
-        const [characterFeatures, setCharacterFeatures] = useState<CharacterFeature[]>([]);
+    const [characterFeatures, setCharacterFeatures] = useState<CharacterFeature[]>([]);
     const [sortKey, setSortKey] = useState<SortKey>("entries");
     const [sortDesc, setSortDesc] = useState(true);
 
@@ -746,6 +746,10 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                 </div>
 
                 <div className="exp-subsection">
+                    <div className="exp-subsection-header">
+                        <span className="exp-subsection-title">Your Team</span>
+                        <span className="exp-subsection-note">Every requirement in a card must belong to the same horse on your team.</span>
+                    </div>
                     <div className="exp-feature-list">
                         {characterFeatures.map(feature => (
                             <div key={feature.id} className="exp-feature-card">

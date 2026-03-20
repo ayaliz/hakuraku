@@ -586,7 +586,9 @@ function StyleRepsPanel({ styleReps, allHorses, skillStats, strategyColors }: {
             </div>
             <div className="sa-reps-columns">
                 {REPRESENTATIVE_STRATEGY_IDS.map(sId => {
-                    const entries = (styleReps[sId] ?? []).filter(entry => entry.popPct >= minPopPct);
+                    const entries = (styleReps[sId] ?? [])
+                        .filter(entry => entry.popPct >= minPopPct)
+                        .slice(0, 5);
                     const color = strategyColors[sId];
                     return (
                         <div key={sId} className="sa-reps-col">

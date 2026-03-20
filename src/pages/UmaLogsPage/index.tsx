@@ -253,7 +253,6 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmLabel, s
         for (const sId of [1, 2, 3, 4]) {
             if (result[sId]) {
                 result[sId].sort((a, b) => b.bayesianWinRate - a.bayesianWinRate);
-                result[sId] = result[sId].slice(0, 5);
             }
         }
         return result;

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { Alert, Nav, Spinner, Tab } from "react-bootstrap";
 import { ParsedRace, AggregatedStats } from "./types";
-import { parseRaceJson, aggregateStats, getTrackLabel } from "./utils";
+import { parseRaceJson, aggregateStats, getGroundConditionLabel, getSeasonLabel, getTrackLabel, getWeatherLabel } from "./utils";
 import "./MultiRacePage.css";
 
 import RaceUploadZone from "./components/RaceUploadZone";
@@ -15,8 +15,10 @@ import ExplorerTab from "../UmaLogsPage/ExplorerTab";
 
 // Group races by track
 interface TrackGroup {
+    groupKey: string;
     courseId: number;
     trackLabel: string;
+    conditionLabel: string;
     races: ParsedRace[];
     stats: AggregatedStats;
     hpSpurtStats: CharaHpSpurtStats[];
@@ -81,23 +83,32 @@ const MultiRacePage: React.FC = () => {
     const trackGroups: TrackGroup[] = useMemo(() => {
         if (races.length === 0) return [];
 
-        const groupMap = new Map<number, ParsedRace[]>();
+        const groupMap = new Map<string, { courseId: number; races: ParsedRace[]; season?: string | number; weather?: string | number; groundCondition?: number }>();
 
         races.forEach(race => {
             const courseId = race.detectedCourseId ?? 0;
-            if (!groupMap.has(courseId)) {
-                groupMap.set(courseId, []);
+            const groupKey = `${courseId}|${race.season ?? ""}|${race.weather ?? ""}|${race.groundCondition ?? ""}`;
+            if (!groupMap.has(groupKey)) {
+                groupMap.set(groupKey, {
+                    courseId,
+                    races: [],
+                    season: race.season,
+                    weather: race.weather,
+                    groundCondition: race.groundCondition,
+                });
             }
-            groupMap.get(courseId)!.push(race);
+            groupMap.get(groupKey)!.races.push(race);
         });
 
         const groups: TrackGroup[] = Array.from(groupMap.entries())
-            .map(([courseId, trackRaces]) => ({
-                courseId,
-                trackLabel: getTrackLabel(courseId),
-                races: trackRaces,
-                stats: aggregateStats(trackRaces),
-                hpSpurtStats: computeHpSpurtStats(trackRaces, undefined, true, undefined, true),
+            .map(([groupKey, groupData]) => ({
+                groupKey,
+                courseId: groupData.courseId,
+                trackLabel: getTrackLabel(groupData.courseId),
+                conditionLabel: `${getSeasonLabel(groupData.season)} · ${getWeatherLabel(groupData.weather)} · ${getGroundConditionLabel(groupData.groundCondition)}`,
+                races: groupData.races,
+                stats: aggregateStats(groupData.races),
+                hpSpurtStats: computeHpSpurtStats(groupData.races, undefined, true, undefined, true),
             }))
             .sort((a, b) => b.races.length - a.races.length); // Sort by number of races descending
 
@@ -107,7 +118,7 @@ const MultiRacePage: React.FC = () => {
     // Default to the most common track
     const defaultTrackTab = useMemo(() => {
         if (trackGroups.length === 0) return null;
-        return `track-${trackGroups[0].courseId}`;
+        return `track-${trackGroups[0].groupKey}`;
     }, [trackGroups]);
 
     // Use active tab or default
@@ -154,9 +165,9 @@ const MultiRacePage: React.FC = () => {
                             <div className="analysis-tabs">
                                 <Nav variant="tabs">
                                     {trackGroups.map((group) => (
-                                        <Nav.Item key={group.courseId}>
-                                            <Nav.Link eventKey={`track-${group.courseId}`}>
-                                                {group.trackLabel} ({group.races.length})
+                                        <Nav.Item key={group.groupKey}>
+                                            <Nav.Link eventKey={`track-${group.groupKey}`}>
+                                                {group.trackLabel} · {group.conditionLabel} ({group.races.length})
                                             </Nav.Link>
                                         </Nav.Item>
                                     ))}
@@ -165,7 +176,7 @@ const MultiRacePage: React.FC = () => {
 
                             <Tab.Content>
                                 {trackGroups.map((group) => (
-                                    <Tab.Pane key={group.courseId} eventKey={`track-${group.courseId}`} transition={false}>
+                                    <Tab.Pane key={group.groupKey} eventKey={`track-${group.groupKey}`} transition={false}>
                                         <div className="hp-spurt-analysis-section">
                                             <h4 className="section-heading">
                                                 Personal character analysis

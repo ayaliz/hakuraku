@@ -3,6 +3,7 @@ import { deserializeFromBase64 } from "../../data/RaceDataParser";
 import { fromRaceHorseData } from "../../data/TrainedCharaData";
 import GameDataLoader from "../../data/GameDataLoader";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
+import { parseGroundCondition } from "../../components/RaceDataPresenter/utils/RacePresenterUtils";
 import {
     AggregatedStats,
     CharacterStats,
@@ -36,6 +37,24 @@ const GATE_FLAVOR_TO_STRATEGIES = {
 } as const;
 const DODGING_DANGER_SKILL_IDS = [201261, 201262] as const;
 const DODGING_DANGER_SKILL_BASE_IDS = new Set(DODGING_DANGER_SKILL_IDS.map((id) => Math.floor(id / 10)));
+const SEASON_LABELS: Record<number, string> = {
+    1: "Spring",
+    2: "Summer",
+    3: "Autumn",
+    4: "Winter",
+};
+const WEATHER_LABELS: Record<number, string> = {
+    1: "Sunny",
+    2: "Cloudy",
+    3: "Rainy",
+    4: "Snowy",
+};
+const GROUND_CONDITION_LABELS: Record<number, string> = {
+    1: "Good",
+    2: "Soft",
+    3: "Heavy",
+    4: "Bad",
+};
 
 
 // Get track info from course ID
@@ -51,6 +70,29 @@ export function getTrackLabel(courseId: number | undefined): string {
     const info = getTrackInfo(courseId);
     if (!info) return "Unknown Track";
     return info.label;
+}
+
+function displayEnumish(
+    value: string | number | undefined,
+    numericLabels: Record<number, string>,
+    unknownLabel: string
+): string {
+    if (value === undefined || value === null || value === "") return unknownLabel;
+    if (typeof value === "string") return value;
+    return numericLabels[value] ?? String(value);
+}
+
+export function getSeasonLabel(value: string | number | undefined): string {
+    return displayEnumish(value, SEASON_LABELS, "Unknown season");
+}
+
+export function getWeatherLabel(value: string | number | undefined): string {
+    return displayEnumish(value, WEATHER_LABELS, "Unknown weather");
+}
+
+export function getGroundConditionLabel(value: number | undefined): string {
+    if (value === undefined || value === null || value === 0) return "Unknown ground";
+    return GROUND_CONDITION_LABELS[value] ?? String(value);
 }
 
 // Get the official track distance from course ID
@@ -93,6 +135,9 @@ export function parseRaceJson(json: any, fileName: string): ParsedRace | { error
     // --- OLD FORMAT LOGIC BELOW ---
     const raceHorseArray = json['<RaceHorse>k__BackingField'];
     const raceType = json['<RaceType>k__BackingField'];
+    const groundCondition = parseGroundCondition(json['<GroundCondition>k__BackingField']);
+    const weather = json['<Weather>k__BackingField'];
+    const season = json['<Season>k__BackingField'];
     if (!Array.isArray(raceHorseArray)) {
         return { error: 'Could not find <RaceHorse>k__BackingField or race_horse_data_array in JSON' };
     }
@@ -145,6 +190,9 @@ export function parseRaceJson(json: any, fileName: string): ParsedRace | { error
         raceData: parsedRaceData,
         horseInfo,
         detectedCourseId,
+        groundCondition,
+        weather,
+        season,
         raceDistance,
         uploadedAt: new Date(),
         playerIndices,
@@ -173,6 +221,9 @@ function parseNewFormat(json: any, fileName: string, id: string): ParsedRace | {
         }
 
         const raceType = json['race_type'] || json['RaceType'];
+        const groundCondition = parseGroundCondition(json['ground_condition'] ?? json['GroundCondition']);
+        const weather = json['weather'] ?? json['Weather'];
+        const season = json['season'] ?? json['Season'];
 
         const horseInfo = rawHorses.filter((h: any) => h !== null);
 
@@ -212,6 +263,9 @@ function parseNewFormat(json: any, fileName: string, id: string): ParsedRace | {
             raceData: parsedRaceData,
             horseInfo,
             detectedCourseId,
+            groundCondition,
+            weather,
+            season,
             raceDistance,
             uploadedAt: new Date(),
             playerIndices,
@@ -279,6 +333,7 @@ function extractHorseEntries(race: ParsedRace): HorseEntry[] {
             learnedSkillIds,
             finishTime: horseResult.finishTimeRaw ?? 0,
             raceDistance: race.raceDistance,
+            careerWinCount: data['single_mode_win_count'] ?? 0,
             speed,
             stamina,
             pow,

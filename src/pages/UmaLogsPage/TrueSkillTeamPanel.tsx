@@ -18,6 +18,7 @@ function memberToHorse(m: TrueSkillMember): HorseEntry {
         learnedSkillIds: new Set(m.learnedSkillIds),
         finishTime: m.finishTime ?? 0,
         raceDistance: 0,
+        careerWinCount: m.careerWinCount ?? 0,
         speed: m.speed,
         stamina: m.stamina,
         pow: m.pow,

@@ -30,4 +30,5 @@ export interface RecoveryScenarioStats {
     fullSpurtSurvivalCount: number;
     hpOutcomes: number[];
     hpOutcomesFullSpurt: number[];
+    hpAtPhase3Samples: number[];
 }

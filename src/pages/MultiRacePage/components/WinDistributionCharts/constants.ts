@@ -47,5 +47,5 @@ export const BAYES_TEAM = {
 
 // Minimum fraction of total races a saturation bucket must have to display a data point.
 // e.g. 0.003 @ 13600 rooms → floor of ~41 races.
-export const SAT_MIN_RACE_FRACTION = 0.003;
+export const SAT_MIN_RACE_FRACTION = 0.01;
 

@@ -687,7 +687,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                 </span>
             </div>
 
-            <div className="analysis-table-container" style={{ maxHeight: "500px", overflowY: "auto" }}>
+            <div className="analysis-table-container" style={{ maxHeight: "720px", overflowY: "auto" }}>
                 <table className="analysis-table skill-table-expandable">
                     <thead>
                         <tr>

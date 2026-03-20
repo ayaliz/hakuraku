@@ -3,13 +3,14 @@ import type { HorseEntry } from "../MultiRacePage/types";
 import { STRATEGY_NAMES, STRATEGY_COLORS } from "../MultiRacePage/components/WinDistributionCharts/constants";
 import { getCharaIcon } from "../MultiRacePage/components/WinDistributionCharts/utils";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
+import AssetLoader from "../../data/AssetLoader";
+import { getHorseDeckRaceBonus } from "./deckUtils";
 import "./UmaLogsPage.css";
 
-type FilterMode = "includes" | "excludes";
-type FilterKind = "character" | "strategy";
-type FilterProperty = "none" | "speed" | "stamina" | "pow" | "guts" | "wiz" | "totalSkillPoints" | "rankScore" | "skill";
-type StatOp = ">=" | "<";
+type FilterProperty = "none" | "speed" | "stamina" | "pow" | "guts" | "wiz" | "totalSkillPoints" | "rankScore" | "careerWinCount" | "deckRaceBonus" | "skill" | "supportCard";
+type StatOp = ">" | "<" | "=";
 type SortKey = "label" | "entries" | "teams" | "wins" | "awPct";
+type SkillFilterMode = "learned" | "notLearned" | "activated" | "notActivated";
 
 interface CharaVariant {
     cardId: number;
@@ -26,21 +27,23 @@ interface SkillVariant {
     count: number;
 }
 
-interface FilterCondition {
+interface CharacterRequirement {
     id: string;
-    mode: FilterMode;
-    kind: FilterKind;
-    // character kind
-    cardId: number | null;
-    cardStrategy: number | null;
-    // strategy kind
-    strategy: number | null;
-    // optional "with" clause — applies to the matched candidates
     property: FilterProperty;
     statOp: StatOp;
     statValue: number;
     skillId: number | null;
-    skillPresent: boolean;
+    skillMode: SkillFilterMode;
+    supportCardId: number | null;
+    supportCardPresent: boolean;
+    supportCardLb: number;
+}
+
+interface CharacterFeature {
+    id: string;
+    cardId: number | null;
+    cardStrategy: number | null;
+    requirements: CharacterRequirement[];
 }
 
 interface AggRow {
@@ -73,6 +76,26 @@ interface SkillSelectProps {
     onChange: (skillId: number) => void;
 }
 
+interface SupportCardVariant {
+    supportCardId: number;
+    name: string;
+    count: number;
+}
+
+interface SupportCardSelectProps {
+    variants: SupportCardVariant[];
+    value: number | null;
+    onChange: (supportCardId: number) => void;
+}
+
+const SUPPORT_CARD_LB_OPTIONS = [
+    { value: 0, label: "0LB" },
+    { value: 1, label: "1LB" },
+    { value: 2, label: "2LB" },
+    { value: 3, label: "3LB" },
+    { value: 4, label: "MLB" },
+] as const;
+
 const PROPERTY_LABELS: Record<FilterProperty, string> = {
     none: "—",
     speed: "Speed",
@@ -82,7 +105,10 @@ const PROPERTY_LABELS: Record<FilterProperty, string> = {
     wiz: "Wit",
     totalSkillPoints: "Skill pts",
     rankScore: "Score",
+    careerWinCount: "Career wins",
+    deckRaceBonus: "Deck race bonus",
     skill: "Skill",
+    supportCard: "Support card",
 };
 
 const CharaSelect: React.FC<CharaSelectProps> = ({ variants, value, onChange }) => {
@@ -116,7 +142,7 @@ const CharaSelect: React.FC<CharaSelectProps> = ({ variants, value, onChange }) 
             v.charaName.toLowerCase().includes(q))
         : variants;
 
-    const selectedIcon = getCharaIcon(`${selected.charaId}_${selected.cardId}`);
+    const selectedIcon = selected.cardId !== 0 ? getCharaIcon(`${selected.charaId}_${selected.cardId}`) : null;
 
     return (
         <div className="exp-chara-select" ref={ref}>
@@ -128,9 +154,9 @@ const CharaSelect: React.FC<CharaSelectProps> = ({ variants, value, onChange }) 
                     </div>
                 )}
                 <span className="exp-name-block">
-                    <span>{selected.cardName}</span>
-                    {selected.cardName !== selected.charaName && (
-                        <span className="exp-sublabel">{selected.charaName}</span>
+                    <span>{selected.charaName || selected.cardName}</span>
+                    {selected.cardName !== selected.charaName && selected.cardName && (
+                        <span className="exp-sublabel">{selected.cardName}</span>
                     )}
                 </span>
                 <span className="exp-chara-select-arrow">▾</span>
@@ -151,7 +177,7 @@ const CharaSelect: React.FC<CharaSelectProps> = ({ variants, value, onChange }) 
                     {filtered.length === 0 ? (
                         <div className="exp-chara-search-empty">No matches</div>
                     ) : filtered.map(v => {
-                        const icon = getCharaIcon(`${v.charaId}_${v.cardId}`);
+                        const icon = v.cardId !== 0 ? getCharaIcon(`${v.charaId}_${v.cardId}`) : null;
                         return (
                             <div
                                 key={v.cardId}
@@ -165,9 +191,9 @@ const CharaSelect: React.FC<CharaSelectProps> = ({ variants, value, onChange }) 
                                     </div>
                                 )}
                                 <span className="exp-name-block">
-                                    <span>{v.cardName}</span>
-                                    {v.cardName !== v.charaName && (
-                                        <span className="exp-sublabel">{v.charaName}</span>
+                                    <span>{v.charaName || v.cardName}</span>
+                                    {v.cardName !== v.charaName && v.cardName && (
+                                        <span className="exp-sublabel">{v.cardName}</span>
                                     )}
                                 </span>
                             </div>
@@ -258,7 +284,71 @@ const SkillSelect: React.FC<SkillSelectProps> = ({ variants, value, onChange }) 
     );
 };
 
-const STRATEGIES = [1, 2, 3, 4] as const;
+const SupportCardSelect: React.FC<SupportCardSelectProps> = ({ variants, value, onChange }) => {
+    const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState("");
+    const ref = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const selected = variants.find(v => v.supportCardId === value) ?? variants[0] ?? null;
+
+    useEffect(() => {
+        if (!open) return;
+        const handler = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [open]);
+
+    useEffect(() => { if (open) inputRef.current?.focus(); else setSearch(""); }, [open]);
+
+    if (!selected) return null;
+
+    const q = search.toLowerCase();
+    const filtered = q ? variants.filter(v => v.name.toLowerCase().includes(q)) : variants;
+
+    return (
+        <div className="exp-chara-select" ref={ref}>
+            <button type="button" className="exp-chara-select-btn" onClick={() => setOpen(o => !o)}>
+                <div className="exp-chara-select-portrait">
+                    <img src={AssetLoader.getSupportCardIcon(selected.supportCardId)} alt=""
+                        onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                </div>
+                <span className="exp-name-block">
+                    <span>{selected.name}</span>
+                </span>
+                <span className="exp-chara-select-arrow">▾</span>
+            </button>
+
+            {open && (
+                <div className="exp-chara-select-dropdown">
+                    <div className="exp-chara-search">
+                        <input ref={inputRef} type="text" className="exp-chara-search-input"
+                            placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} />
+                    </div>
+                    {filtered.length === 0 ? (
+                        <div className="exp-chara-search-empty">No matches</div>
+                    ) : filtered.map(v => (
+                        <div key={v.supportCardId}
+                            className={`exp-chara-select-option${v.supportCardId === value ? " active" : ""}`}
+                            onClick={() => { onChange(v.supportCardId); setOpen(false); }}>
+                            <div className="exp-chara-select-portrait">
+                                <img src={AssetLoader.getSupportCardIcon(v.supportCardId)} alt=""
+                                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                            </div>
+                            <span className="exp-name-block">
+                                <span>{v.name}</span>
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const STRATEGIES = [5, 1, 2, 3, 4] as const;
 
 function computeSkillPoints(learnedSkillIds: Set<number>): number {
     let total = 0;
@@ -291,33 +381,61 @@ function buildTeamMap(horses: HorseEntry[]): Map<string, HorseEntry[]> {
     return map;
 }
 
-function matchProperty(cond: FilterCondition, h: HorseEntry): boolean {
-    if (cond.property === "none") return true;
-    if (cond.property === "skill") {
-        const has = cond.skillId !== null && h.learnedSkillIds.has(cond.skillId);
-        return cond.skillPresent ? has : !has;
-    }
-    const val = cond.property === "totalSkillPoints"
+type PropertyFilter = Pick<CharacterRequirement, "property" | "statOp" | "statValue" | "skillId" | "skillMode" | "supportCardId" | "supportCardPresent" | "supportCardLb">;
+
+function matchStatProperty(filter: PropertyFilter, h: HorseEntry): boolean {
+    if (filter.property === "none") return true;
+    const val = filter.property === "totalSkillPoints"
         ? computeSkillPoints(h.learnedSkillIds)
-        : h[cond.property as Exclude<FilterProperty, "none" | "skill" | "totalSkillPoints">] as number;
-    return cond.statOp === ">=" ? val >= cond.statValue : val < cond.statValue;
+        : filter.property === "deckRaceBonus"
+            ? getHorseDeckRaceBonus(h)
+            : h[filter.property as Exclude<FilterProperty, "none" | "skill" | "totalSkillPoints" | "deckRaceBonus" | "supportCard">] as number;
+    if (val === null) return false;
+    if (filter.statOp === ">") return val > filter.statValue;
+    if (filter.statOp === "<") return val < filter.statValue;
+    return val === filter.statValue;
 }
 
-function matchCondition(cond: FilterCondition, teammates: HorseEntry[]): boolean {
-    let hasMatch: boolean;
-    if (cond.kind === "character") {
-        hasMatch = teammates.some(h =>
-            h.cardId === cond.cardId &&
-            (cond.cardStrategy === null || h.strategy === cond.cardStrategy) &&
-            matchProperty(cond, h)
-        );
-    } else {
-        hasMatch = teammates.some(h =>
-            h.strategy === cond.strategy &&
-            matchProperty(cond, h)
-        );
+function matchesFeatureCharacter(feature: CharacterFeature, h: HorseEntry): boolean {
+    return (feature.cardId === 0 || h.cardId === feature.cardId) &&
+        (feature.cardStrategy === null || h.strategy === feature.cardStrategy);
+}
+
+function matchesPropertyFilter(filter: PropertyFilter, h: HorseEntry): boolean {
+    if (filter.property === "skill") {
+        if (filter.skillId === null) return false;
+        if (filter.skillMode === "learned") return h.learnedSkillIds.has(filter.skillId);
+        if (filter.skillMode === "notLearned") return !h.learnedSkillIds.has(filter.skillId);
+        if (filter.skillMode === "activated") return h.activatedSkillIds.has(filter.skillId);
+        return !h.activatedSkillIds.has(filter.skillId);
     }
-    return cond.mode === "includes" ? hasMatch : !hasMatch;
+    if (filter.property === "supportCard") {
+        if (filter.supportCardId === null) return false;
+        const hasCard = h.supportCardIds.some((id, index) =>
+            id === filter.supportCardId && (h.supportCardLimitBreaks[index] ?? 0) === filter.supportCardLb
+        );
+        return filter.supportCardPresent ? hasCard : !hasCard;
+    }
+    return matchStatProperty(filter, h);
+}
+
+function defaultStatValueForProperty(property: FilterProperty): number {
+    switch (property) {
+        case "speed":
+        case "stamina":
+        case "pow":
+        case "guts":
+        case "wiz":
+            return 1200;
+        case "totalSkillPoints":
+            return 3000;
+        case "careerWinCount":
+            return 35;
+        case "deckRaceBonus":
+            return 50;
+        default:
+            return 35;
+    }
 }
 
 function aggregateHorses(
@@ -340,9 +458,10 @@ function aggregateHorses(
         if (!groups.has(key)) {
             if (mode === "card-strategy") {
                 const cardName = UMDatabaseWrapper.cards[h.cardId]?.name ?? h.charaName;
+                const label = cardName === h.charaName ? h.charaName : `${h.charaName} ${cardName}`;
                 const stratName = STRATEGY_NAMES[h.strategy] ?? `Strategy ${h.strategy}`;
                 groups.set(key, {
-                    label: cardName, sublabel: stratName,
+                    label, sublabel: stratName,
                     charaId: h.charaId, cardId: h.cardId, strategy: h.strategy,
                     entries: 0, teams: new Set(), wins: 0,
                 });
@@ -369,6 +488,15 @@ function aggregateHorses(
     }));
 
     result.sort((a, b) => {
+        if (sortKey === "wins") {
+            if (a.awPct !== b.awPct) {
+                return sortDesc ? b.awPct - a.awPct : a.awPct - b.awPct;
+            }
+            if (a.wins !== b.wins) {
+                return sortDesc ? b.wins - a.wins : a.wins - b.wins;
+            }
+            return sortDesc ? b.entries - a.entries : a.entries - b.entries;
+        }
         const va = a[sortKey], vb = b[sortKey];
         if (typeof va === "string" && typeof vb === "string")
             return sortDesc ? vb.localeCompare(va) : va.localeCompare(vb);
@@ -379,7 +507,7 @@ function aggregateHorses(
 }
 
 const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) => {
-    const [conditions, setConditions] = useState<FilterCondition[]>([]);
+        const [characterFeatures, setCharacterFeatures] = useState<CharacterFeature[]>([]);
     const [sortKey, setSortKey] = useState<SortKey>("entries");
     const [sortDesc, setSortDesc] = useState(true);
 
@@ -398,7 +526,8 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
             }
             map.get(h.cardId)!.count++;
         }
-        return Array.from(map.values()).sort((a, b) => b.count - a.count);
+        const any: CharaVariant = { cardId: 0, charaId: 0, charaName: "", cardName: "Any character", count: 0 };
+        return [any, ...Array.from(map.values()).sort((a, b) => b.count - a.count)];
     }, [allHorses]);
 
     const skillVariants = useMemo((): SkillVariant[] => {
@@ -419,34 +548,74 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
             .sort((a, b) => b.count - a.count);
     }, [allHorses]);
 
+    const supportCardVariants = useMemo((): SupportCardVariant[] => {
+        const map = new Map<number, number>();
+        for (const h of allHorses) {
+            if (h.teamId <= 0) continue;
+            for (const id of h.supportCardIds) {
+                map.set(id, (map.get(id) ?? 0) + 1);
+            }
+        }
+        return Array.from(map.entries())
+            .map(([supportCardId, count]) => ({
+                supportCardId,
+                name: UMDatabaseWrapper.supportCards[supportCardId]?.name ?? `Card ${supportCardId}`,
+                count,
+            }))
+            .sort((a, b) => b.count - a.count);
+    }, [allHorses]);
+
     const teamMap = useMemo(() => buildTeamMap(allHorses), [allHorses]);
     const playerHorses = useMemo(() => allHorses.filter(h => h.teamId > 0), [allHorses]);
 
-    const filteredHorses = useMemo(() => {
-        if (conditions.length === 0) return playerHorses;
-        const qualifyingKeys = new Set<string>();
-        for (const [teamKey, teammates] of teamMap) {
-            if (conditions.every(cond => matchCondition(cond, teammates)))
-                qualifyingKeys.add(teamKey);
-        }
-        return playerHorses.filter(h => qualifyingKeys.has(`${h.raceId}|${h.teamId}`));
-    }, [playerHorses, teamMap, conditions]);
+    const createDefaultRequirement = (): CharacterRequirement => ({
+        id: `${Date.now()}-${Math.random()}`,
+        property: "none",
+        statOp: ">",
+        statValue: defaultStatValueForProperty("none"),
+        skillId: skillVariants[0]?.skillId ?? null,
+        skillMode: "learned",
+        supportCardId: supportCardVariants[0]?.supportCardId ?? null,
+        supportCardPresent: true,
+        supportCardLb: 4,
+    });
 
-    const includeCharConds = useMemo(
-        () => conditions.filter(c => c.mode === "includes" && c.kind === "character"),
-        [conditions]
-    );
-    const hasCharFilter = includeCharConds.length > 0;
+    const filteredTeamResults = useMemo(() => {
+        if (characterFeatures.length === 0) {
+            return Array.from(teamMap.entries()).map(([teamKey, teammates]) => ({
+                teamKey,
+                teammates,
+                matchedCharacterHorses: [] as HorseEntry[],
+            }));
+        }
+
+        const results: { teamKey: string; teammates: HorseEntry[]; matchedCharacterHorses: HorseEntry[] }[] = [];
+        for (const [teamKey, teammates] of teamMap) {
+            const matchedCharacterHorses = characterFeatures.flatMap(feature => {
+                const candidates = teammates.filter(h => matchesFeatureCharacter(feature, h));
+                return candidates.filter(h => feature.requirements.every(req => matchesPropertyFilter(req, h)));
+            });
+
+            if (matchedCharacterHorses.length === 0) continue;
+            results.push({ teamKey, teammates, matchedCharacterHorses });
+        }
+        return results;
+    }, [characterFeatures, teamMap]);
+
+    const filteredHorses = useMemo(() => {
+        if (characterFeatures.length === 0) return playerHorses;
+        const qualifyingKeys = new Set(filteredTeamResults.map(r => r.teamKey));
+        return playerHorses.filter(h => qualifyingKeys.has(`${h.raceId}|${h.teamId}`));
+    }, [characterFeatures.length, filteredTeamResults, playerHorses]);
+
+    const hasCharFilter = characterFeatures.length > 0;
 
     const displayHorses = useMemo(() => {
-        if (!hasCharFilter) return filteredHorses;
-        return filteredHorses.filter(h =>
-            includeCharConds.some(c =>
-                h.cardId === c.cardId &&
-                (c.cardStrategy === null || h.strategy === c.cardStrategy)
-            )
-        );
-    }, [filteredHorses, includeCharConds, hasCharFilter]);
+        if (hasCharFilter) {
+            return filteredTeamResults.flatMap(result => result.matchedCharacterHorses.filter(h => h.teamId > 0));
+        }
+        return filteredHorses;
+    }, [filteredHorses, filteredTeamResults, hasCharFilter]);
 
     const aggMode = hasCharFilter ? "card-strategy" : "strategy";
     const rows = useMemo(
@@ -461,35 +630,58 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
         return { filteredTeams: keys.size, filteredTeamWins: winKeys.size };
     }, [filteredHorses]);
     const filteredTeamWinPct = filteredTeams > 0 ? Math.round(100 * filteredTeamWins / filteredTeams) : 0;
+    const isLowTeamWinRate = filteredTeams > 0 && filteredTeamWins * 3 < filteredTeams;
 
 
-    const addCondition = () => setConditions(prev => [...prev, {
+    const addCharacterFeature = () => setCharacterFeatures(prev => [...prev, {
         id: `${Date.now()}-${Math.random()}`,
-        mode: "includes",
-        kind: "character",
         cardId: cardVariants[0]?.cardId ?? null,
         cardStrategy: null,
-        strategy: 1,
-        property: "none",
-        statOp: ">=",
-        statValue: 1200,
-        skillId: skillVariants[0]?.skillId ?? null,
-        skillPresent: true,
+        requirements: [createDefaultRequirement()],
     }]);
 
-    const removeCondition = (id: string) => setConditions(prev => prev.filter(c => c.id !== id));
+    const removeCharacterFeature = (id: string) => { setCharacterFeatures(prev => prev.filter(f => f.id !== id)); };
+    const addCharacterRequirement = (featureId: string) =>
+        setCharacterFeatures(prev => prev.map(feature =>
+            feature.id === featureId
+                ? { ...feature, requirements: [...feature.requirements, createDefaultRequirement()] }
+                : feature
+        ));
+    const removeCharacterRequirement = (featureId: string, requirementId: string) =>
+        setCharacterFeatures(prev => prev.map(feature =>
+            feature.id === featureId
+                ? {
+                    ...feature,
+                    requirements: feature.requirements.filter(req => req.id !== requirementId),
+                }
+                : feature
+        ));
 
-    const updateCondition = (id: string, patch: Partial<FilterCondition>) =>
-        setConditions(prev => prev.map(c => {
-            if (c.id !== id) return c;
-            const next = { ...c, ...patch };
-            if (patch.kind !== undefined && patch.kind !== c.kind) {
-                if (patch.kind === "character") { next.cardId = cardVariants[0]?.cardId ?? null; next.cardStrategy = null; }
-                else if (patch.kind === "strategy") { next.strategy = 1; }
-            }
-            if (patch.property === "skill" && next.skillId === null)
-                next.skillId = skillVariants[0]?.skillId ?? null;
-            return next;
+    const updateCharacterFeature = (id: string, patch: Partial<CharacterFeature>) =>
+        setCharacterFeatures(prev => prev.map(feature => {
+            if (feature.id !== id) return feature;
+            return { ...feature, ...patch };
+        }));
+
+    const updateCharacterRequirement = (featureId: string, requirementId: string, patch: Partial<CharacterRequirement>) =>
+        setCharacterFeatures(prev => prev.map(feature => {
+            if (feature.id !== featureId) return feature;
+            return {
+                ...feature,
+                requirements: feature.requirements.map(req => {
+                    if (req.id !== requirementId) return req;
+                    const next = { ...req, ...patch };
+                    if (patch.property === "skill" && next.skillId === null)
+                        next.skillId = skillVariants[0]?.skillId ?? null;
+                    if (patch.property === "supportCard" && next.supportCardId === null)
+                        next.supportCardId = supportCardVariants[0]?.supportCardId ?? null;
+                    if (patch.property === "supportCard" && next.supportCardLb === undefined)
+                        next.supportCardLb = 4;
+                    if (patch.property !== undefined)
+                        next.statValue = defaultStatValueForProperty(patch.property);
+                    return next;
+                }),
+            };
         }));
 
     const handleSort = (key: SortKey) => {
@@ -497,10 +689,10 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
         else { setSortKey(key); setSortDesc(true); }
     };
 
-    const maxAwPct = Math.max(...rows.map(r => r.awPct), 1);
-
     const SortArrow = ({ col }: { col: SortKey }) =>
-        sortKey === col ? <span className="exp-sort-arrow">{sortDesc ? "↓" : "↑"}</span> : null;
+        sortKey === col ? <span className="exp-sort-arrow">{sortDesc ? "v" : "^"}</span> : null;
+
+    const showTeamsColumn = !hasCharFilter;
 
     const renderRow = (row: AggRow) => {
         const activeStrategyColors = strategyColors ?? STRATEGY_COLORS;
@@ -526,18 +718,10 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                     </span>
                 </td>
                 <td className="exp-td exp-td--r">{row.entries}</td>
-                <td className="exp-td exp-td--r">{row.teams}</td>
+                {showTeamsColumn && <td className="exp-td exp-td--r">{row.teams}</td>}
                 <td className="exp-td exp-td--r">
                     {row.wins}
                     {row.entries > 0 && <span className="exp-wins-pct"> ({row.awPct}%)</span>}
-                </td>
-                <td className="exp-td exp-td--r">
-                    <div className="exp-pct-cell">
-                        <div className="exp-bar-track">
-                            <div className="exp-bar exp-bar--aw" style={{ width: `${(row.awPct / maxAwPct) * 100}%` }} />
-                        </div>
-                        <span className="exp-pct-val">{row.awPct}%</span>
-                    </div>
                 </td>
             </tr>
         );
@@ -547,118 +731,146 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
         <div className="exp-container">
             <div className="exp-panel">
                 <div className="exp-panel-header">
-                    <span className="exp-panel-label">Team Filter</span>
-                    <span className="exp-panel-note">
-                        Filter teams however you want.
-                    </span>
+                    <span className="exp-panel-note">Filter teams by your own criteria.</span>
                     <span className="exp-filter-summary">
                         {filteredTeams.toLocaleString()} / {totalTeams.toLocaleString()} teams
-                        {' · '}{filteredTeamWins.toLocaleString()} wins
-                        {' · '}<span className="exp-filter-winpct">{filteredTeamWinPct}% team win rate</span>
-                        {conditions.length > 0 && <> · {filteredHorses.length.toLocaleString()} entries</>}
+                        {" | "}{filteredTeamWins.toLocaleString()} wins
+                        {" | "}
+                        <span className={`exp-filter-winpct${isLowTeamWinRate ? " exp-filter-winpct--low" : ""}`}>
+                            {filteredTeamWinPct}% team win rate
+                        </span>
+                        {characterFeatures.length > 0 && (
+                            <>{` | ${filteredHorses.length.toLocaleString()} entries`}</>
+                        )}
                     </span>
                 </div>
 
-                <div className="exp-conditions">
-                    {conditions.map(cond => (
-                        <div key={cond.id} className="exp-condition-row">
-                            {/* contains / excludes */}
-                            <div className="exp-toggle">
-                                <button className={`exp-toggle-btn${cond.mode === "includes" ? " active" : ""}`}
-                                    onClick={() => updateCondition(cond.id, { mode: "includes" })}>contains</button>
-                                <button className={`exp-toggle-btn${cond.mode === "excludes" ? " active" : ""}`}
-                                    onClick={() => updateCondition(cond.id, { mode: "excludes" })}>excludes</button>
-                            </div>
-
-                            {/* kind */}
-                            <select className="exp-select" value={cond.kind}
-                                onChange={e => updateCondition(cond.id, { kind: e.target.value as FilterKind })}>
-                                <option value="character">character</option>
-                                <option value="strategy">strategy</option>
-                            </select>
-
-                            {/* subject selector */}
-                            {cond.kind === "character" && (
-                                <>
-                                    <CharaSelect
-                                        variants={cardVariants}
-                                        value={cond.cardId}
-                                        onChange={cardId => updateCondition(cond.id, { cardId })}
-                                    />
+                <div className="exp-subsection">
+                    <div className="exp-feature-list">
+                        {characterFeatures.map(feature => (
+                            <div key={feature.id} className="exp-feature-card">
+                                <div className="exp-feature-header">
+                                    <span className="exp-feature-label">Character</span>
+                                    <CharaSelect variants={cardVariants} value={feature.cardId} onChange={cardId => updateCharacterFeature(feature.id, { cardId })} />
                                     <span className="exp-as-label">as</span>
-                                    <select className="exp-select"
-                                        value={cond.cardStrategy ?? ""}
-                                        onChange={e => updateCondition(cond.id, {
-                                            cardStrategy: e.target.value === "" ? null : Number(e.target.value)
-                                        })}>
+                                    <select
+                                        className="exp-select"
+                                        value={feature.cardStrategy ?? ""}
+                                        onChange={e => updateCharacterFeature(feature.id, { cardStrategy: e.target.value === "" ? null : Number(e.target.value) })}
+                                    >
                                         <option value="">any strategy</option>
                                         {STRATEGIES.map(s => (
                                             <option key={s} value={s}>{STRATEGY_NAMES[s] ?? `Strategy ${s}`}</option>
                                         ))}
                                     </select>
-                                </>
-                            )}
+                                    <button className="exp-remove-btn" onClick={() => removeCharacterFeature(feature.id)}>x</button>
+                                </div>
 
-                            {cond.kind === "strategy" && (
-                                <select className="exp-select exp-select--wide"
-                                    value={cond.strategy ?? 1}
-                                    onChange={e => updateCondition(cond.id, { strategy: Number(e.target.value) })}>
-                                    {STRATEGIES.map(s => (
-                                        <option key={s} value={s}>{STRATEGY_NAMES[s] ?? `Strategy ${s}`}</option>
+                                <div className="exp-feature-reqs">
+                                    {feature.requirements.map(req => (
+                                        <div key={req.id} className="exp-condition-row exp-condition-row--feature">
+                                            <span className="exp-with-label">requires</span>
+                                            <select
+                                                className="exp-select"
+                                                value={req.property}
+                                                onChange={e => updateCharacterRequirement(feature.id, req.id, { property: e.target.value as FilterProperty })}
+                                            >
+                                                {(Object.keys(PROPERTY_LABELS) as FilterProperty[]).map(k => (
+                                                    <option key={k} value={k}>{PROPERTY_LABELS[k]}</option>
+                                                ))}
+                                            </select>
+
+                                            {req.property !== "none" && req.property !== "skill" && req.property !== "supportCard" && (
+                                                <>
+                                                    <div className="exp-toggle">
+                                                        <button
+                                                            className={`exp-toggle-btn${req.statOp === ">" ? " active" : ""}`}
+                                                            onClick={() => updateCharacterRequirement(feature.id, req.id, { statOp: ">" })}
+                                                        >
+                                                            {">"}
+                                                        </button>
+                                                        <button
+                                                            className={`exp-toggle-btn${req.statOp === "=" ? " active" : ""}`}
+                                                            onClick={() => updateCharacterRequirement(feature.id, req.id, { statOp: "=" })}
+                                                        >
+                                                            =
+                                                        </button>
+                                                        <button
+                                                            className={`exp-toggle-btn${req.statOp === "<" ? " active" : ""}`}
+                                                            onClick={() => updateCharacterRequirement(feature.id, req.id, { statOp: "<" })}
+                                                        >
+                                                            &lt;
+                                                        </button>
+                                                    </div>
+                                                    <input
+                                                        type="number"
+                                                        className="exp-stat-input"
+                                                        value={req.statValue}
+                                                        min={0}
+                                                        onChange={e => updateCharacterRequirement(feature.id, req.id, { statValue: Number(e.target.value) })}
+                                                    />
+                                                </>
+                                            )}
+
+                                            {req.property === "supportCard" && (
+                                                <>
+                                                    <div className="exp-toggle">
+                                                        <button
+                                                            className={`exp-toggle-btn${req.supportCardPresent ? " active" : ""}`}
+                                                            onClick={() => updateCharacterRequirement(feature.id, req.id, { supportCardPresent: true })}
+                                                        >
+                                                            used
+                                                        </button>
+                                                        <button
+                                                            className={`exp-toggle-btn${!req.supportCardPresent ? " active" : ""}`}
+                                                            onClick={() => updateCharacterRequirement(feature.id, req.id, { supportCardPresent: false })}
+                                                        >
+                                                            not used
+                                                        </button>
+                                                    </div>
+                                                    <SupportCardSelect
+                                                        variants={supportCardVariants}
+                                                        value={req.supportCardId}
+                                                        onChange={supportCardId => updateCharacterRequirement(feature.id, req.id, { supportCardId })}
+                                                    />
+                                                    <select
+                                                        className="exp-select"
+                                                        value={req.supportCardLb}
+                                                        onChange={e => updateCharacterRequirement(feature.id, req.id, { supportCardLb: Number(e.target.value) })}
+                                                    >
+                                                        {SUPPORT_CARD_LB_OPTIONS.map(opt => (
+                                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                        ))}
+                                                    </select>
+                                                </>
+                                            )}
+
+                                            {req.property === "skill" && (
+                                                <>
+                                                    <select
+                                                        className="exp-select exp-select--wide"
+                                                        value={req.skillMode}
+                                                        onChange={e => updateCharacterRequirement(feature.id, req.id, { skillMode: e.target.value as SkillFilterMode })}
+                                                    >
+                                                        <option value="learned">learned</option>
+                                                        <option value="notLearned">not learned</option>
+                                                        <option value="activated">activated</option>
+                                                        <option value="notActivated">not activated</option>
+                                                    </select>
+                                                    <SkillSelect variants={skillVariants} value={req.skillId} onChange={skillId => updateCharacterRequirement(feature.id, req.id, { skillId })} />
+                                                </>
+                                            )}
+
+                                            <button className="exp-remove-btn" onClick={() => removeCharacterRequirement(feature.id, req.id)}>x</button>
+                                        </div>
                                     ))}
-                                </select>
-                            )}
-
-                            {/* optional "with" clause */}
-                            <span className="exp-with-label">with</span>
-                            <select className="exp-select" value={cond.property}
-                                onChange={e => updateCondition(cond.id, { property: e.target.value as FilterProperty })}>
-                                {(Object.keys(PROPERTY_LABELS) as FilterProperty[]).map(k => (
-                                    <option key={k} value={k}>{PROPERTY_LABELS[k]}</option>
-                                ))}
-                            </select>
-
-                            {/* property controls */}
-                            {cond.property !== "none" && cond.property !== "skill" && (
-                                <>
-                                    <div className="exp-toggle">
-                                        <button className={`exp-toggle-btn${cond.statOp === ">=" ? " active" : ""}`}
-                                            onClick={() => updateCondition(cond.id, { statOp: ">=" })}>≥</button>
-                                        <button className={`exp-toggle-btn${cond.statOp === "<" ? " active" : ""}`}
-                                            onClick={() => updateCondition(cond.id, { statOp: "<" })}>&lt;</button>
-                                    </div>
-                                    <input
-                                        type="number"
-                                        className="exp-stat-input"
-                                        value={cond.statValue}
-                                        min={0}
-                                        onChange={e => updateCondition(cond.id, { statValue: Number(e.target.value) })}
-                                    />
-                                </>
-                            )}
-
-                            {cond.property === "skill" && (
-                                <>
-                                    <div className="exp-toggle">
-                                        <button className={`exp-toggle-btn${cond.skillPresent ? " active" : ""}`}
-                                            onClick={() => updateCondition(cond.id, { skillPresent: true })}>has</button>
-                                        <button className={`exp-toggle-btn${!cond.skillPresent ? " active" : ""}`}
-                                            onClick={() => updateCondition(cond.id, { skillPresent: false })}>hasn't</button>
-                                    </div>
-                                    <SkillSelect
-                                        variants={skillVariants}
-                                        value={cond.skillId}
-                                        onChange={skillId => updateCondition(cond.id, { skillId })}
-                                    />
-                                </>
-                            )}
-
-                            <button className="exp-remove-btn" onClick={() => removeCondition(cond.id)}>×</button>
-                        </div>
-                    ))}
+                                </div>
+                                <button className="exp-add-btn" onClick={() => addCharacterRequirement(feature.id)}>+ Add requirement</button>
+                            </div>
+                        ))}
+                    </div>
+                    <button className="exp-add-btn" onClick={addCharacterFeature}>+ Add character filter</button>
                 </div>
-
-                <button className="exp-add-btn" onClick={addCondition}>+ Add condition</button>
             </div>
 
             <div className="exp-panel exp-panel--results">
@@ -668,11 +880,20 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                     <table className="exp-table">
                         <thead>
                             <tr>
-                                <th className="exp-th" onClick={() => handleSort("label")}>{hasCharFilter ? "Character / Style" : "Style"} <SortArrow col="label" /></th>
-                                <th className="exp-th exp-th--r" onClick={() => handleSort("entries")} title="Total horse-race appearances">Entries <SortArrow col="entries" /></th>
-                                <th className="exp-th exp-th--r" onClick={() => handleSort("teams")} title="Distinct teams that ran this strategy">Teams <SortArrow col="teams" /></th>
-                                <th className="exp-th exp-th--r" onClick={() => handleSort("wins")} title="1st place finishes">Wins <SortArrow col="wins" /></th>
-                                <th className="exp-th exp-th--r" onClick={() => handleSort("awPct")} title="Entry Win Rate — wins ÷ entries">Entry Win% <SortArrow col="awPct" /></th>
+                                <th className="exp-th" onClick={() => handleSort("label")}>
+                                    {hasCharFilter ? "Character / Style" : "Style"} <SortArrow col="label" />
+                                </th>
+                                <th className="exp-th exp-th--r" onClick={() => handleSort("entries")} title="Total horse-race appearances">
+                                    Entries <SortArrow col="entries" />
+                                </th>
+                                {showTeamsColumn && (
+                                    <th className="exp-th exp-th--r" onClick={() => handleSort("teams")} title="Distinct teams that ran this strategy">
+                                        Teams <SortArrow col="teams" />
+                                    </th>
+                                )}
+                                <th className="exp-th exp-th--r" onClick={() => handleSort("wins")} title="1st place finishes">
+                                    Wins <SortArrow col="wins" />
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -681,7 +902,6 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                     </table>
                 )}
             </div>
-
         </div>
     );
 };

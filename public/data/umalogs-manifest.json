@@ -3,9 +3,16 @@
     {
       "cmId": "cm10",
       "cmLabel": "CM10",
-      "generatedAt": "2026-03-18T04:08:01.006Z",
+      "generatedAt": "2026-03-20T04:37:54.056Z",
       "totalRaces": 15178,
       "trackSummary": "Tokyo 1600m dirt"
+    },
+    {
+      "cmId": "cm11",
+      "cmLabel": "CM11",
+      "generatedAt": "2026-03-20T04:38:00.402Z",
+      "totalRaces": 10056,
+      "trackSummary": "Hanshin 3200m turf"
     }
   ]
 }

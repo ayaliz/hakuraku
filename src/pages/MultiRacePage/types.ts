@@ -6,6 +6,9 @@ export type ParsedRace = {
     raceData: RaceSimulateData;
     horseInfo: any[];
     detectedCourseId?: number;
+    groundCondition?: number;
+    weather?: string | number;
+    season?: string | number;
     raceDistance: number;
     uploadedAt: Date;
     playerIndices: Set<number>;
@@ -27,6 +30,7 @@ export type HorseEntry = {
     learnedSkillIds: Set<number>; // All skills the horse has in their skillset
     finishTime: number;
     raceDistance: number;
+    careerWinCount: number;
     speed: number;
     stamina: number;
     pow: number;
@@ -147,6 +151,7 @@ export type TrueSkillMember = {
     motivation: number;
     activatedSkillIds: number[];
     learnedSkillIds: number[];
+    careerWinCount: number;
     supportCardIds: number[];
     supportCardLimitBreaks: number[];
     aptGround?: number;

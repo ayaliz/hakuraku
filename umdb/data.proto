@@ -41,6 +41,8 @@ message SupportCard {
     optional int32 chara_id = 3;
     // Total race bonus from support_card_effect_table (type=15) + support_card_unique_effect (type=15)
     optional int32 race_bonus = 4;
+    // Race bonus at each support-card limit break count, indices 0..4.
+    repeated int32 race_bonus_by_limit_break = 5;
 }
 
 message RaceInstance {

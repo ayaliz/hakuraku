@@ -206,7 +206,7 @@ const TeamCompositionPanel: React.FC<TeamCompositionPanelProps> = ({ teamStats, 
                         )}
                         <div className="stcp-team-members-row">
                             {(selectedInstance?.horses ?? []).map((horse, i) => (
-                                <TeamMemberCard key={i} horse={horse} skillStats={skillStats!} strategyColors={strategyColors} />
+                                <TeamMemberCard key={i} horse={horse} skillStats={skillStats!} strategyColors={strategyColors} allHorses={allHorses} />
                             ))}
                         </div>
                     </div>

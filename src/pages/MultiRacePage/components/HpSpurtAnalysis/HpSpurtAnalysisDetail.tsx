@@ -145,6 +145,7 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats; courseId?: numb
                                 </th>
                                 <th className="text-center" style={{ borderTop: 0, width: '100px', verticalAlign: 'middle' }}>Runs</th>
                                 <th className="text-center" style={{ borderTop: 0, width: '120px', verticalAlign: 'middle' }}>Full Spurt</th>
+                                <th className="text-center" style={{ borderTop: 0, width: '110px', verticalAlign: 'middle' }}>Avg Spare HP</th>
                                 <th className="text-center" style={{ borderTop: 0, width: '120px', verticalAlign: 'middle' }}>Survival</th>
                                 <th className="text-center" style={{ borderTop: 0, width: '100px', verticalAlign: 'middle' }}>Mean HP</th>
                                 <th className="text-center" style={{ borderTop: 0, width: '100px', verticalAlign: 'middle' }}>Median HP</th>
@@ -189,6 +190,12 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats; courseId?: numb
                                                 }}>
                                                     {fsRate.toFixed(1)}%
                                                 </span>
+                                            </td>
+                                            <td className="text-center" style={{ verticalAlign: 'middle' }}>
+                                                {row.hpAtPhase3Samples.length > 0 ? (() => {
+                                                    const avg = row.hpAtPhase3Samples.reduce((a, b) => a + b, 0) / row.hpAtPhase3Samples.length;
+                                                    return <span style={{ color: avg >= 0 ? '#4ade80' : '#f87171', fontWeight: 'bold' }}>{avg >= 0 ? '+' : ''}{avg.toFixed(0)}</span>;
+                                                })() : <span style={{ color: '#718096' }}>-</span>}
                                             </td>
                                             <td
                                                 className="text-center clickable-cell"

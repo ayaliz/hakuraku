@@ -15,6 +15,13 @@ export const computeHpSpurtStats = (
     groupByStats: boolean = false
 ): CharaHpSpurtStats[] => {
     const statsMap = new Map<string, CharaHpSpurtStats>();
+    const groundConditionCounts = new Map<number, number>();
+    races.forEach(race => {
+        if (race.groundCondition === undefined) return;
+        groundConditionCounts.set(race.groundCondition, (groundConditionCounts.get(race.groundCondition) ?? 0) + 1);
+    });
+    const dominantGroundCondition = Array.from(groundConditionCounts.entries())
+        .sort((a, b) => b[1] - a[1] || a[0] - b[0])[0]?.[0];
 
     const getRecoveryValue = (skillId: number): number | null => {
         const def = getSkillDef(skillId);
@@ -54,10 +61,25 @@ export const computeHpSpurtStats = (
         }
 
         // Compute "Other Events" (Dueling/Struggle)
-        const otherEvents = computeOtherEvents(raceData, race.horseInfo, effectiveCourseId, skillActivations, raceDistance);
+        const otherEvents = computeOtherEvents(
+            raceData,
+            race.horseInfo,
+            effectiveCourseId,
+            skillActivations,
+            raceDistance,
+            dominantGroundCondition
+        );
 
         // Use the EXACT same computation as CharaList
-        const charaTableData = computeCharaTableData(race.horseInfo, raceData, effectiveCourseId, skillActivations, otherEvents, race.raceType);
+        const charaTableData = computeCharaTableData(
+            race.horseInfo,
+            raceData,
+            effectiveCourseId,
+            skillActivations,
+            otherEvents,
+            race.raceType,
+            dominantGroundCondition
+        );
 
         // Extract HP outcomes from the computed data
         charaTableData.forEach(charaData => {
@@ -251,7 +273,8 @@ export const computeHpSpurtStats = (
                             survivalCount: 0,
                             fullSpurtSurvivalCount: 0,
                             hpOutcomes: [],
-                            hpOutcomesFullSpurt: []
+                            hpOutcomesFullSpurt: [],
+                            hpAtPhase3Samples: []
                         };
                     }
 
@@ -264,6 +287,9 @@ export const computeHpSpurtStats = (
                     if (hpOutcome.type === 'survived') recStats.survivalCount++;
                     if (didFullSpurt && hpOutcome.type === 'survived') recStats.fullSpurtSurvivalCount++;
                     recStats.hpOutcomes.push(outcomeValue);
+                    if (charaData.hpAtPhase3Start !== undefined && charaData.requiredSpurtHp !== undefined) {
+                        recStats.hpAtPhase3Samples.push(charaData.hpAtPhase3Start - charaData.requiredSpurtHp);
+                    }
                 }
             }
         });

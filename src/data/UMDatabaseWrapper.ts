@@ -24,57 +24,65 @@ class _UMDatabaseWrapper {
     raceInstanceCourseSetId: Record<number, number> = {};
     // support_card_id -> race bonus (from effect table + unique effect, type=15)
     supportCardRaceBonus: Record<number, number> = {};
+    // support_card_id -> race bonus by limit break count (indices 0..4)
+    supportCardRaceBonusByLimitBreak: Record<number, number[]> = {};
 
     initialize() {
         return fetch(import.meta.env.BASE_URL + 'data/umdb.binarypb.gz', { cache: 'no-cache' })
             .then(response => response.arrayBuffer())
-            .then(response => {
-                this.umdb = fromBinary(UMDatabaseSchema, pako.inflate(new Uint8Array(response)));
+            .then((response) => {
+            this.umdb = fromBinary(UMDatabaseSchema, pako.inflate(new Uint8Array(response)));
+            this.supportCardRaceBonusByLimitBreak = {};
 
-                this.umdb.chara.forEach((chara) => this.charas[chara.id!] = chara);
-                this.umdb.card.forEach((card) => this.cards[card.id!] = card);
-                this.umdb.supportCard.forEach((card) => {
-                    this.supportCards[card.id!] = card;
-                    this.supportCardRaceBonus[card.id!] = card.raceBonus ?? 0;
-                });
-
-                this.umdb.raceInstance.forEach((race) => {
-                    this.raceInstances[race.id!] = race;
-                    if (race.courseSetId) this.raceInstanceCourseSetId[race.id!] = race.courseSetId;
-                });
-
-                this.umdb.skill.forEach((skill) => this.skills[skill.id!] = skill);
-
-                this.umdb.singleModeSkillNeedPoint.forEach((entry) => {
-                    this.skillNeedPoints[entry.id!] = entry.needSkillPoint!;
-                });
-
-                this.singleModeRanks = this.umdb.singleModeRank.slice();
-
-                this.umdb.textData.forEach((text) => {
-                    if (!this.textData[text.category!]) {
-                        this.textData[text.category!] = {};
-                    }
-                    this.textData[text.category!][text.index!] = text;
-                });
-
-                this.umdb.successionRelation.forEach((r) => {
-                    this.relationPoints[r.relationType!] = r.relationPoint!;
-                });
-
-                this.umdb.successionRelationMember.forEach((m) => {
-                    const charaId = m.charaId!;
-                    if (!this.charaRelationTypes[charaId]) {
-                        this.charaRelationTypes[charaId] = new Set();
-                    }
-                    this.charaRelationTypes[charaId].add(m.relationType!);
-                });
-
-                this.umdb.singleModeWinsSaddle.forEach((s) => {
-                    if (s.raceInstanceId) this.winSaddleToRaceInstance[s.id!] = s.raceInstanceId;
-                    this.winSaddleToRaceInstances[s.id!] = Array.from(s.raceInstanceIds);
-                });
+            this.umdb.chara.forEach((chara) => this.charas[chara.id!] = chara);
+            this.umdb.card.forEach((card) => this.cards[card.id!] = card);
+            this.umdb.supportCard.forEach((card) => {
+                this.supportCards[card.id!] = card;
+                const lbBonuses = (card.raceBonusByLimitBreak ?? []).map((v) => Number(v) || 0);
+                if (lbBonuses.length > 0) {
+                    this.supportCardRaceBonusByLimitBreak[card.id!] = lbBonuses;
+                }
+                const maxLbBonus = lbBonuses && lbBonuses.length > 0 ? lbBonuses[lbBonuses.length - 1] : undefined;
+                this.supportCardRaceBonus[card.id!] = card.raceBonus ?? maxLbBonus ?? 0;
             });
+
+            this.umdb.raceInstance.forEach((race) => {
+                this.raceInstances[race.id!] = race;
+                if (race.courseSetId) this.raceInstanceCourseSetId[race.id!] = race.courseSetId;
+            });
+
+            this.umdb.skill.forEach((skill) => this.skills[skill.id!] = skill);
+
+            this.umdb.singleModeSkillNeedPoint.forEach((entry) => {
+                this.skillNeedPoints[entry.id!] = entry.needSkillPoint!;
+            });
+
+            this.singleModeRanks = this.umdb.singleModeRank.slice();
+
+            this.umdb.textData.forEach((text) => {
+                if (!this.textData[text.category!]) {
+                    this.textData[text.category!] = {};
+                }
+                this.textData[text.category!][text.index!] = text;
+            });
+
+            this.umdb.successionRelation.forEach((r) => {
+                this.relationPoints[r.relationType!] = r.relationPoint!;
+            });
+
+            this.umdb.successionRelationMember.forEach((m) => {
+                const charaId = m.charaId!;
+                if (!this.charaRelationTypes[charaId]) {
+                    this.charaRelationTypes[charaId] = new Set();
+                }
+                this.charaRelationTypes[charaId].add(m.relationType!);
+            });
+
+            this.umdb.singleModeWinsSaddle.forEach((s) => {
+                if (s.raceInstanceId) this.winSaddleToRaceInstance[s.id!] = s.raceInstanceId;
+                this.winSaddleToRaceInstances[s.id!] = Array.from(s.raceInstanceIds);
+            });
+        });
     }
 
     raceInstanceNameWithId = (raceInstanceId: number) =>

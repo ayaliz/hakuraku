@@ -95,6 +95,7 @@ const WinTimeHistogram: React.FC<WinTimeHistogramProps> = ({ winTimes }) => {
                 }}
             >
                 Winning Time Distribution
+                <span title="The winning time displayed ingame is usually meaningless and sampled randomly from a 2 second window." className="sa-info-icon" style={{ marginLeft: "6px", fontWeight: "normal" }}>i</span>
                 <span
                     style={{
                         marginLeft: "12px",

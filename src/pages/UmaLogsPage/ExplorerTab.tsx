@@ -591,12 +591,12 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
 
         const results: { teamKey: string; teammates: HorseEntry[]; matchedCharacterHorses: HorseEntry[] }[] = [];
         for (const [teamKey, teammates] of teamMap) {
-            const matchedCharacterHorses = characterFeatures.flatMap(feature => {
+            const matchedByFeature = characterFeatures.map(feature => {
                 const candidates = teammates.filter(h => matchesFeatureCharacter(feature, h));
                 return candidates.filter(h => feature.requirements.every(req => matchesPropertyFilter(req, h)));
             });
-
-            if (matchedCharacterHorses.length === 0) continue;
+            if (matchedByFeature.some(matches => matches.length === 0)) continue;
+            const matchedCharacterHorses = matchedByFeature.flat();
             results.push({ teamKey, teammates, matchedCharacterHorses });
         }
         return results;

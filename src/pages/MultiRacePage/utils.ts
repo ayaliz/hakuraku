@@ -667,9 +667,10 @@ function buildDodgingDangerGateStats(allHorses: HorseEntry[]): GateSkillActivati
         .sort((a, b) => a.gateNumber - b.gateNumber);
 }
 
-export function aggregateStats(races: ParsedRace[]): AggregatedStats {
+export function aggregateStats(races: ParsedRace[], options?: { releaseProcessedRaceData?: boolean }): AggregatedStats {
     const allHorses: HorseEntry[] = [];
     const allSkillActivations = new Map<number, SkillActivationPoint[]>();
+    const releaseProcessedRaceData = options?.releaseProcessedRaceData ?? false;
 
     // Collect all horse entries and skill activations
     races.forEach(race => {
@@ -683,6 +684,12 @@ export function aggregateStats(races: ParsedRace[]): AggregatedStats {
             }
             allSkillActivations.get(skillId)!.push(...points);
         });
+
+        if (releaseProcessedRaceData) {
+            race.raceData.frame = [];
+            race.raceData.event = [];
+            race.raceData.horseResult = [];
+        }
     });
 
     // Character stats

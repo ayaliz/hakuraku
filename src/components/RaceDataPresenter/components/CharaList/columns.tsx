@@ -126,7 +126,27 @@ const StatsCell: React.FC<{ row: CharaTableData }> = ({ row }) => {
 };
 
 
-export const charaTableColumns: CharaColumnDef[] = [
+const predictionColumn: CharaColumnDef = {
+    key: 'predictedWin',
+    header: 'Pred Win',
+    renderCell: (row) => {
+        if (row.predictedWinProbability === undefined) {
+            return '—';
+        }
+        return (
+            <div className="col-prediction-cell">
+                <span className={`col-prediction-primary${row.predictionRank === 1 ? ' top' : ''}`}>
+                    {(row.predictedWinProbability * 100).toFixed(1)}%
+                </span>
+                <span className="col-prediction-rank">
+                    Pred #{row.predictionRank ?? '-'}
+                </span>
+            </div>
+        );
+    },
+};
+
+const baseCharaTableColumns: CharaColumnDef[] = [
     {
         key: 'expand',
         header: '',
@@ -475,3 +495,21 @@ export const charaTableColumns: CharaColumnDef[] = [
         renderCell: (row) => <StatsCell row={row} />,
     },
 ];
+
+export function getCharaTableColumns(showPredictionColumn = false): CharaColumnDef[] {
+    if (!showPredictionColumn) {
+        return baseCharaTableColumns;
+    }
+
+    const insertAfterKey = 'time';
+    const insertIndex = baseCharaTableColumns.findIndex((column) => column.key === insertAfterKey);
+    if (insertIndex === -1) {
+        return [...baseCharaTableColumns, predictionColumn];
+    }
+
+    return [
+        ...baseCharaTableColumns.slice(0, insertIndex + 1),
+        predictionColumn,
+        ...baseCharaTableColumns.slice(insertIndex + 1),
+    ];
+}

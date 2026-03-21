@@ -29,6 +29,7 @@ const SPOT_STRUGGLE_GUTS_DURATION_SCALE = 0.012;
 // Max adjusted speed calculation
 const DECELERATION_THRESHOLD = -0.05;      // m/s²: frames with accel below this are skipped
 const DUELING_FRAME_LOOKAHEAD = 2;         // Frames to skip after dueling ends before counting peak speed
+const SPEED_BUFF_DROP_FRAME_LOOKAHEAD = 2; // Frames to skip after a speed skill falls off; raw speed can lag behind the lower target
 
 // HP outcome calculation
 const DEATH_EPSILON = 0.1;                 // Horse is considered to have died before finish if dist < raceDistance - this
@@ -319,6 +320,8 @@ export function calculateMaxAdjustedSpeed(
     let maxAdjDebug: MaxAdjustedSpeedDebug = { rawSpeed: 0, skillBuffs: [], spotStruggleBuff: 0, duelingBuff: 0, downhillBuff: 0 };
     let wasType28Active = false;
     let lastDuelingActiveFrameIndex = -100;
+    let previousFrameSkillBuff = 0;
+    let lastSpeedBuffDropFrameIndex = -100;
 
     for (let fIdx = 0; fIdx < frames.length; fIdx++) {
         const frame = frames[fIdx];
@@ -351,9 +354,17 @@ export function calculateMaxAdjustedSpeed(
             });
         }
 
+        const frameSkillBuff = frameSkillBuffs.reduce((sum, entry) => sum + entry.value, 0);
+        if (fIdx > 0 && frameSkillBuff < previousFrameSkillBuff - 1e-6) {
+            lastSpeedBuffDropFrameIndex = fIdx;
+        }
+
         const shouldSkip = isType28Active || wasType28Active;
         wasType28Active = isType28Active;
-        if (shouldSkip) continue;
+        if (shouldSkip) {
+            previousFrameSkillBuff = frameSkillBuff;
+            continue;
+        }
 
         let isDuelingActive = false;
         let frameSpotStruggleBuff = 0;
@@ -381,7 +392,15 @@ export function calculateMaxAdjustedSpeed(
         if (isDuelingActive) {
             lastDuelingActiveFrameIndex = fIdx;
         } else {
-            if (fIdx - lastDuelingActiveFrameIndex <= DUELING_FRAME_LOOKAHEAD) continue;
+            if (fIdx - lastDuelingActiveFrameIndex <= DUELING_FRAME_LOOKAHEAD) {
+                previousFrameSkillBuff = frameSkillBuff;
+                continue;
+            }
+        }
+
+        if (fIdx - lastSpeedBuffDropFrameIndex <= SPEED_BUFF_DROP_FRAME_LOOKAHEAD) {
+            previousFrameSkillBuff = frameSkillBuff;
+            continue;
         }
 
         // Downhill Mode
@@ -441,7 +460,10 @@ export function calculateMaxAdjustedSpeed(
             }
         }
 
-        if (isDecelerating) continue;
+        if (isDecelerating) {
+            previousFrameSkillBuff = frameSkillBuff;
+            continue;
+        }
 
         const adj = speed - buff;
         if (adj > maxAdjSpeed) {
@@ -455,6 +477,8 @@ export function calculateMaxAdjustedSpeed(
                 downhillBuff: frameDownhillBuff,
             };
         }
+
+        previousFrameSkillBuff = frameSkillBuff;
     }
 
     return { speed: maxAdjSpeed, time: maxAdjSpeedTime, debug: maxAdjDebug };

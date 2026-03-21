@@ -3,7 +3,7 @@ import { CharaTableData, ParentEntry } from "./types";
 import { aggregateFactors, formatFactor, getCharaImageUrl, getFactorColor } from "./utils";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import CharaProperLabels from "../../../CharaProperLabels";
-import { charaTableColumns } from "./columns";
+import { getCharaTableColumns } from "./columns";
 import { getSkillDef } from "../../../RaceReplay/utils/SkillDataUtils";
 import { getCourseAptitudeFilters } from "../../../../pages/MultiRacePage/utils";
 import AssetLoader from "../../../../data/AssetLoader";
@@ -18,6 +18,7 @@ const ChevronIcon = () => (
 interface CharaTableProps {
     data: CharaTableData[];
     courseId?: number;
+    showPredictionColumn?: boolean;
 }
 
 const ParentGroup = ({ parents }: { parents: ParentEntry[] }) => {
@@ -59,12 +60,13 @@ const ParentGroup = ({ parents }: { parents: ParentEntry[] }) => {
     );
 };
 
-const CharaTable: React.FC<CharaTableProps> = ({ data, courseId }) => {
+const CharaTable: React.FC<CharaTableProps> = ({ data, courseId, showPredictionColumn = false }) => {
     const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
     const [tableCollapsed, setTableCollapsed] = useState(false);
     const [selectedSkillRow, setSelectedSkillRow] = useState<CharaTableData | null>(null);
 
     const aptitudeFilters = getCourseAptitudeFilters(courseId);
+    const charaTableColumns = getCharaTableColumns(showPredictionColumn);
 
     const toggleRow = (frameOrder: number) => {
         setExpandedRows(prev => {

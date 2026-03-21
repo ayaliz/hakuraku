@@ -5,6 +5,16 @@
     margin-bottom: 16px;
 }
 
+.prediction-banner {
+    margin: 0 4px 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(16, 185, 129, 0.12);
+    color: #a7f3d0;
+    font-size: 0.85rem;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
 
 .chara-table-wrapper {
     overflow-x: auto;
@@ -623,6 +633,26 @@
 
 .col-pace-down {
     color: #f87171;
+}
+
+.col-prediction-cell {
+    line-height: 1.25;
+}
+
+.col-prediction-primary {
+    display: block;
+    font-weight: 700;
+    color: #cbd5e1;
+}
+
+.col-prediction-primary.top {
+    color: #86efac;
+}
+
+.col-prediction-rank {
+    display: block;
+    font-size: 0.8em;
+    color: #94a3b8;
 }
 
 /* ── Late-heal warning ──────────────────────────────────── */

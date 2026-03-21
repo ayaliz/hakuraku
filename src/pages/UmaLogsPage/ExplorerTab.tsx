@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import type { HorseEntry } from "../MultiRacePage/types";
 import { STRATEGY_NAMES, STRATEGY_COLORS } from "../MultiRacePage/components/WinDistributionCharts/constants";
 import { getCharaIcon } from "../MultiRacePage/components/WinDistributionCharts/utils";
@@ -11,6 +12,7 @@ type FilterProperty = "none" | "speed" | "stamina" | "pow" | "guts" | "wiz" | "t
 type StatOp = ">" | "<" | "=";
 type SortKey = "label" | "entries" | "teams" | "wins" | "awPct";
 type SkillFilterMode = "learned" | "notLearned" | "activated" | "notActivated";
+type FeatureMatchMode = "is" | "isNot";
 
 interface CharaVariant {
     cardId: number;
@@ -41,6 +43,7 @@ interface CharacterRequirement {
 
 interface CharacterFeature {
     id: string;
+    matchMode: FeatureMatchMode;
     cardId: number | null;
     cardStrategy: number | null;
     requirements: CharacterRequirement[];
@@ -350,6 +353,12 @@ const SupportCardSelect: React.FC<SupportCardSelectProps> = ({ variants, value, 
 
 const STRATEGIES = [5, 1, 2, 3, 4] as const;
 
+const ExplorerInfoIcon = ({ id, tip }: { id: string; tip: React.ReactNode }) => (
+    <OverlayTrigger placement="bottom" overlay={<Tooltip id={id}>{tip}</Tooltip>}>
+        <span className="exp-info-icon" tabIndex={0} role="button" aria-label="Explain filter behavior">i</span>
+    </OverlayTrigger>
+);
+
 function computeSkillPoints(learnedSkillIds: Set<number>): number {
     let total = 0;
     for (const skillId of learnedSkillIds) {
@@ -399,6 +408,49 @@ function matchStatProperty(filter: PropertyFilter, h: HorseEntry): boolean {
 function matchesFeatureCharacter(feature: CharacterFeature, h: HorseEntry): boolean {
     return (feature.cardId === 0 || h.cardId === feature.cardId) &&
         (feature.cardStrategy === null || h.strategy === feature.cardStrategy);
+}
+
+function matchesCharacterFeaturePredicate(feature: CharacterFeature, h: HorseEntry): boolean {
+    const positiveMatch = matchesFeatureCharacter(feature, h) &&
+        feature.requirements.every(req => matchesPropertyFilter(req, h));
+    return feature.matchMode === "is" ? positiveMatch : !positiveMatch;
+}
+
+function findDistinctFeatureMatches(
+    teammates: HorseEntry[],
+    features: CharacterFeature[],
+): HorseEntry[] | null {
+    if (features.length === 0) return [];
+    if (features.length > teammates.length) return null;
+
+    const candidateLists = features.map((feature, featureIndex) => ({
+        featureIndex,
+        candidates: teammates
+            .map((teammate, teammateIndex) => ({ teammate, teammateIndex }))
+            .filter(({ teammate }) => matchesCharacterFeaturePredicate(feature, teammate)),
+    }));
+
+    if (candidateLists.some(entry => entry.candidates.length === 0)) return null;
+
+    candidateLists.sort((a, b) => a.candidates.length - b.candidates.length);
+    const assigned = new Array<HorseEntry | null>(features.length).fill(null);
+    const usedTeammates = new Set<number>();
+
+    const search = (idx: number): boolean => {
+        if (idx >= candidateLists.length) return true;
+        const { featureIndex, candidates } = candidateLists[idx];
+        for (const { teammate, teammateIndex } of candidates) {
+            if (usedTeammates.has(teammateIndex)) continue;
+            usedTeammates.add(teammateIndex);
+            assigned[featureIndex] = teammate;
+            if (search(idx + 1)) return true;
+            assigned[featureIndex] = null;
+            usedTeammates.delete(teammateIndex);
+        }
+        return false;
+    };
+
+    return search(0) ? assigned.filter((teammate): teammate is HorseEntry => teammate !== null) : null;
 }
 
 function matchesPropertyFilter(filter: PropertyFilter, h: HorseEntry): boolean {
@@ -591,12 +643,8 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
 
         const results: { teamKey: string; teammates: HorseEntry[]; matchedCharacterHorses: HorseEntry[] }[] = [];
         for (const [teamKey, teammates] of teamMap) {
-            const matchedByFeature = characterFeatures.map(feature => {
-                const candidates = teammates.filter(h => matchesFeatureCharacter(feature, h));
-                return candidates.filter(h => feature.requirements.every(req => matchesPropertyFilter(req, h)));
-            });
-            if (matchedByFeature.some(matches => matches.length === 0)) continue;
-            const matchedCharacterHorses = matchedByFeature.flat();
+            const matchedCharacterHorses = findDistinctFeatureMatches(teammates, characterFeatures);
+            if (!matchedCharacterHorses) continue;
             results.push({ teamKey, teammates, matchedCharacterHorses });
         }
         return results;
@@ -608,16 +656,16 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
         return playerHorses.filter(h => qualifyingKeys.has(`${h.raceId}|${h.teamId}`));
     }, [characterFeatures.length, filteredTeamResults, playerHorses]);
 
-    const hasCharFilter = characterFeatures.length > 0;
+    const hasCharacterFilter = characterFeatures.length > 0;
 
     const displayHorses = useMemo(() => {
-        if (hasCharFilter) {
+        if (hasCharacterFilter) {
             return filteredTeamResults.flatMap(result => result.matchedCharacterHorses.filter(h => h.teamId > 0));
         }
         return filteredHorses;
-    }, [filteredHorses, filteredTeamResults, hasCharFilter]);
+    }, [filteredHorses, filteredTeamResults, hasCharacterFilter]);
 
-    const aggMode = hasCharFilter ? "card-strategy" : "strategy";
+    const aggMode = hasCharacterFilter ? "card-strategy" : "strategy";
     const rows = useMemo(
         () => aggregateHorses(displayHorses, aggMode, sortKey, sortDesc),
         [displayHorses, aggMode, sortKey, sortDesc]
@@ -635,6 +683,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
 
     const addCharacterFeature = () => setCharacterFeatures(prev => [...prev, {
         id: `${Date.now()}-${Math.random()}`,
+        matchMode: "is",
         cardId: cardVariants[0]?.cardId ?? null,
         cardStrategy: null,
         requirements: [createDefaultRequirement()],
@@ -692,7 +741,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
     const SortArrow = ({ col }: { col: SortKey }) =>
         sortKey === col ? <span className="exp-sort-arrow">{sortDesc ? "v" : "^"}</span> : null;
 
-    const showTeamsColumn = !hasCharFilter;
+    const showTeamsColumn = !hasCharacterFilter;
 
     const renderRow = (row: AggRow) => {
         const activeStrategyColors = strategyColors ?? STRATEGY_COLORS;
@@ -732,14 +781,14 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
             <div className="exp-panel">
                 <div className="exp-panel-header">
                     <span className="exp-panel-note">Filter teams by your own criteria.</span>
-                    <span className="exp-filter-summary">
+                        <span className="exp-filter-summary">
                         {filteredTeams.toLocaleString()} / {totalTeams.toLocaleString()} teams
                         {" | "}{filteredTeamWins.toLocaleString()} wins
                         {" | "}
                         <span className={`exp-filter-winpct${isLowTeamWinRate ? " exp-filter-winpct--low" : ""}`}>
                             {filteredTeamWinPct}% team win rate
                         </span>
-                        {characterFeatures.length > 0 && (
+                        {hasCharacterFilter && (
                             <>{` | ${filteredHorses.length.toLocaleString()} entries`}</>
                         )}
                     </span>
@@ -748,13 +797,39 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                 <div className="exp-subsection">
                     <div className="exp-subsection-header">
                         <span className="exp-subsection-title">Your Team</span>
-                        <span className="exp-subsection-note">Every requirement in a card must belong to the same horse on your team.</span>
+                        <span className="exp-subsection-note">
+                            Each card matches a different uma on your team.
+                            <ExplorerInfoIcon
+                                id="explorer-filter-types-tooltip"
+                                tip={
+                                    <div className="exp-tooltip-copy">
+                                        <div><strong>is</strong>: the selected uma must match the full card.</div>
+                                        <div><strong>is not</strong>: the selected uma must not match the full card.</div>
+                                        <div>Different cards must be fulfilled by different umas on the same team.</div>
+                                    </div>
+                                }
+                            />
+                        </span>
                     </div>
                     <div className="exp-feature-list">
                         {characterFeatures.map(feature => (
                             <div key={feature.id} className="exp-feature-card">
                                 <div className="exp-feature-header">
                                     <span className="exp-feature-label">Character</span>
+                                    <div className="exp-toggle">
+                                        <button
+                                            className={`exp-toggle-btn${feature.matchMode === "is" ? " active" : ""}`}
+                                            onClick={() => updateCharacterFeature(feature.id, { matchMode: "is" })}
+                                        >
+                                            is
+                                        </button>
+                                        <button
+                                            className={`exp-toggle-btn${feature.matchMode === "isNot" ? " active" : ""}`}
+                                            onClick={() => updateCharacterFeature(feature.id, { matchMode: "isNot" })}
+                                        >
+                                            is not
+                                        </button>
+                                    </div>
                                     <CharaSelect variants={cardVariants} value={feature.cardId} onChange={cardId => updateCharacterFeature(feature.id, { cardId })} />
                                     <span className="exp-as-label">as</span>
                                     <select
@@ -885,7 +960,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                         <thead>
                             <tr>
                                 <th className="exp-th" onClick={() => handleSort("label")}>
-                                    {hasCharFilter ? "Character / Style" : "Style"} <SortArrow col="label" />
+                                    {hasCharacterFilter ? "Character / Style" : "Style"} <SortArrow col="label" />
                                 </th>
                                 <th className="exp-th exp-th--r" onClick={() => handleSort("entries")} title="Total horse-race appearances">
                                     Entries <SortArrow col="entries" />

@@ -69,6 +69,8 @@ export type CharaTableData = {
     paceUpTime?: number;
     paceDownTime?: number;
     timeDiffToPrev?: number;
+    predictedWinProbability?: number;
+    predictionRank?: number;
 };
 
 export type AggregatedFactor = {

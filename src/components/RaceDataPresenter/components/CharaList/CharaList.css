@@ -657,6 +657,128 @@
 
 /* ── Late-heal warning ──────────────────────────────────── */
 
+@media (max-width: 1600px) {
+    .chara-table-wrapper--with-prediction .chara-table {
+        font-size: 0.84rem;
+    }
+
+    .chara-table-wrapper--with-prediction .chara-table thead th {
+        padding: 8px 9px;
+        font-size: 0.7rem;
+        letter-spacing: 0.02em;
+    }
+
+    .chara-table-wrapper--with-prediction .chara-table tbody td {
+        padding: 7px 9px;
+    }
+
+    .chara-table-wrapper--with-prediction .copy-cell {
+        width: 26px;
+    }
+
+    .chara-table-wrapper--with-prediction .expand-cell {
+        width: 18px;
+    }
+
+    .chara-table-wrapper--with-prediction .rank-cell {
+        width: 34px;
+        font-size: 0.95rem;
+    }
+
+    .chara-table-wrapper--with-prediction .chara-name-cell {
+        max-width: 160px;
+    }
+
+    .chara-table-wrapper--with-prediction .col-chara-ident {
+        gap: 4px;
+    }
+
+    .chara-table-wrapper--with-prediction .col-rank-icon {
+        height: 18px;
+    }
+
+    .chara-table-wrapper--with-prediction .col-chara-thumb {
+        height: 34px;
+    }
+
+    .chara-table-wrapper--with-prediction .chara-name-primary {
+        font-size: 0.96em;
+    }
+
+    .chara-table-wrapper--with-prediction .chara-viewer-name {
+        font-size: 0.7em;
+    }
+
+    .chara-table-wrapper--with-prediction .time-secondary {
+        font-size: 0.78em;
+    }
+
+    .chara-table-wrapper--with-prediction .col-prediction-primary {
+        font-size: 0.96em;
+    }
+
+    .chara-table-wrapper--with-prediction .col-prediction-rank {
+        font-size: 0.72em;
+    }
+
+    .chara-table-wrapper--with-prediction .col-mood-icon {
+        height: 32px;
+    }
+
+    .chara-table-wrapper--with-prediction .col-style-mood {
+        gap: 2px;
+    }
+
+    .chara-table-wrapper--with-prediction .col-start-delay,
+    .chara-table-wrapper--with-prediction .col-spurt-cell,
+    .chara-table-wrapper--with-prediction .col-hp-outcome,
+    .chara-table-wrapper--with-prediction .col-pace-cell {
+        font-size: 0.92em;
+    }
+
+    .chara-table-wrapper--with-prediction .mini-badge {
+        font-size: 0.64rem;
+        padding: 2px 5px;
+    }
+
+    .chara-table-wrapper--with-prediction .col-stats-grid {
+        font-size: 0.92em;
+        line-height: 1.25;
+    }
+
+    .chara-table-wrapper--with-prediction .stat-label-item {
+        margin-right: 5px;
+    }
+
+    .chara-table-wrapper--with-prediction .stat-icon {
+        width: 14px;
+        height: 14px;
+        margin-right: 1px;
+    }
+}
+
+@media (max-width: 1400px) {
+    .chara-table-wrapper--with-prediction .chara-name-cell {
+        max-width: 145px;
+    }
+
+    .chara-table-wrapper--with-prediction .col-mood-icon {
+        height: 28px;
+    }
+
+    .chara-table-wrapper--with-prediction .col-stats-grid {
+        font-size: 0.88em;
+    }
+
+    .chara-table-wrapper--with-prediction .col-start-delay,
+    .chara-table-wrapper--with-prediction .col-spurt-cell,
+    .chara-table-wrapper--with-prediction .col-hp-outcome,
+    .chara-table-wrapper--with-prediction .col-pace-cell,
+    .chara-table-wrapper--with-prediction .col-prediction-cell {
+        font-size: 0.88em;
+    }
+}
+
 .late-heal-icon {
     width: 14px;
     height: 14px;

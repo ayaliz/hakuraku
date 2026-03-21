@@ -81,7 +81,7 @@ const CharaTable: React.FC<CharaTableProps> = ({ data, courseId, showPredictionC
     };
 
     return (
-        <div className="chara-table-wrapper">
+        <div className={`chara-table-wrapper${showPredictionColumn ? ' chara-table-wrapper--with-prediction' : ''}`}>
             <table className="chara-table">
                 <thead>
                     <tr>

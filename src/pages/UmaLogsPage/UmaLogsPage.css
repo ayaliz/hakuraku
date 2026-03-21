@@ -1392,6 +1392,39 @@
     color: #718096;
 }
 
+.exp-info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    margin-left: 6px;
+    border: 1px solid #4a5568;
+    border-radius: 50%;
+    color: #a0aec0;
+    font-size: 10px;
+    font-weight: bold;
+    line-height: 1;
+    cursor: help;
+    transition: border-color var(--haku-transition), color var(--haku-transition), background var(--haku-transition);
+}
+
+.exp-info-icon:hover,
+.exp-info-icon:focus {
+    color: #e2e8f0;
+    border-color: #718096;
+    background: rgba(255, 255, 255, 0.08);
+    outline: none;
+}
+
+.exp-tooltip-copy {
+    text-align: left;
+}
+
+.exp-tooltip-copy > div + div {
+    margin-top: 6px;
+}
+
 .exp-condition-row {
     display: flex;
     align-items: center;

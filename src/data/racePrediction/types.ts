@@ -98,6 +98,7 @@ export type FrontendHorse = {
     matched_passive_skill_ids?: number[];
     passive_stat_modifiers?: FrontendPassiveModifiers;
     speed_course_modifier?: number;
+    last_spurt_target_speed?: number;
 };
 
 export type FrontendTeam = {

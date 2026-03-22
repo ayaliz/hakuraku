@@ -6,6 +6,16 @@ import type { FrontendHorse, FrontendModel, FrontendRoom, FrontendTeam, RaceRoom
 
 const RUNAWAY_TRIGGER_SKILL_ID = 202051;
 const STAT_CAP = 1200;
+const BASE_SPEED_CONSTANT = 20.0;
+const BASE_SPEED_COURSE_OFFSET = 2000.0;
+const BASE_SPEED_COURSE_SCALE = 1000.0;
+const SPEED_TERM_COEFF = 500.0;
+const SPEED_TERM_SCALE = 0.002;
+const GUTS_TERM_BASE = 450.0;
+const GUTS_TERM_EXPONENT = 0.597;
+const GUTS_TERM_SCALE = 0.0001;
+const LAST_SPURT_MULTIPLIER = 1.05;
+const LAST_SPURT_BASE_RATIO = 0.01;
 const TRACK_STAT_THRESHOLD_HIGH = 900;
 const TRACK_STAT_MODIFIER_HIGH = 1.2;
 const TRACK_STAT_THRESHOLD_MID = 600;
@@ -13,6 +23,44 @@ const TRACK_STAT_MODIFIER_MID = 1.15;
 const TRACK_STAT_THRESHOLD_LOW = 300;
 const TRACK_STAT_MODIFIER_LOW = 1.1;
 const TRACK_STAT_MODIFIER_BASE = 1.05;
+const HP_STRATEGY_COEFFICIENT: Record<number, number> = {
+    1: 0.95,
+    2: 0.89,
+    3: 1.0,
+    4: 0.995,
+    5: 0.86,
+};
+const ACCEL_PHASE_COEFFS: Record<number, number[]> = {
+    1: [1.0, 1.0, 0.996],
+    2: [0.985, 1.0, 0.996],
+    3: [0.975, 1.0, 1.0],
+    4: [0.945, 1.0, 0.997],
+    5: [1.17, 0.94, 0.956],
+};
+const GROUND_ACCEL_PROFICIENCY_MODIFIER: Record<number, number> = {
+    8: 1.05,
+    7: 1.0,
+    6: 0.9,
+    5: 0.8,
+    4: 0.7,
+    3: 0.5,
+    2: 0.3,
+    1: 0.1,
+};
+const ACCEL_DISTANCE_PROFICIENCY_MODIFIER: Record<number, number> = {
+    8: 1.0,
+    7: 1.0,
+    6: 1.0,
+    5: 1.0,
+    4: 1.0,
+    3: 0.6,
+    2: 0.5,
+    1: 0.4,
+};
+const GROUND_HP_CONSUMPTION_MODIFIER: Record<number, Record<number, number>> = {
+    1: { 1: 1.0, 2: 1.0, 3: 1.02, 4: 1.02 },
+    2: { 1: 1.0, 2: 1.0, 3: 1.01, 4: 1.02 },
+};
 
 const MOOD_MODIFIER: Record<number, number> = {
     5: 1.04,
@@ -20,6 +68,30 @@ const MOOD_MODIFIER: Record<number, number> = {
     3: 1.0,
     2: 0.98,
     1: 0.96,
+};
+
+const STRATEGY_PHASE_COEFFS: Record<number, number[]> = {
+    1: [1.0, 0.98, 0.962],
+    2: [0.978, 0.991, 0.975],
+    3: [0.938, 0.998, 0.994],
+    4: [0.931, 1.0, 1.0],
+};
+
+const OONIGE_COEFFS = [1.063, 0.962, 0.95];
+const TARGET_SPEED_PHASE_COEFFS: Record<number, number[]> = {
+    ...STRATEGY_PHASE_COEFFS,
+    5: OONIGE_COEFFS,
+};
+
+const DISTANCE_PROFICIENCY_MODIFIER: Record<number, number> = {
+    8: 1.05,
+    7: 1.0,
+    6: 0.9,
+    5: 0.8,
+    4: 0.6,
+    3: 0.4,
+    2: 0.2,
+    1: 0.1,
 };
 
 const RUNNING_STYLE_TO_APTITUDE_FIELD: Record<number, string> = {
@@ -82,6 +154,24 @@ function computeTrackStatThresholdModifier(courseContext: FrontendModel["courseC
     }
 
     return count > 0 ? total / count : 1.0;
+}
+
+function computeLastSpurtTargetSpeed(courseContext: FrontendModel["courseContext"], horse: FrontendHorse): number {
+    const courseDistance = Number(courseContext.distance ?? 0);
+    if (courseDistance <= 0) return 0;
+
+    const strategyCoeffs = horse.strategy === 5
+        ? OONIGE_COEFFS
+        : (STRATEGY_PHASE_COEFFS[horse.strategy] ?? STRATEGY_PHASE_COEFFS[1]);
+    const distMod = DISTANCE_PROFICIENCY_MODIFIER[horse.apt_distance] ?? 1.0;
+    const adjustedSpeed = Number(horse.speed ?? 0);
+    const adjustedGuts = Number(horse.guts ?? 0);
+    const baseSpeed = BASE_SPEED_CONSTANT - (courseDistance - BASE_SPEED_COURSE_OFFSET) / BASE_SPEED_COURSE_SCALE;
+    const speedTerm = Math.sqrt(SPEED_TERM_COEFF * Math.max(adjustedSpeed, 0)) * distMod * SPEED_TERM_SCALE;
+    const phase2BaseSpeed = baseSpeed * strategyCoeffs[2];
+    const lateRaceBaseSpeed = phase2BaseSpeed + speedTerm;
+    const gutsTerm = Math.pow(GUTS_TERM_BASE * Math.max(adjustedGuts, 0), GUTS_TERM_EXPONENT) * GUTS_TERM_SCALE;
+    return (lateRaceBaseSpeed + LAST_SPURT_BASE_RATIO * baseSpeed) * LAST_SPURT_MULTIPLIER + speedTerm + gutsTerm;
 }
 
 function parseConditionToken(token: string, context: Record<string, number | Set<number>>): boolean {
@@ -277,8 +367,12 @@ export function applyPreRaceAdjustments(room: FrontendRoom, model: FrontendModel
                     pow: Math.round(adjustStat(horse.pow, mood, modifiers.power + groundPowerBonus)),
                     guts: Math.round(adjustStat(horse.guts, mood, modifiers.guts)),
                     wiz: Math.round(adjustStat(horse.wiz, mood, modifiers.wisdom)),
+                    last_spurt_target_speed: 0,
                 };
-            }),
+            }).map((adjustedHorse) => ({
+                ...adjustedHorse,
+                last_spurt_target_speed: computeLastSpurtTargetSpeed(courseContext, adjustedHorse),
+            })),
         })),
     };
 }
@@ -337,6 +431,73 @@ function computeRankPct(values: number[]): Map<number, number> {
     return result;
 }
 
+function computeRankPctAgainst(values: number[], candidate: number): number {
+    const ordered = [...values].sort((a, b) => b - a);
+    const count = Math.max(1, ordered.length - 1);
+    const higherCount = ordered.filter((value) => value > candidate).length;
+    return higherCount / count;
+}
+
+function computeRaceMechanicsFeatureMap(
+    horse: FrontendHorse,
+    courseContext: FrontendModel["courseContext"],
+): Record<string, number> {
+    const courseDistance = Number(courseContext.distance ?? 0);
+    const courseSurface = Number(courseContext.surface ?? 0);
+    const groundCondition = Number(courseContext.ground_condition ?? 0);
+    const baseSpeed = courseDistance > 0
+        ? BASE_SPEED_CONSTANT - (courseDistance - BASE_SPEED_COURSE_OFFSET) / BASE_SPEED_COURSE_SCALE
+        : 0;
+    const hpGroundModifier = GROUND_HP_CONSUMPTION_MODIFIER[courseSurface]?.[groundCondition] ?? 1.0;
+    const remainingDistanceFromLateStart = Math.max(courseDistance / 3 - 60, 0);
+    const strategy = TARGET_SPEED_PHASE_COEFFS[horse.strategy] ? horse.strategy : 1;
+    const distSpeedMod = DISTANCE_PROFICIENCY_MODIFIER[horse.apt_distance] ?? 1.0;
+    const groundAccelMod = GROUND_ACCEL_PROFICIENCY_MODIFIER[horse.apt_ground] ?? 1.0;
+    const distAccelMod = ACCEL_DISTANCE_PROFICIENCY_MODIFIER[horse.apt_distance] ?? 1.0;
+    const targetPhaseCoeffs = TARGET_SPEED_PHASE_COEFFS[strategy] ?? TARGET_SPEED_PHASE_COEFFS[1];
+    const accelPhaseCoeffs = ACCEL_PHASE_COEFFS[strategy] ?? ACCEL_PHASE_COEFFS[1];
+    const speedTerm = Math.sqrt(500 * Math.max(horse.speed, 0)) * distSpeedMod * 0.002;
+    const earlyTargetSpeed = baseSpeed * targetPhaseCoeffs[0];
+    const midTargetSpeed = baseSpeed * targetPhaseCoeffs[1];
+    const lateTargetSpeed = baseSpeed * targetPhaseCoeffs[2] + speedTerm;
+    const lateAcceleration = 0.0006
+        * Math.sqrt(500 * Math.max(horse.pow, 0))
+        * accelPhaseCoeffs[2]
+        * groundAccelMod
+        * distAccelMod;
+    const maxHp = 0.8 * (HP_STRATEGY_COEFFICIENT[strategy] ?? 1.0) * horse.stamina + courseDistance;
+    const minSpeed = 0.85 * baseSpeed + Math.sqrt(200 * Math.max(horse.guts, 0)) * 0.001;
+    const wizRandomMaxPct = horse.wiz / 5500 * Math.log10(Math.max(horse.wiz * 0.1, 1));
+    const wizRandomMinPct = wizRandomMaxPct - 0.65;
+    const spurtWisdomChance = (15 + 0.05 * horse.wiz) / 100;
+    const gutsHpModifier = 1 + (200 / Math.max(Math.sqrt(600 * Math.max(horse.guts, 1)), 1e-6));
+    const lastSpurtTargetSpeed = Number(horse.last_spurt_target_speed ?? 0);
+    const spurtHpPerSecond = 20
+        * (((lastSpurtTargetSpeed - baseSpeed + 12) ** 2) / 144)
+        * hpGroundModifier
+        * gutsHpModifier;
+    const spurtHpPerMeter = spurtHpPerSecond / Math.max(lastSpurtTargetSpeed, 1e-6);
+    const spurtHpRequired = spurtHpPerMeter * remainingDistanceFromLateStart;
+    const spurtHpMargin = maxHp - spurtHpRequired;
+    const spurtHpMarginRatio = spurtHpMargin / Math.max(maxHp, 1);
+    return {
+        mech_max_hp: maxHp,
+        mech_min_speed: minSpeed,
+        mech_early_target_speed: earlyTargetSpeed,
+        mech_mid_target_speed: midTargetSpeed,
+        mech_late_target_speed: lateTargetSpeed,
+        mech_late_acceleration: lateAcceleration,
+        mech_wiz_random_max_pct: wizRandomMaxPct,
+        mech_wiz_random_min_pct: wizRandomMinPct,
+        mech_spurt_wisdom_chance: spurtWisdomChance,
+        mech_spurt_hp_per_meter: spurtHpPerMeter,
+        mech_spurt_hp_required: spurtHpRequired,
+        mech_spurt_hp_margin: spurtHpMargin,
+        mech_spurt_hp_margin_ratio: spurtHpMarginRatio,
+        mech_immediate_spurt_feasible: spurtHpMargin >= 0 ? 1 : 0,
+    };
+}
+
 export function encodeRoom(room: FrontendRoom, model: FrontendModel): { features: number[][][]; orderedHorses: FrontendHorse[] } {
     const canonical = canonicalizeRoom(room);
     const allHorses = canonical.teams.flatMap((team) => team.horses);
@@ -373,6 +534,9 @@ export function encodeRoom(room: FrontendRoom, model: FrontendModel): { features
         team.horses.forEach((horse) => {
             teamStyleCounts.set(horse.strategy, (teamStyleCounts.get(horse.strategy) ?? 0) + 1);
         });
+        const opponentHorses = canonical.teams
+            .filter((otherTeam) => otherTeam.team_id !== team.team_id)
+            .flatMap((otherTeam) => otherTeam.horses);
         const teamRankLookup = new Map<string, Map<number, number>>();
         model.schema.rankFields.forEach((field) => {
             const values = team.horses.map((horse) => numericHorseField(horse, field));
@@ -387,6 +551,15 @@ export function encodeRoom(room: FrontendRoom, model: FrontendModel): { features
         model.schema.rankFields.forEach((field) => {
             teamMaxLookup.set(field, Math.max(...team.horses.map((horse) => numericHorseField(horse, field))));
         });
+        const opponentMeanLookup = new Map<string, number>();
+        model.schema.rankFields.forEach((field) => {
+            const values = opponentHorses.map((horse) => numericHorseField(horse, field));
+            opponentMeanLookup.set(field, values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1));
+        });
+        const opponentMaxLookup = new Map<string, number>();
+        model.schema.rankFields.forEach((field) => {
+            opponentMaxLookup.set(field, Math.max(...opponentHorses.map((horse) => numericHorseField(horse, field))));
+        });
         const teamGateNumbers = team.horses.map((horse) => horse.frame_order + 1);
         const teamGateMean = teamGateNumbers.reduce((sum, value) => sum + value, 0) / Math.max(teamGateNumbers.length, 1);
         const teamGateSpread = teamGateNumbers.length > 0
@@ -396,6 +569,7 @@ export function encodeRoom(room: FrontendRoom, model: FrontendModel): { features
         return team.horses.map((horse) => {
             const row: number[] = [];
             const gateNumber = horse.frame_order + 1;
+            const mechanics = computeRaceMechanicsFeatureMap(horse, model.courseContext);
             model.schema.numericFields.forEach((field) => {
                 row.push(numericHorseField(horse, field));
             });
@@ -445,6 +619,21 @@ export function encodeRoom(room: FrontendRoom, model: FrontendModel): { features
                     row.push(teamRankLookup.get(field)?.get(value) ?? 1);
                     return;
                 }
+                if (featureName.startsWith("opponent_rank_pct_")) {
+                    const field = featureName.replace("opponent_rank_pct_", "");
+                    row.push(computeRankPctAgainst(opponentHorses.map((otherHorse) => numericHorseField(otherHorse, field)), numericHorseField(horse, field)));
+                    return;
+                }
+                if (featureName.startsWith("gap_to_opponent_max_")) {
+                    const field = featureName.replace("gap_to_opponent_max_", "");
+                    row.push((opponentMaxLookup.get(field) ?? 0) - numericHorseField(horse, field));
+                    return;
+                }
+                if (featureName.startsWith("gap_to_opponent_mean_")) {
+                    const field = featureName.replace("gap_to_opponent_mean_", "");
+                    row.push((opponentMeanLookup.get(field) ?? 0) - numericHorseField(horse, field));
+                    return;
+                }
                 if (featureName.startsWith("opp_style_count_")) {
                     const styleId = Number(featureName.replace("opp_style_count_", ""));
                     row.push((roomStyleCounts.get(styleId) ?? 0) - (teamStyleCounts.get(styleId) ?? 0));
@@ -456,6 +645,10 @@ export function encodeRoom(room: FrontendRoom, model: FrontendModel): { features
                 }
                 if (featureName === "matched_passive_count") {
                     row.push(horse.matched_passive_skill_ids?.length ?? 0);
+                    return;
+                }
+                if (featureName === "last_spurt_target_speed") {
+                    row.push(horse.last_spurt_target_speed ?? 0);
                     return;
                 }
                 if (featureName === "adjusted_stat_sum") {
@@ -492,6 +685,10 @@ export function encodeRoom(room: FrontendRoom, model: FrontendModel): { features
                 }
                 if (featureName === "team_gate_spread") {
                     row.push(teamGateSpread);
+                    return;
+                }
+                if (featureName.startsWith("mech_")) {
+                    row.push(mechanics[featureName] ?? 0);
                     return;
                 }
                 row.push(0);

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { startTransition, useMemo, useState } from 'react';
 import { Form, Modal } from 'react-bootstrap';
 import './VeteransPage.css';
 import { Veteran } from './types';
@@ -51,9 +51,11 @@ const AffinityCalculatorPanel: React.FC<Props> = ({
     }, [allCharas, mainSearch]);
 
     const selectChara = (id: number) => {
-        onMainCharChange(id);
         setShowMainPicker(false);
         setMainSearch('');
+        startTransition(() => {
+            onMainCharChange(id);
+        });
     };
 
     const handleBorrow = async () => {
@@ -177,7 +179,13 @@ const AffinityCalculatorPanel: React.FC<Props> = ({
                 </p>
             )}
 
-            <Modal show={showMainPicker} onHide={() => { setShowMainPicker(false); setMainSearch(''); }} size="lg" scrollable>
+            <Modal
+                show={showMainPicker}
+                onHide={() => { setShowMainPicker(false); setMainSearch(''); }}
+                size="lg"
+                scrollable
+                animation={false}
+            >
                 <Modal.Header closeButton>
                     <Modal.Title>Select Main Uma</Modal.Title>
                 </Modal.Header>

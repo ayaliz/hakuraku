@@ -102,6 +102,11 @@
     font-size: 9px;
 }
 
+.ca-bar-value-wide {
+    width: auto;
+    min-width: 72px;
+}
+
 /* Full-data modal: wider than default cdt-modal to give bars more room */
 .ca-full-data-modal {
     width: 820px;
@@ -308,6 +313,7 @@
 .syn-section-header {
     display: flex;
     align-items: baseline;
+    gap: 6px;
     font-size: 13px;
     font-weight: bold;
     color: #a0aec0;
@@ -341,6 +347,17 @@
 }
 .syn-table-col-label--best { color: #68d391; }
 .syn-table-col-label--worst { color: #fc8181; }
+
+.syn-comp-meta {
+    margin-left: auto;
+    display: grid;
+    grid-template-columns: 58px 92px;
+    align-items: baseline;
+    justify-items: end;
+    column-gap: 8px;
+    white-space: nowrap;
+    font-weight: normal;
+}
 
 /* Pair Synergy table */
 .syn-table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -413,9 +430,17 @@
 }
 
 .syn-comp-stats {
-    display: flex;
+    display: grid;
+    grid-template-columns: 58px 92px;
     align-items: baseline;
+    justify-items: end;
+    column-gap: 8px;
     flex-shrink: 0;
+}
+
+.syn-comp-stat {
+    min-width: 0;
+    text-align: right;
 }
 
 .syn-comp-meta {
@@ -460,6 +485,61 @@
 .bp-pop-filter-btn:last-child { border-right: none; }
 .bp-pop-filter-btn:hover { background: rgba(255,255,255,0.06); color: #a0aec0; }
 .bp-pop-filter-btn.active { background: rgba(66,153,225,0.2); color: #90cdf4; }
+
+.bp-style-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.bp-style-legend-label {
+    font-size: 11px;
+    color: #718096;
+    margin-right: 2px;
+}
+
+.bp-style-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid color-mix(in srgb, var(--bp-style-color) 55%, #4a5568);
+    border-radius: 999px;
+    color: #e2e8f0;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.bp-style-chip:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.bp-style-chip--inactive {
+    opacity: 0.55;
+    color: #a0aec0;
+}
+
+.bp-style-chip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--bp-style-color);
+    flex-shrink: 0;
+}
+
+.bp-empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 240px;
+    color: #718096;
+    font-size: 13px;
+    border: 1px dashed #2d3748;
+    border-radius: 8px;
+}
 
 /* Bubble plot SVG */
 .score-winrate-svg {

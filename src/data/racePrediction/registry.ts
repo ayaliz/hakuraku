@@ -5,7 +5,7 @@ const ROOM_MODEL_REGISTRY: RaceRoomModelSpec[] = [
         id: "cm11",
         label: "CM11 model",
         courseId: 10914,
-        artifactPath: "data/cm11-room-model.json.gz?rev=confirmed-drop1-om-2026-03-22",
+        artifactPath: "data/cm11-room-model.json.gz?rev=surrogate-context-target-mix-skill210061-2026-03-23",
         teamCount: 3,
         horsesPerTeam: 3,
     },

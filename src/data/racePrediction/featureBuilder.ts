@@ -2,7 +2,7 @@ import GameDataLoader from "../GameDataLoader";
 import UMDatabaseWrapper from "../UMDatabaseWrapper";
 import { fromRaceHorseData } from "../TrainedCharaData";
 import { getDistanceCategory } from "../../components/RaceReplay/utils/speedCalculations";
-import type { FrontendHorse, FrontendModel, FrontendRoom, FrontendTeam, RaceRoomModelSpec } from "./types";
+import type { FrontendHorse, FrontendModel, FrontendRoom, FrontendTeam, RaceRoomModelSpec, TensorPayload } from "./types";
 
 const RUNAWAY_TRIGGER_SKILL_ID = 202051;
 const STAT_CAP = 1200;
@@ -101,6 +101,7 @@ const RUNNING_STYLE_TO_APTITUDE_FIELD: Record<number, string> = {
     4: "proper_running_style_oikomi",
     5: "proper_running_style_nige",
 };
+const SURROGATE_RECOVERY_BUCKETS = [150, 350, 550];
 
 const TRACK_STAT_FIELD_MAP: Record<string, keyof FrontendHorse> = {
     speed: "speed",
@@ -438,6 +439,150 @@ function computeRankPctAgainst(values: number[], candidate: number): number {
     return higherCount / count;
 }
 
+function relu(values: number[]): number[] {
+    return values.map((value) => (value > 0 ? value : 0));
+}
+
+function sigmoid(value: number): number {
+    if (value >= 0) {
+        const z = Math.exp(-value);
+        return 1 / (1 + z);
+    }
+    const z = Math.exp(value);
+    return z / (1 + z);
+}
+
+function linear(row: number[], weight: TensorPayload | undefined, bias: TensorPayload | undefined): number[] {
+    if (!weight || !bias || weight.shape.length !== 2 || bias.shape.length !== 1) {
+        return [];
+    }
+    const [outDim, inDim] = weight.shape;
+    const result = new Array(outDim).fill(0);
+    for (let outIndex = 0; outIndex < outDim; outIndex++) {
+        let sum = bias.data[outIndex] ?? 0;
+        for (let inIndex = 0; inIndex < inDim; inIndex++) {
+            sum += (weight.data[outIndex * inDim + inIndex] ?? 0) * (row[inIndex] ?? 0);
+        }
+        result[outIndex] = sum;
+    }
+    return result;
+}
+
+function countRecoveryBuckets(
+    learnedSkillIds: number[],
+    recoveryValueBySkillId: Record<string, number>,
+): Record<number, number> {
+    const counts = Object.fromEntries(SURROGATE_RECOVERY_BUCKETS.map((bucket) => [bucket, 0])) as Record<number, number>;
+    learnedSkillIds.forEach((skillId) => {
+        const value = Number(recoveryValueBySkillId[String(skillId)] ?? 0);
+        if (SURROGATE_RECOVERY_BUCKETS.includes(value)) {
+            counts[value] += 1;
+        }
+    });
+    return counts;
+}
+
+function buildSurrogateInputVector(
+    horse: FrontendHorse,
+    inputFeatureNames: string[],
+    recoveryValueBySkillId: Record<string, number>,
+): number[] {
+    const recoveryCounts = countRecoveryBuckets(horse.learned_skill_ids, recoveryValueBySkillId);
+    const learnedSkillIds = new Set(horse.learned_skill_ids.map((skillId) => Number(skillId)));
+    return inputFeatureNames.map((featureName) => {
+        switch (featureName) {
+            case "speed":
+                return Number(horse.speed ?? 0);
+            case "stamina":
+                return Number(horse.stamina ?? 0);
+            case "pow":
+                return Number(horse.pow ?? 0);
+            case "guts":
+                return Number(horse.guts ?? 0);
+            case "wiz":
+                return Number(horse.wiz ?? 0);
+            default:
+                break;
+        }
+
+        if (featureName.startsWith("style_is_")) {
+            const styleId = Number(featureName.slice("style_is_".length));
+            return horse.strategy === styleId ? 1 : 0;
+        }
+        if (featureName.startsWith("recovery_count_")) {
+            const bucket = Number(featureName.slice("recovery_count_".length));
+            return Number(recoveryCounts[bucket] ?? 0);
+        }
+        if (featureName.startsWith("has_skill_")) {
+            const skillId = Number(featureName.slice("has_skill_".length));
+            return learnedSkillIds.has(skillId) ? 1 : 0;
+        }
+        return 0;
+    });
+}
+
+function computeSurrogateOutputs(horse: FrontendHorse, model: FrontendModel): Record<string, number> {
+    const surrogate = model.surrogateSpurtModel;
+    if (!surrogate) {
+        return {};
+    }
+    const input = buildSurrogateInputVector(horse, surrogate.inputFeatureNames, surrogate.recoveryValueBySkillId);
+    const normalizedInput = input.map((value, index) => {
+        const mean = surrogate.normalization.mean[index] ?? 0;
+        const std = surrogate.normalization.std[index] ?? 1;
+        return (value - mean) / std;
+    });
+    const first = relu(linear(normalizedInput, surrogate.weights["net.0.weight"], surrogate.weights["net.0.bias"]));
+    const second = relu(linear(first, surrogate.weights["net.3.weight"], surrogate.weights["net.3.bias"]));
+    const logits = linear(second, surrogate.weights["net.6.weight"], surrogate.weights["net.6.bias"]);
+    const result: Record<string, number> = {};
+    surrogate.outputFeatureNames.forEach((featureName, index) => {
+        const value = logits[index] ?? 0;
+        result[featureName] = featureName === "surrogate_full_spurt_prob" || featureName === "surrogate_no_spurt_prob"
+            ? sigmoid(value)
+            : value;
+    });
+    return result;
+}
+
+function computeSurrogateContextFeatureMap(
+    horse: FrontendHorse,
+    model: FrontendModel,
+    mechanics: Record<string, number>,
+): Record<string, number> {
+    const outputs = computeSurrogateOutputs(horse, model);
+    const fullSpurtProb = Number(outputs.surrogate_full_spurt_prob ?? 0);
+    const noSpurtProb = Number(outputs.surrogate_no_spurt_prob ?? 0);
+    const delayRatio = Math.max(0, Math.min(1, Number(outputs.surrogate_spurt_delay_ratio ?? 0)));
+    const speedRatio = Math.max(0, Math.min(1.25, Number(outputs.surrogate_spurt_speed_ratio ?? 0)));
+    const hpMarginRatio = Math.max(-1.5, Math.min(1.5, Number(outputs.surrogate_hp_margin_ratio ?? 0)));
+    const hpShortfall = Math.max(0, -hpMarginRatio);
+    const speedShortfall = Math.max(0, 1 - Math.min(speedRatio, 1));
+    const failureRisk = Math.max(1 - fullSpurtProb, noSpurtProb);
+    const lastSpurtTargetSpeed = Number(horse.last_spurt_target_speed ?? 0);
+    const projectedSpeedFactor = Math.max(
+        0,
+        Math.min(speedRatio, 1) * (1 - 0.75 * delayRatio) * (1 - 0.35 * hpShortfall),
+    );
+    const projectedLateSpeed = lastSpurtTargetSpeed * projectedSpeedFactor;
+    const mechMarginRatio = Number(mechanics.mech_spurt_hp_margin_ratio ?? 0);
+    const frontStyleFailureRisk = horse.strategy === 1 || horse.strategy === 5 ? failureRisk : 0;
+    const mechFalseFeasibleFlag = hpMarginRatio < -0.05 && mechMarginRatio >= 0 ? 1 : 0;
+    return {
+        surrogate_spurt_failure_risk: failureRisk,
+        surrogate_no_spurt_high_risk_flag: noSpurtProb >= 0.1 ? 1 : 0,
+        surrogate_low_full_spurt_flag: fullSpurtProb < 0.5 ? 1 : 0,
+        surrogate_hp_shortfall: hpShortfall,
+        surrogate_hp_shortfall_flag: hpMarginRatio < -0.05 ? 1 : 0,
+        surrogate_spurt_speed_shortfall: speedShortfall,
+        surrogate_spurt_delay_ratio: delayRatio,
+        surrogate_projected_late_speed: projectedLateSpeed,
+        surrogate_projected_late_speed_gap: lastSpurtTargetSpeed - projectedLateSpeed,
+        surrogate_front_style_failure_risk: frontStyleFailureRisk,
+        surrogate_mech_false_feasible_flag: mechFalseFeasibleFlag,
+    };
+}
+
 function computeRaceMechanicsFeatureMap(
     horse: FrontendHorse,
     courseContext: FrontendModel["courseContext"],
@@ -570,6 +715,7 @@ export function encodeRoom(room: FrontendRoom, model: FrontendModel): { features
             const row: number[] = [];
             const gateNumber = horse.frame_order + 1;
             const mechanics = computeRaceMechanicsFeatureMap(horse, model.courseContext);
+            const surrogateContext = computeSurrogateContextFeatureMap(horse, model, mechanics);
             model.schema.numericFields.forEach((field) => {
                 row.push(numericHorseField(horse, field));
             });
@@ -689,6 +835,10 @@ export function encodeRoom(room: FrontendRoom, model: FrontendModel): { features
                 }
                 if (featureName.startsWith("mech_")) {
                     row.push(mechanics[featureName] ?? 0);
+                    return;
+                }
+                if (featureName.startsWith("surrogate_")) {
+                    row.push(surrogateContext[featureName] ?? 0);
                     return;
                 }
                 row.push(0);

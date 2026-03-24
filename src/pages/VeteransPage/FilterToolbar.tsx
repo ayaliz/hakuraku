@@ -32,9 +32,10 @@ const FilterToolbar: React.FC<FilterToolbarProps> = ({
                 const isVisible = visibilityState[key];
                 
                 return (
-                    <span key={key} style={{ position: 'relative', display: 'inline-block', marginRight: '1rem' }}>
+                    <span key={key} className="vet-filter-button-wrap">
                         <Button
                             onClick={() => onToggle(isVisible ? null : key)}
+                            className="vet-filter-button"
                             style={{ backgroundColor: conf.color, borderColor: conf.color }}
                         >
                             {conf.label}

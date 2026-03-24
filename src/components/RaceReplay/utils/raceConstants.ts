@@ -27,6 +27,8 @@ export const PACE_UP_MULTIPLIER = 1.04;
 export const OVERTAKE_MULTIPLIER = 1.05;
 export const PACE_DOWN_MULTIPLIER = 0.915;
 export const RUSHED_TYPE2_MULTIPLIER = 1.04; // Applied multiplicatively alongside other mode multipliers
+export const PACEMAKER_PACE_UP_LENIENCY = 2.0; // Allow a little slack when Pace Up is judged against the designated pacemaker
+export const POSITION_KEEP_BAND_RENDER_OFFSET = 2.65; // Visual right-shift so displayed PK bands better match observed replay spacing
 
 // Skill timing
 export const SKILL_TIME_SCALE = 10000;     // Converts game base time to race-proportional duration: (baseTime / SKILL_TIME_SCALE) * (distance / 1000)

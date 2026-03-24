@@ -76,6 +76,14 @@ function drawOverlayBox(ctx: CanvasRenderingContext2D, x: number, y: number, tex
     ctx.fillText(text, x + SPEED_BOX_WIDTH / 2, y + SPEED_BOX_HEIGHT / 2);
 }
 
+function isHeuristicLabel(name: string): boolean {
+    return name === "Pace Up"
+        || name === "Pace Down"
+        || name === "Speed Up"
+        || name === "Overtake"
+        || name === "Downhill Mode";
+}
+
 interface CanvasOverlayParams {
     frames: any[];
     displayNames: Record<number, string>;
@@ -461,7 +469,7 @@ export function useCanvasOverlay(
             }
         }
 
-        if (p.toggles.skills) {
+        if (p.toggles.skills || p.toggles.heuristics) {
           for (const targetVis of [1, 0] as const) {
             Object.entries(p.displayNames).forEach(([iStr, name]) => {
                 const vis = (p.characterVisibility?.[name] ?? 0) as 0 | 1 | 2;
@@ -480,41 +488,46 @@ export function useCanvasOverlay(
                 const labels: { text: string; bg: string }[] = [];
 
                 const mode = hf.temptationMode ?? 0;
-                if (mode) {
+                if (p.toggles.skills && mode) {
                     labels.push({ text: TEMPTATION_TEXT[mode] ?? "Rushed", bg: bgColor });
                 }
 
-                (p.skillActivations?.[idx] ?? [])
-                    .filter(s => {
-                        const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.param?.[2]);
-                        return time >= s.time && time < s.time + dur && !EXCLUDE_SKILL_RE.test(s.name);
-                    })
-                    .sort((a, b) => a.time - b.time || a.name.localeCompare(b.name))
-                    .forEach(s => {
-                        const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.param?.[2]);
-                        const remaining = Math.max(0, s.time + dur - time);
-                        const label = p.toggles.skillDuration ? `${s.name} ${remaining.toFixed(1)}s` : s.name;
-                        labels.push({ text: label, bg: bgColor });
-                    });
+                if (p.toggles.skills) {
+                    (p.skillActivations?.[idx] ?? [])
+                        .filter(s => {
+                            const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.param?.[2]);
+                            return time >= s.time && time < s.time + dur && !EXCLUDE_SKILL_RE.test(s.name);
+                        })
+                        .sort((a, b) => a.time - b.time || a.name.localeCompare(b.name))
+                        .forEach(s => {
+                            const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.param?.[2]);
+                            const remaining = Math.max(0, s.time + dur - time);
+                            const label = p.toggles.skillDuration ? `${s.name} ${remaining.toFixed(1)}s` : s.name;
+                            labels.push({ text: label, bg: bgColor });
+                        });
 
-                Object.values(p.skillActivations ?? {}).flat()
-                    .filter(s => {
-                        const targetMask = s.param?.[4] ?? 0;
-                        if ((targetMask & (1 << idx)) === 0) return false;
-                        if ((p.skillActivations?.[idx] ?? []).some((self: any) => self === s)) return false;
-                        if (getActiveSpeedDebuff(s.param[1]) <= 0 && !hasSkillEffect(s.param[1], 9)) return false;
-                        const dur = getSkillDurationSecs(s.param[1], p.goalInX);
-                        return time >= s.time && time < s.time + dur && !EXCLUDE_SKILL_RE.test(s.name);
-                    })
-                    .forEach(s => {
-                        const dur = getSkillDurationSecs(s.param[1], p.goalInX);
-                        const remaining = Math.max(0, s.time + dur - time);
-                        const label = p.toggles.skillDuration ? `↓ ${s.name} ${remaining.toFixed(1)}s` : `↓ ${s.name}`;
-                        labels.push({ text: label, bg: "#ffcccb" });
-                    });
+                    Object.values(p.skillActivations ?? {}).flat()
+                        .filter(s => {
+                            const targetMask = s.param?.[4] ?? 0;
+                            if ((targetMask & (1 << idx)) === 0) return false;
+                            if ((p.skillActivations?.[idx] ?? []).some((self: any) => self === s)) return false;
+                            if (getActiveSpeedDebuff(s.param[1]) <= 0 && !hasSkillEffect(s.param[1], 9)) return false;
+                            const dur = getSkillDurationSecs(s.param[1], p.goalInX);
+                            return time >= s.time && time < s.time + dur && !EXCLUDE_SKILL_RE.test(s.name);
+                        })
+                        .forEach(s => {
+                            const dur = getSkillDurationSecs(s.param[1], p.goalInX);
+                            const remaining = Math.max(0, s.time + dur - time);
+                            const label = p.toggles.skillDuration ? `? ${s.name} ${remaining.toFixed(1)}s` : `? ${s.name}`;
+                            labels.push({ text: label, bg: "#ffcccb" });
+                        });
+                }
 
                 (p.combinedOtherEvents[idx] ?? [])
-                    .filter(e => time >= e.time && time < e.time + e.duration)
+                    .filter(e => {
+                        if (time < e.time || time >= e.time + e.duration) return false;
+                        return p.toggles.skills || (p.toggles.heuristics && isHeuristicLabel(e.name));
+                    })
                     .sort((a, b) => a.time - b.time || a.name.localeCompare(b.name))
                     .forEach(e => {
                         labels.push({ text: e.name, bg: bgColor });

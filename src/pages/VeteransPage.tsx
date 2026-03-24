@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import './VeteransPage/VeteransPage.css';
+import "./VeteransPage/VeteransPage.css";
 import { Alert, Button, Container, Form, InputGroup } from "react-bootstrap";
 import { Veteran, BaseFilter, BluesFilter, AptitudeFilter, UniquesFilter, RacesFilter, SkillsFilter } from "./VeteransPage/types";
 import { SelectorType } from "./VeteransPage/InlineFilterSelector";
@@ -17,11 +17,11 @@ import { applyFiltersAndSort, getAvailableStats } from "./VeteransPage/VeteransL
 import { getKvKeyFromUrl, buildShareBody, uploadVeteransToWorker, fetchVeteransFromWorker, fetchLoanedChara } from "./VeteransPage/UrlSharing";
 
 const FILTER_CONFIG = {
-    blues: { categoryId: 1, stateKey: 'bluesFilters' as const, label: 'Blues', color: 'rgb(55, 183, 244)', selectorType: 'blues' as SelectorType },
-    aptitude: { categoryId: 2, stateKey: 'aptitudeFilters' as const, label: 'Aptitude', color: 'rgb(255, 118, 178)', selectorType: 'aptitude' as SelectorType },
-    uniques: { categoryId: 3, stateKey: 'uniquesFilters' as const, label: 'Uniques', color: 'rgb(120, 208, 96)', selectorType: 'uniques' as SelectorType },
-    races: { categoryId: 4, stateKey: 'racesFilters' as const, label: 'Races/Scenarios', color: 'rgb(200, 162, 200)', selectorType: 'races' as SelectorType },
-    skills: { categoryId: 5, stateKey: 'skillsFilters' as const, label: 'Skills', color: 'rgb(211, 84, 0)', selectorType: 'skills' as SelectorType }
+    blues: { categoryId: 1, stateKey: "bluesFilters" as const, label: "Blues", color: "rgb(55, 183, 244)", selectorType: "blues" as SelectorType },
+    aptitude: { categoryId: 2, stateKey: "aptitudeFilters" as const, label: "Aptitude", color: "rgb(255, 118, 178)", selectorType: "aptitude" as SelectorType },
+    uniques: { categoryId: 3, stateKey: "uniquesFilters" as const, label: "Uniques", color: "rgb(120, 208, 96)", selectorType: "uniques" as SelectorType },
+    races: { categoryId: 4, stateKey: "racesFilters" as const, label: "Races/Scenarios", color: "rgb(200, 162, 200)", selectorType: "races" as SelectorType },
+    skills: { categoryId: 5, stateKey: "skillsFilters" as const, label: "Skills", color: "rgb(211, 84, 0)", selectorType: "skills" as SelectorType },
 };
 
 export default function VeteransPage() {
@@ -29,11 +29,10 @@ export default function VeteransPage() {
     const vetListRef = useRef<HTMLDivElement>(null);
 
     const [veterans, setVeterans] = useState<Veteran[]>([]);
-    const [error, setError] = useState('');
-    const [successMessage, setSuccessMessage] = useState('');
+    const [error, setError] = useState("");
+    const [successMessage, setSuccessMessage] = useState("");
     const [sharing, setSharing] = useState(false);
     const [shareCache, setShareCache] = useState<Record<string, string>>({});
-
 
     const [affinityParent1, setAffinityParent1] = useState<Veteran | null>(null);
     const [affinityParent2, setAffinityParent2] = useState<Veteran | null>(null);
@@ -41,24 +40,28 @@ export default function VeteransPage() {
     const [borrowLoading, setBorrowLoading] = useState(false);
     const [showPlanner, setShowPlanner] = useState(false);
     const [showSparkProc, setShowSparkProc] = useState(false);
-    const [activeAffinitySlot, setActiveAffinitySlot] = useState<'p1' | 'p2' | null>(null);
+    const [activeAffinitySlot, setActiveAffinitySlot] = useState<"p1" | "p2" | null>(null);
 
     useEffect(() => {
         if (activeAffinitySlot && vetListRef.current) {
             const y = vetListRef.current.getBoundingClientRect().top + window.scrollY - 16;
-            window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+            window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
         }
     }, [activeAffinitySlot]);
 
-    const handleLegacySlotClick = (slot: 'p1' | 'p2') => {
-        setActiveAffinitySlot(prev => prev === slot ? null : slot);
+    const handleLegacySlotClick = (slot: "p1" | "p2") => {
+        setActiveAffinitySlot(prev => (prev === slot ? null : slot));
     };
 
-    const handleSelectForSlot = (veteran: Veteran, slot: 'p1' | 'p2') => {
-        if (slot === 'p1') setAffinityParent1(veteran);
-        else { setAffinityParent2(veteran); setParent2IsBorrowed(false); }
+    const handleSelectForSlot = (veteran: Veteran, slot: "p1" | "p2") => {
+        if (slot === "p1") {
+            setAffinityParent1(veteran);
+        } else {
+            setAffinityParent2(veteran);
+            setParent2IsBorrowed(false);
+        }
         setActiveAffinitySlot(null);
-        setActiveSort('affinity');
+        setActiveSort("affinity");
     };
 
     const handleAffinityReset = () => {
@@ -75,12 +78,11 @@ export default function VeteransPage() {
             const vet = await fetchLoanedChara(viewerId);
             setAffinityParent2(vet);
             setParent2IsBorrowed(true);
-            setActiveSort('affinity');
+            setActiveSort("affinity");
         } finally {
             setBorrowLoading(false);
         }
     };
-
 
     const [bluesFilters, setBluesFilters] = useState<BluesFilter[]>([]);
     const [aptitudeFilters, setAptitudeFilters] = useState<AptitudeFilter[]>([]);
@@ -94,9 +96,9 @@ export default function VeteransPage() {
     const [showRacesSelector, setShowRacesSelector] = useState(false);
     const [showSkillsSelector, setShowSkillsSelector] = useState(false);
 
-    const [activeSort, setActiveSort] = useState<SortOption>('none');
-    const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-    const [nameSearch, setNameSearch] = useState('');
+    const [activeSort, setActiveSort] = useState<SortOption>("none");
+    const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+    const [nameSearch, setNameSearch] = useState("");
     const [affinityCharaId, setAffinityCharaId] = useState<number | null>(null);
 
     useEffect(() => {
@@ -108,35 +110,38 @@ export default function VeteransPage() {
         }
     }, []);
 
-    const handleFileChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const handleFileChange: React.ChangeEventHandler<HTMLInputElement> = e => {
         const file = e.target.files?.[0];
         if (!file) return;
-        if (!/\.json$/i.test(file.name)) { setError('Please choose a .json file.'); return; }
+        if (!/\.json$/i.test(file.name)) {
+            setError("Please choose a .json file.");
+            return;
+        }
 
         const reader = new FileReader();
         reader.onload = () => {
             try {
-                const parsed = JSON.parse(String(reader.result ?? ''));
+                const parsed = JSON.parse(String(reader.result ?? ""));
                 if (!Array.isArray(parsed)) throw new Error("Not an array");
                 setVeterans(parsed);
-                setError('');
+                setError("");
             } catch (err) {
                 setError(`Failed to parse JSON: ${err}`);
             }
         };
         reader.readAsText(file);
-        e.target.value = '';
+        e.target.value = "";
     };
 
     const handleExportUrl = async () => {
         if (!veterans.length) return;
         const body = buildShareBody(veterans);
-        const hash = body.length + ':' + [...body].reduce((h, c) => (Math.imul(31, h) + c.charCodeAt(0)) | 0, 0).toString(36);
+        const hash = body.length + ":" + [...body].reduce((h, c) => (Math.imul(31, h) + c.charCodeAt(0)) | 0, 0).toString(36);
         const cachedUrl = shareCache[hash];
         if (cachedUrl) {
             await navigator.clipboard.writeText(cachedUrl);
-            setSuccessMessage('Share link copied to clipboard!');
-            setTimeout(() => setSuccessMessage(''), 3000);
+            setSuccessMessage("Share link copied to clipboard!");
+            setTimeout(() => setSuccessMessage(""), 3000);
             return;
         }
         setSharing(true);
@@ -144,9 +149,9 @@ export default function VeteransPage() {
             const url = await uploadVeteransToWorker(body);
             await navigator.clipboard.writeText(url);
             setSharing(false);
-            setSuccessMessage('Share link copied to clipboard!');
+            setSuccessMessage("Share link copied to clipboard!");
             setShareCache(prev => ({ ...prev, [hash]: url }));
-            setTimeout(() => setSuccessMessage(''), 3000);
+            setTimeout(() => setSuccessMessage(""), 3000);
         } catch (err: any) {
             setSharing(false);
             setError(`Export failed: ${err.message}`);
@@ -162,7 +167,9 @@ export default function VeteransPage() {
             skillsFilters: setSkillsFilters as React.Dispatch<React.SetStateAction<BaseFilter[]>>,
         };
         setters[stateKey]?.(prev => {
-            if (prev.some(f => f.stat === filter.stat && f.type === filter.type && f.stars === filter.stars)) return prev;
+            if (prev.some(f => f.stat === filter.stat && f.type === filter.type && f.stars === filter.stars)) {
+                return prev;
+            }
             return [...prev, filter];
         });
     };
@@ -184,16 +191,16 @@ export default function VeteransPage() {
         setUniquesFilters([]);
         setRacesFilters([]);
         setSkillsFilters([]);
-        setActiveSort('none');
-        setSortDirection('desc');
+        setActiveSort("none");
+        setSortDirection("desc");
     };
 
     const toggleSelector = (key: string | null) => {
-        setShowBluesSelector(key === 'blues');
-        setShowAptitudeSelector(key === 'aptitude');
-        setShowUniquesSelector(key === 'uniques');
-        setShowRacesSelector(key === 'races');
-        setShowSkillsSelector(key === 'skills');
+        setShowBluesSelector(key === "blues");
+        setShowAptitudeSelector(key === "aptitude");
+        setShowUniquesSelector(key === "uniques");
+        setShowRacesSelector(key === "races");
+        setShowSkillsSelector(key === "skills");
     };
 
     let displayVeterans: Veteran[] = [];
@@ -206,10 +213,16 @@ export default function VeteransPage() {
                 aptitude: aptitudeFilters,
                 uniques: uniquesFilters,
                 races: racesFilters,
-                skills: skillsFilters
+                skills: skillsFilters,
             };
             displayVeterans = applyFiltersAndSort(
-                veterans, filters, FILTER_CONFIG, activeSort, sortDirection, nameSearch, affinityCharaId
+                veterans,
+                filters,
+                FILTER_CONFIG,
+                activeSort,
+                sortDirection,
+                nameSearch,
+                affinityCharaId,
             );
 
             const excludedCharaIds = new Set<number>();
@@ -218,7 +231,6 @@ export default function VeteransPage() {
             if (excludedCharaIds.size > 0) {
                 displayVeterans = displayVeterans.filter(v => !excludedCharaIds.has(Math.floor(v.card_id / 100)));
             }
-
         } catch (e: any) {
             console.error("Filter/Sort Logic Crashed", e);
             renderError = "Error processing veteran data. Please clear filters or reload.";
@@ -230,22 +242,21 @@ export default function VeteransPage() {
         aptitude: showAptitudeSelector,
         uniques: showUniquesSelector,
         races: showRacesSelector,
-        skills: showSkillsSelector
+        skills: showSkillsSelector,
     };
 
     return (
         <Container className="vet-page-container">
-
-            <input ref={fileInputRef} type="file" accept=".json" onChange={handleFileChange} style={{ display: 'none' }} />
+            <input ref={fileInputRef} type="file" accept=".json" onChange={handleFileChange} style={{ display: "none" }} />
 
             {successMessage && (
-                <Alert variant="success" dismissible onClose={() => setSuccessMessage('')}>
+                <Alert variant="success" dismissible onClose={() => setSuccessMessage("")}>
                     {successMessage}
                 </Alert>
             )}
 
             {(error || renderError) && (
-                <Alert variant="danger" dismissible onClose={() => setError('')}>
+                <Alert variant="danger" dismissible onClose={() => setError("")}>
                     {error || renderError}
                 </Alert>
             )}
@@ -253,11 +264,11 @@ export default function VeteransPage() {
             {!veterans.length && !error && !renderError && (
                 <>
                     <div className="upload-zone" onClick={() => fileInputRef.current?.click()}>
-                        <div className="upload-icon">📂</div>
+                        <div className="upload-icon">Upload</div>
                         <div className="upload-label">No veterans loaded</div>
                         <div className="upload-sublabel">Upload a JSON file or share link to get started</div>
                     </div>
-                    <Alert variant="info" style={{ marginTop: '20px' }}>
+                    <Alert variant="info" style={{ marginTop: "20px" }}>
                         This page supports both veteran data extracted via the hachimi plugin on the <Link to="/setup">setup page</Link>, as well as the standalone umaextractor on <a href="https://github.com/xancia/UmaExtractor/releases/latest" target="_blank" rel="noreferrer">https://github.com/xancia/UmaExtractor/releases/latest</a>.
                     </Alert>
                 </>
@@ -267,49 +278,71 @@ export default function VeteransPage() {
                 <>
                     <div className="vet-top-layout">
                         <div className="vet-top-left">
-                            <div className="vet-filter-buttons">
-                                <FilterToolbar
+                            <section className="vet-panel-card vet-panel-card--filters">
+                                <div className="vet-panel-header">
+                                    <div>
+                                        <h2 className="vet-panel-title">Filters</h2>
+                                    </div>
+                                </div>
+                                <div className="vet-filter-buttons">
+                                    <FilterToolbar
+                                        config={FILTER_CONFIG}
+                                        visibilityState={visibilityState}
+                                        onToggle={toggleSelector}
+                                        onAddFilter={handleAddFilter}
+                                        getAvailableStats={(catId) => getAvailableStats(veterans, catId)}
+                                    />
+                                </div>
+                                <ActiveFiltersList
+                                    filters={{ bluesFilters, aptitudeFilters, uniquesFilters, racesFilters, skillsFilters }}
                                     config={FILTER_CONFIG}
-                                    visibilityState={visibilityState}
-                                    onToggle={toggleSelector}
-                                    onAddFilter={handleAddFilter}
-                                    getAvailableStats={(catId) => getAvailableStats(veterans, catId)}
+                                    onRemove={handleRemoveFilter}
+                                    onClearAll={handleClearAllFilters}
                                 />
-                            </div>
-                            <InputGroup className="vet-search-input">
-                                <Form.Control
-                                    placeholder="Search by name..."
-                                    value={nameSearch}
-                                    onChange={e => setNameSearch(e.target.value)}
-                                />
-                                {nameSearch && (
-                                    <Button variant="outline-secondary" onClick={() => setNameSearch('')}>✕</Button>
-                                )}
-                            </InputGroup>
-                            <ActiveFiltersList
-                                filters={{ bluesFilters, aptitudeFilters, uniquesFilters, racesFilters, skillsFilters }}
-                                config={FILTER_CONFIG}
-                                onRemove={handleRemoveFilter}
-                                onClearAll={handleClearAllFilters}
-                            />
-                            <div className="vet-sort-share-group">
-                                <Button variant="secondary" size="sm" onClick={handleExportUrl} disabled={sharing}>
-                                    {sharing ? 'Sharing...' : 'Share'}
-                                </Button>
-                                <VeteransSorter
-                                    activeSort={activeSort} sortDirection={sortDirection}
-                                    onSortChange={setActiveSort}
-                                    onDirectionToggle={() => setSortDirection(prev => prev === 'desc' ? 'asc' : 'desc')}
-                                    affinityCharaId={affinityCharaId}
-                                />
-                                <OptimizerPanel veterans={veterans} />
-                            </div>
+                            </section>
+
+                            <section className="vet-panel-card vet-panel-card--results" ref={vetListRef}>
+                                <div className="vet-panel-header vet-panel-header--results">
+                                    <div>
+                                        <h2 className="vet-panel-title">Results</h2>
+                                    </div>
+                                    <span className="vet-results-count">
+                                        Showing {displayVeterans.length} of {veterans.length} veterans
+                                    </span>
+                                </div>
+                                <InputGroup className="vet-search-input">
+                                    <Form.Control
+                                        placeholder="Search by name..."
+                                        value={nameSearch}
+                                        onChange={e => setNameSearch(e.target.value)}
+                                    />
+                                    {nameSearch && (
+                                        <Button variant="outline-secondary" onClick={() => setNameSearch("")}>{"\u00D7"}</Button>
+                                    )}
+                                </InputGroup>
+                                <div className="vet-sort-share-group">
+                                    <Button variant="secondary" size="sm" onClick={handleExportUrl} disabled={sharing}>
+                                        {sharing ? "Sharing..." : "Share"}
+                                    </Button>
+                                    <VeteransSorter
+                                        activeSort={activeSort}
+                                        sortDirection={sortDirection}
+                                        onSortChange={setActiveSort}
+                                        onDirectionToggle={() => setSortDirection(prev => (prev === "desc" ? "asc" : "desc"))}
+                                        affinityCharaId={affinityCharaId}
+                                    />
+                                    <OptimizerPanel veterans={veterans} />
+                                </div>
+                            </section>
                         </div>
 
                         <div className="vet-top-right">
                             <AffinityCalculatorPanel
                                 mainCharId={affinityCharaId}
-                                onMainCharChange={id => { setAffinityCharaId(id); if (id && activeSort === 'none') setActiveSort('affinity'); }}
+                                onMainCharChange={id => {
+                                    setAffinityCharaId(id);
+                                    if (id && activeSort === "none") setActiveSort("affinity");
+                                }}
                                 parent1={affinityParent1}
                                 parent2={affinityParent2}
                                 parent2IsBorrowed={parent2IsBorrowed}
@@ -339,12 +372,6 @@ export default function VeteransPage() {
                         </div>
                     </div>
 
-                    <div className="vet-count-row" ref={vetListRef}>
-                        <span className="vet-count-label">
-                            Showing {displayVeterans.length} of {veterans.length} veterans
-                        </span>
-                    </div>
-
                     <div className="vet-grid">
                         {displayVeterans.map((veteran, index) => (
                             <VeteranCard
@@ -360,7 +387,6 @@ export default function VeteransPage() {
                     </div>
                 </>
             )}
-
         </Container>
     );
 }

@@ -1,18 +1,18 @@
-import React from 'react';
-import { Form, Button } from 'react-bootstrap';
-import UMDatabaseWrapper from '../../data/UMDatabaseWrapper';
+import React from "react";
+import { Form, Button } from "react-bootstrap";
+import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 
 export type SortOption =
-    | 'none'
-    | 'blues'
-    | 'total_common'
-    | 'total_skills'
-    | 'legacy_common'
-    | 'legacy_skills'
-    | 'score'
-    | 'affinity';
+    | "none"
+    | "blues"
+    | "total_common"
+    | "total_skills"
+    | "legacy_common"
+    | "legacy_skills"
+    | "score"
+    | "affinity";
 
-export type SortDirection = 'asc' | 'desc';
+export type SortDirection = "asc" | "desc";
 
 interface VeteransSorterProps {
     activeSort: SortOption;
@@ -34,15 +34,13 @@ const VeteransSorter: React.FC<VeteransSorterProps> = ({
     };
 
     return (
-        <div className="d-flex align-items-center">
-            <Form.Label className="me-2 mb-0" style={{ whiteSpace: 'nowrap', marginRight: '10px', fontWeight: 'bold' }}>
-                Sort By:
-            </Form.Label>
+        <div className="vet-sorter">
+            <Form.Label className="vet-sorter-label">Sort By:</Form.Label>
             <Form.Control
                 as="select"
                 value={activeSort}
                 onChange={handleChange}
-                style={{ width: 'auto', minWidth: '200px', display: 'inline-block' }}
+                className="vet-sorter-select"
             >
                 <option value="none">None</option>
                 <option value="blues">Blue Count</option>
@@ -54,16 +52,16 @@ const VeteransSorter: React.FC<VeteransSorterProps> = ({
                 <option value="affinity" disabled={!affinityCharaId}>
                     {affinityCharaId
                         ? `Affinity: ${UMDatabaseWrapper.charas[affinityCharaId]?.name ?? affinityCharaId}`
-                        : 'Affinity (select a character first)'}
+                        : "Affinity (select a character first)"}
                 </option>
             </Form.Control>
             <Button
                 variant="outline-secondary"
                 onClick={onDirectionToggle}
-                disabled={activeSort === 'none'}
-                style={{ marginLeft: '10px', whiteSpace: 'nowrap' }}
+                disabled={activeSort === "none"}
+                className="vet-sorter-direction"
             >
-                {sortDirection === 'desc' ? '↓ Desc' : '↑ Asc'}
+                {sortDirection === "desc" ? "↓ Desc" : "↑ Asc"}
             </Button>
         </div>
     );

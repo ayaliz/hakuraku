@@ -49,3 +49,17 @@ export const BAYES_TEAM = {
 // e.g. 0.003 @ 13600 rooms → floor of ~41 races.
 export const SAT_MIN_RACE_FRACTION = 0.01;
 
+export const POP_FILTER_OPTIONS = [
+    { value: 0.5, label: "\u22650.5% pop" },
+    { value: 1, label: "\u22651% pop" },
+    { value: 2, label: "\u22652% pop" },
+    { value: 0, label: "No minimum pop" },
+] as const;
+
+export const STYLE_POP_FILTER_OPTIONS = [
+    { value: 1, label: "\u22651%" },
+    { value: 3, label: "\u22653%" },
+    { value: 5, label: "\u22655%" },
+    { value: 0, label: "All" },
+] as const;
+

@@ -99,11 +99,17 @@ export type SkillActivationPoint = {
     activationChance: number; // The horse's skill activation chance at time of proc
 };
 
+export type SkillDoubleProcStats = {
+    estimatedDoubleOpportunityRate: number; // estimated P(two valid proc windows were present | learned)
+};
+
 // Precomputed activation histogram for a single skill (used by UmaLogs, avoids storing raw points)
 export type SkillActivationBuckets = {
     all: number[];                     // counts per distance bucket, all activations
     win: number[];                     // counts per distance bucket, winning horses only
     byStrategy: Record<string, number[]>; // counts per distance bucket, keyed by strategy ID
+    doubleProc?: SkillDoubleProcStats;
+    doubleProcByStrategy?: Record<string, SkillDoubleProcStats>;
 };
 
 export type PairSynergyStats = {

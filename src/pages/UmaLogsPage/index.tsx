@@ -20,7 +20,7 @@ import type {
     TrueSkillTeamEntry,
 } from "../MultiRacePage/types";
 import StrategyAnalysis, { type StyleRepEntry } from "../MultiRacePage/components/WinDistributionCharts/StrategyAnalysis";
-import { BAYES_UMA, COLORBLIND_STRATEGY_COLORS, STRATEGY_COLORS, STRATEGY_NAMES, STRATEGY_DISPLAY_ORDER } from "../MultiRacePage/components/WinDistributionCharts/constants";
+import { BAYES_UMA, COLORBLIND_STRATEGY_COLORS, POP_FILTER_OPTIONS, STRATEGY_COLORS, STRATEGY_NAMES, STRATEGY_DISPLAY_ORDER } from "../MultiRacePage/components/WinDistributionCharts/constants";
 import CharacterAnalysis from "../MultiRacePage/components/WinDistributionCharts/CharacterAnalysis";
 import { useWinDistributionData } from "../MultiRacePage/components/WinDistributionCharts/useWinDistributionData";
 import SkillAnalysis from "../MultiRacePage/components/SkillAnalysis";
@@ -32,6 +32,7 @@ import AssetLoader from "../../data/AssetLoader";
 import TrueSkillTeamPanel from "./TrueSkillTeamPanel";
 import SupportCardPanel from "../MultiRacePage/components/WinDistributionCharts/SupportCardPanel";
 import ExplorerTab from "./ExplorerTab";
+import InfoTooltip from "../MultiRacePage/components/WinDistributionCharts/InfoTooltip";
 import { getHorseDeckRaceBonus } from "./deckUtils";
 import "../MultiRacePage/MultiRacePage.css";
 import "./UmaLogsPage.css";
@@ -228,16 +229,86 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmLabel, s
     const styleReps = useMemo<Record<number, StyleRepEntry[]>>(() => {
         const BAYES_PRIOR = BAYES_UMA.PRIOR;
         const BAYES_K = BAYES_UMA.K;
-        type Tally = { cardId: number; charaId: number; charaName: string; wins: number; appearances: number };
+        const DISTANCE_PRIOR_K = 72;
+        const SCORE_BUCKET_K = 24;
+        const SCORE_BUCKET_SIZE = 500;
+        type Tally = {
+            cardId: number;
+            charaId: number;
+            charaName: string;
+            wins: number;
+            appearances: number;
+            expectedWins: number;
+        };
+        type CountStat = { wins: number; appearances: number };
         const map = new Map<string, Tally>();
         const totalsByStrategy = new Map<number, number>();
+        const strategyStrength = new Map<number, CountStat>();
+        const distanceStrength = new Map<string, CountStat>();
+        const scoreBucketStrength = new Map<string, CountStat>();
+
+        const recordCount = (statsMap: Map<string | number, CountStat>, key: string | number, win: boolean) => {
+            if (!statsMap.has(key)) {
+                statsMap.set(key, { wins: 0, appearances: 0 });
+            }
+            const entry = statsMap.get(key)!;
+            entry.appearances += 1;
+            if (win) entry.wins += 1;
+        };
+
+        const getExpectedWinRate = (horse: HorseEntry): number => {
+            const strategyStats = strategyStrength.get(horse.strategy);
+            const strategyPrior = strategyStats && strategyStats.appearances > 0
+                ? strategyStats.wins / strategyStats.appearances
+                : BAYES_PRIOR;
+            if (horse.rankScore <= 0) {
+                return strategyPrior;
+            }
+
+            const aptDistance = Number(horse.aptDistance ?? 0);
+            const distanceKey = `${horse.strategy}_${aptDistance}`;
+            const scoreBucket = Math.floor(horse.rankScore / SCORE_BUCKET_SIZE) * SCORE_BUCKET_SIZE;
+            const scoreBucketKey = `${distanceKey}_${scoreBucket}`;
+            const distanceStats = distanceStrength.get(distanceKey);
+            const distancePrior = distanceStats && distanceStats.appearances > 0
+                ? (distanceStats.wins + DISTANCE_PRIOR_K * strategyPrior) / (distanceStats.appearances + DISTANCE_PRIOR_K)
+                : strategyPrior;
+            const bucketStats = scoreBucketStrength.get(scoreBucketKey);
+            return bucketStats && bucketStats.appearances > 0
+                ? (bucketStats.wins + SCORE_BUCKET_K * distancePrior) / (bucketStats.appearances + SCORE_BUCKET_K)
+                : distancePrior;
+        };
+
+        for (const h of allHorses) {
+            const win = h.finishOrder === 1;
+            totalsByStrategy.set(h.strategy, (totalsByStrategy.get(h.strategy) ?? 0) + 1);
+            recordCount(strategyStrength, h.strategy, win);
+            if (h.rankScore > 0) {
+                const aptDistance = Number(h.aptDistance ?? 0);
+                const distanceKey = `${h.strategy}_${aptDistance}`;
+                const scoreBucket = Math.floor(h.rankScore / SCORE_BUCKET_SIZE) * SCORE_BUCKET_SIZE;
+                const scoreBucketKey = `${distanceKey}_${scoreBucket}`;
+                recordCount(distanceStrength, distanceKey, win);
+                recordCount(scoreBucketStrength, scoreBucketKey, win);
+            }
+        }
+
         for (const h of allHorses) {
             const key = `${h.strategy}_${h.cardId}`;
-            if (!map.has(key)) map.set(key, { cardId: h.cardId, charaId: h.charaId, charaName: h.charaName, wins: 0, appearances: 0 });
+            if (!map.has(key)) {
+                map.set(key, {
+                    cardId: h.cardId,
+                    charaId: h.charaId,
+                    charaName: h.charaName,
+                    wins: 0,
+                    appearances: 0,
+                    expectedWins: 0,
+                });
+            }
             const t = map.get(key)!;
             t.appearances++;
             if (h.finishOrder === 1) t.wins++;
-            totalsByStrategy.set(h.strategy, (totalsByStrategy.get(h.strategy) ?? 0) + 1);
+            t.expectedWins += getExpectedWinRate(h);
         }
         const result: Record<number, StyleRepEntry[]> = {};
         for (const [key, t] of map.entries()) {
@@ -247,8 +318,19 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmLabel, s
             const totalAppearances = totalsByStrategy.get(strategy) ?? 0;
             const winRate = t.wins / t.appearances;
             const bayesianWinRate = (t.wins + BAYES_K * BAYES_PRIOR) / (t.appearances + BAYES_K);
+            const expectedWinRate = t.expectedWins / Math.max(t.appearances, 1);
+            const scoreAdjustedWinRate = (t.wins + BAYES_K * expectedWinRate) / (t.appearances + BAYES_K);
+            const scoreAdjustedLift = scoreAdjustedWinRate - expectedWinRate;
             const popPct = totalAppearances > 0 ? (t.appearances / totalAppearances) * 100 : 0;
-            result[strategy].push({ ...t, popPct, winRate, bayesianWinRate });
+            result[strategy].push({
+                ...t,
+                popPct,
+                winRate,
+                bayesianWinRate,
+                expectedWinRate,
+                scoreAdjustedWinRate,
+                scoreAdjustedLift,
+            });
         }
         for (const sId of [1, 2, 3, 4]) {
             if (result[sId]) {
@@ -633,15 +715,13 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmLabel, s
                             )}
                             {hasGateStats && (
                                 <div className="uma-gate-panel">
-                                    <div className="uma-gate-panel-title">
-                                        Gate Stats
-                                        <span
-                                            className="sa-info-icon"
-                                            title="Runaway is included in Front."
-                                        >
-                                            i
-                                        </span>
-                                    </div>
+                            <div className="uma-gate-panel-title">
+                                Gate Stats
+                                <InfoTooltip
+                                    id="gate-stats-info"
+                                    tip="Runaway is included in Front."
+                                />
+                            </div>
                                     <div className="histogram-toggle uma-gate-toggle">
                                         {(Object.keys(gateModeLabels) as GateStatsMode[]).map((mode) => (
                                             <button
@@ -819,7 +899,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmLabel, s
                                 <button className="cdt-close-btn" onClick={() => setSkillsOpen(false)}>&times;</button>
                             </div>
                             <div className="cdt-content">
-                                <div className="histogram-toggle uma-gate-toggle" style={{ marginBottom: "10px" }}>
+                                <div className="histogram-toggle uma-gate-toggle uma-toggle-row-spaced">
                                     {activeStrategies.map(sId => (
                                         <button
                                             key={sId}
@@ -831,17 +911,12 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmLabel, s
                                     ))}
                                 </div>
                                 {skillsSort === "winRate" && (
-                                    <div className="scp-pop-filter-toggle" style={{ marginBottom: "10px" }}>
-                                        {([
-                                            { value: 0.5 as const, label: "≥0.5% pop" },
-                                            { value: 1 as const, label: "≥1% pop" },
-                                            { value: 2 as const, label: "≥2% pop" },
-                                            { value: 0 as const, label: "No minimum pop" },
-                                        ]).map(opt => (
+                                    <div className="scp-pop-filter-toggle uma-toggle-row-spaced">
+                                        {POP_FILTER_OPTIONS.map(opt => (
                                             <button
                                                 key={opt.value}
                                                 className={`scp-pop-filter-btn${skillsMinPopPct === opt.value ? " active" : ""}`}
-                                                onClick={() => setSkillsMinPopPct(opt.value)}
+                                                onClick={() => setSkillsMinPopPct(opt.value as 0 | 0.5 | 1 | 2)}
                                             >
                                                 {opt.label}
                                             </button>
@@ -864,7 +939,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmLabel, s
                                             <div className="sa-sb-track sa-sb-track--pick">
                                                 <div className="sa-sb-bar-fill sa-sb-bar-fill--pick" style={{ width: `${(row.popPct / maxP) * 100}%` }} />
                                             </div>
-                                            <div className="sa-sb-value sa-sb-value--pick" style={{ width: "auto", minWidth: "72px" }}>
+                                            <div className="sa-sb-value sa-sb-value--pick uma-bar-value-wide">
                                                 {row.popPct.toFixed(1)}% <span className="ca-abs-count">({row.appearances})</span>
                                             </div>
                                         </div>
@@ -873,7 +948,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmLabel, s
                                             <div className="sa-sb-track sa-sb-track--win">
                                                 <div className="sa-sb-bar-fill" style={{ width: `${(row.adjWinRate * 100 / maxP) * 100}%`, background: "#68d391" }} />
                                             </div>
-                                            <div className="sa-sb-value sa-sb-value--win" style={{ width: "auto", minWidth: "72px" }}>
+                                            <div className="sa-sb-value sa-sb-value--win uma-bar-value-wide">
                                                 {(row.adjWinRate * 100).toFixed(1)}% <span className="ca-abs-count">({row.winAppearances})</span>
                                             </div>
                                         </div>
@@ -922,7 +997,17 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmLabel, s
                                                 <tbody>
                                                     {raceBonusRows.map(row => (
                                                     <tr key={row.isOther ? "other" : row.bucketStart} className="rb-row">
-                                                        <td className="rb-td rb-td--bonus">{row.isOther ? <span style={{ color: "#718096", fontWeight: "normal" }}>Other <span className="sa-info-icon" title={`Race bonus buckets with under ${RACE_BONUS_OTHER_MIN_POP_PCT}% population are grouped here.`}>i</span></span> : `${row.bucketStart}-${row.bucketEnd}%`}</td>
+                                                        <td className="rb-td rb-td--bonus">
+                                                            {row.isOther ? (
+                                                                <span className="uma-muted-inline">
+                                                                    Other{" "}
+                                                                    <InfoTooltip
+                                                                        id="race-bonus-other-info"
+                                                                        tip={`Race bonus buckets with under ${RACE_BONUS_OTHER_MIN_POP_PCT}% population are grouped here.`}
+                                                                    />
+                                                                </span>
+                                                            ) : `${row.bucketStart}-${row.bucketEnd}%`}
+                                                        </td>
                                                         <td className="rb-td rb-td--r">{row.appearances}</td>
                                                         <td className="rb-td rb-td--r">{row.wins}</td>
                                                         <td className="rb-td rb-td--bars">
@@ -951,7 +1036,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmLabel, s
                             })()}
                             {deckModalTab === "decks" && (
                                 <>
-                                    <div className="histogram-toggle uma-gate-toggle" style={{ marginBottom: "10px" }}>
+                                    <div className="histogram-toggle uma-gate-toggle uma-toggle-row-spaced">
                                         {availableDeckStyleIds.map((sid) => (
                                             <button
                                                 key={sid}
@@ -962,7 +1047,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmLabel, s
                                             </button>
                                         ))}
                                     </div>
-                                    <div className="ca-sort-toggle" style={{ marginBottom: "10px" }}>
+                                    <div className="ca-sort-toggle uma-toggle-row-spaced">
                                         <button
                                             className={`ca-sort-btn${styleDeckSort === "pop" ? " ca-sort-btn--active" : ""}`}
                                             onClick={() => setStyleDeckSort("pop")}>
@@ -975,17 +1060,12 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmLabel, s
                                         </button>
                                     </div>
                                     {styleDeckSort === "winRate" && (
-                                        <div className="histogram-toggle uma-gate-toggle" style={{ marginBottom: "10px" }}>
-                                            {([
-                                                { value: 0.5 as const, label: "≥0.5% pop" },
-                                                { value: 1 as const, label: "≥1% pop" },
-                                                { value: 2 as const, label: "≥2% pop" },
-                                                { value: 0 as const, label: "No minimum pop" },
-                                            ]).map((opt) => (
+                                        <div className="histogram-toggle uma-gate-toggle uma-toggle-row-spaced">
+                                            {POP_FILTER_OPTIONS.map((opt) => (
                                                 <button
                                                     key={opt.value}
                                                     className={`histogram-toggle-btn uma-gate-toggle-btn${styleDeckMinPopPct === opt.value ? " active" : ""}`}
-                                                    onClick={() => setStyleDeckMinPopPct(opt.value)}
+                                                    onClick={() => setStyleDeckMinPopPct(opt.value as 0 | 0.5 | 1 | 2)}
                                                 >
                                                     {opt.label}
                                                 </button>
@@ -1008,13 +1088,13 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmLabel, s
                                                 ))}
                                             </div>
                                             <div className="deck-bars">
-                                                <div style={{ fontSize: "11px", color: "#a0aec0", marginBottom: "4px" }}>Race bonus: <span style={{ color: "#fbbf24", fontWeight: "bold" }}>{row.raceBonus}%</span></div>
+                                                <div className="uma-race-bonus-line">Race bonus: <span className="uma-race-bonus-value">{row.raceBonus}%</span></div>
                                                 <div className="sa-sb-bar-row">
                                                     <div className="sa-sb-bar-label">Pop%</div>
                                                     <div className="sa-sb-track sa-sb-track--pick">
                                                         <div className="sa-sb-bar-fill sa-sb-bar-fill--pick" style={{ width: `${(row.popPct / selectedStyleDeckMaxPct) * 100}%` }} />
                                                     </div>
-                                                    <div className="sa-sb-value sa-sb-value--pick" style={{ width: "auto", minWidth: "72px" }}>
+                                                    <div className="sa-sb-value sa-sb-value--pick uma-bar-value-wide">
                                                         {row.popPct.toFixed(1)}% <span className="ca-abs-count">({row.appearances})</span>
                                                     </div>
                                                 </div>
@@ -1023,7 +1103,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmLabel, s
                                                     <div className="sa-sb-track sa-sb-track--win">
                                                         <div className="sa-sb-bar-fill" style={{ width: `${(row.adjWinRate * 100 / selectedStyleDeckMaxPct) * 100}%`, background: "#68d391" }} />
                                                     </div>
-                                                    <div className="sa-sb-value sa-sb-value--win" style={{ width: "auto", minWidth: "72px" }}>
+                                                    <div className="sa-sb-value sa-sb-value--win uma-bar-value-wide">
                                                         {(row.adjWinRate * 100).toFixed(1)}% <span className="ca-abs-count">({row.wins})</span>
                                                     </div>
                                                 </div>
@@ -1111,7 +1191,7 @@ const UmaLogsPage: React.FC = () => {
     useEffect(() => {
         fetch(import.meta.env.BASE_URL + 'data/umalogs-manifest.json')
             .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status} — manifest not found`);
+                if (!r.ok) throw new Error(`HTTP ${r.status} - manifest not found`);
                 return r.json() as Promise<Manifest>;
             })
             .then((m) => {
@@ -1131,7 +1211,7 @@ const UmaLogsPage: React.FC = () => {
         const url = import.meta.env.BASE_URL + `data/umalogs-${selectedCmId}-stats.json.gz`;
         fetch(url)
             .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status} — stats file not found`);
+                if (!r.ok) throw new Error(`HTTP ${r.status} - stats file not found`);
                 return r.arrayBuffer();
             })
             .then((buf) => {
@@ -1184,7 +1264,7 @@ const UmaLogsPage: React.FC = () => {
     if (loading) {
         return (
             <div className="p-4 text-center">
-                <Spinner animation="border" /> Loading statistics…
+                <Spinner animation="border" /> Loading statistics...
             </div>
         );
     }
@@ -1205,11 +1285,11 @@ const UmaLogsPage: React.FC = () => {
             <div className="uma-page-header-row">
                 <div className="mb-3 uma-page-header">
                     <strong>Room Match Statistics</strong>
-                    {' · '}
+                    {' | '}
                     {cmLabel}
-                    {' · '}
+                    {' | '}
                     {totalRaces} races
-                    {' · '}
+                    {' | '}
                     Updated {generatedDate}
                 </div>
                 <div className="uma-cm-selector">
@@ -1270,3 +1350,4 @@ const UmaLogsPage: React.FC = () => {
 };
 
 export default UmaLogsPage;
+

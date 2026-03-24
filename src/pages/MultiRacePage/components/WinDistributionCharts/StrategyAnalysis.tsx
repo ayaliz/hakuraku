@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from "react";
-import { STRATEGY_COLORS, STRATEGY_NAMES, STRATEGY_DISPLAY_ORDER, BAYES_TEAM, SAT_MIN_RACE_FRACTION } from "./constants";
+import { STRATEGY_COLORS, STRATEGY_NAMES, STRATEGY_DISPLAY_ORDER, BAYES_TEAM, POP_FILTER_OPTIONS, SAT_MIN_RACE_FRACTION } from "./constants";
 import type { StrategyStats, RoomCompositionEntry, TeamCompositionStats, HorseEntry, SkillStats } from "../../types";
 import AssetLoader from "../../../../data/AssetLoader";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import { getRankIcon } from "../../../../components/RaceDataPresenter/components/CharaList/rankUtils";
+import InfoTooltip from "./InfoTooltip";
 import TeamSampleSelect from "./TeamSampleSelect";
 import "./StrategyAnalysis.css";
 
@@ -17,6 +18,9 @@ export type StyleRepEntry = {
     popPct: number;
     winRate: number;
     bayesianWinRate: number;
+    expectedWinRate: number;
+    scoreAdjustedWinRate: number;
+    scoreAdjustedLift: number;
 };
 
 interface StrategyAnalysisProps {
@@ -166,7 +170,10 @@ function StyleBreakdownPanel({ strategyStats, totalRaces, allHorses, strategyCol
         <div className="sa-panel sa-panel--breakdown">
             <div className="sa-panel-header">
                 Style Breakdown
-                <span title="A style's win rate exceeding its popularity means its win rate is above average." className="sa-info-icon">i</span>
+                <InfoTooltip
+                    id="style-breakdown-info"
+                    tip="A style's win rate exceeding its popularity means its win rate is above average."
+                />
                 {hasScoreData && (
                     <div className="sa-sb-view-toggle">
                         <button className={`sa-sb-toggle-btn${viewMode === 'bars' ? ' sa-sb-toggle-btn--active' : ''}`} onClick={() => setViewMode('bars')}>Overview</button>
@@ -265,7 +272,13 @@ function SaturationPanel({ strategyStats, totalRaces, strategyColors }: { strate
     return (
         <div className="sa-panel sa-panel--saturation">
             <div className="sa-panel-header sa-panel-header--sat">
-                <span>Effects of style saturation <span title="Per-uma win rate by how many of that style appear in a race. Buckets only appear when they account for at least 1% of total races." className="sa-info-icon">i</span></span>
+                <span>
+                    Effects of style saturation{" "}
+                    <InfoTooltip
+                        id="style-saturation-info"
+                        tip="Per-uma win rate by how many of that style appear in a race. Buckets only appear when they account for at least 1% of total races."
+                    />
+                </span>
                 <div className="sa-sat-view-toggle">
                     <button className={`sa-sat-toggle-btn${view === 'self' ? ' sa-sat-toggle-btn--active' : ''}`} onClick={() => setView('self')}>Self</button>
                     <button className={`sa-sat-toggle-btn${view === 'field' ? ' sa-sat-toggle-btn--active' : ''}`} onClick={() => setView('field')}>Field</button>
@@ -408,7 +421,7 @@ function CrossSaturationView({ strategyStats, totalRaces, strategyColors }: { st
                                             {buckets.length > 1 && <polyline points={ptsStr} fill="none" stroke={lineColor} strokeWidth={1.5} strokeLinejoin="round" />}
                                             {buckets.map(b => (
                                                 <circle key={b.count} cx={toX(b.count)} cy={toY(b.wins / b.subjectCount)} r={3} fill={lineColor} stroke="#1a202c" strokeWidth={1}>
-                                                    <title>{STRATEGY_NAMES[oStrat]}: {b.count} in room → {(b.wins / b.subjectCount * 100).toFixed(1)}% per horse ({b.raceCount} races)</title>
+                                                    <title>{STRATEGY_NAMES[oStrat]}: {b.count} in room to {(b.wins / b.subjectCount * 100).toFixed(1)}% per horse ({b.raceCount} races)</title>
                                                 </circle>
                                             ))}
                                         </g>
@@ -431,13 +444,13 @@ function CompositionSection({ strategyStats, totalRaces, roomCompositions, strat
     roomCompositions: RoomCompositionEntry[];
     strategyColors: Record<number, string>;
 }) {
-    const top10 = roomCompositions.slice(0, 9);
+    const topRows = roomCompositions.slice(0, 12);
     const avgCounts = ANALYSIS_STRATEGY_IDS.map(sId => {
         const stat = strategyStats.find(s => s.strategy === sId);
         return totalRaces > 0 ? (stat?.totalRaces ?? 0) / totalRaces : 0;
     });
     const colMaxes = ANALYSIS_STRATEGY_IDS.map((_, i) =>
-        Math.max(...top10.map(c => c.counts[i]), avgCounts[i], 1)
+        Math.max(...topRows.map(c => c.counts[i]), avgCounts[i], 1)
     );
 
     const asRgba = (color: string, alpha: number) => {
@@ -493,12 +506,12 @@ function CompositionSection({ strategyStats, totalRaces, roomCompositions, strat
                                 background: makeBg(avg, i),
                                 color: avg > 0 ? "#f7fafc" : "#4a5568",
                             }}>
-                                {avg > 0 ? avg.toFixed(1) : "—"}
+                                {avg > 0 ? avg.toFixed(1) : "-"}
                             </td>
                         ))}
                         <td className="sa-comp-td-avg-freq">all rooms average</td>
                     </tr>
-                    {top10.map((comp, idx) => (
+                    {topRows.map((comp, idx) => (
                         <tr key={idx}>
                             {ANALYSIS_STRATEGY_IDS.map((_, i) => {
                                 const count = comp.counts[i];
@@ -507,7 +520,7 @@ function CompositionSection({ strategyStats, totalRaces, roomCompositions, strat
                                         background: makeBg(count, i),
                                         color: count > 0 ? "#f7fafc" : "#4a5568",
                                     }}>
-                                        {count > 0 ? count : "—"}
+                                        {count > 0 ? count : "-"}
                                     </td>
                                 );
                             })}
@@ -527,16 +540,22 @@ function StyleRepsPanel({ styleReps, allHorses, skillStats, strategyColors }: {
     strategyColors: Record<number, string>;
 }) {
     const [selected, setSelected] = useState<{ cardId: number; strategy: number; charaName: string } | null>(null);
+    const [selectedInModal, setSelectedInModal] = useState<{ cardId: number; strategy: number; charaName: string } | null>(null);
+    const [fullDataOpen, setFullDataOpen] = useState(false);
     const [minPopPct, setMinPopPct] = useState<0 | 0.5 | 1 | 2>(0.5);
+    const [rankingMode, setRankingMode] = useState<"bayes" | "scoreAdjusted">("bayes");
     const canDrilldown = !!(allHorses && skillStats);
+    const rankingOptions = [
+        { value: "bayes" as const, label: "By win rate" },
+        { value: "scoreAdjusted" as const, label: "Score-adjusted" },
+    ];
 
-    const drilldownHorses = useMemo(() => {
-        if (!selected || !allHorses) return [];
+    const buildDrilldown = (selection: { cardId: number; strategy: number; charaName: string } | null) => {
+        if (!selection || !allHorses) return [];
         const filtered = allHorses.filter(
-            h => h.cardId === selected.cardId && h.strategy === selected.strategy && h.rankScore > 0
+            h => h.cardId === selection.cardId && h.strategy === selection.strategy && h.rankScore > 0
         );
 
-        // Group by build fingerprint (stats + rankScore) to find per-build win rate across all races
         const buildMap = new Map<string, { rep: HorseEntry; wins: number; appearances: number }>();
         for (const h of filtered) {
             const key = `${h.rankScore}_${h.speed}_${h.stamina}_${h.pow}_${h.guts}_${h.wiz}`;
@@ -546,7 +565,6 @@ function StyleRepsPanel({ styleReps, allHorses, skillStats, strategyColors }: {
             const entry = buildMap.get(key)!;
             entry.appearances++;
             if (h.finishOrder === 1) entry.wins++;
-            // Keep representative with highest rank score (same key means same stats anyway)
         }
 
         const PRIOR = 1 / 9;
@@ -560,108 +578,251 @@ function StyleRepsPanel({ styleReps, allHorses, skillStats, strategyColors }: {
             }))
             .sort((a, b) => b.bayesianWinRate - a.bayesianWinRate)
             .slice(0, 6);
-    }, [selected, allHorses]);
+    };
+
+    const drilldownHorses = useMemo(() => buildDrilldown(selected), [selected, allHorses]);
+    const drilldownHorsesInModal = useMemo(() => buildDrilldown(selectedInModal), [selectedInModal, allHorses]);
+
+    const entriesByStrategy = useMemo(() => (
+        Object.fromEntries(
+            REPRESENTATIVE_STRATEGY_IDS.map((sId) => [
+                sId,
+                [...(styleReps[sId] ?? [])]
+                    .filter(entry => entry.popPct >= minPopPct)
+                    .sort((a, b) => {
+                        if (rankingMode === "scoreAdjusted") {
+                            return (b.scoreAdjustedLift - a.scoreAdjustedLift)
+                                || (b.scoreAdjustedWinRate - a.scoreAdjustedWinRate)
+                                || (b.appearances - a.appearances);
+                        }
+                        return (b.bayesianWinRate - a.bayesianWinRate)
+                            || (b.winRate - a.winRate)
+                            || (b.appearances - a.appearances);
+                    }),
+            ])
+        ) as Record<number, StyleRepEntry[]>
+    ), [styleReps, minPopPct, rankingMode]);
+
+    const totalVisibleEntries = REPRESENTATIVE_STRATEGY_IDS.reduce(
+        (sum, sId) => sum + (entriesByStrategy[sId]?.length ?? 0),
+        0
+    );
+
+    const renderEntry = (
+        entry: StyleRepEntry,
+        sId: number,
+        selection: { cardId: number; strategy: number; charaName: string } | null,
+        setSelection: React.Dispatch<React.SetStateAction<{ cardId: number; strategy: number; charaName: string } | null>>,
+    ) => {
+        const src = AssetLoader.getCharaThumb(entry.cardId);
+        const color = strategyColors[sId];
+        const isSelected = selection?.cardId === entry.cardId && selection?.strategy === sId;
+        return (
+            <div
+                key={entry.cardId}
+                className={`sa-reps-entry${canDrilldown ? " sa-stcp-item--clickable" : ""}${isSelected ? " sa-reps-entry--selected" : ""}`}
+                onClick={canDrilldown ? () => setSelection(
+                    isSelected ? null : { cardId: entry.cardId, strategy: sId, charaName: entry.charaName }
+                ) : undefined}
+            >
+                <div className="sa-reps-portrait" style={{ border: `1px solid ${color}` }}>
+                    {src && (
+                        <img
+                            src={src}
+                            alt={entry.charaName}
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                        />
+                    )}
+                </div>
+                <span className="sa-reps-name" title={entry.charaName}>{entry.charaName}</span>
+                <div className={`sa-reps-stats sa-reps-stats--${rankingMode === "scoreAdjusted" ? "score" : "bayes"}`}>
+                    {rankingMode === "scoreAdjusted" ? (
+                        <>
+                            <span
+                                className="sa-adj-pct sa-reps-stat"
+                                title={`Lift ${(entry.scoreAdjustedLift * 100).toFixed(1)}%, expected ${(entry.expectedWinRate * 100).toFixed(1)}%, score-adjusted ${(entry.scoreAdjustedWinRate * 100).toFixed(1)}%, Bayesian ${(entry.bayesianWinRate * 100).toFixed(1)}%, raw ${(entry.winRate * 100).toFixed(1)}%`}
+                            >
+                                {entry.scoreAdjustedLift >= 0 ? "+" : ""}{(entry.scoreAdjustedLift * 100).toFixed(1)}%
+                            </span>
+                            <span
+                                className="sa-raw-pct sa-reps-stat"
+                                title={`Expected win rate from score bucket and distance aptitude: ${(entry.expectedWinRate * 100).toFixed(1)}%`}
+                            >
+                                {(entry.expectedWinRate * 100).toFixed(1)}%
+                            </span>
+                            <span
+                                className="sa-raw-pct sa-reps-stat"
+                                title={`Raw win rate: ${(entry.winRate * 100).toFixed(1)}% across ${entry.appearances} samples`}
+                            >
+                                {(entry.winRate * 100).toFixed(1)}% ({entry.appearances})
+                            </span>
+                        </>
+                    ) : (
+                        <>
+                            <span className="sa-adj-pct sa-reps-stat">{(entry.bayesianWinRate * 100).toFixed(1)}%</span>
+                            <span className="sa-raw-pct sa-reps-stat">{(entry.winRate * 100).toFixed(1)}% ({entry.appearances})</span>
+                        </>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    const renderColumns = (
+        mode: "top" | "full",
+        selection: { cardId: number; strategy: number; charaName: string } | null,
+        setSelection: React.Dispatch<React.SetStateAction<{ cardId: number; strategy: number; charaName: string } | null>>,
+    ) => (
+        <div className={`sa-reps-columns${mode === "full" ? " sa-reps-columns--full" : ""}`}>
+            {REPRESENTATIVE_STRATEGY_IDS.map(sId => {
+                const entries = mode === "full"
+                    ? entriesByStrategy[sId] ?? []
+                    : (entriesByStrategy[sId] ?? []).slice(0, 5);
+                const color = strategyColors[sId];
+                return (
+                    <div key={sId} className="sa-reps-col">
+                        <div className="sa-reps-col-header" style={{ color }}>
+                            {STRATEGY_NAMES[sId].split(" ")[0].toUpperCase()}
+                            <span className={`sa-stats-meta sa-stats-meta--${rankingMode === "scoreAdjusted" ? "score" : "bayes"}`}>
+                                {rankingMode === "scoreAdjusted" ? (
+                                    <>
+                                        <span className="sa-meta-adj sa-meta-adj--neutral">Lift vs exp</span>
+                                        <span className="sa-meta-raw">Expected%</span>
+                                        <span className="sa-meta-raw">Raw (samples)</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="sa-meta-adj sa-meta-adj--neutral">Adj. win%</span>
+                                        <span className="sa-meta-raw">Raw win% (samples)</span>
+                                    </>
+                                )}
+                            </span>
+                        </div>
+                        {entries.length === 0 ? (
+                            <span className="sa-no-data">No representatives at this pop cutoff.</span>
+                        ) : entries.map(entry => renderEntry(entry, sId, selection, setSelection))}
+                    </div>
+                );
+            })}
+        </div>
+    );
+
+    const renderDrilldown = (
+        selection: { cardId: number; strategy: number; charaName: string } | null,
+        drilldownEntries: ReturnType<typeof buildDrilldown>,
+    ) => {
+        if (!selection || drilldownEntries.length === 0 || !skillStats) return null;
+        return (
+            <div className="stcp-drilldown">
+                <div className="stcp-drilldown-header">
+                    <div className="stcp-drilldown-title">
+                        Top performers for {selection.charaName} ({STRATEGY_NAMES[selection.strategy]})
+                    </div>
+                    <div className="stcp-drilldown-subtitle">
+                        Unique umas ranked by Bayesian-adjusted win rate across all appearances.
+                    </div>
+                </div>
+                <div className="stcp-team-members-row">
+                    {drilldownEntries.map(({ horse, bayesianWinRate, winRate, appearances }, i) => (
+                        <div key={i} className="sa-reps-drilldown-card">
+                            <div className="sa-reps-drilldown-winrate">
+                                <span className="sa-adj-pct">{(bayesianWinRate * 100).toFixed(0)}%</span>
+                                <span className="sa-pipe"> | </span>
+                                <span className="sa-raw-pct">{(winRate * 100).toFixed(0)}% ({appearances})</span>
+                            </div>
+                            <TeamMemberCard horse={horse} skillStats={skillStats} strategyColors={strategyColors} allHorses={allHorses} />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
+    const renderRankingModeToggle = () => (
+        <div className="histogram-toggle uma-gate-toggle sa-toggle-row">
+            {rankingOptions.map((opt) => (
+                <button
+                    key={opt.value}
+                    className={`histogram-toggle-btn uma-gate-toggle-btn${rankingMode === opt.value ? " active" : ""}`}
+                    onClick={() => setRankingMode(opt.value)}
+                >
+                    {opt.label}
+                </button>
+            ))}
+        </div>
+    );
+
+    const renderPopToggle = () => (
+        <div className="histogram-toggle uma-gate-toggle sa-toggle-row">
+            {POP_FILTER_OPTIONS.map((opt) => (
+                <button
+                    key={opt.value}
+                    className={`histogram-toggle-btn uma-gate-toggle-btn${minPopPct === opt.value ? " active" : ""}`}
+                    onClick={() => setMinPopPct(opt.value as 0 | 0.5 | 1 | 2)}
+                >
+                    {opt.label}
+                </button>
+            ))}
+        </div>
+    );
+
+    const renderPanelBody = (
+        mode: "top" | "full",
+        selection: { cardId: number; strategy: number; charaName: string } | null,
+        setSelection: React.Dispatch<React.SetStateAction<{ cardId: number; strategy: number; charaName: string } | null>>,
+        drilldownEntries: ReturnType<typeof buildDrilldown>,
+    ) => (
+        <>
+            {mode === "full" && (
+                <>
+                    {renderRankingModeToggle()}
+                    {renderPopToggle()}
+                </>
+            )}
+            {renderColumns(mode, selection, setSelection)}
+            {renderDrilldown(selection, drilldownEntries)}
+        </>
+    );
 
     return (
         <div className="sa-reps-panel">
             <div className="sa-panel-header">
                 Style Representatives
-                <span title="Top 5 performers per style." className="sa-info-icon">i</span>
+                <InfoTooltip
+                    id="style-representatives-info"
+                    tip={
+                        rankingMode === "bayes"
+                            ? "Top 5 performers per style using the current Bayesian-adjusted win rate."
+                            : "Top 5 performers per style ranked by how much they beat or miss the expected win rate implied by score bucket and distance aptitude. Positive values imply the character has some edge over characters in that style with similar rating and distance aptitude."
+                    }
+                />
             </div>
-            <div className="histogram-toggle uma-gate-toggle" style={{ marginBottom: "10px" }}>
-                {([
-                    { value: 0.5 as const, label: "≥0.5% pop" },
-                    { value: 1 as const, label: "≥1% pop" },
-                    { value: 2 as const, label: "≥2% pop" },
-                    { value: 0 as const, label: "No minimum pop" },
-                ]).map((opt) => (
-                    <button
-                        key={opt.value}
-                        className={`histogram-toggle-btn uma-gate-toggle-btn${minPopPct === opt.value ? " active" : ""}`}
-                        onClick={() => setMinPopPct(opt.value)}
-                    >
-                        {opt.label}
+            {renderRankingModeToggle()}
+            {renderPopToggle()}
+            {renderPanelBody("top", selected, setSelected, drilldownHorses)}
+            {totalVisibleEntries > 0 && (
+                <div className="sa-reps-actions">
+                    <button className="sa-reps-view-all-btn" onClick={() => setFullDataOpen(true)}>
+                        View full data
                     </button>
-                ))}
-            </div>
-            <div className="sa-reps-columns">
-                {REPRESENTATIVE_STRATEGY_IDS.map(sId => {
-                    const entries = (styleReps[sId] ?? [])
-                        .filter(entry => entry.popPct >= minPopPct)
-                        .slice(0, 5);
-                    const color = strategyColors[sId];
-                    return (
-                        <div key={sId} className="sa-reps-col">
-                            <div className="sa-reps-col-header" style={{ color }}>
-                                {STRATEGY_NAMES[sId].split(" ")[0].toUpperCase()}
-                                <span className="sa-stats-meta">
-                                    <span className="sa-meta-adj sa-meta-adj--neutral">Adj. win%</span>
-                                    <span className="sa-meta-raw"> | Raw win% (samples)</span>
-                                </span>
-                            </div>
-                            {entries.length === 0 ? (
-                                <span className="sa-no-data">No representatives at this pop cutoff.</span>
-                            ) : entries.map(entry => {
-                                const src = AssetLoader.getCharaThumb(entry.cardId);
-                                const isSelected = selected?.cardId === entry.cardId && selected?.strategy === sId;
-                                return (
-                                    <div
-                                        key={entry.cardId}
-                                        className={`sa-reps-entry${canDrilldown ? " sa-stcp-item--clickable" : ""}${isSelected ? " sa-reps-entry--selected" : ""}`}
-                                        onClick={canDrilldown ? () => setSelected(
-                                            isSelected ? null : { cardId: entry.cardId, strategy: sId, charaName: entry.charaName }
-                                        ) : undefined}
-                                    >
-                                        <div className="sa-reps-portrait" style={{ border: `1px solid ${color}` }}>
-                                            {src && (
-                                                <img
-                                                    src={src}
-                                                    alt={entry.charaName}
-                                                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                                                />
-                                            )}
-                                        </div>
-                                        <span className="sa-reps-name" title={entry.charaName}>{entry.charaName}</span>
-                                        <div className="sa-reps-stats">
-                                            <span className="sa-adj-pct">{(entry.bayesianWinRate * 100).toFixed(0)}%</span>
-                                            <span className="sa-pipe"> | </span>
-                                            <span className="sa-raw-pct">{(entry.winRate * 100).toFixed(0)}% ({entry.appearances})</span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                </div>
+            )}
+            {fullDataOpen && (
+                <div className="cdt-overlay" onClick={() => setFullDataOpen(false)}>
+                    <div className="cdt-modal sa-reps-full-data-modal" onClick={e => e.stopPropagation()}>
+                        <div className="cdt-header">
+                            <h3 className="cdt-title">Style Representatives</h3>
+                            <button className="cdt-close-btn" onClick={() => setFullDataOpen(false)}>&times;</button>
                         </div>
-                    );
-                })}
-            </div>
-            {selected && drilldownHorses.length > 0 && skillStats && (
-                <div className="stcp-drilldown">
-                    <div className="stcp-drilldown-header">
-                        <div className="stcp-drilldown-title">
-                            Top performers for {selected.charaName} ({STRATEGY_NAMES[selected.strategy]})
+                        <div className="cdt-content">
+                            {renderPanelBody("full", selectedInModal, setSelectedInModal, drilldownHorsesInModal)}
                         </div>
-                        <div className="stcp-drilldown-subtitle">
-                            Unique umas ranked by Bayesian-adjusted win rate across all appearances.
-                        </div>
-                    </div>
-                    <div className="stcp-team-members-row">
-                        {drilldownHorses.map(({ horse, bayesianWinRate, winRate, appearances }, i) => (
-                            <div key={i} className="sa-reps-drilldown-card">
-                                <div className="sa-reps-drilldown-winrate">
-                                    <span className="sa-adj-pct">{(bayesianWinRate * 100).toFixed(0)}%</span>
-                                    <span className="sa-pipe"> | </span>
-                                    <span className="sa-raw-pct">{(winRate * 100).toFixed(0)}% ({appearances})</span>
-                                </div>
-                                <TeamMemberCard horse={horse} skillStats={skillStats} strategyColors={strategyColors} allHorses={allHorses} />
-                            </div>
-                        ))}
                     </div>
                 </div>
             )}
         </div>
     );
 }
-
 const MIN_STYLE_APPEARANCES = 20;
 const MAX_STYLE_ITEMS = 10;
 
@@ -688,7 +849,7 @@ function aggregateStyleTeams(teamStats: TeamCompositionStats[]): StyleTeamEntry[
     return Array.from(map.entries()).map(([key, e]) => ({
         key,
         strategies: e.strategies,
-        label: e.strategies.map(s => (STRATEGY_NAMES[s] ?? String(s)).split(" ")[0]).join(" · "),
+        label: e.strategies.map(s => (STRATEGY_NAMES[s] ?? String(s)).split(" ")[0]).join(" / "),
         appearances: e.appearances,
         wins: e.wins,
         winRate: e.wins / e.appearances,
@@ -715,7 +876,7 @@ function resolveIconSkillId(id: number): number {
     return s.startsWith("9") ? parseInt("1" + s.slice(1), 10) : id;
 }
 
-// Grade letter map — 1=G … 8=S (see charaProperLabels in UMDatabaseUtils)
+// Grade letter map - 1=G ... 8=S (see charaProperLabels in UMDatabaseUtils)
 const GRADE_LETTERS: Record<number, string> = { 1: "G", 2: "F", 3: "E", 4: "D", 5: "C", 6: "B", 7: "A", 8: "S" };
 
 // Aptitude display labels
@@ -884,7 +1045,7 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
                         {horse.rankScore.toLocaleString()}
                     </div>
                 </div>
-                <div className="fastest-card-hint">Click for full profile →</div>
+                <div className="fastest-card-hint">Click for full profile</div>
             </div>
 
             {open && (
@@ -892,7 +1053,7 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
                     <div className="stcp-modal" onClick={e => e.stopPropagation()}>
                         <div className="stcp-modal-header">
                             <div className="fup-modal-title">Team Member - Full Profile</div>
-                            <button className="stcp-modal-close" onClick={() => setOpen(false)}>×</button>
+                            <button className="stcp-modal-close" onClick={() => setOpen(false)}>Ã—</button>
                         </div>
                         <div className="stcp-modal-body">
                             <div className="fup-identity">
@@ -1100,9 +1261,8 @@ function StyleTeamCompositionPanel({
                 </div>
                 <div className="sa-stcp-name">{e.label}</div>
                 <div className="sa-stcp-stats">
-                    <span className="sa-adj-pct" style={{ color: valueColor }}>{(e.bayesianWinRate * 100).toFixed(0)}%</span>
-                    <span className="sa-pipe"> | </span>
-                    <span className="sa-raw-pct">{(e.winRate * 100).toFixed(0)}% ({e.appearances})</span>
+                    <span className="sa-adj-pct sa-stcp-stat" style={{ color: valueColor }}>{(e.bayesianWinRate * 100).toFixed(1)}%</span>
+                    <span className="sa-raw-pct sa-stcp-stat">{(e.winRate * 100).toFixed(1)}% ({e.appearances})</span>
                 </div>
             </div>
         );
@@ -1131,18 +1291,21 @@ function StyleTeamCompositionPanel({
         <div className="sa-stcp-section">
             <div className="sa-stcp-header">
                 Style Composition Performance
-                <span title="Win rate of 3-player teams grouped by running style trio." className="sa-info-icon">i</span>
+                <InfoTooltip
+                    id="style-composition-performance-info"
+                    tip="Win rate of 3-uma teams grouped by running style trio."
+                />
             </div>
             <div className="sa-stcp-columns">
                 {overperformers.length > 0 && (
                     <div className="sa-stcp-col">
-                        <div className="sa-stcp-col-label sa-stcp-col-label--over">OVERPERFORMERS<span className="sa-stats-meta"><span className="sa-meta-adj sa-meta-adj--over">Adj. win%</span><span className="sa-meta-raw"> | Raw win% (samples)</span></span></div>
+                        <div className="sa-stcp-col-label sa-stcp-col-label--over">OVERPERFORMERS<span className="sa-stats-meta sa-stats-meta--bayes"><span className="sa-meta-adj sa-meta-adj--over">Adj. win%</span><span className="sa-meta-raw">Raw win% (samples)</span></span></div>
                         {overperformers.map(e => renderItem(e, true))}
                     </div>
                 )}
                 {underperformers.length > 0 && (
                     <div className="sa-stcp-col">
-                        <div className="sa-stcp-col-label sa-stcp-col-label--under">UNDERPERFORMERS<span className="sa-stats-meta"><span className="sa-meta-adj sa-meta-adj--under">Adj. win%</span><span className="sa-meta-raw"> | Raw win% (samples)</span></span></div>
+                        <div className="sa-stcp-col-label sa-stcp-col-label--under">UNDERPERFORMERS<span className="sa-stats-meta sa-stats-meta--bayes"><span className="sa-meta-adj sa-meta-adj--under">Adj. win%</span><span className="sa-meta-raw">Raw win% (samples)</span></span></div>
                         {underperformers.map(e => renderItem(e, false))}
                     </div>
                 )}

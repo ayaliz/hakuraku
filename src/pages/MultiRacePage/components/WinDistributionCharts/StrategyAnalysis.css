@@ -40,20 +40,40 @@
     margin-bottom: 4px;
 }
 
+.sa-toggle-row {
+    margin-bottom: 10px;
+}
+
 /* Info icon (ⓘ help tooltip trigger) */
 .sa-info-icon {
     font-size: 10px;
+    font-weight: 600;
+    font-family: inherit;
     color: #718096;
     border: 1px solid #718096;
-    border-radius: 50%;
-    width: 14px;
-    height: 14px;
+    border-radius: 4px;
+    padding: 1px 5px;
+    background: transparent;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: help;
     flex-shrink: 0;
-    line-height: 1;
+    line-height: 1.1;
+    min-height: 16px;
+    appearance: none;
+    outline: none;
+}
+
+.sa-info-icon:hover {
+    color: #a0aec0;
+    border-color: #a0aec0;
+}
+
+.sa-info-icon:focus-visible {
+    color: #e2e8f0;
+    border-color: #63b3ed;
+    box-shadow: 0 0 0 2px rgba(99, 179, 237, 0.25);
 }
 
 /* "Not enough data" placeholder text */
@@ -462,6 +482,7 @@
 .sa-stcp-header {
     display: flex;
     align-items: baseline;
+    gap: 6px;
     font-size: 13px;
     font-weight: bold;
     color: #a0aec0;
@@ -539,9 +560,17 @@
 }
 
 .sa-stcp-stats {
-    display: flex;
+    display: grid;
+    grid-template-columns: 58px 92px;
     align-items: baseline;
+    justify-items: end;
+    column-gap: 8px;
     flex-shrink: 0;
+}
+
+.sa-stcp-stat {
+    min-width: 0;
+    text-align: right;
 }
 
 /* ── Style Representatives panel ──────────────────────────────────────────── */
@@ -559,6 +588,10 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px 16px;
+}
+
+.sa-reps-columns--full {
+    gap: 16px 20px;
 }
 
 .sa-reps-col {
@@ -644,6 +677,24 @@
     font-weight: normal;
 }
 
+.sa-stats-meta,
+.sa-reps-stats {
+    display: grid;
+    align-items: baseline;
+    justify-items: end;
+    column-gap: 8px;
+}
+
+.sa-stats-meta--bayes,
+.sa-reps-stats--bayes {
+    grid-template-columns: 58px 92px;
+}
+
+.sa-stats-meta--score,
+.sa-reps-stats--score {
+    grid-template-columns: 72px 62px 96px;
+}
+
 .sa-meta-adj {
     font-size: 10px;
     font-weight: bold;
@@ -687,9 +738,63 @@
 }
 
 .sa-reps-stats {
-    display: flex;
-    align-items: baseline;
     flex-shrink: 0;
+}
+
+.sa-reps-stat {
+    min-width: 0;
+    text-align: right;
+}
+
+.sa-reps-actions {
+    margin-top: 12px;
+}
+
+.sa-reps-view-all-btn {
+    width: 100%;
+    padding: 5px 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid #4a5568;
+    border-radius: 4px;
+    color: #a0aec0;
+    font-size: 11px;
+    cursor: pointer;
+    text-align: center;
+}
+
+.sa-reps-view-all-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
+}
+
+.sa-reps-full-data-modal {
+    width: min(1240px, calc(100vw - 24px));
+}
+
+.sa-reps-full-data-modal .cdt-content {
+    padding: 12px 16px;
+}
+
+.sa-reps-full-data-modal .sa-reps-columns--full {
+    gap: 16px 28px;
+}
+
+.sa-reps-full-data-modal .sa-reps-entry {
+    gap: 6px;
+}
+
+.sa-reps-full-data-modal .sa-reps-name {
+    font-size: 11px;
+}
+
+.sa-reps-full-data-modal .sa-stats-meta--bayes,
+.sa-reps-full-data-modal .sa-reps-stats--bayes {
+    grid-template-columns: 54px 88px;
+}
+
+.sa-reps-full-data-modal .sa-stats-meta--score,
+.sa-reps-full-data-modal .sa-reps-stats--score {
+    grid-template-columns: 68px 56px 92px;
 }
 
 .sa-panel--breakdown {
@@ -699,4 +804,11 @@
 .sa-panel--saturation {
     flex: 1.2 1 540px;
     min-width: 460px;
+}
+
+@media (max-width: 900px) {
+    .sa-reps-columns,
+    .sa-reps-columns--full {
+        grid-template-columns: 1fr;
+    }
 }

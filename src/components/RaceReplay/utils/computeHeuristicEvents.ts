@@ -8,6 +8,7 @@ import {
     DOWNHILL_BONUS_BASE, DOWNHILL_BONUS_DIVISOR,
     DOWNHILL_HP_RATIO_THRESHOLD, DOWNHILL_HP_RATIO_STRONG, DOWNHILL_HP_RATIO_PACE_DOWN,
     PACE_UP_MULTIPLIER, OVERTAKE_MULTIPLIER, PACE_DOWN_MULTIPLIER,
+    PACEMAKER_PACE_UP_LENIENCY,
     TEMPTATION_MODE_RUSH_BOOST,
 } from "./raceConstants";
 
@@ -345,7 +346,9 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
 
             const posKeepRange = POSITION_KEEP_RANGES[strategy]?.(courseFactor) ?? { min: 0, max: 1000 };
 
-            const canPaceUp = !isFrontRunner && distanceFromLeader > posKeepRange.max;
+            const paceUpDistanceThreshold =
+                posKeepRange.max - (designatedPacemaker >= 0 ? PACEMAKER_PACE_UP_LENIENCY : 0);
+            const canPaceUp = !isFrontRunner && distanceFromLeader > paceUpDistanceThreshold;
             const canPaceDown = !isFrontRunner && distanceFromLeader < posKeepRange.min;
 
             const isEarlyRace = time < EARLY_RACE_TIME;

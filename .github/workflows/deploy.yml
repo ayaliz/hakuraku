@@ -29,11 +29,24 @@ jobs:
       - run: yarn build
         env:
           VITE_SHARE_SECRET: ${{ secrets.REACT_APP_SHARE_SECRET }}
-      - name: Upload Pages artifact (only once)
-        uses: actions/upload-pages-artifact@v4
+      - name: Package Pages artifact
+        run: |
+          tar \
+            --dereference \
+            --hard-dereference \
+            --directory dist \
+            -cvf "$RUNNER_TEMP/artifact.tar" \
+            --exclude=.git \
+            --exclude=.github \
+            --exclude=".[^/]*" \
+            .
+      - name: Upload Pages artifact
+        uses: actions/upload-artifact@v6
         with:
-          path: ./dist
           name: github-pages
+          path: ${{ runner.temp }}/artifact.tar
+          retention-days: 1
+          if-no-files-found: error
 
   deploy:
     needs: build

@@ -612,7 +612,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmLabel, s
                         <li>Per-team data: prior m = 1/3, C = 18</li>
                         <li>Per-skill win rates: prior m = uma's base win rate in the data, C = 54</li>
                     </ul>
-                    <p>CM11 data collection is ongoing, and will probably finish around 30000 rooms.</p>
+                    <p>CM11 data collection is over. See you in CM12.</p>
                 </div>
             )}
 
@@ -1350,4 +1350,3 @@ const UmaLogsPage: React.FC = () => {
 };
 
 export default UmaLogsPage;
-

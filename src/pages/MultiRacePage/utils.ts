@@ -675,14 +675,14 @@ export function aggregateStats(races: ParsedRace[], options?: { releaseProcessed
     // Collect all horse entries and skill activations
     races.forEach(race => {
         const horses = extractHorseEntries(race);
-        allHorses.push(...horses);
+        horses.forEach((horse) => allHorses.push(horse));
 
         const skillActs = extractSkillActivations(race);
         skillActs.forEach((points, skillId) => {
             if (!allSkillActivations.has(skillId)) {
                 allSkillActivations.set(skillId, []);
             }
-            allSkillActivations.get(skillId)!.push(...points);
+            points.forEach((point) => allSkillActivations.get(skillId)!.push(point));
         });
 
         if (releaseProcessedRaceData) {
@@ -857,7 +857,7 @@ export function aggregateStats(races: ParsedRace[], options?: { releaseProcessed
         if (baseId < 90000 || baseId >= 100000) return;
         const counterpartBaseId = baseId - 80000;
         if (!skillGroups.has(counterpartBaseId)) return;
-        skillGroups.get(counterpartBaseId)!.push(...ids);
+        ids.forEach((id) => skillGroups.get(counterpartBaseId)!.push(id));
         inheritedGroupsToRemove.push(baseId);
     });
     inheritedGroupsToRemove.forEach(baseId => skillGroups.delete(baseId));
@@ -868,7 +868,7 @@ export function aggregateStats(races: ParsedRace[], options?: { releaseProcessed
         groupSkillIds.forEach(id => {
             const points = allSkillActivations.get(id);
             if (points) {
-                groupPoints.push(...points);
+                points.forEach((point) => groupPoints.push(point));
             }
         });
 

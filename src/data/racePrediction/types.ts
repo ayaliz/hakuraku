@@ -67,6 +67,22 @@ export type FrontendModel = {
         std: number[];
     };
     weights: Record<string, TensorPayload>;
+    surrogateSpurtModel?: {
+        inputFeatureNames: string[];
+        outputFeatureNames: string[];
+        modelConfig: {
+            input_dim: number;
+            hidden_dim: number;
+            dropout: number;
+            output_dim: number;
+        };
+        normalization: {
+            mean: number[];
+            std: number[];
+        };
+        recoveryValueBySkillId: Record<string, number>;
+        weights: Record<string, TensorPayload>;
+    };
     passiveSkills: PassiveSkillCatalogEntry[];
 };
 

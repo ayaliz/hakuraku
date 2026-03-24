@@ -13,6 +13,7 @@ import {
 import { ComposeOption } from "echarts/core";
 type MarkLine1DDataItemOption = { xAxis?: number | string; name?: string; label?: object; lineStyle?: object };
 import { RaceSimulateData } from "../../../data/race_data_pb";
+import { POSITION_KEEP_BAND_RENDER_OFFSET } from "./raceConstants";
 import {
     DEFAULT_TEAM_PALETTE,
 } from "../RaceReplay.constants";
@@ -61,8 +62,8 @@ export function buildPositionKeepSeries(frontRunnerDistance: number, courseLengt
     ];
 
     const data = zones.map(z => [
-        { xAxis: frontRunnerDistance - z.max, yAxis: 0, itemStyle: { color: z.color }, label: { show: true, position: "insideTop", formatter: z.name, color: "#fff" } },
-        { xAxis: frontRunnerDistance - z.min, yAxis: yMax }
+        { xAxis: frontRunnerDistance - z.max + POSITION_KEEP_BAND_RENDER_OFFSET, yAxis: 0, itemStyle: { color: z.color }, label: { show: true, position: "insideTop", formatter: z.name, color: "#fff" } },
+        { xAxis: frontRunnerDistance - z.min + POSITION_KEEP_BAND_RENDER_OFFSET, yAxis: yMax }
     ]);
 
     return {

@@ -1,10 +1,19 @@
 import React, { useState, useMemo } from "react";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
-import { SkillStats, SkillActivationPoint, SkillActivationBuckets, CharacterStats, StrategyStats, HorseEntry } from "../types";
+import { SkillStats, SkillActivationPoint, SkillActivationBuckets, SkillDoubleProcStats, CharacterStats, StrategyStats, HorseEntry } from "../types";
 import { CharaHpSpurtStats } from "./HpSpurtAnalysis/types";
 import AssetLoader from "../../../data/AssetLoader";
 import UMDatabaseWrapper from "../../../data/UMDatabaseWrapper";
 import PortraitSelect, { PortraitSelectOption } from "./PortraitSelect";
+
+type LocalDoubleProcSummary = {
+    doubleProcHorseCount: number;
+    estimatedDoubleOpportunityRate?: number;
+};
+
+type DoubleProcBreakdown = {
+    byStrategy?: Record<string, Pick<SkillDoubleProcStats, "estimatedDoubleOpportunityRate"> | LocalDoubleProcSummary | null>;
+};
 
 interface SkillAnalysisProps {
     skillStats: Map<number, SkillStats>;
@@ -19,8 +28,8 @@ interface SkillAnalysisProps {
 
 type SortKey = "skillName" | "timesActivated" | "learnedByHorses" | "uniqueRaces" | "winRate" | "avgFinishPosition" | "normalizedActivations" | "meanDistance" | "medianDistance";
 
-const STRAT_LABELS: Record<number, string> = { 1: "FR", 2: "PC", 3: "LS", 4: "EC" };
-const STRATS = [1, 2, 3, 4] as const;
+const STRAT_LABELS: Record<number, string> = { 5: "Runaway", 1: "Front", 2: "Pace", 3: "Late", 4: "End" };
+const STRATS = [5, 1, 2, 3, 4] as const;
 function getSkillGroupBaseIds(representativeSkillId: number): Set<number> {
     const baseId = Math.floor(representativeSkillId / 10);
     const ids = new Set<number>([baseId]);
@@ -137,6 +146,109 @@ function renderWinBreakdown(skill: SkillStats, horses: HorseEntry[]) {
                             })()}
                         </tr>
                     ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
+function computeDoubleProcSummary(activations: SkillActivationPoint[]): LocalDoubleProcSummary | null {
+    const procCountsByHorse = new Map<string, number>();
+    activations.forEach((activation) => {
+        const key = `${activation.raceId}_${activation.horseFrameOrder}`;
+        procCountsByHorse.set(key, (procCountsByHorse.get(key) ?? 0) + 1);
+    });
+
+    const doubleProcHorseCount = Array.from(procCountsByHorse.values()).filter((count) => count >= 2).length;
+    if (doubleProcHorseCount === 0) return null;
+
+    return {
+        doubleProcHorseCount,
+    };
+}
+
+function estimateDoubleOpportunityRate(
+    learnedHorseObservations: Array<{ activationChance: number; observedCount: number }>
+): number | undefined {
+    if (learnedHorseObservations.length === 0) return undefined;
+
+    let pi1 = 0.2;
+    let pi2 = 0.05;
+
+    for (let iter = 0; iter < 40; iter++) {
+        const pi0 = Math.max(0, 1 - pi1 - pi2);
+        let sum1 = 0;
+        let sum2 = 0;
+
+        for (const observation of learnedHorseObservations) {
+            const p = Math.min(Math.max(observation.activationChance, 0.2), 0.999);
+            const y = Math.min(observation.observedCount, 2);
+
+            if (y >= 2) {
+                sum2 += 1;
+                continue;
+            }
+
+            if (y === 1) {
+                const w1 = pi1 * p;
+                const w2 = pi2 * 2 * p * (1 - p);
+                const total = w1 + w2;
+                if (total <= 0) continue;
+                sum1 += w1 / total;
+                sum2 += w2 / total;
+                continue;
+            }
+
+            const w0 = pi0;
+            const w1 = pi1 * (1 - p);
+            const w2 = pi2 * (1 - p) * (1 - p);
+            const total = w0 + w1 + w2;
+            if (total <= 0) continue;
+            sum1 += w1 / total;
+            sum2 += w2 / total;
+        }
+
+        pi1 = sum1 / learnedHorseObservations.length;
+        pi2 = sum2 / learnedHorseObservations.length;
+        if (pi1 + pi2 > 1) {
+            const scale = 1 / (pi1 + pi2);
+            pi1 *= scale;
+            pi2 *= scale;
+        }
+    }
+
+    return pi2;
+}
+
+function renderDoubleProcBreakdown(breakdown: DoubleProcBreakdown | null | undefined) {
+    const byStrategy = breakdown?.byStrategy ?? {};
+    const hasAny = STRATS.some((strategy) => breakdown?.byStrategy?.[String(strategy)]?.estimatedDoubleOpportunityRate !== undefined);
+    if (!hasAny) return null;
+
+    const fmt = (summary: Pick<SkillDoubleProcStats, "estimatedDoubleOpportunityRate"> | LocalDoubleProcSummary | null | undefined) => {
+        if (!summary || summary.estimatedDoubleOpportunityRate === undefined) {
+            return <span className="swb-empty">-</span>;
+        }
+        return <strong className="swb-double-proc-rate">{(summary.estimatedDoubleOpportunityRate * 100).toFixed(1)}%</strong>;
+    };
+
+    return (
+        <div className="swb-container">
+            <div className="swb-header">Estimated frequency for two proc opportunities during a race</div>
+            <table className="swb-table swb-table--compact">
+                <thead>
+                    <tr>
+                        {STRATS.map(s => <th key={s} className="swb-strat-col">{STRAT_LABELS[s]}</th>)}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr className="swb-row--total">
+                        {STRATS.map(s => (
+                            <td key={s} className="swb-cell">
+                                {fmt(byStrategy[String(s)])}
+                            </td>
+                        ))}
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -455,6 +567,15 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
             const buckets = selectedStrategy === "all"
                 ? b.all
                 : (b.byStrategy[String(selectedStrategy)] ?? b.all);
+            const doubleProcBreakdown: DoubleProcBreakdown = selectedStrategy === "all"
+                ? {
+                    byStrategy: b.doubleProcByStrategy,
+                }
+                : {
+                    byStrategy: {
+                        [String(selectedStrategy)]: b.doubleProcByStrategy?.[String(selectedStrategy)] ?? null,
+                    },
+                };
             const totalActivations = buckets.reduce((s, c) => s + c, 0);
             if (totalActivations === 0) return null;
             const maxCount = Math.max(...buckets, 1);
@@ -488,6 +609,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                                 <span style={{ position: "absolute", left: "83.33%", transform: "translateX(-50%)" }}>Spurt</span>
                                 <span style={{ position: "absolute", right: 0 }}>{Math.round(avgRaceDistance)}m</span>
                             </div>
+                            {renderDoubleProcBreakdown(doubleProcBreakdown)}
                             {renderWinBreakdown(skill, filteredHorses)}
                         </div>
                     </td>
@@ -509,6 +631,52 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                 (minD === -1 || p.distance >= minD) &&
                 (maxD === Number.MAX_SAFE_INTEGER || p.distance <= maxD)
             );
+        }
+
+        const doubleProcSummary = computeDoubleProcSummary(activations);
+        const doubleProcBreakdown: DoubleProcBreakdown = {};
+        if (doubleProcSummary) {
+            const procCountsByHorse = new Map<string, number>();
+            activations.forEach((activation) => {
+                const key = `${activation.raceId}_${activation.horseFrameOrder}`;
+                procCountsByHorse.set(key, (procCountsByHorse.get(key) ?? 0) + 1);
+            });
+            const learnedHorsesForSkill = filteredHorses.filter((horse) => {
+                for (const learnedId of horse.learnedSkillIds) {
+                    if (matchesRepresentativeSkillGroup(learnedId, skill.skillId)) return true;
+                }
+                return false;
+            });
+            doubleProcSummary.estimatedDoubleOpportunityRate = estimateDoubleOpportunityRate(
+                learnedHorsesForSkill.map((horse) => ({
+                    activationChance: horse.activationChance,
+                    observedCount: procCountsByHorse.get(`${horse.raceId}_${horse.frameOrder}`) ?? 0,
+                }))
+            );
+
+            const byStrategy: Record<string, LocalDoubleProcSummary | null> = {};
+            STRATS.forEach((strategy) => {
+                const strategyLearnedHorses = learnedHorsesForSkill.filter((horse) => horse.strategy === strategy);
+                const strategyActivations = activations.filter((activation) => {
+                    const horse = filteredHorses.find((h) => h.raceId === activation.raceId && h.frameOrder === activation.horseFrameOrder);
+                    return horse?.strategy === strategy;
+                });
+                const strategySummary = computeDoubleProcSummary(strategyActivations);
+                if (!strategySummary) return;
+                const strategyProcCounts = new Map<string, number>();
+                strategyActivations.forEach((activation) => {
+                    const key = `${activation.raceId}_${activation.horseFrameOrder}`;
+                    strategyProcCounts.set(key, (strategyProcCounts.get(key) ?? 0) + 1);
+                });
+                strategySummary.estimatedDoubleOpportunityRate = estimateDoubleOpportunityRate(
+                    strategyLearnedHorses.map((horse) => ({
+                        activationChance: horse.activationChance,
+                        observedCount: strategyProcCounts.get(`${horse.raceId}_${horse.frameOrder}`) ?? 0,
+                    }))
+                );
+                byStrategy[String(strategy)] = strategySummary;
+            });
+            doubleProcBreakdown.byStrategy = byStrategy;
         }
 
         // Create density buckets (50 buckets across the track)
@@ -599,6 +767,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                             <span style={{ position: "absolute", right: 0 }}>{Math.round(avgRaceDistance)}m</span>
                         </div>
 
+                        {renderDoubleProcBreakdown(doubleProcBreakdown)}
                         {renderWinBreakdown(skill, filteredHorses)}
                     </div>
                 </td>

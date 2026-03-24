@@ -97,6 +97,37 @@
     color: #90cdf4;
 }
 
+.exp-info-icon {
+    font-size: 10px;
+    font-weight: 600;
+    font-family: inherit;
+    color: #718096;
+    border: 1px solid #718096;
+    border-radius: 4px;
+    padding: 1px 5px;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: help;
+    flex-shrink: 0;
+    line-height: 1.1;
+    min-height: 16px;
+    appearance: none;
+    outline: none;
+}
+
+.exp-info-icon:hover {
+    color: #a0aec0;
+    border-color: #a0aec0;
+}
+
+.exp-info-icon:focus-visible {
+    color: #e2e8f0;
+    border-color: #63b3ed;
+    box-shadow: 0 0 0 2px rgba(99, 179, 237, 0.25);
+}
+
 .ca-skills-skill-name {
     font-size: 11px;
     font-weight: bold;
@@ -496,14 +527,39 @@
     margin-bottom: 8px;
 }
 
+.uma-toggle-row-spaced {
+    margin-bottom: 10px;
+}
+
+.uma-bar-value-wide {
+    width: auto;
+    min-width: 72px;
+}
+
+.uma-muted-inline {
+    color: #718096;
+    font-weight: normal;
+}
+
+.uma-race-bonus-line {
+    font-size: 11px;
+    color: #a0aec0;
+    margin-bottom: 4px;
+}
+
+.uma-race-bonus-value {
+    color: #fbbf24;
+    font-weight: bold;
+}
+
 .uma-gate-toggle-btn {
     flex: 1 1 0;
     min-width: 0;
     text-align: center;
-    padding: 4px 6px;
+    padding: 1px 6px;
     white-space: normal;
-    line-height: 1.15;
-    min-height: 34px;
+    line-height: 1.05;
+    min-height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1396,16 +1452,19 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 15px;
-    height: 15px;
+    min-height: 16px;
     margin-left: 6px;
     border: 1px solid #4a5568;
-    border-radius: 50%;
+    border-radius: 4px;
+    padding: 1px 5px;
     color: #a0aec0;
     font-size: 10px;
-    font-weight: bold;
-    line-height: 1;
+    font-family: inherit;
+    font-weight: 600;
+    line-height: 1.1;
     cursor: help;
+    background: transparent;
+    appearance: none;
     transition: border-color var(--haku-transition), color var(--haku-transition), background var(--haku-transition);
 }
 
@@ -1415,6 +1474,35 @@
     border-color: #718096;
     background: rgba(255, 255, 255, 0.08);
     outline: none;
+}
+
+.wth-section {
+    margin-bottom: 20px;
+}
+
+.wth-header {
+    font-size: 13px;
+    font-weight: bold;
+    color: #a0aec0;
+    margin-bottom: 8px;
+}
+
+.wth-info {
+    margin-left: 6px;
+    font-weight: normal;
+}
+
+.wth-summary {
+    margin-left: 12px;
+    font-weight: normal;
+    font-size: 12px;
+    color: #718096;
+}
+
+.wth-svg {
+    width: 100%;
+    max-width: 620px;
+    display: block;
 }
 
 .exp-tooltip-copy {
@@ -1548,6 +1636,17 @@
     align-items: center;
     gap: 6px;
     flex-wrap: wrap;
+}
+
+.exp-feature-actions {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.exp-toggle--card-mode .exp-toggle-btn {
+    min-width: 64px;
 }
 
 .exp-feature-label {

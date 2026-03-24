@@ -1,17 +1,16 @@
 import React, { useMemo } from "react";
+import InfoTooltip from "../MultiRacePage/components/WinDistributionCharts/InfoTooltip";
 
 interface WinTimeHistogramProps {
-    winTimes: number[]; // seconds (finishTime of race winners)
+    winTimes: number[];
 }
 
-// Format seconds as M:SS.ss for axis labels
 function fmtTime(t: number): string {
     const m = Math.floor(t / 60);
     const s = t - m * 60;
     return `${m}:${s.toFixed(2).padStart(5, "0")}`;
 }
 
-// Pick a bin step that targets ~20 bins
 function niceStep(range: number): number {
     const raw = range / 20;
     for (const s of [0.05, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0]) {
@@ -34,31 +33,31 @@ const WinTimeHistogram: React.FC<WinTimeHistogramProps> = ({ winTimes }) => {
         const min = sorted[0];
         const max = sorted[sorted.length - 1];
         const range = max - min;
-        const step = niceStep(Math.max(range, 0.5));
+        const computedStep = niceStep(Math.max(range, 0.5));
 
-        const binStart = Math.floor(min / step) * step;
-        const numBins = Math.ceil((max - binStart) / step) + 1;
+        const binStart = Math.floor(min / computedStep) * computedStep;
+        const numBins = Math.ceil((max - binStart) / computedStep) + 1;
 
         const counts = new Array<number>(numBins).fill(0);
         for (const t of sorted) {
-            const idx = Math.min(Math.floor((t - binStart) / step), numBins - 1);
+            const idx = Math.min(Math.floor((t - binStart) / computedStep), numBins - 1);
             counts[idx]++;
         }
 
-        const bins = counts.map((count, i) => ({
-            start: binStart + i * step,
+        const computedBins = counts.map((count, i) => ({
+            start: binStart + i * computedStep,
             count,
         }));
 
         const sum = sorted.reduce((a, b) => a + b, 0);
-        const mean = sum / sorted.length;
+        const computedMean = sum / sorted.length;
         const mid = Math.floor(sorted.length / 2);
-        const median =
+        const computedMedian =
             sorted.length % 2 === 0
                 ? (sorted[mid - 1] + sorted[mid]) / 2
                 : sorted[mid];
 
-        return { bins, step, mean, median };
+        return { bins: computedBins, step: computedStep, mean: computedMean, median: computedMedian };
     }, [winTimes]);
 
     if (bins.length === 0 || winTimes.length === 0) return null;
@@ -67,51 +66,34 @@ const WinTimeHistogram: React.FC<WinTimeHistogramProps> = ({ winTimes }) => {
     const totalBins = bins.length;
     const barW = PLOT_W / totalBins;
 
-    // x pixel for a time value
     const xOf = (t: number) =>
         PAD.left + ((t - bins[0].start) / (step * totalBins)) * PLOT_W;
 
-    // y pixel for a count
     const yOf = (count: number) =>
         PAD.top + PLOT_H - (count / maxCount) * PLOT_H;
 
-    // x-axis label ticks — target ~6 labels
     const labelEvery = Math.max(1, Math.round(totalBins / 6));
     const labelIndices = bins
         .map((_, i) => i)
         .filter((i) => i % labelEvery === 0 || i === totalBins - 1);
 
-    // y-axis grid lines at 0, 50%, 100%
     const yGridCounts = [0, Math.round(maxCount / 2), maxCount];
 
     return (
-        <div style={{ marginBottom: "20px" }}>
-            <div
-                style={{
-                    fontSize: "13px",
-                    fontWeight: "bold",
-                    color: "#a0aec0",
-                    marginBottom: "8px",
-                }}
-            >
+        <div className="wth-section">
+            <div className="wth-header">
                 Winning Time Distribution
-                <span title="The winning time displayed ingame is usually meaningless and sampled randomly from a 2 second window." className="sa-info-icon" style={{ marginLeft: "6px", fontWeight: "normal" }}>i</span>
-                <span
-                    style={{
-                        marginLeft: "12px",
-                        fontWeight: "normal",
-                        fontSize: "12px",
-                        color: "#718096",
-                    }}
-                >
+                <InfoTooltip
+                    id="winning-time-distribution-info"
+                    tip="The winning time displayed ingame is usually meaningless and sampled randomly from a 2 second window."
+                    className="sa-info-icon wth-info"
+                />
+                <span className="wth-summary">
                     n={winTimes.length} · mean {fmtTime(mean)} · median {fmtTime(median)}
                 </span>
             </div>
 
-            <svg
-                viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-                style={{ width: "100%", maxWidth: VIEW_W, display: "block" }}
-            >
+            <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="wth-svg">
                 {/* y grid lines */}
                 {yGridCounts.map((c) => {
                     const y = yOf(c);
@@ -154,7 +136,7 @@ const WinTimeHistogram: React.FC<WinTimeHistogramProps> = ({ winTimes }) => {
                             opacity={0.8}
                         >
                             <title>
-                                {fmtTime(bin.start)}–{fmtTime(bin.start + step)}: {bin.count} race
+                                {fmtTime(bin.start)}-{fmtTime(bin.start + step)}: {bin.count} race
                                 {bin.count !== 1 ? "s" : ""}
                             </title>
                         </rect>

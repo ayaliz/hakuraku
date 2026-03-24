@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { Container, Nav, Navbar, Spinner } from "react-bootstrap";
-import { HashRouter, Link, Route, Routes } from "react-router-dom";
+import { HashRouter, Link, NavLink, Route, Routes } from "react-router-dom";
 import './App.css';
 import './dark-mode.css';
 import UMDatabaseWrapper from './data/UMDatabaseWrapper';
@@ -55,13 +55,13 @@ export default function App() {
 
                 <Navbar.Collapse id="basic-navbar-nav">
                     <Nav className="me-auto">
-                        <Nav.Link as={Link} to="/">Home</Nav.Link>
-                        <Nav.Link as={Link} to="/veterans">Veterans</Nav.Link>
-                        <Nav.Link as={Link} to="/racedata">Race Analysis</Nav.Link>
-                        <Nav.Link as={Link} to="/multirace">Multi-Race Analysis</Nav.Link>
-                        <Nav.Link as={Link} to="/masterdata">Master Data</Nav.Link>
-                        <Nav.Link as={Link} to="/notes">Research Notes</Nav.Link>
-                        <Nav.Link as={Link} to="/umalogs">
+                        <Nav.Link as={NavLink} to="/" end>Home</Nav.Link>
+                        <Nav.Link as={NavLink} to="/veterans">Veterans</Nav.Link>
+                        <Nav.Link as={NavLink} to="/racedata">Race Analysis</Nav.Link>
+                        <Nav.Link as={NavLink} to="/multirace">Multi-Race Analysis</Nav.Link>
+                        <Nav.Link as={NavLink} to="/masterdata">Master Data</Nav.Link>
+                        <Nav.Link as={NavLink} to="/notes">Research Notes</Nav.Link>
+                        <Nav.Link as={NavLink} to="/umalogs">
                             <span className="haku-nav-link-with-badge">
                                 <span>UmaLogs</span>
                                 <span className="haku-nav-badge">CM11 update!</span>
@@ -69,7 +69,7 @@ export default function App() {
                         </Nav.Link>
                     </Nav>
                     <Nav className="ms-auto">
-                        <Nav.Link as={Link} to="/setup">Setup Guide</Nav.Link>
+                        <Nav.Link as={NavLink} to="/setup">Setup Guide</Nav.Link>
                     </Nav>
                 </Navbar.Collapse>
             </Container>

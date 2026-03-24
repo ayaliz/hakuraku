@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import "./CharacterAnalysis.css";
-import { STRATEGY_COLORS, STRATEGY_NAMES, STRATEGY_DISPLAY_ORDER, BAYES_UMA, BAYES_TEAM } from "./constants";
+import { STRATEGY_COLORS, STRATEGY_NAMES, STRATEGY_DISPLAY_ORDER, BAYES_UMA, BAYES_TEAM, STYLE_POP_FILTER_OPTIONS } from "./constants";
 import { PieSlice } from "./types";
 import { getCharaIcon } from "./utils";
 import type { CharacterStats, HorseEntry, SkillStats, TeamCompositionStats } from "../../types";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
+import InfoTooltip from "./InfoTooltip";
 import { TeamMemberCard } from "./StrategyAnalysis";
 import TeamSampleSelect from "./TeamSampleSelect";
 
@@ -89,7 +90,7 @@ const SynergyEntitySelect: React.FC<SynergyEntitySelectProps> = ({ entities, val
                     <span className="syn-select-name">{selected.charaName}</span>
                     <span className="syn-select-strategy" style={{ color: selectedStratColor }}>{STRATEGY_NAMES[selected.strategy] ?? `Strategy ${selected.strategy}`}</span>
                 </span>
-                <span className="syn-select-arrow">▾</span>
+                <span className="syn-select-arrow">v</span>
             </button>
 
             {open && (
@@ -98,7 +99,7 @@ const SynergyEntitySelect: React.FC<SynergyEntitySelectProps> = ({ entities, val
                         <input
                             ref={inputRef}
                             type="text"
-                            placeholder="Search…"
+                            placeholder="Search..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             className="syn-select-input"
@@ -269,7 +270,7 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
                     <div className="sa-sb-track sa-sb-track--win">
                         <div className="sa-sb-bar-fill" style={{ width: `${(c.adjRate * 100 / maxP) * 100}%`, background: color }} />
                     </div>
-                    <div className="sa-sb-value sa-sb-value--win" style={{ width: "auto", minWidth: "72px" }}>
+                    <div className="sa-sb-value sa-sb-value--win ca-bar-value-wide">
                         {(c.adjRate * 100).toFixed(1)}% <span className="ca-abs-count">({c.winsCount})</span>
                     </div>
                 </div>
@@ -278,7 +279,7 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
                     <div className="sa-sb-track sa-sb-track--pick">
                         <div className="sa-sb-bar-fill sa-sb-bar-fill--pick" style={{ width: `${(c.popPct / maxP) * 100}%` }} />
                     </div>
-                    <div className="sa-sb-value sa-sb-value--pick" style={{ width: "auto", minWidth: "72px" }}>
+                    <div className="sa-sb-value sa-sb-value--pick ca-bar-value-wide">
                         {c.popPct.toFixed(1)}% <span className="ca-abs-count">({c.appsCount})</span>
                     </div>
                 </div>
@@ -320,7 +321,13 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
     return (
         <div className="sa-panel ca-panel">
             <div className="sa-panel-header">
-                <span>{title} <span title="11.11% win% is average." className="sa-info-icon">i</span></span>
+                <span>
+                    {title}{" "}
+                    <InfoTooltip
+                        id={`${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-info`}
+                        tip="11.11% win% is average."
+                    />
+                </span>
                 <div className="ca-sort-toggle">
                     <button
                         className={`ca-sort-btn${sortMode === "pop" ? " ca-sort-btn--active" : ""}`}
@@ -395,6 +402,7 @@ type BubblePoint = {
     cardId: number;
     strategyId: number;
     popPct: number;
+    stylePopPct: number;
     adjWinRate: number;
     count: number;
     adjTeamWinRate: number;
@@ -403,16 +411,12 @@ type BubblePoint = {
 const TEAM_BAYES_K = 18;
 const TEAM_BAYES_PRIOR = 1 / 3;
 
-const POP_FILTER_OPTS = [
-    { value: 0.5, label: "≥0.5%" },
-    { value: 1,   label: "≥1%" },
-    { value: 2,   label: "≥2%" },
-    { value: 0,   label: "All" },
-] as const;
-
 function BubblePlotPanel({ rawPopSlices, rawWinsSlices, strategyColors, allHorses }: BubblePlotPanelProps) {
     const [hovered, setHovered] = useState<string | null>(null);
-    const [minPopPct, setMinPopPct] = useState<number>(1);
+    const [minPopPct, setMinPopPct] = useState<0 | 1 | 3 | 5>(3);
+    const [hiddenStrategies, setHiddenStrategies] = useState<Record<number, boolean>>(
+        () => Object.fromEntries(STRATEGY_DISPLAY_ORDER.map((sid) => [sid, false])) as Record<number, boolean>
+    );
 
     const winsByKey = useMemo(
         () => new Map(rawWinsSlices.filter(s => s.charaId).map(s => [s.charaId as string, s.value])),
@@ -421,7 +425,6 @@ function BubblePlotPanel({ rawPopSlices, rawWinsSlices, strategyColors, allHorse
 
     const teamWinRateByKey = useMemo((): Map<string, { wins: number; apps: number }> => {
         if (!allHorses) return new Map();
-        // Build per-race winner team
         const raceWinTeam = new Map<string, number>();
         const raceHorses = new Map<string, HorseEntry[]>();
         for (const h of allHorses) {
@@ -433,7 +436,6 @@ function BubblePlotPanel({ rawPopSlices, rawWinsSlices, strategyColors, allHorse
             const winner = horses.reduce((best, h) => h.finishOrder < best.finishOrder ? h : best, horses[0]);
             raceWinTeam.set(raceId, winner.teamId);
         }
-        // Accumulate team wins/apps per character key
         const result = new Map<string, { wins: number; apps: number }>();
         for (const h of allHorses) {
             if (h.teamId <= 0) continue;
@@ -446,8 +448,19 @@ function BubblePlotPanel({ rawPopSlices, rawWinsSlices, strategyColors, allHorse
         return result;
     }, [allHorses]);
 
-    const points = useMemo((): BubblePoint[] => {
-        const all = rawPopSlices
+    const styleAppsByStrategy = useMemo(() => {
+        const totals = new Map<number, number>();
+        for (const slice of rawPopSlices) {
+            if (!slice.charaId) continue;
+            const parts = (slice.charaId as string).split('_');
+            const strategyId = Number(parts[2]);
+            totals.set(strategyId, (totals.get(strategyId) ?? 0) + slice.value);
+        }
+        return totals;
+    }, [rawPopSlices]);
+
+    const allPoints = useMemo((): BubblePoint[] => {
+        return rawPopSlices
             .filter(s => s.charaId)
             .map(s => {
                 const key = s.charaId as string;
@@ -456,6 +469,8 @@ function BubblePlotPanel({ rawPopSlices, rawWinsSlices, strategyColors, allHorse
                 const apps = s.value;
                 const adjWinRate = (wins + CHAR_BAYES_K * CHAR_BAYES_PRIOR) / (apps + CHAR_BAYES_K);
                 const tw = teamWinRateByKey.get(key);
+                const strategyId = Number(parts[2]);
+                const styleApps = styleAppsByStrategy.get(strategyId) ?? 0;
                 const adjTeamWinRate = tw
                     ? (tw.wins + TEAM_BAYES_K * TEAM_BAYES_PRIOR) / (tw.apps + TEAM_BAYES_K)
                     : TEAM_BAYES_PRIOR;
@@ -464,71 +479,108 @@ function BubblePlotPanel({ rawPopSlices, rawWinsSlices, strategyColors, allHorse
                     label: s.fullLabel ?? s.label,
                     charaId: Number(parts[0]),
                     cardId: Number(parts[1]),
-                    strategyId: Number(parts[2]),
+                    strategyId,
                     popPct: s.percentage,
+                    stylePopPct: styleApps > 0 ? (apps / styleApps) * 100 : 0,
                     adjWinRate,
                     count: apps,
                     adjTeamWinRate,
                 };
             })
             .sort((a, b) => b.popPct - a.popPct);
-        return minPopPct > 0 ? all.filter(p => p.popPct >= minPopPct) : all;
-    }, [rawPopSlices, winsByKey, teamWinRateByKey, minPopPct]);
+    }, [rawPopSlices, winsByKey, teamWinRateByKey, styleAppsByStrategy]);
 
-    if (points.length === 0) return null;
+    const availableStrategyIds = useMemo(() => {
+        const present = new Set(allPoints.map((p) => p.strategyId));
+        return STRATEGY_DISPLAY_ORDER.filter((sid) => present.has(sid));
+    }, [allPoints]);
 
-    // SVG layout
+    const points = useMemo(() => (
+        allPoints.filter((p) => p.stylePopPct >= minPopPct && !hiddenStrategies[p.strategyId])
+    ), [allPoints, minPopPct, hiddenStrategies]);
+
+    if (allPoints.length === 0) return null;
+
     const W = 620, H = 420;
     const PAD = { top: 10, right: 20, bottom: 34, left: 48 };
     const plotW = W - PAD.left - PAD.right;
     const plotH = H - PAD.top - PAD.bottom;
 
-    // X: individual win rate, Y: team win rate, size: popularity
-    const indRates = points.map(p => p.adjWinRate);
+    const hasVisiblePoints = points.length > 0;
+
+    const indRates = hasVisiblePoints ? points.map(p => p.adjWinRate) : [CHAR_BAYES_PRIOR];
     const xMin = Math.min(...indRates, CHAR_BAYES_PRIOR) * 0.85;
     const xMax = Math.max(...indRates, CHAR_BAYES_PRIOR) * 1.15;
 
-    const twrValues = points.map(p => p.adjTeamWinRate);
+    const twrValues = hasVisiblePoints ? points.map(p => p.adjTeamWinRate) : [TEAM_BAYES_PRIOR];
     const yMin = Math.min(...twrValues, TEAM_BAYES_PRIOR) * 0.85;
     const yMax = Math.max(...twrValues, TEAM_BAYES_PRIOR) * 1.15;
 
     const xScale = (v: number) => PAD.left + ((v - xMin) / (xMax - xMin)) * plotW;
     const yScale = (v: number) => PAD.top + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
 
-    // Bubble radius: sqrt-scaled by pick rate (popularity)
-    const maxPop = Math.max(...points.map(p => p.popPct));
+    const maxPop = hasVisiblePoints ? Math.max(...points.map(p => p.popPct)) : 1;
     const rScale = (pop: number) => 10 + 17 * Math.sqrt(pop / maxPop);
 
-    // Y-axis ticks
     const yRange = yMax - yMin;
     const yStep = yRange <= 0.04 ? 0.005 : yRange <= 0.08 ? 0.01 : yRange <= 0.2 ? 0.02 : 0.05;
     const yTicks: number[] = [];
     for (let v = Math.ceil(yMin / yStep) * yStep; v <= yMax; v += yStep) yTicks.push(v);
 
-    // X-axis ticks
     const xRange = xMax - xMin;
     const xStep = xRange <= 0.04 ? 0.005 : xRange <= 0.08 ? 0.01 : xRange <= 0.2 ? 0.02 : 0.05;
     const xTicks: number[] = [];
     for (let v = Math.ceil(xMin / xStep) * xStep; v <= xMax; v += xStep) xTicks.push(v);
     const hoveredPoint = hovered ? points.find(p => p.key === hovered) ?? null : null;
+    const toggleStrategy = (strategyId: number) => {
+        setHiddenStrategies((prev) => ({ ...prev, [strategyId]: !prev[strategyId] }));
+    };
 
     return (
         <div className="sa-panel ca-panel">
-            <div className="sa-panel-header">
-                <span>Individual Win% vs Team Win% <span title="Bubble size represents population." className="sa-info-icon">i</span></span>
-                <div className="bp-pop-filter-toggle">
-                    <span className="bp-pop-filter-label">Pop:</span>
-                    {POP_FILTER_OPTS.map(opt => (
+                <div className="sa-panel-header">
+                    <span>
+                        Individual Win% vs Team Win%
+                        {" "}
+                        <InfoTooltip
+                            id="individual-vs-team-win-tooltip"
+                            tip="Bubble size represents total population."
+                        />
+                    </span>
+                    <div className="bp-pop-filter-toggle">
+                    <span className="bp-pop-filter-label">Style pop:</span>
+                    {STYLE_POP_FILTER_OPTIONS.map(opt => (
                         <button
                             key={opt.value}
                             className={`bp-pop-filter-btn${minPopPct === opt.value ? " active" : ""}`}
-                            onClick={() => setMinPopPct(opt.value)}
+                            onClick={() => setMinPopPct(opt.value as 0 | 1 | 3 | 5)}
                         >
                             {opt.label}
                         </button>
                     ))}
                 </div>
             </div>
+            <div className="bp-style-legend">
+                <span className="bp-style-legend-label">Display:</span>
+                {availableStrategyIds.map((strategyId) => {
+                    const hidden = hiddenStrategies[strategyId];
+                    return (
+                        <button
+                            key={strategyId}
+                            className={`bp-style-chip${hidden ? " bp-style-chip--inactive" : ""}`}
+                            onClick={() => toggleStrategy(strategyId)}
+                            style={{ "--bp-style-color": strategyColors[strategyId] ?? "#718096" } as React.CSSProperties}
+                            type="button"
+                        >
+                            <span className="bp-style-chip-dot" />
+                            {STRATEGY_NAMES[strategyId]}
+                        </button>
+                    );
+                })}
+            </div>
+            {points.length === 0 ? (
+                <div className="bp-empty-state">No data for the current style filters.</div>
+            ) : (
             <svg className="score-winrate-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
                 {/* Y grid + labels */}
                 {yTicks.map(v => (
@@ -581,8 +633,6 @@ function BubblePlotPanel({ rawPopSlices, rawWinsSlices, strategyColors, allHorse
                     const color = strategyColors[p.strategyId] ?? "#718096";
                     const isHov = hovered === p.key;
                     const icon = getCharaIcon(`${p.charaId}_${p.cardId}`);
-
-                    // Unique clipPath id
                     const clipId = `bp-clip-${p.key}`;
                     return (
                         <g key={p.key}
@@ -594,10 +644,8 @@ function BubblePlotPanel({ rawPopSlices, rawWinsSlices, strategyColors, allHorse
                                     <circle cx={cx} cy={cy} r={r - 1.5} />
                                 </clipPath>
                             </defs>
-                            {/* Strategy-colored ring */}
                             <circle cx={cx} cy={cy} r={r} fill={color} fillOpacity={isHov ? 0.55 : 0.38}
                                 stroke={isHov ? "#e2e8f0" : color} strokeWidth={isHov ? 2 : 1.5} />
-                            {/* Character portrait */}
                             {icon && (
                                 <image href={icon} x={cx - r + 1.5} y={cy - r + 1.5}
                                     width={(r - 1.5) * 2} height={(r - 1.5) * 2}
@@ -624,15 +672,16 @@ function BubblePlotPanel({ rawPopSlices, rawWinsSlices, strategyColors, allHorse
                                 {hoveredPoint.label} [{stratName}]
                             </text>
                             <text x={tx + 8} y={ty + 31} fill="#a0aec0" fontSize={10}>
-                                Win: {(hoveredPoint.adjWinRate * 100).toFixed(1)}% | Pop: {hoveredPoint.popPct.toFixed(1)}%
+                                Win: {(hoveredPoint.adjWinRate * 100).toFixed(1)}% | Pop: {hoveredPoint.popPct.toFixed(1)}% total
                             </text>
                             <text x={tx + 8} y={ty + 46} fill="#a0aec0" fontSize={10}>
-                                Team win: {(hoveredPoint.adjTeamWinRate * 100).toFixed(1)}%
+                                Team win: {(hoveredPoint.adjTeamWinRate * 100).toFixed(1)}% | Style pop: {hoveredPoint.stylePopPct.toFixed(1)}%
                             </text>
                         </g>
                     );
                 })()}
             </svg>
+            )}
         </div>
     );
 }
@@ -770,7 +819,6 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
 
         for (const teamMap of raceMap.values()) {
             for (const { horses, teamWon } of teamMap.values()) {
-                // Only include teams that contain the selected (cardId, strategy) entity
                 if (!horses.some(h => h.cardId === selCardId && h.strategy === selStrategy)) continue;
                 if (horses.length !== 3) continue;
 
@@ -790,7 +838,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
             .map(([key, t]) => {
                 const winRate = t.appearances > 0 ? t.wins / t.appearances : 0;
                 const bayesianWinRate = (t.wins + BAYES_TEAM.K * BAYES_TEAM.PRIOR) / (t.appearances + BAYES_TEAM.K);
-                const label = t.strategies.map(s => (STRATEGY_NAMES[s] ?? String(s)).split(" ")[0]).join(" · ");
+                const label = t.strategies.map(s => (STRATEGY_NAMES[s] ?? String(s)).split(" ")[0]).join(" / ");
                 return {
                     key,
                     strategies: t.strategies,
@@ -830,9 +878,8 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                 </div>
                 <div className="syn-comp-name">{e.label}</div>
                 <div className="syn-comp-stats">
-                    <span className="sa-adj-pct" style={{ color: valueColor }}>{(e.bayesianWinRate * 100).toFixed(0)}%</span>
-                    <span className="sa-pipe"> | </span>
-                    <span className="sa-raw-pct">{(e.winRate * 100).toFixed(0)}% ({e.appearances})</span>
+                    <span className="sa-adj-pct syn-comp-stat" style={{ color: valueColor }}>{(e.bayesianWinRate * 100).toFixed(1)}%</span>
+                    <span className="sa-raw-pct syn-comp-stat">{(e.winRate * 100).toFixed(1)}% ({e.appearances})</span>
                 </div>
             </div>
         );
@@ -872,10 +919,13 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
 
             {spectatorMode && synEntities.length > 0 && (
                 <div className="syn-section">
-                    <div className="syn-section-header">
-                        Style Trio Synergy
-                        <span title="Highest win rate team compositions for a specific character." className="sa-info-icon">i</span>
-                    </div>
+                <div className="syn-section-header">
+                    Style Trio Synergy
+                    <InfoTooltip
+                        id="style-trio-synergy-info"
+                        tip="Highest win rate team compositions for a specific character."
+                    />
+                </div>
                     <div className="syn-entity-row">
                         <span className="syn-entity-label">Character:</span>
                         <SynergyEntitySelect
@@ -893,7 +943,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                                 <div className="syn-table-col">
                                     <div className="syn-table-col-label syn-table-col-label--best">
                                         OVERPERFORMERS
-                                        <span className="sa-stats-meta"><span className="sa-meta-adj sa-meta-adj--over">Adj. win%</span><span className="sa-meta-raw"> | Raw win% (samples)</span></span>
+                                        <span className="syn-comp-meta"><span className="sa-meta-adj sa-meta-adj--over">Adj. win%</span><span className="sa-meta-raw">Raw win% (samples)</span></span>
                                     </div>
                                     {overperformers.map(e => renderCompItem(e, true))}
                                 </div>
@@ -902,7 +952,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                                 <div className="syn-table-col">
                                     <div className="syn-table-col-label syn-table-col-label--worst">
                                         UNDERPERFORMERS
-                                        <span className="sa-stats-meta"><span className="sa-meta-adj sa-meta-adj--under">Adj. win%</span><span className="sa-meta-raw"> | Raw win% (samples)</span></span>
+                                        <span className="syn-comp-meta"><span className="sa-meta-adj sa-meta-adj--under">Adj. win%</span><span className="sa-meta-raw">Raw win% (samples)</span></span>
                                     </div>
                                     {underperformers.map(e => renderCompItem(e, false))}
                                 </div>
@@ -969,3 +1019,4 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
 };
 
 export default CharacterAnalysis;
+

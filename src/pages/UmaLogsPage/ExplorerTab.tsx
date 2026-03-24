@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import type { HorseEntry } from "../MultiRacePage/types";
 import { STRATEGY_NAMES, STRATEGY_COLORS } from "../MultiRacePage/components/WinDistributionCharts/constants";
+import InfoTooltip from "../MultiRacePage/components/WinDistributionCharts/InfoTooltip";
 import { getCharaIcon } from "../MultiRacePage/components/WinDistributionCharts/utils";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 import AssetLoader from "../../data/AssetLoader";
@@ -12,7 +12,8 @@ type FilterProperty = "none" | "speed" | "stamina" | "pow" | "guts" | "wiz" | "t
 type StatOp = ">" | "<" | "=";
 type SortKey = "label" | "entries" | "teams" | "wins" | "awPct";
 type SkillFilterMode = "learned" | "notLearned" | "activated" | "notActivated";
-type FeatureMatchMode = "is" | "isNot";
+type CharacterMatchMode = "is" | "isNot";
+type FeatureCardMode = "include" | "exclude";
 
 interface CharaVariant {
     cardId: number;
@@ -43,7 +44,8 @@ interface CharacterRequirement {
 
 interface CharacterFeature {
     id: string;
-    matchMode: FeatureMatchMode;
+    characterMatchMode: CharacterMatchMode;
+    cardMode: FeatureCardMode;
     cardId: number | null;
     cardStrategy: number | null;
     requirements: CharacterRequirement[];
@@ -354,9 +356,13 @@ const SupportCardSelect: React.FC<SupportCardSelectProps> = ({ variants, value, 
 const STRATEGIES = [5, 1, 2, 3, 4] as const;
 
 const ExplorerInfoIcon = ({ id, tip }: { id: string; tip: React.ReactNode }) => (
-    <OverlayTrigger placement="bottom" overlay={<Tooltip id={id}>{tip}</Tooltip>}>
-        <span className="exp-info-icon" tabIndex={0} role="button" aria-label="Explain filter behavior">i</span>
-    </OverlayTrigger>
+    <InfoTooltip
+        id={id}
+        tip={tip}
+        className="exp-info-icon"
+        placement="bottom"
+        ariaLabel="Explain filter behavior"
+    />
 );
 
 function computeSkillPoints(learnedSkillIds: Set<number>): number {
@@ -406,14 +412,20 @@ function matchStatProperty(filter: PropertyFilter, h: HorseEntry): boolean {
 }
 
 function matchesFeatureCharacter(feature: CharacterFeature, h: HorseEntry): boolean {
-    return (feature.cardId === 0 || h.cardId === feature.cardId) &&
+    const matchesCard = feature.cardId === 0
+        ? true
+        : feature.characterMatchMode === "is"
+            ? h.cardId === feature.cardId
+            : h.cardId !== feature.cardId;
+
+    return matchesCard &&
         (feature.cardStrategy === null || h.strategy === feature.cardStrategy);
 }
 
 function matchesCharacterFeaturePredicate(feature: CharacterFeature, h: HorseEntry): boolean {
     const positiveMatch = matchesFeatureCharacter(feature, h) &&
         feature.requirements.every(req => matchesPropertyFilter(req, h));
-    return feature.matchMode === "is" ? positiveMatch : !positiveMatch;
+    return feature.cardMode === "include" ? positiveMatch : !positiveMatch;
 }
 
 function findDistinctFeatureMatches(
@@ -683,7 +695,8 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
 
     const addCharacterFeature = () => setCharacterFeatures(prev => [...prev, {
         id: `${Date.now()}-${Math.random()}`,
-        matchMode: "is",
+        characterMatchMode: "is",
+        cardMode: "include",
         cardId: cardVariants[0]?.cardId ?? null,
         cardStrategy: null,
         requirements: [createDefaultRequirement()],
@@ -803,9 +816,9 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                                 id="explorer-filter-types-tooltip"
                                 tip={
                                     <div className="exp-tooltip-copy">
-                                        <div><strong>is</strong>: the selected uma must match the full card.</div>
-                                        <div><strong>is not</strong>: the selected uma must not match the full card.</div>
-                                        <div>Different cards must be fulfilled by different umas on the same team.</div>
+                                        <div><strong>is / is not</strong>: controls whether the matched uma can be the selected character.</div>
+                                        <div><strong>Include / Exclude</strong>: controls whether this full card definition must be present or absent on the team.</div>
+                                        <div>Different included cards must be fulfilled by different umas on the same team.</div>
                                     </div>
                                 }
                             />
@@ -818,14 +831,14 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                                     <span className="exp-feature-label">Character</span>
                                     <div className="exp-toggle">
                                         <button
-                                            className={`exp-toggle-btn${feature.matchMode === "is" ? " active" : ""}`}
-                                            onClick={() => updateCharacterFeature(feature.id, { matchMode: "is" })}
+                                            className={`exp-toggle-btn${feature.characterMatchMode === "is" ? " active" : ""}`}
+                                            onClick={() => updateCharacterFeature(feature.id, { characterMatchMode: "is" })}
                                         >
                                             is
                                         </button>
                                         <button
-                                            className={`exp-toggle-btn${feature.matchMode === "isNot" ? " active" : ""}`}
-                                            onClick={() => updateCharacterFeature(feature.id, { matchMode: "isNot" })}
+                                            className={`exp-toggle-btn${feature.characterMatchMode === "isNot" ? " active" : ""}`}
+                                            onClick={() => updateCharacterFeature(feature.id, { characterMatchMode: "isNot" })}
                                         >
                                             is not
                                         </button>
@@ -842,7 +855,23 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                                             <option key={s} value={s}>{STRATEGY_NAMES[s] ?? `Strategy ${s}`}</option>
                                         ))}
                                     </select>
-                                    <button className="exp-remove-btn" onClick={() => removeCharacterFeature(feature.id)}>x</button>
+                                    <div className="exp-feature-actions">
+                                        <div className="exp-toggle exp-toggle--card-mode">
+                                            <button
+                                                className={`exp-toggle-btn${feature.cardMode === "include" ? " active" : ""}`}
+                                                onClick={() => updateCharacterFeature(feature.id, { cardMode: "include" })}
+                                            >
+                                                Include
+                                            </button>
+                                            <button
+                                                className={`exp-toggle-btn${feature.cardMode === "exclude" ? " active" : ""}`}
+                                                onClick={() => updateCharacterFeature(feature.id, { cardMode: "exclude" })}
+                                            >
+                                                Exclude
+                                            </button>
+                                        </div>
+                                        <button className="exp-remove-btn" onClick={() => removeCharacterFeature(feature.id)}>x</button>
+                                    </div>
                                 </div>
 
                                 <div className="exp-feature-reqs">

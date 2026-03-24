@@ -93,6 +93,10 @@ interface SupportCardSelectProps {
     onChange: (supportCardId: number) => void;
 }
 
+function formatPercent(value: number): string {
+    return value.toFixed(1);
+}
+
 const SUPPORT_CARD_LB_OPTIONS = [
     { value: 0, label: "0LB" },
     { value: 1, label: "1LB" },
@@ -548,7 +552,7 @@ function aggregateHorses(
         label: g.label, sublabel: g.sublabel,
         charaId: g.charaId, cardId: g.cardId, strategy: g.strategy,
         entries: g.entries, teams: g.teams.size, wins: g.wins,
-        awPct: g.entries > 0 ? Math.round(100 * g.wins / g.entries) : 0,
+        awPct: g.entries > 0 ? (100 * g.wins) / g.entries : 0,
     }));
 
     result.sort((a, b) => {
@@ -689,7 +693,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
         const winKeys = new Set(filteredHorses.filter(h => h.finishOrder === 1).map(h => `${h.raceId}|${h.teamId}`));
         return { filteredTeams: keys.size, filteredTeamWins: winKeys.size };
     }, [filteredHorses]);
-    const filteredTeamWinPct = filteredTeams > 0 ? Math.round(100 * filteredTeamWins / filteredTeams) : 0;
+    const filteredTeamWinPct = filteredTeams > 0 ? (100 * filteredTeamWins) / filteredTeams : 0;
     const isLowTeamWinRate = filteredTeams > 0 && filteredTeamWins * 3 < filteredTeams;
 
 
@@ -783,7 +787,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                 {showTeamsColumn && <td className="exp-td exp-td--r">{row.teams}</td>}
                 <td className="exp-td exp-td--r">
                     {row.wins}
-                    {row.entries > 0 && <span className="exp-wins-pct"> ({row.awPct}%)</span>}
+                    {row.entries > 0 && <span className="exp-wins-pct"> ({formatPercent(row.awPct)}%)</span>}
                 </td>
             </tr>
         );
@@ -799,7 +803,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                         {" | "}{filteredTeamWins.toLocaleString()} wins
                         {" | "}
                         <span className={`exp-filter-winpct${isLowTeamWinRate ? " exp-filter-winpct--low" : ""}`}>
-                            {filteredTeamWinPct}% team win rate
+                            {formatPercent(filteredTeamWinPct)}% team win rate
                         </span>
                         {hasCharacterFilter && (
                             <>{` | ${filteredHorses.length.toLocaleString()} entries`}</>

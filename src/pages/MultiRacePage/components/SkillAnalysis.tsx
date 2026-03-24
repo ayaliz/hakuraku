@@ -11,8 +11,11 @@ type LocalDoubleProcSummary = {
     estimatedDoubleOpportunityRate?: number;
 };
 
+type DoubleProcRateSummary = Pick<SkillDoubleProcStats, "estimatedDoubleOpportunityRate"> | LocalDoubleProcSummary | null;
+
 type DoubleProcBreakdown = {
-    byStrategy?: Record<string, Pick<SkillDoubleProcStats, "estimatedDoubleOpportunityRate"> | LocalDoubleProcSummary | null>;
+    overall?: DoubleProcRateSummary;
+    byStrategy?: Record<string, DoubleProcRateSummary>;
 };
 
 interface SkillAnalysisProps {
@@ -225,7 +228,7 @@ function renderDoubleProcBreakdown(breakdown: DoubleProcBreakdown | null | undef
     const hasAny = STRATS.some((strategy) => breakdown?.byStrategy?.[String(strategy)]?.estimatedDoubleOpportunityRate !== undefined);
     if (!hasAny) return null;
 
-    const fmt = (summary: Pick<SkillDoubleProcStats, "estimatedDoubleOpportunityRate"> | LocalDoubleProcSummary | null | undefined) => {
+    const fmt = (summary: DoubleProcRateSummary | undefined) => {
         if (!summary || summary.estimatedDoubleOpportunityRate === undefined) {
             return <span className="swb-empty">-</span>;
         }
@@ -235,19 +238,25 @@ function renderDoubleProcBreakdown(breakdown: DoubleProcBreakdown | null | undef
     return (
         <div className="swb-container">
             <div className="swb-header">Estimated frequency for two proc opportunities during a race</div>
-            <table className="swb-table swb-table--compact">
+            <table className="swb-table">
                 <thead>
                     <tr>
+                        <th className="swb-label-col" />
                         {STRATS.map(s => <th key={s} className="swb-strat-col">{STRAT_LABELS[s]}</th>)}
+                        <th className="swb-total-col">Total</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr className="swb-row--total">
+                        <td className="swb-label">All</td>
                         {STRATS.map(s => (
                             <td key={s} className="swb-cell">
                                 {fmt(byStrategy[String(s)])}
                             </td>
                         ))}
+                        <td className="swb-cell swb-cell--all">
+                            {fmt(breakdown?.overall)}
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -636,6 +645,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
         const doubleProcSummary = computeDoubleProcSummary(activations);
         const doubleProcBreakdown: DoubleProcBreakdown = {};
         if (doubleProcSummary) {
+            doubleProcBreakdown.overall = doubleProcSummary;
             const procCountsByHorse = new Map<string, number>();
             activations.forEach((activation) => {
                 const key = `${activation.raceId}_${activation.horseFrameOrder}`;

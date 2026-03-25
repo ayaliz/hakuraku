@@ -1053,7 +1053,7 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
                     <div className="stcp-modal" onClick={e => e.stopPropagation()}>
                         <div className="stcp-modal-header">
                             <div className="fup-modal-title">Team Member - Full Profile</div>
-                            <button className="stcp-modal-close" onClick={() => setOpen(false)}>Ã—</button>
+                            <button className="stcp-modal-close" onClick={() => setOpen(false)}>&times;</button>
                         </div>
                         <div className="stcp-modal-body">
                             <div className="fup-identity">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './ShopRefreshPage.css';
 
 interface ShopItem {
@@ -29,11 +29,7 @@ interface TurnData {
     items: ShopItem[];
 }
 
-// Lazy-loaded at module level; Vite will handle the JSON import
-import shopData from '../../../public/data/shop-refresh-data.json';
-
-const TURNS = shopData as TurnData[];
-const MAX_N = Math.max(...TURNS.map(t => t.n));
+const SHOP_DATA_URL = `${import.meta.env.BASE_URL}data/shop-refresh-data.json`;
 
 function iconSrc(icon: string) {
     return `${import.meta.env.BASE_URL}assets/mant/${icon}`;
@@ -65,7 +61,6 @@ function ItemIcon({ icon, name, className }: { icon: string; name: string; class
 
 // ── Scatter plot ─────────────────────────────────────────────
 function ScatterPlot({ items, n }: { items: ShopItem[]; n: number }) {
-    const maxAppear = Math.max(...items.map(i => i.appearanceRate), 1);
     const yMin = 0.95;
     const yMax = 1.55;
     const yRange = yMax - yMin;
@@ -97,7 +92,7 @@ function ScatterPlot({ items, n }: { items: ShopItem[]; n: number }) {
                         ))}
                         <div className="srp-scatter-points">
                             {items.map(item => {
-                                const left = Math.min((item.appearanceRate / maxAppear) * 95, 95);
+                                const left = Math.min(Math.max(item.appearanceRate, 0), 100);
                                 const bottom = Math.min(Math.max(((item.avgCopies - yMin) / yRange) * 100, 0), 100);
                                 const tip = `${item.name} (item ${item.id})\nAppearance rate: ${item.appearanceRate}%\nAvg copies when present: ${item.avgCopies}\n${item.batches}/${n} batches`;
                                 return (
@@ -204,6 +199,53 @@ function TurnSection({ turn }: { turn: TurnData }) {
 
 // ── Page ─────────────────────────────────────────────────────
 export default function ShopRefreshPage() {
+    const [turns, setTurns] = useState<TurnData[] | null>(null);
+    const [loadError, setLoadError] = useState<string | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        async function loadTurns() {
+            try {
+                const response = await fetch(SHOP_DATA_URL);
+                if (!response.ok) {
+                    throw new Error(`Failed to load shop data (${response.status})`);
+                }
+                const data = await response.json() as TurnData[];
+                if (!cancelled) {
+                    setTurns(data);
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    setLoadError(error instanceof Error ? error.message : 'Failed to load shop data');
+                }
+            }
+        }
+
+        void loadTurns();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    if (loadError) {
+        return (
+            <div className="srp-page">
+                <div className="srp-turn-section">Unable to load shop refresh data: {loadError}</div>
+            </div>
+        );
+    }
+
+    if (!turns) {
+        return (
+            <div className="srp-page">
+                <div className="srp-turn-section">Loading shop refresh data...</div>
+            </div>
+        );
+    }
+
+    const maxN = Math.max(...turns.map(t => t.n), 1);
+
     return (
         <div className="srp-page">
             {/* Turn nav */}
@@ -213,7 +255,7 @@ export default function ShopRefreshPage() {
                         <span>Jump to a turn</span>
                     </div>
                     <div className="srp-turn-chip-grid">
-                        {TURNS.map(t => (
+                        {turns.map(t => (
                             <div
                                 key={t.turn}
                                 className="srp-turn-chip"
@@ -229,7 +271,7 @@ export default function ShopRefreshPage() {
                                 <span className="srp-turn-chip-label">T{t.turn}</span>
                                 <span className="srp-turn-chip-count">n={t.n}</span>
                                 <span className="srp-turn-chip-bar">
-                                    <span style={{ width: `${(t.n / MAX_N) * 100}%` }} />
+                                    <span style={{ width: `${(t.n / maxN) * 100}%` }} />
                                 </span>
                             </div>
                         ))}
@@ -239,7 +281,7 @@ export default function ShopRefreshPage() {
 
             {/* Turn sections */}
             <div className="srp-turn-sections">
-                {TURNS.map(t => <TurnSection key={t.turn} turn={t} />)}
+                {turns.map(t => <TurnSection key={t.turn} turn={t} />)}
             </div>
         </div>
     );

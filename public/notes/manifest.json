@@ -19,5 +19,12 @@
     "filename": "sparks.md",
     "date": "2026-02-20",
     "description": "Spark proc chances and stuff"
+  },
+  {
+    "id": "shop-refresh",
+    "title": "MANT shop refresh data",
+    "filename": "shop-refresh.md",
+    "date": "2026-03-25",
+    "description": "Spawn rates and average amounts for each scheduled refresh turn."
   }
 ]

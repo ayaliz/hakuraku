@@ -29,7 +29,8 @@ const UmaLogsPage     = lazyWithReload(() => import("./pages/UmaLogsPage"),     
 const MasterDataPage  = lazyWithReload(() => import("./pages/MasterDataPage"),  "MasterDataPage");
 const NotesPage       = lazyWithReload(() => import("./pages/NotesPage"),       "NotesPage");
 const SetupGuidePage  = lazyWithReload(() => import("./pages/SetupGuidePage"),  "SetupGuidePage");
-const VeteransPage    = lazyWithReload(() => import("./pages/VeteransPage"),    "VeteransPage");
+const VeteransPage      = lazyWithReload(() => import("./pages/VeteransPage"),      "VeteransPage");
+const ShopRefreshPage   = lazyWithReload(() => import("./pages/ShopRefreshPage"),  "ShopRefreshPage");
 
 
 export default function App() {
@@ -86,6 +87,7 @@ export default function App() {
                     <Route path="/masterdata" element={<MasterDataPage />} />
                     <Route path="/notes/:noteId" element={<NotesPage />} />
                     <Route path="/notes" element={<NotesPage />} />
+                    <Route path="/shop-refresh" element={<ShopRefreshPage />} />
                     <Route path="/" element={<Home />} />
                 </Routes>
             </Suspense>

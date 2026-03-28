@@ -1,9 +1,9 @@
-import { RaceSimulateData, RaceSimulateEventData_SimulateEventType } from "../../data/race_data_pb";
+import { RaceSimulateEventData_SimulateEventType } from "../../data/race_data_pb";
 import { deserializeFromBase64 } from "../../data/RaceDataParser";
 import { fromRaceHorseData } from "../../data/TrainedCharaData";
 import GameDataLoader from "../../data/GameDataLoader";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
-import { parseGroundCondition } from "../../components/RaceDataPresenter/utils/RacePresenterUtils";
+import { parseGroundCondition, calculateRaceDistance } from "../../components/RaceDataPresenter/utils/RacePresenterUtils";
 import {
     AggregatedStats,
     CharacterStats,
@@ -110,18 +110,6 @@ export function getCourseAptitudeFilters(courseId: number | undefined): { ground
     const m = course.distance as number;
     const distance = m <= 1400 ? 1 : m <= 1800 ? 2 : m <= 2400 ? 3 : 4;
     return { ground, distance };
-}
-
-function calculateRaceDistance(raceData: RaceSimulateData): number {
-    let maxDist = 0;
-    for (const frame of raceData.frame ?? []) {
-        for (const hf of frame.horseFrame ?? []) {
-            if (hf.distance && hf.distance > maxDist) {
-                maxDist = hf.distance;
-            }
-        }
-    }
-    return Math.round(maxDist / 100) * 100;
 }
 
 export function parseRaceJson(json: any, fileName: string): ParsedRace | { error: string } {

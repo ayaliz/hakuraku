@@ -26,5 +26,12 @@
     "filename": "shop-refresh.md",
     "date": "2026-03-25",
     "description": "Spawn rates and average amounts for each scheduled refresh turn."
+  },
+  {
+    "id": "spark_generation",
+    "title": "Spark generation rates",
+    "filename": "spark-generation.md",
+    "date": "2026-03-28",
+    "description": "Observed spark generation data vs community expected rates."
   }
 ]

@@ -25,6 +25,7 @@ const calculateSortScore = (veteran: Veteran, sortMode: SortOption, affinityChar
     };
 
     switch (sortMode) {
+        case 'date': return Date.parse(veteran.create_time ?? '') || 0;
         case 'blues': return sumStars(f => f.category === 1);
         case 'total_common': return sumStars(f => f.category === 4 || f.category === 5);
         case 'total_skills': return sumStars(f => f.category === 5);

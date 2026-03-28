@@ -518,7 +518,7 @@ export function useCanvasOverlay(
                         .forEach(s => {
                             const dur = getSkillDurationSecs(s.param[1], p.goalInX);
                             const remaining = Math.max(0, s.time + dur - time);
-                            const label = p.toggles.skillDuration ? `? ${s.name} ${remaining.toFixed(1)}s` : `? ${s.name}`;
+                            const label = p.toggles.skillDuration ? `↓ ${s.name} ${remaining.toFixed(1)}s` : `↓ ${s.name}`;
                             labels.push({ text: label, bg: "#ffcccb" });
                         });
                 }

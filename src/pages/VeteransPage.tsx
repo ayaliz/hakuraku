@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import "./VeteransPage/VeteransPage.css";
 import { Alert, Button, Container, Form, InputGroup } from "react-bootstrap";
-import { Veteran, BaseFilter, BluesFilter, AptitudeFilter, UniquesFilter, RacesFilter, SkillsFilter } from "./VeteransPage/types";
+import { Veteran, BaseFilter, BluesFilter, AptitudeFilter, UniquesFilter, RacesFilter, SkillsFilter, SortOption, SortDirection } from "./VeteransPage/types";
 import { SelectorType } from "./VeteransPage/InlineFilterSelector";
-import VeteransSorter, { SortOption, SortDirection } from "./VeteransPage/VeteransSorter";
+import VeteransSorter from "./VeteransPage/VeteransSorter";
 
 import VeteranCard from "./VeteransPage/VeteranCard";
 import FilterToolbar from "./VeteransPage/FilterToolbar";
@@ -96,7 +96,7 @@ export default function VeteransPage() {
     const [showRacesSelector, setShowRacesSelector] = useState(false);
     const [showSkillsSelector, setShowSkillsSelector] = useState(false);
 
-    const [activeSort, setActiveSort] = useState<SortOption>("none");
+    const [activeSort, setActiveSort] = useState<SortOption>("date");
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
     const [nameSearch, setNameSearch] = useState("");
     const [affinityCharaId, setAffinityCharaId] = useState<number | null>(null);
@@ -191,7 +191,7 @@ export default function VeteransPage() {
         setUniquesFilters([]);
         setRacesFilters([]);
         setSkillsFilters([]);
-        setActiveSort("none");
+        setActiveSort("date");
         setSortDirection("desc");
     };
 
@@ -341,7 +341,7 @@ export default function VeteransPage() {
                                 mainCharId={affinityCharaId}
                                 onMainCharChange={id => {
                                     setAffinityCharaId(id);
-                                    if (id && activeSort === "none") setActiveSort("affinity");
+                                    if (id && activeSort === "date") setActiveSort("affinity");
                                 }}
                                 parent1={affinityParent1}
                                 parent2={affinityParent2}

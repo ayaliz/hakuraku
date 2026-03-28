@@ -1,11 +1,10 @@
-import React, { useMemo } from 'react';
-import { Table, ProgressBar } from 'react-bootstrap';
-import { CharaHpSpurtStats } from './types';
+import React from 'react';
+import { Table } from 'react-bootstrap';
+import { CharaHpSpurtStats, RecoveryScenarioStats } from './types';
 import UMDatabaseWrapper from '../../../../data/UMDatabaseWrapper';
 import './HpSpurtAnalysis.css';
 import HpDistributionModal from './HpDistributionModal';
-import CharaProperLabels from "../../../../components/CharaProperLabels";
-import { getCourseAptitudeFilters } from "../../utils";
+import { getColorForSpurtDelay } from "../../../../components/RaceDataPresenter/utils/RacePresenterUtils";
 
 const getMeanMedian = (data: number[]) => {
     if (data.length === 0) return { mean: 0, median: 0 };
@@ -17,33 +16,86 @@ const getMeanMedian = (data: number[]) => {
     return { mean, median };
 };
 
-const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats; courseId?: number }> = ({ stat, courseId }) => {
-    const aptitudeFilters = getCourseAptitudeFilters(courseId);
+const formatMetric = (value: number, digits: number, signed: boolean = false): string => {
+    const prefix = signed && value > 0 ? '+' : '';
+    return `${prefix}${value.toFixed(digits)}`;
+};
 
-    const dominantRunningStyle = useMemo(() => {
-        const counts: Record<number, number> = {};
-        stat.sourceRuns.forEach(({ race, horseFrameOrder }) => {
-            const horseData = race.horseInfo.find(
-                (h, idx) => ((h['frame_order'] ?? (idx + 1)) - 1) === horseFrameOrder
-            );
-            const raw = horseData?.running_style;
-            const style = (raw === 1 || raw === 2 || raw === 3 || raw === 4) ? raw : 1;
-            counts[style] = (counts[style] ?? 0) + 1;
-        });
-        let best = 1, bestCount = 0;
-        for (const [s, c] of Object.entries(counts)) {
-            if (c > bestCount) { bestCount = c; best = Number(s); }
-        }
-        return best;
-    }, [stat.sourceRuns]);
-    // 1. Calculate Aggregates
-    const fullSpurtRate = stat.totalRuns > 0 ? (stat.hpOutcomesFullSpurt.length / stat.totalRuns) * 100 : 0;
-    const survivalRate = stat.totalRuns > 0 ? (stat.survivalCount / stat.totalRuns) * 100 : 0;
+const getRateColor = (rate: number) => (
+    rate > 80 ? '#4ade80' : rate > 50 ? '#facc15' : '#f87171'
+);
 
-    const allHpOutcomes = [...stat.hpOutcomesFullSpurt, ...stat.hpOutcomesNonFullSpurt];
-    const { mean: meanHp, median: medianHp } = getMeanMedian(allHpOutcomes);
+const getSignedMetricColor = (value: number) => (
+    value >= 0 ? '#4ade80' : '#f87171'
+);
 
-    // Modal State
+const getSpeedDiffColor = (value: number) => {
+    if (value >= -0.05) return '#4ade80';
+    if (value >= -0.2) return '#facc15';
+    return '#f87171';
+};
+
+const AvgHeader: React.FC<{ label: string }> = ({ label }) => (
+    <>
+        <div>Avg</div>
+        <div className="hp-th-subtitle hp-th-subtitle--avg">{label}</div>
+    </>
+);
+
+type RecoveryScenarioPart = {
+    pctLabel: string;
+    activatedCount: number;
+    lateCount: number;
+};
+
+function parseRecoveryScenarioParts(scenarioId: string): RecoveryScenarioPart[] {
+    return scenarioId.split('_').flatMap((part) => {
+        const match = part.match(/^(\d+)-e(\d+)-l(\d+)\/(\d+)$/);
+        if (!match) return [];
+
+        const [, rawValue, rawEarlyCount, rawLateCount] = match;
+        const earlyCount = Number(rawEarlyCount);
+        const lateCount = Number(rawLateCount);
+        const activatedCount = earlyCount + lateCount;
+
+        if (activatedCount === 0) return [];
+
+        return [{
+            pctLabel: `${(Number(rawValue) / 100).toFixed(1)}%`,
+            activatedCount,
+            lateCount,
+        }];
+    });
+}
+
+const RecoveryScenarioLabel: React.FC<{ scenario: RecoveryScenarioStats }> = ({ scenario }) => {
+    const parts = parseRecoveryScenarioParts(scenario.scenarioId);
+
+    if (parts.length === 0) {
+        return <>{scenario.label}</>;
+    }
+
+    return (
+        <>
+            {parts.map((part, index) => (
+                <React.Fragment key={`${scenario.scenarioId}-${index}`}>
+                    {index > 0 && ', '}
+                    <span>{part.pctLabel} ({part.activatedCount}</span>
+                    {part.lateCount > 0 && (
+                        <>
+                            {', '}
+                            <span>{part.lateCount} </span>
+                            <span className="hp-scenario-late">late-race</span>
+                        </>
+                    )}
+                    <span>)</span>
+                </React.Fragment>
+            ))}
+        </>
+    );
+};
+
+const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) => {
     const [modalOpen, setModalOpen] = React.useState(false);
     const [modalTitle, setModalTitle] = React.useState('');
     const [modalData, setModalData] = React.useState<number[]>([]);
@@ -54,27 +106,46 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats; courseId?: numb
         setModalOpen(true);
     };
 
+    const renderMetricCell = (
+        scenario: RecoveryScenarioStats,
+        metricLabel: string,
+        data: number[],
+        options: {
+            digits?: number;
+            signed?: boolean;
+            color?: (value: number) => string;
+            emptyLabel?: string;
+        } = {}
+    ) => {
+        if (data.length === 0) {
+            return (
+                <td className="text-center hp-scenario-cell hp-scenario-cell--empty">
+                    {options.emptyLabel ?? '-'}
+                </td>
+            );
+        }
 
-    const getRateColor = (rate: number, type: 'good' | 'bad' = 'good') => {
-        if (type === 'good') return rate > 80 ? '#4ade80' : rate > 50 ? '#facc15' : '#f87171';
-        return rate < 20 ? '#4ade80' : rate < 50 ? '#facc15' : '#f87171';
+        const { mean, median } = getMeanMedian(data);
+        const digits = options.digits ?? 0;
+        const signed = options.signed ?? false;
+        const color = options.color?.(mean);
+
+        return (
+            <td
+                className="text-center clickable-cell hp-scenario-cell hp-scenario-cell--metric"
+                onClick={() => openModal(`${scenario.label} - ${metricLabel}`, data)}
+            >
+                <div className="hp-scenario-metric-primary" style={color ? { color } : undefined}>
+                    {formatMetric(mean, digits, signed)}
+                </div>
+                <div className="hp-scenario-metric-secondary">
+                    median {formatMetric(median, digits, signed)}
+                </div>
+            </td>
+        );
     };
 
-    const getProgVariant = (rate: number) => rate > 80 ? 'success' : rate > 50 ? 'warning' : 'danger';
-
-
-    const StatCard = ({ title, value, subValue, progress, variant }: { title: string, value: React.ReactNode, subValue?: string, progress?: number, variant?: string }) => (
-        <div className="stat-card detail-stat-card">
-            <div className="dsc-title">{title}</div>
-            <div className="dsc-value">{value}</div>
-            {subValue && <div className="dsc-subvalue">{subValue}</div>}
-            {progress !== undefined && (
-                <div className="dsc-progress">
-                    <ProgressBar now={progress} variant={variant || getProgVariant(progress)} />
-                </div>
-            )}
-        </div>
-    );
+    const recoveryRows = Object.values(stat.recoveryStats ?? {}).sort((a, b) => b.totalRuns - a.totalRuns);
 
     return (
         <div className="analysis-detail-container">
@@ -85,149 +156,121 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats; courseId?: numb
                 data={modalData}
             />
 
-
-            <div className="detail-top-section">
-                <CharaProperLabels
-                    chara={stat.trainedChara}
-                    groundFilter={aptitudeFilters?.ground}
-                    distanceFilter={aptitudeFilters?.distance}
-                    runningStyleFilter={dominantRunningStyle}
-                />
-                <div className="detail-stat-cards">
-                    <div className="detail-stat-card-clickable" onClick={() => openModal('All Runs', allHpOutcomes)}>
-                        <StatCard
-                            title="Total Runs"
-                            value={stat.totalRuns}
-                            subValue={`Win Rate: ${((stat.wins / stat.totalRuns) * 100).toFixed(1)}%`}
-                        />
-                    </div>
-                    <div className="detail-stat-card-clickable" onClick={() => openModal('Full Spurt Runs', stat.hpOutcomesFullSpurt)}>
-                        <StatCard
-                            title="Full Spurt Rate"
-                            value={`${fullSpurtRate.toFixed(1)}%`}
-                            subValue={`${stat.hpOutcomesFullSpurt.length} / ${stat.totalRuns}`}
-                            progress={fullSpurtRate}
-                        />
-                    </div>
-                    <div className="detail-stat-card-clickable" onClick={() => openModal('Survivor Runs', allHpOutcomes.filter(h => h > 0))}>
-                        <StatCard
-                            title="Survival Rate"
-                            value={`${survivalRate.toFixed(1)}%`}
-                            subValue={`${stat.survivalCount} / ${stat.totalRuns}`}
-                            progress={survivalRate}
-                        />
-                    </div>
+            <div className="hp-detail-panel">
+                <div className="hp-detail-panel__header">
                     <div>
-                        <StatCard
-                            title="Avg Final HP"
-                            value={<span style={{ color: meanHp >= 0 ? '#4ade80' : '#f87171' }}>{meanHp > 0 ? '+' : ''}{meanHp.toFixed(0)}</span>}
-                            subValue={`Median: ${medianHp.toFixed(0)}`}
-                            variant={meanHp >= 0 ? 'success' : 'danger'}
-                            progress={Math.min(Math.abs(meanHp) / 200 * 100, 100)}
-                        />
+                        <h5 className="hp-detail-panel__title">Recovery Scenario Analysis</h5>
+                        <div className="hp-detail-panel__subtitle">
+                            Each heal bucket is split by activations before the final third vs during the final third.
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {stat.recoveryStats && Object.keys(stat.recoveryStats).length > 0 && (
-                <div style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ padding: '15px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(30, 41, 59, 0.6)' }}>
-                        <h5 style={{ margin: 0, color: '#e2e8f0', fontSize: '1rem' }}>Recovery Skill Analysis</h5>
+                {recoveryRows.length === 0 ? (
+                    <div className="hp-detail-empty">
+                        No recovery skills were detected for this build.
                     </div>
+                ) : (
                     <Table className="mb-0 detail-table" size="sm" responsive>
                         <thead>
                             <tr>
-                                <th style={{ borderTop: 0 }}>
-                                    Recovery Scenario
-                                    <div style={{ fontSize: '0.75em', color: '#a0aec0', fontWeight: 'normal', marginTop: '2px' }}>
-                                        Heal % (Active / Total)
-                                    </div>
+                                <th>
+                                    Recovery scenario
+                                    <div className="hp-th-subtitle">Heal % (early, late / total)</div>
                                 </th>
-                                <th className="text-center" style={{ borderTop: 0, width: '100px', verticalAlign: 'middle' }}>Runs</th>
-                                <th className="text-center" style={{ borderTop: 0, width: '120px', verticalAlign: 'middle' }}>Full Spurt</th>
-                                <th className="text-center" style={{ borderTop: 0, width: '110px', verticalAlign: 'middle' }}>Avg Spare HP</th>
-                                <th className="text-center" style={{ borderTop: 0, width: '120px', verticalAlign: 'middle' }}>Survival</th>
-                                <th className="text-center" style={{ borderTop: 0, width: '100px', verticalAlign: 'middle' }}>Mean HP</th>
-                                <th className="text-center" style={{ borderTop: 0, width: '100px', verticalAlign: 'middle' }}>Median HP</th>
+                                <th className="text-center">Runs</th>
+                                <th className="text-center">Full spurt</th>
+                                <th className="text-center">Survival</th>
+                                <th className="text-center"><AvgHeader label="Delay" /></th>
+                                <th className="text-center"><AvgHeader label="Speed Diff" /></th>
+                                <th className="text-center"><AvgHeader label="HP @ 2/3" /></th>
+                                <th className="text-center"><AvgHeader label="Req HP @ 2/3" /></th>
+                                <th className="text-center"><AvgHeader label="Spare HP @ 2/3" /></th>
+                                <th className="text-center"><AvgHeader label="Final HP" /></th>
                             </tr>
                         </thead>
                         <tbody>
-                            {Object.values(stat.recoveryStats)
-                                .sort((a, b) => b.totalRuns - a.totalRuns)
-                                .map(row => {
-                                    const fsRate = (row.fullSpurtCount / row.totalRuns) * 100;
-                                    const sRate = (row.survivalCount / row.totalRuns) * 100;
-                                    const { mean, median } = getMeanMedian(row.hpOutcomes);
+                            {recoveryRows.map((row) => {
+                                const fullSpurtRate = (row.fullSpurtCount / row.totalRuns) * 100;
+                                const survivalRate = (row.survivalCount / row.totalRuns) * 100;
+                                const share = (row.totalRuns / stat.totalRuns) * 100;
 
-                                    // Row share calculation
-                                    const shareMap = (row.totalRuns / stat.totalRuns) * 100;
-
-                                    return (
-                                        <tr key={row.scenarioId}>
-                                            <td
-                                                style={{ verticalAlign: 'middle', cursor: 'pointer' }}
-                                                onClick={() => openModal(`${row.label} - All Runs`, row.hpOutcomes)}
-                                                className="clickable-cell"
-                                            >
-                                                <div style={{ fontWeight: 'bold', color: '#e2e8f0', textDecoration: 'underline', textDecorationStyle: 'dotted', textDecorationColor: '#6366f1' }}>
-                                                    {row.label}
-                                                </div>
-                                                <div style={{ height: '2px', width: `${shareMap}%`, background: '#6366f1', marginTop: '4px', opacity: 0.5 }}></div>
-                                            </td>
-                                            <td className="text-center" style={{ verticalAlign: 'middle' }}>
-                                                <div style={{ fontWeight: 'bold' }}>{row.totalRuns}</div>
-                                                <div style={{ fontSize: '0.8em', color: '#718096' }}>{shareMap.toFixed(1)}%</div>
-                                            </td>
-                                            <td
-                                                className="text-center clickable-cell"
-                                                style={{ verticalAlign: 'middle', cursor: 'pointer' }}
-                                                onClick={() => openModal(`${row.label} - Full Spurt Runs`, row.hpOutcomesFullSpurt)}
-                                            >
-                                                <span style={{
-                                                    color: getRateColor(fsRate),
-                                                    fontWeight: 'bold',
-                                                    textDecoration: 'underline', textDecorationStyle: 'dotted'
-                                                }}>
-                                                    {fsRate.toFixed(1)}%
-                                                </span>
-                                            </td>
-                                            <td className="text-center" style={{ verticalAlign: 'middle' }}>
-                                                {row.hpAtPhase3Samples.length > 0 ? (() => {
-                                                    const avg = row.hpAtPhase3Samples.reduce((a, b) => a + b, 0) / row.hpAtPhase3Samples.length;
-                                                    return <span style={{ color: avg >= 0 ? '#4ade80' : '#f87171', fontWeight: 'bold' }}>{avg >= 0 ? '+' : ''}{avg.toFixed(0)}</span>;
-                                                })() : <span style={{ color: '#718096' }}>-</span>}
-                                            </td>
-                                            <td
-                                                className="text-center clickable-cell"
-                                                style={{ verticalAlign: 'middle', cursor: 'pointer' }}
-                                                onClick={() => openModal(`${row.label} - Survivor Runs`, row.hpOutcomes.filter(h => h > 0))}
-                                            >
-                                                <span style={{
-                                                    color: getRateColor(sRate),
-                                                    fontWeight: 'bold',
-                                                    textDecoration: 'underline', textDecorationStyle: 'dotted'
-                                                }}>
-                                                    {sRate.toFixed(1)}%
-                                                </span>
-                                            </td>
-                                            <td className="text-center" style={{ verticalAlign: 'middle' }}>
-                                                <span style={{ color: mean >= 0 ? '#4ade80' : '#f87171' }}>{mean.toFixed(0)}</span>
-                                            </td>
-                                            <td className="text-center" style={{ verticalAlign: 'middle' }}>
-                                                <span style={{ color: median >= 0 ? '#4ade80' : '#f87171' }}>{median.toFixed(0)}</span>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
+                                return (
+                                    <tr key={row.scenarioId}>
+                                        <td
+                                            className="clickable-cell hp-scenario-label-cell"
+                                            onClick={() => openModal(`${row.label} - Final HP`, row.hpOutcomes)}
+                                        >
+                                            <div className="hp-scenario-label">
+                                                <RecoveryScenarioLabel scenario={row} />
+                                            </div>
+                                            <div className="hp-scenario-sharebar">
+                                                <div className="hp-scenario-sharebar__fill" style={{ width: `${share}%` }} />
+                                            </div>
+                                        </td>
+                                        <td className="text-center hp-scenario-cell">
+                                            <div className="hp-scenario-metric-primary">{row.totalRuns}</div>
+                                            <div className="hp-scenario-metric-secondary">{share.toFixed(1)}%</div>
+                                        </td>
+                                        <td
+                                            className="text-center clickable-cell hp-scenario-cell hp-scenario-cell--metric"
+                                            onClick={() => openModal(`${row.label} - Full Spurt Final HP`, row.hpOutcomesFullSpurt)}
+                                        >
+                                            <div className="hp-scenario-metric-primary" style={{ color: getRateColor(fullSpurtRate) }}>
+                                                {fullSpurtRate.toFixed(1)}%
+                                            </div>
+                                            <div className="hp-scenario-metric-secondary">
+                                                {row.fullSpurtCount} / {row.totalRuns}
+                                            </div>
+                                        </td>
+                                        <td
+                                            className="text-center clickable-cell hp-scenario-cell hp-scenario-cell--metric"
+                                            onClick={() => openModal(`${row.label} - Survivor Final HP`, row.hpOutcomes.filter((value) => value > 0))}
+                                        >
+                                            <div className="hp-scenario-metric-primary" style={{ color: getRateColor(survivalRate) }}>
+                                                {survivalRate.toFixed(1)}%
+                                            </div>
+                                            <div className="hp-scenario-metric-secondary">
+                                                {row.survivalCount} / {row.totalRuns}
+                                            </div>
+                                        </td>
+                                        {renderMetricCell(row, 'Spurt Delay', row.spurtDelaySamples, {
+                                            digits: 1,
+                                            signed: true,
+                                            color: getColorForSpurtDelay,
+                                        })}
+                                        {renderMetricCell(row, 'Target Speed Difference', row.speedDiffSamples, {
+                                            digits: 3,
+                                            signed: true,
+                                            color: getSpeedDiffColor,
+                                        })}
+                                        {renderMetricCell(row, 'HP at 2/3', row.hpAtPhase3Samples, {
+                                            digits: 0,
+                                        })}
+                                        {renderMetricCell(row, 'Required HP at 2/3', row.requiredHpSamples, {
+                                            digits: 0,
+                                        })}
+                                        {renderMetricCell(row, 'Spare HP at 2/3', row.spareHpSamples, {
+                                            digits: 0,
+                                            signed: true,
+                                            color: getSignedMetricColor,
+                                        })}
+                                        {renderMetricCell(row, 'Final HP', row.hpOutcomes, {
+                                            digits: 0,
+                                            signed: true,
+                                            color: getSignedMetricColor,
+                                        })}
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </Table>
-                </div>
-            )}
+                )}
+            </div>
 
-
-            <div style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ padding: '10px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(30, 41, 59, 0.6)' }}>
-                    <h5 style={{ margin: 0, color: '#e2e8f0', fontSize: '1rem' }}>Skill Activations</h5>
+            <div className="hp-detail-panel">
+                <div className="hp-detail-panel__header">
+                    <h5 className="hp-detail-panel__title">Skill Activations</h5>
                 </div>
                 <Table className="mb-0 detail-table" size="sm" responsive>
                     <thead>
@@ -263,7 +306,7 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats; courseId?: numb
                     </tbody>
                 </Table>
             </div>
-        </div >
+        </div>
     );
 };
 

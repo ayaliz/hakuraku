@@ -9,7 +9,6 @@ import { getRankIcon } from '../../../../components/RaceDataPresenter/components
 
 interface HpSpurtTableProps {
     stats: CharaHpSpurtStats[];
-    courseId?: number;
 }
 
 type SortConfig = {
@@ -87,7 +86,7 @@ const ChevronIcon = () => (
     </svg>
 );
 
-const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats, courseId }) => {
+const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats }) => {
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'charaName', direction: 'asc' });
 
@@ -264,8 +263,8 @@ const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats, courseId }) => {
 
                         const expandedRow = (
                             <tr key={`expanded-${row.uniqueId}`}>
-                                <td colSpan={9} className="hp-expanded-td">
-                                    <HpSpurtAnalysisDetail stat={row} courseId={courseId} />
+                                <td colSpan={10} className="hp-expanded-td">
+                                    <HpSpurtAnalysisDetail stat={row} />
                                 </td>
                             </tr>
                         );

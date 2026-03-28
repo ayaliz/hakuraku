@@ -5,10 +5,9 @@ import HpSpurtTable from './HpSpurtTable';
 
 interface Props {
     stats: CharaHpSpurtStats[];
-    courseId?: number;
 }
 
-const HpSpurtAnalysis: React.FC<Props> = ({ stats, courseId }) => {
+const HpSpurtAnalysis: React.FC<Props> = ({ stats }) => {
     return (
         <div className="hp-analysis-wrapper">
             {stats.length === 0 ? (
@@ -16,7 +15,7 @@ const HpSpurtAnalysis: React.FC<Props> = ({ stats, courseId }) => {
                     No user characters found in the loaded races.
                 </div>
             ) : (
-                <HpSpurtTable stats={stats} courseId={courseId} />
+                <HpSpurtTable stats={stats} />
             )}
         </div>
     );

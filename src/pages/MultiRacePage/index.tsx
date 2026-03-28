@@ -181,7 +181,7 @@ const MultiRacePage: React.FC = () => {
                                             <h4 className="section-heading">
                                                 Personal character analysis
                                             </h4>
-                                            <HpSpurtAnalysis stats={group.hpSpurtStats} courseId={group.courseId} />
+                                            <HpSpurtAnalysis stats={group.hpSpurtStats} />
                                         </div>
 
                                         <WinDistributionCharts

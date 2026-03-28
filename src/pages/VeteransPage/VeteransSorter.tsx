@@ -1,18 +1,7 @@
 import React from "react";
 import { Form, Button } from "react-bootstrap";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
-
-export type SortOption =
-    | "none"
-    | "blues"
-    | "total_common"
-    | "total_skills"
-    | "legacy_common"
-    | "legacy_skills"
-    | "score"
-    | "affinity";
-
-export type SortDirection = "asc" | "desc";
+import { SortOption, SortDirection } from "./types";
 
 interface VeteransSorterProps {
     activeSort: SortOption;
@@ -42,6 +31,7 @@ const VeteransSorter: React.FC<VeteransSorterProps> = ({
                 onChange={handleChange}
                 className="vet-sorter-select"
             >
+                <option value="date">Date</option>
                 <option value="none">None</option>
                 <option value="blues">Blue Count</option>
                 <option value="total_common">Total Common Stars</option>

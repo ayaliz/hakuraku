@@ -5,7 +5,38 @@ import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import { getAvailableTracks, guessTrackId } from "../../../../components/RaceReplay/utils/guessTrackUtils";
 import { computeOtherEvents } from "../../../../components/RaceReplay/utils/analysisUtils";
 import { computeCharaTableData } from "../../../../components/RaceDataPresenter/components/CharaList/useCharaTableData";
+import { calculateRaceDistance } from "../../../../components/RaceDataPresenter/utils/RacePresenterUtils";
 import { getSkillDef } from "../../../../components/RaceReplay/utils/SkillDataUtils";
+
+const FULL_SPURT_SPEED_TOLERANCE = 0.05;
+const NO_RECOVERY_SCENARIO_ID = "none";
+const NO_RECOVERY_SCENARIO_LABEL = "No recovery activations";
+
+function createRecoveryScenarioStats(scenarioId: string, label: string) {
+    return {
+        scenarioId,
+        label,
+        activationPattern: scenarioId,
+        totalRuns: 0,
+        fullSpurtCount: 0,
+        survivalCount: 0,
+        hpOutcomes: [],
+        hpOutcomesFullSpurt: [],
+        spurtDelaySamples: [],
+        speedDiffSamples: [],
+        hpAtPhase3Samples: [],
+        requiredHpSamples: [],
+        spareHpSamples: [],
+    };
+}
+
+function formatRecoveryTimingLabel(earlyCount: number, lateCount: number): string {
+    const activatedCount = earlyCount + lateCount;
+    if (activatedCount === 0) return '';
+    if (lateCount === 0) return `${activatedCount}`;
+    if (lateCount === activatedCount) return `${lateCount} late-race`;
+    return `${activatedCount}, ${lateCount} late-race`;
+}
 
 export const computeHpSpurtStats = (
     races: ParsedRace[],
@@ -41,7 +72,7 @@ export const computeHpSpurtStats = (
 
     races.forEach(race => {
         const raceData = race.raceData;
-        const raceDistance = race.raceDistance;
+        const raceDistance = calculateRaceDistance(raceData);
 
         // Use shared track guessing logic
         const availableTracks = getAvailableTracks(raceDistance);
@@ -177,20 +208,26 @@ export const computeHpSpurtStats = (
             });
 
             // Full Spurt Analysis using the computed values
+            const phase3Start = raceDistance * 2 / 3;
             const lastSpurtStartDist = charaData.horseResultData.lastSpurtStartDistance;
+            const spurtDelay = lastSpurtStartDist && lastSpurtStartDist !== -1
+                ? lastSpurtStartDist - phase3Start
+                : undefined;
+            const speedDiff = (
+                charaData.maxAdjustedSpeed !== undefined &&
+                charaData.lastSpurtTargetSpeed !== undefined
+            )
+                ? charaData.maxAdjustedSpeed - charaData.lastSpurtTargetSpeed
+                : undefined;
+            const normalizedSpeedDiff = speedDiff !== undefined && Math.abs(speedDiff) < FULL_SPURT_SPEED_TOLERANCE
+                ? 0
+                : speedDiff;
             let didFullSpurt = false;
 
-            if (lastSpurtStartDist && lastSpurtStartDist !== -1) {
-                const phase3Start = raceDistance * 2 / 3;
-                const spurtDelay = lastSpurtStartDist - phase3Start;
-
-                if (spurtDelay < 3) {
-                    const speedDiff = (charaData.maxAdjustedSpeed ?? 0) - (charaData.lastSpurtTargetSpeed ?? 0);
-                    const speedReached = speedDiff >= -0.05;
-
-                    if (speedReached) {
-                        didFullSpurt = true;
-                    }
+            if (spurtDelay !== undefined && spurtDelay < 3) {
+                const speedReached = (normalizedSpeedDiff ?? 0) >= -FULL_SPURT_SPEED_TOLERANCE;
+                if (speedReached) {
+                    didFullSpurt = true;
                 }
             }
 
@@ -225,7 +262,9 @@ export const computeHpSpurtStats = (
                     .filter(s => s.value !== null)
                     .map(s => ({ ...s, value: s.value! }));
 
-                // Avoid creating stats if no recovery skills
+                let scenarioKey = NO_RECOVERY_SCENARIO_ID;
+                let label = NO_RECOVERY_SCENARIO_LABEL;
+
                 if (knownRecoverySkills.length > 0) {
                     // Group by value
                     const valueGroups = new Map<number, { total: number, ids: number[] }>();
@@ -236,10 +275,12 @@ export const computeHpSpurtStats = (
                         valueGroups.set(s.value, g);
                     });
 
-                    // Check activations
-                    // skillActivations[frameOrder] contains all skills activated by this chara
-
-
+                    const recoveryTimingBySkill = new Map<number, "early" | "late">();
+                    charaData.skillEvents.forEach(event => {
+                        if (event.isMode) return;
+                        if (getRecoveryValue(event.skillId) === null) return;
+                        recoveryTimingBySkill.set(event.skillId, event.startDistance >= phase3Start ? "late" : "early");
+                    });
 
                     const scenarioParts: string[] = [];
                     const labelParts: string[] = [];
@@ -249,47 +290,45 @@ export const computeHpSpurtStats = (
 
                     sortedValues.forEach(val => {
                         const group = valueGroups.get(val)!;
-                        let activatedCount = 0;
+                        let earlyCount = 0;
+                        let lateCount = 0;
                         group.ids.forEach(id => {
-                            if (activatedIds.has(id)) activatedCount++;
+                            const timing = recoveryTimingBySkill.get(id);
+                            if (timing === "early") earlyCount++;
+                            if (timing === "late") lateCount++;
                         });
 
                         const pct = (val / 100).toFixed(1); // 550 -> 5.5
-                        const partId = `${val}-${activatedCount}/${group.total}`;
+                        const partId = `${val}-e${earlyCount}-l${lateCount}/${group.total}`;
                         scenarioParts.push(partId);
-                        labelParts.push(`${pct}% (${activatedCount}/${group.total})`);
+                        const timingLabel = formatRecoveryTimingLabel(earlyCount, lateCount);
+                        if (timingLabel) {
+                            labelParts.push(`${pct}% (${timingLabel})`);
+                        }
                     });
 
-                    const scenarioKey = scenarioParts.join("_");
-                    const label = labelParts.join(", ");
+                    scenarioKey = scenarioParts.join("_") || NO_RECOVERY_SCENARIO_ID;
+                    label = labelParts.join(", ") || NO_RECOVERY_SCENARIO_LABEL;
+                }
 
-                    if (!currentStats.recoveryStats[scenarioKey]) {
-                        currentStats.recoveryStats[scenarioKey] = {
-                            scenarioId: scenarioKey,
-                            label,
-                            activationPattern: scenarioKey,
-                            totalRuns: 0,
-                            fullSpurtCount: 0,
-                            survivalCount: 0,
-                            fullSpurtSurvivalCount: 0,
-                            hpOutcomes: [],
-                            hpOutcomesFullSpurt: [],
-                            hpAtPhase3Samples: []
-                        };
-                    }
+                if (!currentStats.recoveryStats[scenarioKey]) {
+                    currentStats.recoveryStats[scenarioKey] = createRecoveryScenarioStats(scenarioKey, label);
+                }
 
-                    const recStats = currentStats.recoveryStats[scenarioKey];
-                    recStats.totalRuns++;
-                    if (didFullSpurt) {
-                        recStats.fullSpurtCount++;
-                        recStats.hpOutcomesFullSpurt.push(outcomeValue);
-                    }
-                    if (hpOutcome.type === 'survived') recStats.survivalCount++;
-                    if (didFullSpurt && hpOutcome.type === 'survived') recStats.fullSpurtSurvivalCount++;
-                    recStats.hpOutcomes.push(outcomeValue);
-                    if (charaData.hpAtPhase3Start !== undefined && charaData.requiredSpurtHp !== undefined) {
-                        recStats.hpAtPhase3Samples.push(charaData.hpAtPhase3Start - charaData.requiredSpurtHp);
-                    }
+                const recStats = currentStats.recoveryStats[scenarioKey];
+                recStats.totalRuns++;
+                if (didFullSpurt) {
+                    recStats.fullSpurtCount++;
+                    recStats.hpOutcomesFullSpurt.push(outcomeValue);
+                }
+                if (hpOutcome.type === 'survived') recStats.survivalCount++;
+                recStats.hpOutcomes.push(outcomeValue);
+                if (spurtDelay !== undefined) recStats.spurtDelaySamples.push(spurtDelay);
+                if (normalizedSpeedDiff !== undefined) recStats.speedDiffSamples.push(normalizedSpeedDiff);
+                if (charaData.hpAtPhase3Start !== undefined) recStats.hpAtPhase3Samples.push(charaData.hpAtPhase3Start);
+                if (charaData.requiredSpurtHp !== undefined) recStats.requiredHpSamples.push(charaData.requiredSpurtHp);
+                if (charaData.hpAtPhase3Start !== undefined && charaData.requiredSpurtHp !== undefined) {
+                    recStats.spareHpSamples.push(charaData.hpAtPhase3Start - charaData.requiredSpurtHp);
                 }
             }
         });

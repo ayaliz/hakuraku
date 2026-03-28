@@ -11,9 +11,10 @@ import "./UmaLogsPage.css";
 type FilterProperty = "none" | "speed" | "stamina" | "pow" | "guts" | "wiz" | "totalSkillPoints" | "rankScore" | "careerWinCount" | "deckRaceBonus" | "skill" | "supportCard";
 type StatOp = ">" | "<" | "=";
 type SortKey = "label" | "entries" | "teams" | "wins" | "awPct";
-type SkillFilterMode = "learned" | "notLearned" | "activated" | "notActivated";
+type SkillFilterMode = "learned" | "activated";
 type CharacterMatchMode = "is" | "isNot";
 type FeatureCardMode = "include" | "exclude";
+type RequirementTruthMode = "require" | "requireNot";
 
 interface CharaVariant {
     cardId: number;
@@ -32,6 +33,7 @@ interface SkillVariant {
 
 interface CharacterRequirement {
     id: string;
+    truthMode: RequirementTruthMode;
     property: FilterProperty;
     statOp: StatOp;
     statValue: number;
@@ -97,7 +99,10 @@ function formatPercent(value: number): string {
     return value.toFixed(1);
 }
 
+const SUPPORT_CARD_LB_ANY = -1;
+
 const SUPPORT_CARD_LB_OPTIONS = [
+    { value: SUPPORT_CARD_LB_ANY, label: "Any" },
     { value: 0, label: "0LB" },
     { value: 1, label: "1LB" },
     { value: 2, label: "2LB" },
@@ -428,7 +433,7 @@ function matchesFeatureCharacter(feature: CharacterFeature, h: HorseEntry): bool
 
 function matchesCharacterFeaturePredicate(feature: CharacterFeature, h: HorseEntry): boolean {
     const positiveMatch = matchesFeatureCharacter(feature, h) &&
-        feature.requirements.every(req => matchesPropertyFilter(req, h));
+        feature.requirements.every(req => matchesRequirement(req, h));
     return feature.cardMode === "include" ? positiveMatch : !positiveMatch;
 }
 
@@ -473,18 +478,22 @@ function matchesPropertyFilter(filter: PropertyFilter, h: HorseEntry): boolean {
     if (filter.property === "skill") {
         if (filter.skillId === null) return false;
         if (filter.skillMode === "learned") return h.learnedSkillIds.has(filter.skillId);
-        if (filter.skillMode === "notLearned") return !h.learnedSkillIds.has(filter.skillId);
-        if (filter.skillMode === "activated") return h.activatedSkillIds.has(filter.skillId);
-        return !h.activatedSkillIds.has(filter.skillId);
+        return h.activatedSkillIds.has(filter.skillId);
     }
     if (filter.property === "supportCard") {
         if (filter.supportCardId === null) return false;
         const hasCard = h.supportCardIds.some((id, index) =>
-            id === filter.supportCardId && (h.supportCardLimitBreaks[index] ?? 0) === filter.supportCardLb
+            id === filter.supportCardId &&
+            (filter.supportCardLb === SUPPORT_CARD_LB_ANY || (h.supportCardLimitBreaks[index] ?? 0) === filter.supportCardLb)
         );
         return filter.supportCardPresent ? hasCard : !hasCard;
     }
     return matchStatProperty(filter, h);
+}
+
+function matchesRequirement(requirement: CharacterRequirement, h: HorseEntry): boolean {
+    const result = matchesPropertyFilter(requirement, h);
+    return requirement.truthMode === "require" ? result : !result;
 }
 
 function defaultStatValueForProperty(property: FilterProperty): number {
@@ -638,6 +647,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
 
     const createDefaultRequirement = (): CharacterRequirement => ({
         id: `${Date.now()}-${Math.random()}`,
+        truthMode: "require",
         property: "none",
         statOp: ">",
         statValue: defaultStatValueForProperty("none"),
@@ -645,7 +655,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
         skillMode: "learned",
         supportCardId: supportCardVariants[0]?.supportCardId ?? null,
         supportCardPresent: true,
-        supportCardLb: 4,
+        supportCardLb: SUPPORT_CARD_LB_ANY,
     });
 
     const filteredTeamResults = useMemo(() => {
@@ -741,8 +751,8 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                         next.skillId = skillVariants[0]?.skillId ?? null;
                     if (patch.property === "supportCard" && next.supportCardId === null)
                         next.supportCardId = supportCardVariants[0]?.supportCardId ?? null;
-                    if (patch.property === "supportCard" && next.supportCardLb === undefined)
-                        next.supportCardLb = 4;
+                    if (patch.property === "supportCard")
+                        next.supportCardLb = next.supportCardLb ?? SUPPORT_CARD_LB_ANY;
                     if (patch.property !== undefined)
                         next.statValue = defaultStatValueForProperty(patch.property);
                     return next;
@@ -881,7 +891,14 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                                 <div className="exp-feature-reqs">
                                     {feature.requirements.map(req => (
                                         <div key={req.id} className="exp-condition-row exp-condition-row--feature">
-                                            <span className="exp-with-label">requires</span>
+                                            <select
+                                                className="exp-select"
+                                                value={req.truthMode}
+                                                onChange={e => updateCharacterRequirement(feature.id, req.id, { truthMode: e.target.value as RequirementTruthMode })}
+                                            >
+                                                <option value="require">requires</option>
+                                                <option value="requireNot">requires not</option>
+                                            </select>
                                             <select
                                                 className="exp-select"
                                                 value={req.property}
@@ -965,9 +982,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
                                                         onChange={e => updateCharacterRequirement(feature.id, req.id, { skillMode: e.target.value as SkillFilterMode })}
                                                     >
                                                         <option value="learned">learned</option>
-                                                        <option value="notLearned">not learned</option>
                                                         <option value="activated">activated</option>
-                                                        <option value="notActivated">not activated</option>
                                                     </select>
                                                     <SkillSelect variants={skillVariants} value={req.skillId} onChange={skillId => updateCharacterRequirement(feature.id, req.id, { skillId })} />
                                                 </>

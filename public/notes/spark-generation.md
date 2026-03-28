@@ -22,27 +22,27 @@ Hypothesis: the five blue spark types are equally likely.
 | Stamina | 21,269 | 19.85% | 20.00% | -0.15% |
 | Power | 21,776 | 20.32% | 20.00% | +0.32% |
 | Guts | 21,016 | 19.61% | 20.00% | -0.39% |
-| Wisdom | 21,289 | 19.87% | 20.00% | -0.13% |
+| Wit | 21,289 | 19.87% | 20.00% | -0.13% |
 
 Result: `p = 0.000165`
 
-Interpretation: blue types are very close to a 20/20/20/20/20 split in absolute terms, but with this many samples the remaining deviation is still statistically significant. The main pattern is a small excess of Speed and Power, and a small deficit of Guts, so the pure equal-distribution hypothesis is not a good match for the current data.
+Interpretation: Blue types are very close to a 20/20/20/20/20 split in absolute terms, but with this many samples the remaining deviation is still statistically significant. The main pattern is a small excess of Speed and Power, and a small deficit of Guts, so the pure equal-distribution hypothesis is not a good match for the current data.
 
 What is interesting is that the ordering lines up with the stat distribution of the same dataset. The average five-stat mix of these CM10-CM12 characters is roughly:
 
 - Speed: `26.96%`
 - Power: `22.37%`
 - Stamina: `19.27%`
-- Wisdom: `19.04%`
+- Wit: `19.04%`
 - Guts: `12.36%`
 
 The stat distribution is much more extreme than the blue spark rates, but it points in the same direction: the stats that occupy more of a character's statline tend to be slightly overrepresented in blue sparks, while Guts is both the smallest average share and the least common blue spark.
 
 I also checked whether this could be explained by lineage, by comparing a character's blue spark to the blue spark makeup of its six entries in `succession_chara_array`. No meaningful correlation was found - simply having more Speed, Power, or other blue sparks in the immediate lineage did not seem to make the matching child blue spark materially more likely.
 
-This interpretation also lines up with older URA-era data from Umamusu Station's [blue factor analysis](https://umamusustation.com/blue_factor_analysis.html). In its 22411 uma data from `2021-05-04`, the reported blue spark rates were approximately Speed `20.13%`, Stamina `20.33%`, Power `20.36%`, Guts `19.42%`, and Wisdom `19.76%`. Guts was again the clear low point, followed by wit, which is in line with common uma statlines seen during URA, when this data was recorded.
+This interpretation also lines up with older URA-era data from Umamusu Station's [blue factor analysis](https://umamusustation.com/blue_factor_analysis.html). In its 22411 uma data from `2021-05-04`, the reported blue spark rates were approximately Speed `20.13%`, Stamina `20.33%`, Power `20.36%`, Guts `19.42%`, and Wit `19.76%`. Guts was again the clear low point, followed by wit, which is in line with common uma statlines seen during URA, when this data was recorded.
 
-Bottom line: the current equal distribution hypothesis is slightly but meaningfully off. Blue spark type is probably weighted a little toward stronger stats in some fashion, though the exact mechanism is unclear. I may revisit this after the dataset grows even more with future CMs.
+Bottom line: The current equal distribution hypothesis is slightly but meaningfully off. Blue spark type is probably weighted a little toward stronger stats in some fashion, though the exact mechanism is unclear. I may revisit this after the dataset grows even more with future CMs.
 
 ## Blue spark star count
 
@@ -125,8 +125,6 @@ Interpretation: Pink star generation matches the expected rates very well.
 
 ## White skill spark generation
 
-This section looks at skill-factor generation after excluding unique-skill families, debuff skills, `cost: 50` skills, and `Runaway`, since those were showing up in the learned-skill pool without behaving like normal sparkable skill families.
-
 Community hypothesis:
 
 - White circle: `20% + 2.5% * lineage_count`
@@ -145,7 +143,7 @@ For plain white skills:
 | 5 | 5,227 | 32.98% | 32.50% |
 | 6+ | 1,640 | 34.33% | 35.00% |
 
-Result: `p = 3.6317164587496e-14`
+Result: `p = 3.6317164587496 × 10^-14`
 
 For double circle skills:
 
@@ -172,9 +170,9 @@ For gold skills:
 | 5 | 2,096 | 65.31% | 65.00% |
 | 6+ | 290 | 69.66% | 70.00% |
 
-Result: `p = 3.08625316723481e-19`
+Result: `p = 3.08625316723481 × 10^-19`
 
-The largest mismatch is in the `1` and `2` lineage buckets, which carry far more weight than the tiny high-lineage tail. The base rates look broadly fine, but the first couple of lineage copies do not appear to add as much as the community formula says they should.
+The largest mismatch is in the `1` and `2` lineage buckets, which carry a lot of weight due to the high sample size.. The base rates look broadly fine, but the first couple of lineage copies do not appear to add as much as the community formula says they should.
 
 ### Plausible replacements
 

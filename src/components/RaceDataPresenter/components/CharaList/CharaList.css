@@ -90,7 +90,6 @@
     font-weight: 700;
     font-size: 1rem;
     text-align: center;
-    width: 40px;
 }
 
 .rank-cell.rank-1 {
@@ -108,7 +107,6 @@
 
 /* Character name styling */
 .chara-name-cell {
-    max-width: 200px;
     text-align: left;
 }
 
@@ -131,7 +129,6 @@
     text-align: center;
     font-variant-numeric: tabular-nums;
     font-weight: 500;
-    min-width: 45px;
 }
 
 /* Time display */
@@ -194,15 +191,8 @@
     opacity: 1;
 }
 
-/* Copy button cell */
-.copy-cell {
-    width: 32px;
-    text-align: center;
-}
-
 /* Expand indicator */
 .expand-cell {
-    width: 24px;
     text-align: center;
     color: #4b5563;
     transition: color 0.2s;
@@ -672,21 +662,8 @@
         padding: 7px 9px;
     }
 
-    .chara-table-wrapper--with-prediction .copy-cell {
-        width: 26px;
-    }
-
-    .chara-table-wrapper--with-prediction .expand-cell {
-        width: 18px;
-    }
-
     .chara-table-wrapper--with-prediction .rank-cell {
-        width: 34px;
         font-size: 0.95rem;
-    }
-
-    .chara-table-wrapper--with-prediction .chara-name-cell {
-        max-width: 160px;
     }
 
     .chara-table-wrapper--with-prediction .col-chara-ident {
@@ -758,10 +735,6 @@
 }
 
 @media (max-width: 1400px) {
-    .chara-table-wrapper--with-prediction .chara-name-cell {
-        max-width: 145px;
-    }
-
     .chara-table-wrapper--with-prediction .col-mood-icon {
         height: 28px;
     }

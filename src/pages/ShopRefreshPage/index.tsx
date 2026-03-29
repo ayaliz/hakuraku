@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import GameDataLoader from '../../data/GameDataLoader';
 import './ShopRefreshPage.css';
 
 interface ShopItem {
@@ -28,8 +29,6 @@ interface ShopRefreshSummary {
     scheduledTurns: RefreshSectionData[];
     gradedRacePool: RefreshSectionData | null;
 }
-
-const SHOP_DATA_URL = `${import.meta.env.BASE_URL}data/shop-refresh-data.json`;
 
 function iconSrc(icon: string) {
     return `${import.meta.env.BASE_URL}assets/mant/${icon}`;
@@ -268,11 +267,8 @@ export default function ShopRefreshPage() {
 
         async function loadSummary() {
             try {
-                const response = await fetch(SHOP_DATA_URL);
-                if (!response.ok) {
-                    throw new Error(`Failed to load shop data (${response.status})`);
-                }
-                const data = await response.json() as ShopRefreshSummary;
+                await GameDataLoader.initialize();
+                const data = GameDataLoader.shopRefreshData as ShopRefreshSummary;
                 if (!cancelled) {
                     setSummary(data);
                 }

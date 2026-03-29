@@ -1,6 +1,6 @@
 import { ParsedRace } from "../../types";
 import { CharaHpSpurtStats } from "./types";
-import { filterCharaSkills } from "../../../../data/RaceDataUtils";
+import { filterCharaSkills, filterCharaTargetedSkills } from "../../../../data/RaceDataUtils";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import { getAvailableTracks, guessTrackId } from "../../../../components/RaceReplay/utils/guessTrackUtils";
 import { computeOtherEvents } from "../../../../components/RaceReplay/utils/analysisUtils";
@@ -11,7 +11,6 @@ import { getSkillDef } from "../../../../components/RaceReplay/utils/SkillDataUt
 const FULL_SPURT_SPEED_TOLERANCE = 0.05;
 const NO_RECOVERY_SCENARIO_ID = "none";
 const NO_RECOVERY_SCENARIO_LABEL = "No recovery activations";
-
 function createRecoveryScenarioStats(scenarioId: string, label: string) {
     return {
         scenarioId,
@@ -30,12 +29,54 @@ function createRecoveryScenarioStats(scenarioId: string, label: string) {
     };
 }
 
-function formatRecoveryTimingLabel(earlyCount: number, lateCount: number): string {
+function formatRecoveryTimingLabel(earlyCount: number, lateCount: number, totalCount: number): string {
     const activatedCount = earlyCount + lateCount;
-    if (activatedCount === 0) return '';
-    if (lateCount === 0) return `${activatedCount}`;
-    if (lateCount === activatedCount) return `${lateCount} late-race`;
-    return `${activatedCount}, ${lateCount} late-race`;
+    if (activatedCount === 0) return `0 / ${totalCount}`;
+
+    const parts: string[] = [];
+    if (earlyCount > 0) parts.push(`${earlyCount} early`);
+    if (lateCount > 0) parts.push(`${lateCount} late`);
+    return `${parts.join(", ")} / ${totalCount}`;
+}
+
+function formatEffectPercent(value: number): string {
+    return `${(Math.abs(value) / 100).toFixed(1)}%`;
+}
+
+function buildDebuffScenarioDescriptor(earlyDebuffTotal: number, lateDebuffTotal: number) {
+    const scenarioId = `debuff-e${Math.abs(earlyDebuffTotal)}-l${Math.abs(lateDebuffTotal)}`;
+    if (earlyDebuffTotal === 0 && lateDebuffTotal === 0) {
+        return { scenarioId, label: "" };
+    }
+
+    const labelParts: string[] = [];
+    if (earlyDebuffTotal !== 0) labelParts.push(`${formatEffectPercent(earlyDebuffTotal)} early`);
+    if (lateDebuffTotal !== 0) labelParts.push(`${formatEffectPercent(lateDebuffTotal)} late`);
+
+    return {
+        scenarioId,
+        label: `Debuffs: ${labelParts.join(", ")}`,
+    };
+}
+
+function interpolateDistanceAtTime(frames: ParsedRace["raceData"]["frame"], frameOrder: number, time: number): number {
+    if (!frames || frames.length === 0) return 0;
+    if (time <= (frames[0].time ?? 0)) return frames[0].horseFrame?.[frameOrder]?.distance ?? 0;
+
+    for (let i = 1; i < frames.length; i++) {
+        const prevFrame = frames[i - 1];
+        const nextFrame = frames[i];
+        const prevTime = prevFrame.time ?? 0;
+        const nextTime = nextFrame.time ?? 0;
+        if (time > nextTime) continue;
+
+        const prevDist = prevFrame.horseFrame?.[frameOrder]?.distance ?? 0;
+        const nextDist = nextFrame.horseFrame?.[frameOrder]?.distance ?? prevDist;
+        if (nextTime <= prevTime) return nextDist;
+        return prevDist + (nextDist - prevDist) * ((time - prevTime) / (nextTime - prevTime));
+    }
+
+    return frames[frames.length - 1].horseFrame?.[frameOrder]?.distance ?? 0;
 }
 
 export const computeHpSpurtStats = (
@@ -43,7 +84,7 @@ export const computeHpSpurtStats = (
     targetCharaId?: number,
     onlyPlayer: boolean = false,
     statsFilter?: { speed: number, stamina: number, pow: number, guts: number, wiz: number },
-    groupByStats: boolean = false
+    groupByStats: boolean = false,
 ): CharaHpSpurtStats[] => {
     const statsMap = new Map<string, CharaHpSpurtStats>();
     const groundConditionCounts = new Map<number, number>();
@@ -66,6 +107,17 @@ export const computeHpSpurtStats = (
                     }
                 }
             }
+        }
+        return null;
+    };
+
+    const getHpDebuffValue = (skillId: number): number | null => {
+        const def = getSkillDef(skillId);
+        if (!def || !def.conditionGroups) return null;
+
+        for (const group of def.conditionGroups) {
+            const firstEffect = group.effects?.[0];
+            if (firstEffect?.type === 9 && firstEffect.value < 0) return firstEffect.value;
         }
         return null;
     };
@@ -167,6 +219,7 @@ export const computeHpSpurtStats = (
                     hpOutcomesFullSpurt: [],
                     hpOutcomesNonFullSpurt: [],
                     recoveryStats: {},
+                    recoveryStatsWithDebuffs: {},
                     sourceRuns: []
                 });
             }
@@ -261,16 +314,27 @@ export const computeHpSpurtStats = (
                     .map(id => ({ id, value: getRecoveryValue(id) }))
                     .filter(s => s.value !== null)
                     .map(s => ({ ...s, value: s.value! }));
+                let earlyDebuffTotal = 0;
+                let lateDebuffTotal = 0;
+                filterCharaTargetedSkills(raceData, frameOrder).forEach(event => {
+                    const value = getHpDebuffValue(event.param[1]);
+                    if (value === null) return;
+
+                    const startDistance = interpolateDistanceAtTime(raceData.frame ?? [], frameOrder, event.frameTime ?? 0);
+                    if (startDistance >= phase3Start) {
+                        lateDebuffTotal += value;
+                    } else {
+                        earlyDebuffTotal += value;
+                    }
+                });
 
                 let scenarioKey = NO_RECOVERY_SCENARIO_ID;
                 let label = NO_RECOVERY_SCENARIO_LABEL;
-
                 if (knownRecoverySkills.length > 0) {
                     // Group by value
-                    const valueGroups = new Map<number, { total: number, ids: number[] }>();
+                    const valueGroups = new Map<number, { ids: number[] }>();
                     knownRecoverySkills.forEach(s => {
-                        const g = valueGroups.get(s.value) || { total: 0, ids: [] };
-                        g.total++;
+                        const g = valueGroups.get(s.value) || { ids: [] };
                         g.ids.push(s.id);
                         valueGroups.set(s.value, g);
                     });
@@ -299,37 +363,48 @@ export const computeHpSpurtStats = (
                         });
 
                         const pct = (val / 100).toFixed(1); // 550 -> 5.5
-                        const partId = `${val}-e${earlyCount}-l${lateCount}/${group.total}`;
+                        const partId = `${val}-e${earlyCount}-l${lateCount}/${group.ids.length}`;
                         scenarioParts.push(partId);
-                        const timingLabel = formatRecoveryTimingLabel(earlyCount, lateCount);
-                        if (timingLabel) {
-                            labelParts.push(`${pct}% (${timingLabel})`);
-                        }
+                        const timingLabel = formatRecoveryTimingLabel(earlyCount, lateCount, group.ids.length);
+                        labelParts.push(`${pct}% (${timingLabel})`);
                     });
 
                     scenarioKey = scenarioParts.join("_") || NO_RECOVERY_SCENARIO_ID;
                     label = labelParts.join(", ") || NO_RECOVERY_SCENARIO_LABEL;
                 }
 
+                const debuffScenario = buildDebuffScenarioDescriptor(earlyDebuffTotal, lateDebuffTotal);
+                const debuffScenarioKey = `${scenarioKey}__${debuffScenario.scenarioId}`;
+                const debuffScenarioLabel = debuffScenario.label
+                    ? `${label} | ${debuffScenario.label}`
+                    : label;
+
                 if (!currentStats.recoveryStats[scenarioKey]) {
                     currentStats.recoveryStats[scenarioKey] = createRecoveryScenarioStats(scenarioKey, label);
                 }
+                if (!currentStats.recoveryStatsWithDebuffs[debuffScenarioKey]) {
+                    currentStats.recoveryStatsWithDebuffs[debuffScenarioKey] = createRecoveryScenarioStats(debuffScenarioKey, debuffScenarioLabel);
+                }
 
-                const recStats = currentStats.recoveryStats[scenarioKey];
-                recStats.totalRuns++;
-                if (didFullSpurt) {
-                    recStats.fullSpurtCount++;
-                    recStats.hpOutcomesFullSpurt.push(outcomeValue);
-                }
-                if (hpOutcome.type === 'survived') recStats.survivalCount++;
-                recStats.hpOutcomes.push(outcomeValue);
-                if (spurtDelay !== undefined) recStats.spurtDelaySamples.push(spurtDelay);
-                if (normalizedSpeedDiff !== undefined) recStats.speedDiffSamples.push(normalizedSpeedDiff);
-                if (charaData.hpAtPhase3Start !== undefined) recStats.hpAtPhase3Samples.push(charaData.hpAtPhase3Start);
-                if (charaData.requiredSpurtHp !== undefined) recStats.requiredHpSamples.push(charaData.requiredSpurtHp);
-                if (charaData.hpAtPhase3Start !== undefined && charaData.requiredSpurtHp !== undefined) {
-                    recStats.spareHpSamples.push(charaData.hpAtPhase3Start - charaData.requiredSpurtHp);
-                }
+                const applyScenarioSample = (recStats: ReturnType<typeof createRecoveryScenarioStats>) => {
+                    recStats.totalRuns++;
+                    if (didFullSpurt) {
+                        recStats.fullSpurtCount++;
+                        recStats.hpOutcomesFullSpurt.push(outcomeValue);
+                    }
+                    if (hpOutcome.type === 'survived') recStats.survivalCount++;
+                    recStats.hpOutcomes.push(outcomeValue);
+                    if (spurtDelay !== undefined) recStats.spurtDelaySamples.push(spurtDelay);
+                    if (normalizedSpeedDiff !== undefined) recStats.speedDiffSamples.push(normalizedSpeedDiff);
+                    if (charaData.hpAtPhase3Start !== undefined) recStats.hpAtPhase3Samples.push(charaData.hpAtPhase3Start);
+                    if (charaData.requiredSpurtHp !== undefined) recStats.requiredHpSamples.push(charaData.requiredSpurtHp);
+                    if (charaData.hpAtPhase3Start !== undefined && charaData.requiredSpurtHp !== undefined) {
+                        recStats.spareHpSamples.push(charaData.hpAtPhase3Start - charaData.requiredSpurtHp);
+                    }
+                };
+
+                applyScenarioSample(currentStats.recoveryStats[scenarioKey]);
+                applyScenarioSample(currentStats.recoveryStatsWithDebuffs[debuffScenarioKey]);
             }
         });
     });

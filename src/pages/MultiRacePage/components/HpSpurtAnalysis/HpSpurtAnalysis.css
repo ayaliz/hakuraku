@@ -247,6 +247,15 @@
     padding: 14px 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     background: rgba(30, 41, 59, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.hp-detail-panel__header-copy {
+    min-width: 0;
 }
 
 .hp-detail-panel__title {
@@ -270,6 +279,20 @@
     color: #94a3b8;
 }
 
+.hp-detail-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #cbd5e1;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.hp-detail-toggle input {
+    accent-color: #65d283;
+}
+
 .hp-scenario-label-cell {
     min-width: 260px;
 }
@@ -281,6 +304,10 @@
     text-decoration-style: dotted;
     text-decoration-color: #6366f1;
     text-underline-offset: 2px;
+}
+
+.hp-scenario-debuff {
+    color: #f87171;
 }
 
 .hp-scenario-late {

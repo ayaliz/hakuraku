@@ -42,55 +42,17 @@ const AvgHeader: React.FC<{ label: string }> = ({ label }) => (
     </>
 );
 
-type RecoveryScenarioPart = {
-    pctLabel: string;
-    activatedCount: number;
-    lateCount: number;
-};
+const RecoveryScenarioLabel: React.FC<{ label: string }> = ({ label }) => {
+    const debuffMarker = " | Debuffs:";
+    const markerIndex = label.indexOf(debuffMarker);
+    if (markerIndex === -1) return <>{label}</>;
 
-function parseRecoveryScenarioParts(scenarioId: string): RecoveryScenarioPart[] {
-    return scenarioId.split('_').flatMap((part) => {
-        const match = part.match(/^(\d+)-e(\d+)-l(\d+)\/(\d+)$/);
-        if (!match) return [];
-
-        const [, rawValue, rawEarlyCount, rawLateCount] = match;
-        const earlyCount = Number(rawEarlyCount);
-        const lateCount = Number(rawLateCount);
-        const activatedCount = earlyCount + lateCount;
-
-        if (activatedCount === 0) return [];
-
-        return [{
-            pctLabel: `${(Number(rawValue) / 100).toFixed(1)}%`,
-            activatedCount,
-            lateCount,
-        }];
-    });
-}
-
-const RecoveryScenarioLabel: React.FC<{ scenario: RecoveryScenarioStats }> = ({ scenario }) => {
-    const parts = parseRecoveryScenarioParts(scenario.scenarioId);
-
-    if (parts.length === 0) {
-        return <>{scenario.label}</>;
-    }
-
+    const recoveryLabel = label.slice(0, markerIndex);
+    const debuffLabel = label.slice(markerIndex + 3);
     return (
         <>
-            {parts.map((part, index) => (
-                <React.Fragment key={`${scenario.scenarioId}-${index}`}>
-                    {index > 0 && ', '}
-                    <span>{part.pctLabel} ({part.activatedCount}</span>
-                    {part.lateCount > 0 && (
-                        <>
-                            {', '}
-                            <span>{part.lateCount} </span>
-                            <span className="hp-scenario-late">late-race</span>
-                        </>
-                    )}
-                    <span>)</span>
-                </React.Fragment>
-            ))}
+            <span>{recoveryLabel}</span>
+            <span className="hp-scenario-debuff"> | {debuffLabel}</span>
         </>
     );
 };
@@ -99,6 +61,7 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) 
     const [modalOpen, setModalOpen] = React.useState(false);
     const [modalTitle, setModalTitle] = React.useState('');
     const [modalData, setModalData] = React.useState<number[]>([]);
+    const [splitByDebuffs, setSplitByDebuffs] = React.useState(false);
 
     const openModal = (title: string, data: number[]) => {
         setModalTitle(title);
@@ -145,7 +108,10 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) 
         );
     };
 
-    const recoveryRows = Object.values(stat.recoveryStats ?? {}).sort((a, b) => b.totalRuns - a.totalRuns);
+    const activeRecoveryStats = splitByDebuffs
+        ? (stat.recoveryStatsWithDebuffs ?? stat.recoveryStats ?? {})
+        : (stat.recoveryStats ?? {});
+    const recoveryRows = Object.values(activeRecoveryStats).sort((a, b) => b.totalRuns - a.totalRuns);
 
     return (
         <div className="analysis-detail-container">
@@ -158,12 +124,20 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) 
 
             <div className="hp-detail-panel">
                 <div className="hp-detail-panel__header">
-                    <div>
+                    <div className="hp-detail-panel__header-copy">
                         <h5 className="hp-detail-panel__title">Recovery Scenario Analysis</h5>
                         <div className="hp-detail-panel__subtitle">
                             Each heal bucket is split by activations before the final third vs during the final third.
                         </div>
                     </div>
+                    <label className="hp-detail-toggle">
+                        <input
+                            type="checkbox"
+                            checked={splitByDebuffs}
+                            onChange={(event) => setSplitByDebuffs(event.target.checked)}
+                        />
+                        <span>Also split by HP debuffs received</span>
+                    </label>
                 </div>
 
                 {recoveryRows.length === 0 ? (
@@ -176,7 +150,11 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) 
                             <tr>
                                 <th>
                                     Recovery scenario
-                                    <div className="hp-th-subtitle">Heal % (early, late / total)</div>
+                                    <div className="hp-th-subtitle">
+                                        {splitByDebuffs
+                                            ? 'Heal % plus received debuffs, both split into early vs late-race'
+                                            : 'Heal % (early, late / total)'}
+                                    </div>
                                 </th>
                                 <th className="text-center">Runs</th>
                                 <th className="text-center">Full spurt</th>
@@ -202,7 +180,7 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) 
                                             onClick={() => openModal(`${row.label} - Final HP`, row.hpOutcomes)}
                                         >
                                             <div className="hp-scenario-label">
-                                                <RecoveryScenarioLabel scenario={row} />
+                                                <RecoveryScenarioLabel label={row.label} />
                                             </div>
                                             <div className="hp-scenario-sharebar">
                                                 <div className="hp-scenario-sharebar__fill" style={{ width: `${share}%` }} />

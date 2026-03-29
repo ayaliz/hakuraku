@@ -66,7 +66,7 @@ const CharaTable: React.FC<CharaTableProps> = ({ data, courseId, showPredictionC
     const [selectedSkillRow, setSelectedSkillRow] = useState<CharaTableData | null>(null);
 
     const aptitudeFilters = getCourseAptitudeFilters(courseId);
-    const charaTableColumns = getCharaTableColumns(showPredictionColumn);
+    const charaTableColumns = getCharaTableColumns(data, showPredictionColumn);
 
     const toggleRow = (frameOrder: number) => {
         setExpandedRows(prev => {

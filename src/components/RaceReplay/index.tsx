@@ -37,6 +37,7 @@ import { useCourseLayers, slopeRenderItemFactory } from "./hooks/useCourseLayers
 import { useToggles } from "./hooks/useToggles";
 import { useRaceDerivedData } from "./hooks/useRaceDerivedData";
 import { useRaceExport } from "./hooks/useRaceExport";
+import { useWorldTransformEstimate } from "./hooks/useWorldTransformEstimate";
 import LegendItem from "./components/LegendItem";
 import ClipMaker from "./components/ClipMaker";
 import HorseTooltip from "./components/HorseTooltip";
@@ -74,6 +75,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     otherEvents,
     trainerColors,
     detectedCourseId,
+    laneDistanceMax,
     raceType,
     trackDetails,
     onTrackChange,
@@ -115,6 +117,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     const { t: toggles, bind } = useToggles();
 
     const groundCondition = parseGroundCondition(trackDetails?.condition);
+    const worldTransformEstimate = useWorldTransformEstimate(frames, selectedTrackId, laneDistanceMax);
 
     const {
         maxHpByIdx,
@@ -305,6 +308,34 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     const clampedRenderTime = clamp(renderTime, startTime, endTime);
 
     const [hoveredHorse, setHoveredHorse] = useState<{ idx: number; x: number; y: number; containerW: number } | null>(null);
+
+    const hoveredHorseWorldTransform = useMemo(() => {
+        if (!hoveredHorse || !worldTransformEstimate || !frames.length) return null;
+        const horse = interpolatedFrame.horseFrame[hoveredHorse.idx];
+        if (!horse) return null;
+
+        const lowerFrame = frames[interpolatedFrame.frameIndex];
+        const upperFrame = frames[interpolatedFrame.frameIndex + 1] ?? lowerFrame;
+        const lowerTime = lowerFrame?.time ?? 0;
+        const upperTime = upperFrame?.time ?? lowerTime;
+        const alpha = interpolatedFrame.frameIndex < frames.length - 1
+            ? clamp((renderTime - lowerTime) / Math.max(1e-9, upperTime - lowerTime), 0, 1)
+            : 0;
+
+        const nextIndex = Math.min(interpolatedFrame.frameIndex + 1, frames.length - 1);
+        const loss0 = worldTransformEstimate.cumulativeLossByFrame[interpolatedFrame.frameIndex]?.[hoveredHorse.idx] ?? 0;
+        const loss1 = worldTransformEstimate.cumulativeLossByFrame[nextIndex]?.[hoveredHorse.idx] ?? loss0;
+        const ratio0 = worldTransformEstimate.ratioByFrame[interpolatedFrame.frameIndex]?.[hoveredHorse.idx] ?? worldTransformEstimate.baseRatio;
+        const ratio1 = worldTransformEstimate.ratioByFrame[nextIndex]?.[hoveredHorse.idx] ?? ratio0;
+
+        return {
+            baseRatio: worldTransformEstimate.baseRatio,
+            cumulativeLoss: loss0 + (loss1 - loss0) * alpha,
+            laneOffsetMeters: worldTransformEstimate.laneMaxMeters * Math.min(Math.max(horse.lanePosition ?? 0, 0), 9999) / 9999,
+            laneMaxMeters: worldTransformEstimate.laneMaxMeters,
+            ratio: ratio0 + (ratio1 - ratio0) * alpha,
+        };
+    }, [frames, hoveredHorse, interpolatedFrame, renderTime, worldTransformEstimate]);
 
     const [isEditingFrame, setIsEditingFrame] = useState(false);
     const [tempFrameInput, setTempFrameInput] = useState("");
@@ -570,6 +601,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                         hoveredHorse={hoveredHorse}
                         entry={horseHoverDataRef.current.find(e => e.idx === hoveredHorse.idx)}
                         name={displayNames[hoveredHorse.idx] ?? ""}
+                        worldTransform={hoveredHorseWorldTransform}
                     />
                 )}
             </div>

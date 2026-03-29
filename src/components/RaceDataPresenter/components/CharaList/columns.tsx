@@ -2,7 +2,6 @@ import React from "react";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import * as UMDatabaseUtils from "../../../../data/UMDatabaseUtils";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
-import CopyButton from "../../../CopyButton";
 import {
     getColorForSpurtDelay,
     runningStyleLabel,
@@ -66,6 +65,15 @@ interface CharaColumnDef {
     cellClassName?: string;
     renderCell: (row: CharaTableData) => React.ReactNode;
     stopPropagation?: boolean;
+}
+
+function getWorldTransformLossColor(loss: number, minLoss: number, maxLoss: number) {
+    const normalized = maxLoss > minLoss ? (loss - minLoss) / (maxLoss - minLoss) : 0.5;
+    const clamped = Math.min(Math.max(normalized, 0), 1);
+    const red = Math.round(76 + (220 - 76) * clamped);
+    const green = Math.round(175 + (88 - 175) * clamped);
+    const blue = Math.round(80 + (80 - 80) * clamped);
+    return `rgb(${red}, ${green}, ${blue})`;
 }
 
 // Shared tooltip info icon component
@@ -146,19 +154,41 @@ const predictionColumn: CharaColumnDef = {
     },
 };
 
+function createWorldTransformColumn(minLoss: number, maxLoss: number): CharaColumnDef {
+    return {
+        key: 'worldTransformLoss',
+        header: (
+            <span>
+                WT{' '}
+                <InfoIcon
+                    id="tooltip-world-transform"
+                    tip="Estimated losses from world transform, i.e. distance loss from moving lanes, as well as being on outside lanes on corners."
+                />
+            </span>
+        ),
+        cellClassName: 'stat-cell',
+        renderCell: (row) => {
+            if (row.worldTransformLossTotal === undefined) {
+                return '-';
+            }
+            return (
+                <span
+                    className="col-downhill-time"
+                    style={{ color: getWorldTransformLossColor(row.worldTransformLossTotal, minLoss, maxLoss) }}
+                >
+                    -{row.worldTransformLossTotal.toFixed(2)}m
+                </span>
+            );
+        },
+    };
+}
+
 const baseCharaTableColumns: CharaColumnDef[] = [
     {
         key: 'expand',
         header: '',
         cellClassName: 'expand-cell',
         renderCell: () => null, // Handled specially in CharaCard
-    },
-    {
-        key: 'copy',
-        header: '',
-        cellClassName: 'copy-cell',
-        stopPropagation: true,
-        renderCell: (row) => <CopyButton content={JSON.stringify(row.trainedChara.rawData)} />,
     },
     {
         key: 'finishOrder',
@@ -212,7 +242,7 @@ const baseCharaTableColumns: CharaColumnDef[] = [
                 Time{' '}
                 <InfoIcon
                     id="tooltip-time"
-                    tip="The first value is finish time, second time difference to the previous finish. Note that this uses the real race simulation time, the ingame time is highly inaccurate."
+                    tip="The first value is finish time, second value is the distance to the previous finisher at the moment they finish. Note that the finish time uses the real race simulation time, the ingame time is highly inaccurate."
                 />
             </span>
         ),
@@ -221,8 +251,8 @@ const baseCharaTableColumns: CharaColumnDef[] = [
             <>
                 <span className="time-primary">{UMDatabaseUtils.formatTime(row.horseResultData.finishTimeRaw!)}</span>
                 <span className="time-secondary col-time-diff">
-                    {row.timeDiffToPrev !== undefined && row.timeDiffToPrev > 0
-                        ? `+${UMDatabaseUtils.formatTime(row.timeDiffToPrev)}`
+                    {row.finishDistanceToPrev !== undefined && row.finishDistanceToPrev > 0
+                        ? `+${row.finishDistanceToPrev.toFixed(1)}m`
                         : ''}
                 </span>
             </>
@@ -247,7 +277,7 @@ const baseCharaTableColumns: CharaColumnDef[] = [
         key: 'startDelay',
         header: (
             <span>
-                Start delay{' '}
+                Delay{' '}
                 <InfoIcon
                     id="tooltip-start-delay"
                     tip="Ingame, a start delay of 80ms or worse is marked as a late start. However, the most devastating effect of high start delay is the loss of 1 frame of acceleration which already occurs at 66ms, so any start that loses that frame of acceleration is marked as a late start here."
@@ -429,7 +459,7 @@ const baseCharaTableColumns: CharaColumnDef[] = [
         key: 'duelingTime',
         header: (
             <span>
-                Dueling{' '}
+                Duel{' '}
                 <InfoIcon
                     id="tooltip-dueling"
                     tip="Approximate time this Uma spent dueling."
@@ -496,20 +526,40 @@ const baseCharaTableColumns: CharaColumnDef[] = [
     },
 ];
 
-export function getCharaTableColumns(showPredictionColumn = false): CharaColumnDef[] {
-    if (!showPredictionColumn) {
-        return baseCharaTableColumns;
+export function getCharaTableColumns(data: CharaTableData[], showPredictionColumn = false): CharaColumnDef[] {
+    let columns = [...baseCharaTableColumns];
+    const worldTransformLosses = data
+        .map((row) => row.worldTransformLossTotal)
+        .filter((loss): loss is number => loss !== undefined);
+    const minWorldTransformLoss = worldTransformLosses.length > 0 ? Math.min(...worldTransformLosses) : 0;
+    const maxWorldTransformLoss = worldTransformLosses.length > 0 ? Math.max(...worldTransformLosses) : 0;
+    const worldTransformColumn = createWorldTransformColumn(minWorldTransformLoss, maxWorldTransformLoss);
+
+    const wtInsertAfterKey = 'paceTime';
+    const wtInsertIndex = columns.findIndex((column) => column.key === wtInsertAfterKey);
+    if (wtInsertIndex === -1) {
+        columns.push(worldTransformColumn);
+    } else {
+        columns = [
+            ...columns.slice(0, wtInsertIndex + 1),
+            worldTransformColumn,
+            ...columns.slice(wtInsertIndex + 1),
+        ];
     }
 
-    const insertAfterKey = 'time';
-    const insertIndex = baseCharaTableColumns.findIndex((column) => column.key === insertAfterKey);
-    if (insertIndex === -1) {
-        return [...baseCharaTableColumns, predictionColumn];
+    if (!showPredictionColumn) {
+        return columns;
+    }
+
+    const predictionInsertAfterKey = 'time';
+    const predictionInsertIndex = columns.findIndex((column) => column.key === predictionInsertAfterKey);
+    if (predictionInsertIndex === -1) {
+        return [...columns, predictionColumn];
     }
 
     return [
-        ...baseCharaTableColumns.slice(0, insertIndex + 1),
+        ...columns.slice(0, predictionInsertIndex + 1),
         predictionColumn,
-        ...baseCharaTableColumns.slice(insertIndex + 1),
+        ...columns.slice(predictionInsertIndex + 1),
     ];
 }

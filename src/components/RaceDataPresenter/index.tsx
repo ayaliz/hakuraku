@@ -33,6 +33,7 @@ type RaceDataPresenterProps = {
     raceHorseInfo: any[],
     raceData: RaceSimulateData,
     detectedCourseId?: number,
+    laneDistanceMax?: number,
     raceType?: string,
     trackDetails?: {
         condition?: string,
@@ -132,6 +133,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 raceHorseInfo={this.props.raceHorseInfo}
                 raceData={this.props.raceData}
                 detectedCourseId={this.state.activeCourseId}
+                laneDistanceMax={this.props.laneDistanceMax}
                 skillActivations={this.skillActivations(this.props.raceData)}
                 otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.state.activeCourseId, this.skillActivations(this.props.raceData), parseGroundCondition(this.props.trackDetails?.condition))}
                 raceType={this.props.raceType}
@@ -148,6 +150,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                     skillActivations={this.skillActivations(this.props.raceData)}
                     otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.state.activeCourseId, this.skillActivations(this.props.raceData), parseGroundCondition(this.props.trackDetails?.condition))}
                     detectedCourseId={this.props.detectedCourseId}
+                    laneDistanceMax={this.props.laneDistanceMax}
                     raceType={this.props.raceType}
                     trackDetails={this.props.trackDetails}
                     onTrackChange={this.handleTrackChange}

@@ -1,4 +1,5 @@
 import * as pako from "pako";
+import type { CourseBaseRatioData, CourseShapeData } from "./CourseShapeLoader";
 
 class GameDataLoaderClass {
     private data: Record<string, any> | null = null;
@@ -63,6 +64,20 @@ class GameDataLoaderClass {
         return this.data!["tracks/ura_races"];
     }
 
+    get courseShapes(): CourseShapeData {
+        this.ensureLoaded();
+        return this.data!["tracks/course_shapes"];
+    }
+
+    get courseBaseRatios(): CourseBaseRatioData {
+        this.ensureLoaded();
+        return this.data!["tracks/course_base_ratios"];
+    }
+
+    get shopRefreshData(): any {
+        this.ensureLoaded();
+        return this.data!["shop_refresh/data"];
+    }
 }
 
 const GameDataLoader = new GameDataLoaderClass();

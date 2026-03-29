@@ -549,14 +549,14 @@ export const computeCharaTableData = (
         };
     });
 
-    // Calculate time diff to previous finisher
+    // Calculate finish distance gap to previous finisher at the moment they finish.
     const sortedByFinish = [...tableData].sort((a, b) => a.finishOrder - b.finishOrder);
     for (let i = 1; i < sortedByFinish.length; i++) {
         const prev = sortedByFinish[i - 1];
         const curr = sortedByFinish[i];
         const prevTime = prev.horseResultData.finishTimeRaw ?? 0;
-        const currTime = curr.horseResultData.finishTimeRaw ?? 0;
-        curr.timeDiffToPrev = currTime - prevTime;
+        const currDistanceAtPrevFinish = interpolateDistance(raceData.frame ?? [], curr.frameOrder - 1, prevTime);
+        curr.finishDistanceToPrev = Math.max(0, raceDistance - currDistanceAtPrevFinish);
     }
 
     return tableData;

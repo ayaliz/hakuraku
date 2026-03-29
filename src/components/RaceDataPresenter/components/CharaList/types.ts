@@ -68,9 +68,10 @@ export type CharaTableData = {
     downhillModeTime?: number;
     paceUpTime?: number;
     paceDownTime?: number;
-    timeDiffToPrev?: number;
+    finishDistanceToPrev?: number;
     predictedWinProbability?: number;
     predictionRank?: number;
+    worldTransformLossTotal?: number;
 };
 
 export type AggregatedFactor = {

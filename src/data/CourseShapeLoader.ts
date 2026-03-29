@@ -1,6 +1,9 @@
+import GameDataLoader from "./GameDataLoader";
+
 export type CourseShapePoint = [number, number];
 
 export interface CourseShapeEntry {
+    baseRatio?: number;
     distance: number;
     pointCount: number;
     pointStep: number;
@@ -9,9 +12,11 @@ export interface CourseShapeEntry {
 }
 
 export type CourseShapeData = Record<string, CourseShapeEntry>;
+export type CourseBaseRatioData = Record<string, number>;
 
 class CourseShapeLoaderClass {
     private data: CourseShapeData | null = null;
+    private baseRatios: CourseBaseRatioData | null = null;
     private loadingPromise: Promise<void> | null = null;
 
     async initialize(): Promise<void> {
@@ -19,14 +24,19 @@ class CourseShapeLoaderClass {
         if (this.loadingPromise) return this.loadingPromise;
 
         this.loadingPromise = (async () => {
-            const response = await fetch(
-                import.meta.env.BASE_URL + "data/course-shapes.json",
-                { cache: "no-cache" }
-            );
-            if (!response.ok) {
-                throw new Error(`Failed to load course shapes (${response.status})`);
+            await GameDataLoader.initialize();
+            const shapeData = structuredClone(GameDataLoader.courseShapes);
+            const ratioData = GameDataLoader.courseBaseRatios;
+
+            for (const [trackId, entry] of Object.entries(shapeData)) {
+                const baseRatio = ratioData[trackId];
+                if (typeof baseRatio === "number") {
+                    entry.baseRatio = baseRatio;
+                }
             }
-            this.data = await response.json() as CourseShapeData;
+
+            this.data = shapeData;
+            this.baseRatios = ratioData;
         })();
 
         try {
@@ -39,6 +49,10 @@ class CourseShapeLoaderClass {
 
     getCourseShape(trackId: string): CourseShapeEntry | undefined {
         return this.data?.[trackId];
+    }
+
+    getBaseRatio(trackId: string): number | undefined {
+        return this.data?.[trackId]?.baseRatio ?? this.baseRatios?.[trackId];
     }
 }
 

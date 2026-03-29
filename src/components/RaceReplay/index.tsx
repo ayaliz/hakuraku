@@ -40,6 +40,7 @@ import { useRaceExport } from "./hooks/useRaceExport";
 import LegendItem from "./components/LegendItem";
 import ClipMaker from "./components/ClipMaker";
 import HorseTooltip from "./components/HorseTooltip";
+import CourseMinimap from "./components/CourseMinimap";
 import { toggleDefs } from "./components/ToggleDefs";
 import {
     createOptions,
@@ -221,6 +222,16 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
             data: Array.from({ length: 24 }, (_, i) => [i * goalInX / 24, 0]),
         };
     }, [goalInX]);
+
+    const visibleRange = useMemo(() => {
+        if (!goalInX || interpolatedFrame.horseFrame.length === 0) return null;
+        const frontRunnerDistance = interpolatedFrame.horseFrame.reduce((maxDistance, horse) => Math.max(maxDistance, horse?.distance ?? 0), 0);
+        const lead = cameraWindow * 0.1;
+        const front = Math.min(frontRunnerDistance, goalInX) + lead;
+        const min = Math.max(0, Math.max(cameraWindow, front) - cameraWindow);
+        const max = Math.max(cameraWindow, front);
+        return { min, max };
+    }, [cameraWindow, goalInX, interpolatedFrame.horseFrame]);
 
     // Placeholder series for React options — imperative path updates markArea data every frame
     const positionKeepSeries = useMemo(() => {
@@ -419,6 +430,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                                 </div>
                             )}
                         </div>
+
                     </div>
 
                     {/* MIDDLE SECTION: Toggles */}
@@ -533,6 +545,14 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                 }}
                 onMouseLeave={() => setHoveredHorse(null)}
             >
+                {toggles.minimap && selectedTrackId && visibleRange && (
+                    <div className="course-minimap-overlay">
+                        <CourseMinimap
+                            trackId={selectedTrackId}
+                            visibleRange={visibleRange}
+                        />
+                    </div>
+                )}
                 <EChartsReactCore
                     ref={echartsRef}
                     echarts={echarts}

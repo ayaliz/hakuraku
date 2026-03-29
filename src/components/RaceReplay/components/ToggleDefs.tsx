@@ -4,6 +4,8 @@ import { Toggles } from "../hooks/useToggles";
 
 export type ToggleDef = { id: keyof Toggles; label: React.ReactNode };
 
+const INFO_ICON = "\u24D8";
+
 export const toggleDefs: ToggleDef[] = [
     {
         id: "skills",
@@ -18,7 +20,7 @@ export const toggleDefs: ToggleDef[] = [
                         </Tooltip>
                     }
                 >
-                    <span className="toggle-info-icon">ⓘ</span>
+                    <span className="toggle-info-icon">{INFO_ICON}</span>
                 </OverlayTrigger>
             </span>
         ),
@@ -36,7 +38,7 @@ export const toggleDefs: ToggleDef[] = [
                         </Tooltip>
                     }
                 >
-                    <span className="toggle-info-icon">ⓘ</span>
+                    <span className="toggle-info-icon">{INFO_ICON}</span>
                 </OverlayTrigger>
             </span>
         ),
@@ -54,7 +56,7 @@ export const toggleDefs: ToggleDef[] = [
                         </Tooltip>
                     }
                 >
-                    <span className="toggle-info-icon">ⓘ</span>
+                    <span className="toggle-info-icon">{INFO_ICON}</span>
                 </OverlayTrigger>
             </span>
         ),
@@ -72,7 +74,7 @@ export const toggleDefs: ToggleDef[] = [
                         </Tooltip>
                     }
                 >
-                    <span className="toggle-info-icon">ⓘ</span>
+                    <span className="toggle-info-icon">{INFO_ICON}</span>
                 </OverlayTrigger>
             </span>
         ),
@@ -90,7 +92,7 @@ export const toggleDefs: ToggleDef[] = [
                         </Tooltip>
                     }
                 >
-                    <span className="toggle-info-icon">ⓘ</span>
+                    <span className="toggle-info-icon">{INFO_ICON}</span>
                 </OverlayTrigger>
             </span>
         ),
@@ -108,7 +110,7 @@ export const toggleDefs: ToggleDef[] = [
                         </Tooltip>
                     }
                 >
-                    <span className="toggle-info-icon">ⓘ</span>
+                    <span className="toggle-info-icon">{INFO_ICON}</span>
                 </OverlayTrigger>
             </span>
         ),
@@ -126,7 +128,7 @@ export const toggleDefs: ToggleDef[] = [
                         </Tooltip>
                     }
                 >
-                    <span className="toggle-info-icon">ⓘ</span>
+                    <span className="toggle-info-icon">{INFO_ICON}</span>
                 </OverlayTrigger>
             </span>
         ),
@@ -144,7 +146,7 @@ export const toggleDefs: ToggleDef[] = [
                         </Tooltip>
                     }
                 >
-                    <span className="toggle-info-icon">ⓘ</span>
+                    <span className="toggle-info-icon">{INFO_ICON}</span>
                 </OverlayTrigger>
             </span>
         ),
@@ -162,7 +164,7 @@ export const toggleDefs: ToggleDef[] = [
                         </Tooltip>
                     }
                 >
-                    <span className="toggle-info-icon">ⓘ</span>
+                    <span className="toggle-info-icon">{INFO_ICON}</span>
                 </OverlayTrigger>
             </span>
         ),
@@ -180,7 +182,25 @@ export const toggleDefs: ToggleDef[] = [
                         </Tooltip>
                     }
                 >
-                    <span className="toggle-info-icon">ⓘ</span>
+                    <span className="toggle-info-icon">{INFO_ICON}</span>
+                </OverlayTrigger>
+            </span>
+        ),
+    },
+    {
+        id: "minimap",
+        label: (
+            <span>
+                Course map
+                <OverlayTrigger
+                    placement="top"
+                    overlay={
+                        <Tooltip id="course-map-info-tooltip">
+                            Shows a small overlay of the selected course and highlights the portion currently visible in the replay.
+                        </Tooltip>
+                    }
+                >
+                    <span className="toggle-info-icon">{INFO_ICON}</span>
                 </OverlayTrigger>
             </span>
         ),

@@ -146,3 +146,135 @@
     opacity: 0.25;
     text-decoration: line-through;
 }
+
+.course-minimap-card {
+    width: min(100%, 230px);
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03));
+}
+
+.course-minimap-overlay {
+    position: absolute;
+    top: 42px;
+    left: 54px;
+    z-index: 12;
+    width: min(230px, calc(100% - 24px));
+    pointer-events: none;
+}
+
+.course-minimap-overlay .course-minimap-card {
+    width: 100%;
+    background: rgba(24, 28, 34, 0.88);
+    backdrop-filter: blur(4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+}
+
+.course-minimap-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.course-minimap-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #f0f0f0;
+    letter-spacing: 0.02em;
+}
+
+.course-minimap-track {
+    font-size: 0.72rem;
+    color: #9bb7d7;
+}
+
+.course-minimap-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.course-minimap-outline {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.12);
+    stroke-width: 6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.course-minimap-segment-straight {
+    fill: none;
+    stroke: rgba(106, 149, 166, 0.9);
+    stroke-width: 4.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.course-minimap-segment-corner {
+    fill: none;
+    stroke: rgba(192, 139, 91, 0.9);
+    stroke-width: 4.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.course-minimap-segment-straight-inactive {
+    fill: none;
+    stroke: rgba(106, 149, 166, 0.28);
+    stroke-width: 4.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.course-minimap-segment-corner-inactive {
+    fill: none;
+    stroke: rgba(192, 139, 91, 0.28);
+    stroke-width: 4.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.course-minimap-slope-up,
+.course-minimap-slope-down,
+.course-minimap-slope-end-up,
+.course-minimap-slope-end-down {
+    font-size: 10px;
+    font-weight: 700;
+    paint-order: stroke;
+    stroke: rgba(18, 24, 32, 0.95);
+    stroke-width: 2px;
+    stroke-linejoin: round;
+}
+
+.course-minimap-slope-up {
+    fill: #ff8a80;
+}
+
+.course-minimap-slope-down {
+    fill: #7dd3fc;
+}
+
+.course-minimap-slope-end-up {
+    fill: #ff8a80;
+}
+
+.course-minimap-slope-end-down {
+    fill: #7dd3fc;
+}
+
+.course-minimap-highlight {
+    fill: none;
+    stroke: #4fd1c5;
+    stroke-width: 5.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.course-minimap-marker {
+    fill: #ffd166;
+    stroke: rgba(0, 0, 0, 0.45);
+    stroke-width: 1.5;
+}

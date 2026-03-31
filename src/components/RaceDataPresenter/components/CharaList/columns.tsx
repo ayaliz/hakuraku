@@ -9,6 +9,7 @@ import {
 } from "../../utils/RacePresenterUtils";
 import { CharaTableData } from "./types";
 import { getRankIcon } from "./rankUtils";
+import { hasLowHpNegativeSpurtSuspicion } from "./utils";
 
 import AssetLoader from "../../../../data/AssetLoader";
 import { getSkillDef } from "../../../RaceReplay/utils/SkillDataUtils";
@@ -318,6 +319,11 @@ const baseCharaTableColumns: CharaColumnDef[] = [
             const speedDiff = (row.maxAdjustedSpeed && row.lastSpurtTargetSpeed)
                 ? row.maxAdjustedSpeed - row.lastSpurtTargetSpeed : 0;
             const speedReached = speedDiff >= -0.05;
+            const hasLowHpSpurtSuspicion = hasLowHpNegativeSpurtSuspicion(
+                row.hpAtPhase3Start,
+                row.requiredSpurtHp,
+                speedDiff
+            );
 
             const hasHpInfo = row.hpAtPhase3Start !== undefined || row.requiredSpurtHp !== undefined;
             const startHp = row.hpOutcome?.startHp;
@@ -334,10 +340,11 @@ const baseCharaTableColumns: CharaColumnDef[] = [
                 )
                 : [];
             const hasLateHeal = lateHealEvents.length > 0;
-            const blockedIconUrl = hasLateHeal ? AssetLoader.getBlockedIcon() : null;
+            const hasPotentialSpurtIssue = hasLateHeal || hasLowHpSpurtSuspicion;
+            const blockedIconUrl = hasPotentialSpurtIssue ? AssetLoader.getBlockedIcon() : null;
 
             const cellContent = (
-                <div className={`col-spurt-cell${hasHpInfo || hasLateHeal ? ' col-spurt-help' : ''}`}>
+                <div className={`col-spurt-cell${hasHpInfo || hasPotentialSpurtIssue ? ' col-spurt-help' : ''}`}>
                     <span>Delay: <span className="col-spurt-delay-val" style={{ color: spurtColor }}>{spurtDelay.toFixed(1)}m</span></span>
                     {row.maxAdjustedSpeed && row.lastSpurtTargetSpeed && (
                         <>
@@ -356,7 +363,7 @@ const baseCharaTableColumns: CharaColumnDef[] = [
                 </div>
             );
 
-            if (!hasHpInfo && !hasLateHeal) return cellContent;
+            if (!hasHpInfo && !hasPotentialSpurtIssue) return cellContent;
 
             const hpPct = (row.hpAtPhase3Start !== undefined && startHp)
                 ? ` (${((row.hpAtPhase3Start / startHp) * 100).toFixed(1)}%)`
@@ -405,6 +412,14 @@ const baseCharaTableColumns: CharaColumnDef[] = [
                                 <strong>Potential spurt issue</strong>
                                 <div className="late-heal-warning-text">
                                     Last spurt speed may have been reduced prior to the activation of {lateHealEvents.map(e => e.name).join(', ')} in the late-race.
+                                </div>
+                            </div>
+                        )}
+                        {hasLowHpSpurtSuspicion && (
+                            <div className="late-heal-warning">
+                                <strong>Potential spurt issue</strong>
+                                <div className="late-heal-warning-text">
+                                    Spare HP at 2/3 was under 10, so a negative spurt may be hidden by duel speed even though the observed sample looks faster than theoretical.
                                 </div>
                             </div>
                         )}

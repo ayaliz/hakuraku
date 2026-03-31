@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import type { HorseEntry } from "../MultiRacePage/types";
+import type { HorseEntry, SkillStats } from "../MultiRacePage/types";
 import { STRATEGY_NAMES, STRATEGY_COLORS } from "../MultiRacePage/components/WinDistributionCharts/constants";
 import InfoTooltip from "../MultiRacePage/components/WinDistributionCharts/InfoTooltip";
 import { getCharaIcon } from "../MultiRacePage/components/WinDistributionCharts/utils";
+import { TeamMemberCard } from "../MultiRacePage/components/WinDistributionCharts/StrategyAnalysis";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 import AssetLoader from "../../data/AssetLoader";
 import { getHorseDeckRaceBonus } from "./deckUtils";
@@ -68,6 +69,7 @@ interface AggRow {
 
 interface ExplorerTabProps {
     allHorses: HorseEntry[];
+    skillStats?: Map<number, SkillStats>;
     strategyColors?: Record<number, string>;
 }
 
@@ -583,10 +585,11 @@ function aggregateHorses(
     return result;
 }
 
-const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) => {
+const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, skillStats, strategyColors }) => {
     const [characterFeatures, setCharacterFeatures] = useState<CharacterFeature[]>([]);
     const [sortKey, setSortKey] = useState<SortKey>("entries");
     const [sortDesc, setSortDesc] = useState(true);
+    const [selectedRowKey, setSelectedRowKey] = useState<string | null>(null);
 
     const cardVariants = useMemo((): CharaVariant[] => {
         const map = new Map<number, CharaVariant>();
@@ -769,37 +772,116 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, strategyColors }) 
         sortKey === col ? <span className="exp-sort-arrow">{sortDesc ? "v" : "^"}</span> : null;
 
     const showTeamsColumn = !hasCharacterFilter;
+    const drilldownColSpan = 3 + (showTeamsColumn ? 1 : 0);
+    const selectedRow = useMemo(
+        () => rows.find(row => row.key === selectedRowKey && row.cardId !== undefined && row.strategy !== undefined) ?? null,
+        [rows, selectedRowKey]
+    );
+
+    useEffect(() => {
+        if (selectedRowKey && !rows.some(row => row.key === selectedRowKey && row.cardId !== undefined && row.strategy !== undefined)) {
+            setSelectedRowKey(null);
+        }
+    }, [rows, selectedRowKey]);
+
+    const buildDrilldown = (selection: AggRow | null) => {
+        if (!selection || selection.cardId === undefined || selection.strategy === undefined) return [];
+        const filtered = allHorses.filter(
+            h => h.cardId === selection.cardId && h.strategy === selection.strategy && h.rankScore > 0
+        );
+
+        const buildMap = new Map<string, { rep: HorseEntry; wins: number; appearances: number }>();
+        for (const h of filtered) {
+            const key = `${h.rankScore}_${h.speed}_${h.stamina}_${h.pow}_${h.guts}_${h.wiz}`;
+            if (!buildMap.has(key)) {
+                buildMap.set(key, { rep: h, wins: 0, appearances: 0 });
+            }
+            const entry = buildMap.get(key)!;
+            entry.appearances++;
+            if (h.finishOrder === 1) entry.wins++;
+        }
+
+        const PRIOR = 1 / 9;
+        const K = 54;
+        return Array.from(buildMap.values())
+            .map(({ rep, wins, appearances }) => ({
+                horse: rep,
+                bayesianWinRate: (wins + K * PRIOR) / (appearances + K),
+                winRate: wins / appearances,
+                appearances,
+            }))
+            .sort((a, b) => b.bayesianWinRate - a.bayesianWinRate)
+            .slice(0, 6);
+    };
+
+    const drilldownHorses = useMemo(() => buildDrilldown(selectedRow), [selectedRow, allHorses]);
+    const canDrilldown = !!skillStats;
 
     const renderRow = (row: AggRow) => {
         const activeStrategyColors = strategyColors ?? STRATEGY_COLORS;
         const stratColor = row.strategy !== undefined
             ? (activeStrategyColors[row.strategy] ?? "#718096")
             : undefined;
+        const rowCanDrilldown = canDrilldown && row.cardId !== undefined && row.strategy !== undefined;
+        const isSelected = rowCanDrilldown && selectedRowKey === row.key;
         const iconUrl = row.charaId !== undefined && row.cardId !== undefined
             ? getCharaIcon(`${row.charaId}_${row.cardId}`)
             : null;
         return (
-            <tr key={row.key} className="exp-row">
-                <td className="exp-td exp-td--name">
-                    {iconUrl && (
-                        <div className="exp-card-portrait">
-                            <img src={iconUrl} alt=""
-                                onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                        </div>
-                    )}
-                    {stratColor && <span className="exp-dot" style={{ background: stratColor }} />}
-                    <span className="exp-name-block">
-                        <span>{row.label}</span>
-                        {row.sublabel && <span className="exp-sublabel">{row.sublabel}</span>}
-                    </span>
-                </td>
-                <td className="exp-td exp-td--r">{row.entries}</td>
-                {showTeamsColumn && <td className="exp-td exp-td--r">{row.teams}</td>}
-                <td className="exp-td exp-td--r">
-                    {row.wins}
-                    {row.entries > 0 && <span className="exp-wins-pct"> ({formatPercent(row.awPct)}%)</span>}
-                </td>
-            </tr>
+            <React.Fragment key={row.key}>
+                <tr
+                    className={`exp-row${rowCanDrilldown ? " exp-row--clickable" : ""}${isSelected ? " exp-row--selected" : ""}`}
+                    onClick={rowCanDrilldown ? () => setSelectedRowKey(current => current === row.key ? null : row.key) : undefined}
+                >
+                    <td className="exp-td exp-td--name">
+                        {iconUrl && (
+                            <div className="exp-card-portrait">
+                                <img src={iconUrl} alt=""
+                                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                            </div>
+                        )}
+                        {stratColor && <span className="exp-dot" style={{ background: stratColor }} />}
+                        <span className="exp-name-block">
+                            <span>{row.label}</span>
+                            {row.sublabel && <span className="exp-sublabel">{row.sublabel}</span>}
+                        </span>
+                    </td>
+                    <td className="exp-td exp-td--r">{row.entries}</td>
+                    {showTeamsColumn && <td className="exp-td exp-td--r">{row.teams}</td>}
+                    <td className="exp-td exp-td--r">
+                        {row.wins}
+                        {row.entries > 0 && <span className="exp-wins-pct"> ({formatPercent(row.awPct)}%)</span>}
+                    </td>
+                </tr>
+                {isSelected && selectedRow && drilldownHorses.length > 0 && (
+                    <tr className="exp-drilldown-row">
+                        <td className="exp-drilldown-cell" colSpan={drilldownColSpan}>
+                            <div className="stcp-drilldown">
+                                <div className="stcp-drilldown-header">
+                                    <div className="stcp-drilldown-title">
+                                        Top performers for {selectedRow.label} ({STRATEGY_NAMES[selectedRow.strategy!]})
+                                    </div>
+                                    <div className="stcp-drilldown-subtitle">
+                                        Unique umas ranked by Bayesian-adjusted win rate across all appearances.
+                                    </div>
+                                </div>
+                                <div className="stcp-team-members-row">
+                                    {drilldownHorses.map(({ horse, bayesianWinRate, winRate, appearances }, i) => (
+                                        <div key={i} className="sa-reps-drilldown-card">
+                                            <div className="sa-reps-drilldown-winrate">
+                                                <span className="sa-adj-pct">{(bayesianWinRate * 100).toFixed(0)}%</span>
+                                                <span className="sa-pipe"> | </span>
+                                                <span className="sa-raw-pct">{(winRate * 100).toFixed(0)}% ({appearances})</span>
+                                            </div>
+                                            <TeamMemberCard horse={horse} skillStats={skillStats!} strategyColors={activeStrategyColors} allHorses={allHorses} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                )}
+            </React.Fragment>
         );
     };
 

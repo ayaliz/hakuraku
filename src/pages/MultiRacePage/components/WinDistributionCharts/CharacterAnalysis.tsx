@@ -8,6 +8,7 @@ import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import InfoTooltip from "./InfoTooltip";
 import { TeamMemberCard } from "./StrategyAnalysis";
 import TeamSampleSelect from "./TeamSampleSelect";
+import { getRankIcon } from "../../../../components/RaceDataPresenter/components/CharaList/rankUtils";
 
 type SynergyEntityInfo = {
     key: string;         // `${cardId}_${strategy}`
@@ -141,6 +142,81 @@ const SynergyEntitySelect: React.FC<SynergyEntitySelectProps> = ({ entities, val
 
 const CHAR_BAYES_K = BAYES_UMA.K;
 const CHAR_BAYES_PRIOR = BAYES_UMA.PRIOR;
+type AverageScoreSummary = { average: number; count: number; };
+
+function buildAverageScoreSummary(horses: HorseEntry[]): AverageScoreSummary | null {
+    let total = 0;
+    let count = 0;
+    for (const horse of horses) {
+        if (horse.rankScore <= 0) continue;
+        total += horse.rankScore;
+        count += 1;
+    }
+    return count > 0 ? { average: total / count, count } : null;
+}
+
+function buildCharacterPopulationSlices(horses: HorseEntry[]): PieSlice[] {
+    const getKey = (horse: HorseEntry) => `${horse.charaId}_${horse.cardId}_${horse.strategy}`;
+    const popMap = new Map<string, { count: number; charaId: number; strategy: number; cardId: number; fullLabel: string }>();
+
+    for (const horse of horses) {
+        const key = getKey(horse);
+        if (!popMap.has(key)) {
+            popMap.set(key, {
+                count: 0,
+                charaId: horse.charaId,
+                strategy: horse.strategy,
+                cardId: horse.cardId,
+                fullLabel: horse.charaName,
+            });
+        }
+        popMap.get(key)!.count++;
+    }
+
+    const total = horses.length;
+    if (total <= 0) return [];
+
+    return Array.from(popMap.entries())
+        .map(([id, data]) => {
+            const cardName = data.cardId ? UMDatabaseWrapper.cards[data.cardId]?.name : null;
+            const label = (cardName && cardName !== "") ? cardName : data.fullLabel;
+            return {
+                value: data.count,
+                percentage: (data.count / total) * 100,
+                label,
+                fullLabel: data.fullLabel,
+                color: "#718096",
+                charaId: id,
+                strategyId: data.strategy,
+                cardId: data.cardId,
+            };
+        })
+        .sort((a, b) => b.value - a.value);
+}
+
+function getBestPlacingOpponents(allHorses: HorseEntry[]): HorseEntry[] {
+    const races = new Map<string, HorseEntry[]>();
+    for (const horse of allHorses) {
+        if (!races.has(horse.raceId)) races.set(horse.raceId, []);
+        races.get(horse.raceId)!.push(horse);
+    }
+
+    const bestOpponents: HorseEntry[] = [];
+    races.forEach((horses) => {
+        let bestHorse: HorseEntry | null = null;
+        let bestOrder = Number.MAX_SAFE_INTEGER;
+        for (const horse of horses) {
+            if (horse.isPlayer) continue;
+            if (horse.finishOrder < bestOrder) {
+                bestOrder = horse.finishOrder;
+                bestHorse = horse;
+            }
+        }
+        if (bestHorse) bestOpponents.push(bestHorse);
+    });
+
+    return bestOpponents;
+}
 
 interface CharacterBreakdownPanelProps {
     title: string;
@@ -151,9 +227,21 @@ interface CharacterBreakdownPanelProps {
     allHorses?: HorseEntry[];
     skillStats?: Map<number, SkillStats>;
     strategyColors: Record<number, string>;
+    includeZeroWinEntries?: boolean;
+    useBayesianWinRate?: boolean;
 }
 
-function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRatingWinsSlices, allHorses, skillStats, strategyColors }: CharacterBreakdownPanelProps) {
+function CharacterBreakdownPanel({
+    title,
+    rawWinsSlices,
+    rawPopSlices,
+    rawRatingWinsSlices,
+    allHorses,
+    skillStats,
+    strategyColors,
+    includeZeroWinEntries = false,
+    useBayesianWinRate = true,
+}: CharacterBreakdownPanelProps) {
     const [sortMode, setSortMode] = useState<"pop" | "winRate">("pop");
     const [fullDataOpen, setFullDataOpen] = useState(false);
     const [fullDataSort, setFullDataSort] = useState<"pop" | "winRate">("pop");
@@ -165,7 +253,7 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
     const ratingWinsSlices = rawRatingWinsSlices ?? rawWinsSlices;
     const ratingWinsByKey = new Map(ratingWinsSlices.filter(s => s.charaId).map(s => [s.charaId as string, s]));
 
-    type CharRow = { key: string; label: string; fullLabel?: string; strategyId?: number; cardId?: number; winsPct: number; popPct: number; adjRate: number; winsCount: number; appsCount: number; };
+    type CharRow = { key: string; label: string; fullLabel?: string; strategyId?: number; cardId?: number; winsPct: number; popPct: number; adjRate: number; rawRate: number; displayRate: number; winsCount: number; appsCount: number; };
 
     const buildCharRow = (key: string): CharRow => {
         const w = rawWinsByKey.get(key);
@@ -173,6 +261,7 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
         const ratingWins = ratingWinsByKey.get(key)?.value ?? 0;
         const apps = p?.value ?? 0;
         const adjRate = (ratingWins + CHAR_BAYES_K * CHAR_BAYES_PRIOR) / (apps + CHAR_BAYES_K);
+        const rawRate = apps > 0 ? ratingWins / apps : 0;
         return {
             key,
             label: p?.label ?? w?.label ?? key,
@@ -182,6 +271,8 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
             winsPct: w?.percentage ?? 0,
             popPct: p?.percentage ?? 0,
             adjRate,
+            rawRate,
+            displayRate: useBayesianWinRate ? adjRate : rawRate,
             winsCount: ratingWins,
             appsCount: apps,
         };
@@ -218,17 +309,20 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
     const drilldownHorses = useMemo(() => buildDrilldown(selectedCharKey), [selectedCharKey, allHorses]);
     const drilldownInModal = useMemo(() => buildDrilldown(selectedInModal), [selectedInModal, allHorses]);
 
-    const allPopKeys = rawPopSlices.filter(s => s.charaId && (ratingWinsByKey.get(s.charaId as string)?.value ?? 0) > 0).map(s => s.charaId as string);
+    const allPopKeys = rawPopSlices
+        .filter(s => s.charaId && (includeZeroWinEntries || (ratingWinsByKey.get(s.charaId as string)?.value ?? 0) > 0))
+        .map(s => s.charaId as string);
 
     const allWinRateKeys = [...allPopKeys]
         .map(key => {
             const apps = rawPopByKey.get(key)?.value ?? 0;
             const wins = ratingWinsByKey.get(key)?.value ?? 0;
             const adjRate = (wins + CHAR_BAYES_K * CHAR_BAYES_PRIOR) / (apps + CHAR_BAYES_K);
-            return { key, adjRate, wins };
+            const rawRate = apps > 0 ? wins / apps : 0;
+            return { key, rate: useBayesianWinRate ? adjRate : rawRate, wins };
         })
-        .filter(x => x.wins > 0)
-        .sort((a, b) => b.adjRate - a.adjRate)
+        .filter(x => includeZeroWinEntries || x.wins > 0)
+        .sort((a, b) => b.rate - a.rate)
         .map(x => x.key);
 
     const topPopKeys = allPopKeys.slice(0, 6);
@@ -239,8 +333,8 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
     const fullDataKeys = fullDataSort === "pop" ? allPopKeys : allWinRateKeys;
     const fullDataChars = fullDataKeys.map(buildCharRow);
 
-    const maxPct = Math.max(...chars.flatMap(c => [c.adjRate * 100, c.popPct]), 1);
-    const fullDataMaxPct = Math.max(...fullDataChars.flatMap(c => [c.adjRate * 100, c.popPct]), 1);
+    const maxPct = Math.max(...chars.flatMap(c => [c.displayRate * 100, c.popPct]), 1);
+    const fullDataMaxPct = Math.max(...fullDataChars.flatMap(c => [c.displayRate * 100, c.popPct]), 1);
 
     const renderBarRow = (c: CharRow, maxP: number, inModal: boolean = false) => {
         const icon = getCharaIcon(c.key);
@@ -268,10 +362,10 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
                 <div className="sa-sb-bar-row">
                     <div className="sa-sb-bar-label">Win%</div>
                     <div className="sa-sb-track sa-sb-track--win">
-                        <div className="sa-sb-bar-fill" style={{ width: `${(c.adjRate * 100 / maxP) * 100}%`, background: color }} />
+                        <div className="sa-sb-bar-fill" style={{ width: `${(c.displayRate * 100 / maxP) * 100}%`, background: color }} />
                     </div>
                     <div className="sa-sb-value sa-sb-value--win ca-bar-value-wide">
-                        {(c.adjRate * 100).toFixed(1)}% <span className="ca-abs-count">({c.winsCount})</span>
+                        {(c.displayRate * 100).toFixed(1)}% <span className="ca-abs-count">({c.winsCount})</span>
                     </div>
                 </div>
                 <div className="sa-sb-bar-row">
@@ -337,7 +431,7 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
                     <button
                         className={`ca-sort-btn${sortMode === "winRate" ? " ca-sort-btn--active" : ""}`}
                         onClick={() => setSortMode("winRate")}>
-                        Top Adj. Win%
+                        {useBayesianWinRate ? "Top Adj. Win%" : "Top Win%"}
                     </button>
                 </div>
             </div>
@@ -368,7 +462,7 @@ function CharacterBreakdownPanel({ title, rawWinsSlices, rawPopSlices, rawRating
                                 <button
                                     className={`ca-sort-btn${fullDataSort === "winRate" ? " ca-sort-btn--active" : ""}`}
                                     onClick={() => setFullDataSort("winRate")}>
-                                    By Adj. Win%
+                                    {useBayesianWinRate ? "By Adj. Win%" : "By Win%"}
                                 </button>
                             </div>
                             <button className="cdt-close-btn" onClick={() => setFullDataOpen(false)}>&times;</button>
@@ -714,6 +808,18 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
     const [synEntityKey, setSynEntityKey] = useState<string | null>(null);
     const [selectedCompKey, setSelectedCompKey] = useState<string | null>(null);
     const [selectedDrilldownIdx, setSelectedDrilldownIdx] = useState(0);
+    const opponentScoreSummary = useMemo(() => {
+        if (spectatorMode || !allHorses) return null;
+        return buildAverageScoreSummary(allHorses.filter(h => !h.isPlayer));
+    }, [allHorses, spectatorMode]);
+    const bestOpponentScoreSummary = useMemo(() => {
+        if (spectatorMode || !allHorses) return null;
+        return buildAverageScoreSummary(getBestPlacingOpponents(allHorses));
+    }, [allHorses, spectatorMode]);
+    const unfilteredCharacterPop = useMemo(() => {
+        if (spectatorMode || !allHorses) return rawPop;
+        return buildCharacterPopulationSlices(allHorses);
+    }, [allHorses, rawPop, spectatorMode]);
 
     useEffect(() => { setSelectedCompKey(null); }, [synEntityKey]);
     useEffect(() => { setSelectedDrilldownIdx(0); }, [selectedCompKey]);
@@ -861,6 +967,23 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
 
     const canDrilldown = !!(teamStats && allHorses && skillStats);
     const activeStrategyColors = strategyColors ?? STRATEGY_COLORS;
+    const renderScoreSummaryCard = (label: string, summary: AverageScoreSummary | null) => {
+        if (!summary) return null;
+        const rankInfo = getRankIcon(summary.average);
+        return (
+            <div
+                className="ca-score-summary-card"
+                title={`${Math.round(summary.average).toLocaleString()} average score across ${summary.count.toLocaleString()} samples`}
+            >
+                <div className="ca-score-summary-label">{label}</div>
+                <div className="ca-score-summary-value">
+                    <img src={rankInfo.icon} alt={rankInfo.name} className="ca-score-summary-icon" />
+                    <span>{Math.round(summary.average).toLocaleString()}</span>
+                </div>
+                <div className="ca-score-summary-meta">{summary.count.toLocaleString()} samples</div>
+            </div>
+        );
+    };
 
     const renderCompItem = (e: StyleCompEntry, positive: boolean) => {
         const valueColor = positive ? "#68d391" : "#fc8181";
@@ -887,15 +1010,22 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
 
     return (
         <div className="pie-chart-container">
+            {!spectatorMode && (opponentScoreSummary || bestOpponentScoreSummary) && (
+                <div className="ca-score-summary-row">
+                    {renderScoreSummaryCard("Avg Opponent Score", opponentScoreSummary)}
+                    {renderScoreSummaryCard("Avg Best-Placing Opponent Score", bestOpponentScoreSummary)}
+                </div>
+            )}
             <div className="sa-top-panels-row">
                 <CharacterBreakdownPanel
                     title="Character Breakdown"
                     rawWinsSlices={rawWinsAll}
-                    rawPopSlices={rawPop}
-                    rawRatingWinsSlices={spectatorMode ? undefined : rawWinsOpp}
+                    rawPopSlices={unfilteredCharacterPop}
                     allHorses={allHorses}
                     skillStats={skillStats}
                     strategyColors={activeStrategyColors}
+                    includeZeroWinEntries
+                    useBayesianWinRate={!!spectatorMode}
                 />
                 {!spectatorMode && (
                     <CharacterBreakdownPanel
@@ -905,6 +1035,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                         allHorses={allHorses}
                         skillStats={skillStats}
                         strategyColors={activeStrategyColors}
+                        useBayesianWinRate={false}
                     />
                 )}
                 {spectatorMode && (
@@ -1019,4 +1150,3 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
 };
 
 export default CharacterAnalysis;
-

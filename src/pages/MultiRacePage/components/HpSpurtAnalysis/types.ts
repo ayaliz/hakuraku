@@ -26,6 +26,7 @@ export interface RecoveryScenarioStats {
     label: string;
     activationPattern: string;
     totalRuns: number;
+    wins: number;
     fullSpurtCount: number;
     survivalCount: number;
     hpOutcomes: number[];

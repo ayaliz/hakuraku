@@ -170,6 +170,7 @@ type Section = 'introduction' | 'overview' | 'strategy' | 'character' | 'skill' 
 
 interface TrackGroupContentProps {
     group: TrackGroup;
+    cmId: string | null;
     cmLabel: string;
     scoreWinnersOnly: boolean;
     setScoreWinnersOnly: (v: boolean) => void;
@@ -200,7 +201,7 @@ type RaceBonusOverviewRow = {
 
 const RACE_BONUS_OTHER_MIN_POP_PCT = 0.5;
 
-const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmLabel, scoreWinnersOnly, setScoreWinnersOnly, totalRaces, totalUniqueUmas, strategyColors }) => {
+const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLabel, scoreWinnersOnly, setScoreWinnersOnly, totalRaces, totalUniqueUmas, strategyColors }) => {
     const [section, setSection] = useState<Section>('introduction');
     const [cardUsageOpen, setCardUsageOpen] = useState(false);
     const [styleDecksOpen, setStyleDecksOpen] = useState(false);
@@ -612,7 +613,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmLabel, s
                         <li>Per-team data: prior m = 1/3, C = 18</li>
                         <li>Per-skill win rates: prior m = uma's base win rate in the data, C = 54</li>
                     </ul>
-                    <p>CM11 data collection is over. See you in CM12.</p>
+                    <p>CM12 data collection is ongoing.</p>
                 </div>
             )}
 
@@ -1120,6 +1121,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmLabel, s
             {section === 'strategy' && (
                 <div className="win-distribution-section">
                     <StrategyAnalysis
+                        datasetId={cmId}
                         strategyStats={group.stats.strategyStats}
                         totalRaces={group.stats.totalRaces}
                         roomCompositions={group.stats.roomCompositions}
@@ -1162,7 +1164,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmLabel, s
             )}
 
             {section === 'explorer' && (
-                <ExplorerTab allHorses={group.stats.allHorses} strategyColors={strategyColors} />
+                <ExplorerTab allHorses={group.stats.allHorses} skillStats={group.stats.skillStats} strategyColors={strategyColors} />
             )}
 
         </>
@@ -1173,7 +1175,7 @@ const UmaLogsPage: React.FC = () => {
     const [manifest, setManifest] = useState<Manifest | null>(null);
     const [manifestError, setManifestError] = useState<string | null>(null);
     const [selectedCmId, setSelectedCmId] = useState<string | null>(null);
-    const [loadedDatasets, setLoadedDatasets] = useState<Record<string, UmaLogsData>>({});
+    const [loadedDataset, setLoadedDataset] = useState<{ cmId: string; data: UmaLogsData } | null>(null);
     const [loadingCmId, setLoadingCmId] = useState<string | null>(null);
     const [datasetError, setDatasetError] = useState<string | null>(null);
     const [scoreWinnersOnly, setScoreWinnersOnly] = useState(false);
@@ -1203,35 +1205,49 @@ const UmaLogsPage: React.FC = () => {
             .catch((err: Error) => setManifestError(err.message));
     }, []);
 
-    // Lazy-load a dataset's stats file when it's selected and not yet cached.
+    // Lazy-load only the currently selected dataset and release the previous one.
     useEffect(() => {
-        if (!selectedCmId || loadedDatasets[selectedCmId] || loadingCmId === selectedCmId) return;
+        if (!selectedCmId) {
+            setLoadedDataset(null);
+            setLoadingCmId(null);
+            return;
+        }
+        if (loadedDataset?.cmId === selectedCmId) {
+            setLoadingCmId(null);
+            return;
+        }
+        const controller = new AbortController();
         setLoadingCmId(selectedCmId);
         setDatasetError(null);
+        setLoadedDataset(null);
         const url = import.meta.env.BASE_URL + `data/umalogs-${selectedCmId}-stats.json.gz`;
-        fetch(url)
+        fetch(url, { signal: controller.signal })
             .then((r) => {
                 if (!r.ok) throw new Error(`HTTP ${r.status} - stats file not found`);
                 return r.arrayBuffer();
             })
             .then((buf) => {
                 const json = JSON.parse(pako.inflate(new Uint8Array(buf), { to: 'string' })) as UmaLogsData;
-                setLoadedDatasets((prev) => ({ ...prev, [selectedCmId]: json }));
+                setLoadedDataset({ cmId: selectedCmId, data: json });
                 setLoadingCmId(null);
             })
             .catch((err: Error) => {
+                if (err.name === "AbortError") return;
                 setDatasetError(err.message);
                 setLoadingCmId(null);
             });
-    }, [selectedCmId, loadedDatasets, loadingCmId]);
+        return () => controller.abort();
+    }, [selectedCmId, loadedDataset?.cmId]);
 
     const handleSelectCm = (newCmId: string) => {
         if (newCmId === selectedCmId) return;
+        setLoadedDataset(null);
+        setDatasetError(null);
         setSelectedCmId(newCmId);
     };
 
-    const data = selectedCmId ? (loadedDatasets[selectedCmId] ?? null) : null;
-    const loading = manifest === null || (selectedCmId !== null && !loadedDatasets[selectedCmId]);
+    const data = selectedCmId && loadedDataset?.cmId === selectedCmId ? loadedDataset.data : null;
+    const loading = manifest === null || (selectedCmId !== null && (loadingCmId === selectedCmId || data === null));
     const error = manifestError ?? datasetError;
 
     const trackGroups: TrackGroup[] = useMemo(() => {
@@ -1337,6 +1353,7 @@ const UmaLogsPage: React.FC = () => {
                 <TrackGroupContent
                     key={group.courseId}
                     group={group}
+                    cmId={selectedCmId}
                     cmLabel={cmLabel}
                     scoreWinnersOnly={scoreWinnersOnly}
                     setScoreWinnersOnly={setScoreWinnersOnly}

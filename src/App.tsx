@@ -65,7 +65,7 @@ export default function App() {
                         <Nav.Link as={NavLink} to="/umalogs">
                             <span className="haku-nav-link-with-badge">
                                 <span>UmaLogs</span>
-                                <span className="haku-nav-badge">CM11 update!</span>
+                                <span className="haku-nav-badge">CM12 update!</span>
                             </span>
                         </Nav.Link>
                     </Nav>

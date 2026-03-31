@@ -1,22 +1,24 @@
 import { ParsedRace } from "../../types";
-import { CharaHpSpurtStats } from "./types";
+import { CharaHpSpurtStats, RecoveryScenarioStats } from "./types";
 import { filterCharaSkills, filterCharaTargetedSkills } from "../../../../data/RaceDataUtils";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import { getAvailableTracks, guessTrackId } from "../../../../components/RaceReplay/utils/guessTrackUtils";
 import { computeOtherEvents } from "../../../../components/RaceReplay/utils/analysisUtils";
 import { computeCharaTableData } from "../../../../components/RaceDataPresenter/components/CharaList/useCharaTableData";
 import { calculateRaceDistance } from "../../../../components/RaceDataPresenter/utils/RacePresenterUtils";
+import { hasLowHpNegativeSpurtSuspicion } from "../../../../components/RaceDataPresenter/components/CharaList/utils";
 import { getSkillDef } from "../../../../components/RaceReplay/utils/SkillDataUtils";
 
 const FULL_SPURT_SPEED_TOLERANCE = 0.05;
 const NO_RECOVERY_SCENARIO_ID = "none";
 const NO_RECOVERY_SCENARIO_LABEL = "No recovery activations";
-function createRecoveryScenarioStats(scenarioId: string, label: string) {
+function createRecoveryScenarioStats(scenarioId: string, label: string): RecoveryScenarioStats {
     return {
         scenarioId,
         label,
         activationPattern: scenarioId,
         totalRuns: 0,
+        wins: 0,
         fullSpurtCount: 0,
         survivalCount: 0,
         hpOutcomes: [],
@@ -275,10 +277,15 @@ export const computeHpSpurtStats = (
             const normalizedSpeedDiff = speedDiff !== undefined && Math.abs(speedDiff) < FULL_SPURT_SPEED_TOLERANCE
                 ? 0
                 : speedDiff;
+            const hasLowHpSpurtSuspicion = hasLowHpNegativeSpurtSuspicion(
+                charaData.hpAtPhase3Start,
+                charaData.requiredSpurtHp,
+                speedDiff
+            );
             let didFullSpurt = false;
 
             if (spurtDelay !== undefined && spurtDelay < 3) {
-                const speedReached = (normalizedSpeedDiff ?? 0) >= -FULL_SPURT_SPEED_TOLERANCE;
+                const speedReached = (normalizedSpeedDiff ?? 0) >= -FULL_SPURT_SPEED_TOLERANCE && !hasLowHpSpurtSuspicion;
                 if (speedReached) {
                     didFullSpurt = true;
                 }
@@ -388,6 +395,7 @@ export const computeHpSpurtStats = (
 
                 const applyScenarioSample = (recStats: ReturnType<typeof createRecoveryScenarioStats>) => {
                     recStats.totalRuns++;
+                    if (charaData.finishOrder === 1) recStats.wins++;
                     if (didFullSpurt) {
                         recStats.fullSpurtCount++;
                         recStats.hpOutcomesFullSpurt.push(outcomeValue);

@@ -18,7 +18,7 @@ import {
 const DUELING_HP_THRESHOLD_RATIO = 0.05;   // Dueling ends if HP drops below this fraction of starting HP
 const DUEL_UPHILL_SPEED_SLACK = 0.2;       // Min gap between target and current speed to check if duel resumes
 const DUEL_ENTRY_ACCEL_MAX = 0.1;          // Max acceleration at duel start to consider early exit
-const DUEL_RESUME_SPEED_SLACK = 0.05;      // Speed must exceed target + downhill bonus + this to count as resumed
+const DUEL_RESUME_SPEED_SLACK = 0.02;      // Speed must exceed target + downhill bonus + this to count as resumed
 
 // Spot Struggle (COMPETE_TOP)
 const SPOT_STRUGGLE_DIST_RATIO = 9 / 24;           // Only active before this fraction of course distance

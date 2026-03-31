@@ -117,6 +117,11 @@ interface CanvasOverlayParams {
     groundCondition?: number;
 }
 
+type OverlayPopupLabel = {
+    text: string;
+    bg: string;
+};
+
 export type HorseHoverEntry = {
     idx: number;
     cx: number; cy: number;
@@ -485,7 +490,32 @@ export function useCanvasOverlay(
                 const cx = xToPixel(hf.distance ?? 0, xMin, xMax, w);
                 const cy = yToPixel(hf.lanePosition ?? 0, yMax, h);
 
-                const labels: { text: string; bg: string }[] = [];
+                const labels: OverlayPopupLabel[] = [];
+                const mergedSkillLabels = new Map<string, {
+                    name: string;
+                    bg: string;
+                    count: number;
+                    remaining: number;
+                    sortOrder: number;
+                    prefix: string;
+                }>();
+                const addMergedSkillLabel = (
+                    name: string,
+                    bg: string,
+                    remaining: number,
+                    sortOrder: number,
+                    prefix: string = "",
+                ) => {
+                    const key = `${bg}::${prefix}::${name}`;
+                    const existing = mergedSkillLabels.get(key);
+                    if (existing) {
+                        existing.count += 1;
+                        existing.remaining = Math.max(existing.remaining, remaining);
+                        existing.sortOrder = Math.min(existing.sortOrder, sortOrder);
+                        return;
+                    }
+                    mergedSkillLabels.set(key, { name, bg, count: 1, remaining, sortOrder, prefix });
+                };
 
                 const mode = hf.temptationMode ?? 0;
                 if (p.toggles.skills && mode) {
@@ -502,8 +532,7 @@ export function useCanvasOverlay(
                         .forEach(s => {
                             const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.param?.[2]);
                             const remaining = Math.max(0, s.time + dur - time);
-                            const label = p.toggles.skillDuration ? `${s.name} ${remaining.toFixed(1)}s` : s.name;
-                            labels.push({ text: label, bg: bgColor });
+                            addMergedSkillLabel(s.name, bgColor, remaining, s.time);
                         });
 
                     Object.values(p.skillActivations ?? {}).flat()
@@ -518,8 +547,18 @@ export function useCanvasOverlay(
                         .forEach(s => {
                             const dur = getSkillDurationSecs(s.param[1], p.goalInX);
                             const remaining = Math.max(0, s.time + dur - time);
-                            const label = p.toggles.skillDuration ? `↓ ${s.name} ${remaining.toFixed(1)}s` : `↓ ${s.name}`;
-                            labels.push({ text: label, bg: "#ffcccb" });
+                            addMergedSkillLabel(s.name, "#ffcccb", remaining, s.time, "↓ ");
+                        });
+
+                    Array.from(mergedSkillLabels.values())
+                        .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
+                        .forEach(label => {
+                            const countSuffix = label.count > 1 ? ` x${label.count}` : "";
+                            const durationSuffix = p.toggles.skillDuration ? ` ${label.remaining.toFixed(1)}s` : "";
+                            labels.push({
+                                text: `${label.prefix}${label.name}${countSuffix}${durationSuffix}`,
+                                bg: label.bg,
+                            });
                         });
                 }
 

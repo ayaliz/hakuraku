@@ -107,6 +107,52 @@
     min-width: 72px;
 }
 
+.ca-score-summary-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.ca-score-summary-card {
+    flex: 1 1 240px;
+    min-width: 240px;
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid #4a5568;
+    border-radius: 8px;
+}
+
+.ca-score-summary-label {
+    font-size: 11px;
+    color: #a0aec0;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.ca-score-summary-value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    color: #e2e8f0;
+    font-size: 20px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.ca-score-summary-icon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}
+
+.ca-score-summary-meta {
+    margin-top: 4px;
+    color: #718096;
+    font-size: 11px;
+}
+
 /* Full-data modal: wider than default cdt-modal to give bars more room */
 .ca-full-data-modal {
     width: 820px;

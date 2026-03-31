@@ -157,6 +157,7 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) 
                                     </div>
                                 </th>
                                 <th className="text-center">Runs</th>
+                                <th className="text-center">Win rate</th>
                                 <th className="text-center">Full spurt</th>
                                 <th className="text-center">Survival</th>
                                 <th className="text-center"><AvgHeader label="Delay" /></th>
@@ -169,6 +170,7 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) 
                         </thead>
                         <tbody>
                             {recoveryRows.map((row) => {
+                                const winRate = (row.wins / row.totalRuns) * 100;
                                 const fullSpurtRate = (row.fullSpurtCount / row.totalRuns) * 100;
                                 const survivalRate = (row.survivalCount / row.totalRuns) * 100;
                                 const share = (row.totalRuns / stat.totalRuns) * 100;
@@ -189,6 +191,14 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) 
                                         <td className="text-center hp-scenario-cell">
                                             <div className="hp-scenario-metric-primary">{row.totalRuns}</div>
                                             <div className="hp-scenario-metric-secondary">{share.toFixed(1)}%</div>
+                                        </td>
+                                        <td className="text-center hp-scenario-cell">
+                                            <div className="hp-scenario-metric-primary" style={{ color: getRateColor(winRate) }}>
+                                                {winRate.toFixed(1)}%
+                                            </div>
+                                            <div className="hp-scenario-metric-secondary">
+                                                {row.wins} / {row.totalRuns}
+                                            </div>
                                         </td>
                                         <td
                                             className="text-center clickable-cell hp-scenario-cell hp-scenario-cell--metric"

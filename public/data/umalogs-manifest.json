@@ -13,6 +13,13 @@
       "generatedAt": "2026-03-24T07:17:47.834Z",
       "totalRaces": 30137,
       "trackSummary": "Hanshin 3200 m・Turf・Outer to Inner"
+    },
+    {
+      "cmId": "cm12",
+      "cmLabel": "CM12",
+      "generatedAt": "2026-03-31T16:05:51.418Z",
+      "totalRaces": 10455,
+      "trackSummary": "Nakayama 2000 m・Turf・Inner"
     }
   ]
 }

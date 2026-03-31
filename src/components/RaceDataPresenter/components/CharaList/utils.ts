@@ -2,6 +2,9 @@ import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import AssetLoader from "../../../../data/AssetLoader";
 import { AggregatedFactor, ParentEntry } from "./types";
 
+const LOW_HP_NEGATIVE_SPURT_THRESHOLD = 10;
+const POSITIVE_SPURT_DIFF_SUSPICION_THRESHOLD = 0.05;
+
 const getFactorCategory = (factorId: number): number => {
     const idStr = String(factorId);
     const length = idStr.length;
@@ -37,6 +40,17 @@ export const formatFactor = (factorId: number): { name: string; level: number } 
 export const getCharaImageUrl = (cardId: number): string => {
     return AssetLoader.getCharaThumb(cardId) ?? "";
 };
+
+export const hasLowHpNegativeSpurtSuspicion = (
+    hpAtPhase3Start?: number,
+    requiredSpurtHp?: number,
+    speedDiff?: number
+): boolean =>
+    hpAtPhase3Start !== undefined &&
+    requiredSpurtHp !== undefined &&
+    (hpAtPhase3Start - requiredSpurtHp) < LOW_HP_NEGATIVE_SPURT_THRESHOLD &&
+    speedDiff !== undefined &&
+    speedDiff >= POSITIVE_SPURT_DIFF_SUSPICION_THRESHOLD;
 
 export const aggregateFactors = (parents: ParentEntry[]): AggregatedFactor[] => {
     const map = new Map<string, { totalLevel: number, representativeId: number }>();

@@ -24,6 +24,7 @@ export type StyleRepEntry = {
 };
 
 interface StrategyAnalysisProps {
+    datasetId?: string | null;
     strategyStats?: StrategyStats[];
     totalRaces?: number;
     roomCompositions?: RoomCompositionEntry[];
@@ -45,6 +46,24 @@ const strategyOrderIndex = (strategy: number) => {
 };
 
 type StratBucket = { bucket: number; strategies: Record<number, { apps: number; wins: number }> };
+
+type DatasetRoomFeature = {
+    label: string;
+    description: string;
+    accentColor: string;
+    value: (horses: HorseEntry[]) => number;
+};
+
+const DATASET_ROOM_FEATURES: Record<string, DatasetRoomFeature[]> = {
+    cm12: [
+        {
+            label: "Xoguri",
+            description: "Average number of runners with card ID 100602 per room.",
+            accentColor: "#f6c177",
+            value: (horses) => horses.filter((horse) => horse.cardId === 100602).length,
+        },
+    ],
+};
 
 function trimBuckets(buckets: StratBucket[], roomSampleSize: number): StratBucket[] {
     const leadingThreshold = Math.max(1, Math.floor(roomSampleSize * 0.005));
@@ -143,22 +162,58 @@ function WinRateLineChart({ buckets, strategyColors }: { buckets: StratBucket[];
 }
 
 
-function StyleBreakdownPanel({ strategyStats, totalRaces, allHorses, strategyColors }: {
+function StyleBreakdownPanel({ datasetId, strategyStats, totalRaces, allHorses, strategyColors }: {
+    datasetId?: string | null;
     strategyStats: StrategyStats[];
     totalRaces: number;
     allHorses?: HorseEntry[];
     strategyColors: Record<number, string>;
 }) {
     const [viewMode, setViewMode] = useState<'bars' | 'score'>('bars');
-    const sumEntries = strategyStats.reduce((s, st) => s + st.totalRaces, 0);
-    const hasScoreData = !!allHorses && allHorses.length > 0;
+    const [excludeDominatorUsers, setExcludeDominatorUsers] = useState(false);
+    const isCm12 = datasetId?.toLowerCase() === "cm12";
+    const canExcludeDominators = isCm12 && !!allHorses && allHorses.length > 0;
+    const sourceHorses = useMemo(() => {
+        if (!allHorses) return [];
+        if (!excludeDominatorUsers) return allHorses;
+        return allHorses.filter((horse) => !horse.learnedSkillIds.has(201151));
+    }, [allHorses, excludeDominatorUsers]);
+    const hasScoreData = sourceHorses.length > 0;
+
+    const derivedRows = useMemo(() => {
+        if (!hasScoreData) return null;
+        const byStrategy = new Map<number, { apps: number; wins: number }>();
+        let totalEntries = 0;
+        let totalWins = 0;
+        for (const horse of sourceHorses) {
+            const entry = byStrategy.get(horse.strategy) ?? { apps: 0, wins: 0 };
+            entry.apps += 1;
+            totalEntries += 1;
+            if (horse.finishOrder === 1) {
+                entry.wins += 1;
+                totalWins += 1;
+            }
+            byStrategy.set(horse.strategy, entry);
+        }
+        return ANALYSIS_STRATEGY_IDS.map((sId) => {
+            const stat = byStrategy.get(sId);
+            const wins = stat?.wins ?? 0;
+            const apps = stat?.apps ?? 0;
+            return {
+                sId,
+                winShare: totalWins > 0 ? (wins / totalWins) * 100 : 0,
+                pickRate: totalEntries > 0 ? (apps / totalEntries) * 100 : 0,
+            };
+        });
+    }, [hasScoreData, sourceHorses]);
 
     const chartBuckets = useMemo(
-        () => hasScoreData ? trimBuckets(computeChartBuckets(allHorses!), allHorses!.length) : [],
-        [allHorses, hasScoreData]
+        () => hasScoreData ? trimBuckets(computeChartBuckets(sourceHorses), sourceHorses.length) : [],
+        [sourceHorses, hasScoreData]
     );
 
-    const rows = ANALYSIS_STRATEGY_IDS.map(sId => {
+    const sumEntries = strategyStats.reduce((s, st) => s + st.totalRaces, 0);
+    const rows = derivedRows ?? ANALYSIS_STRATEGY_IDS.map(sId => {
         const stat = strategyStats.find(s => s.strategy === sId);
         const winShare = stat && totalRaces > 0 ? (stat.wins / totalRaces) * 100 : 0;
         const pickRate = stat && sumEntries > 0 ? (stat.totalRaces / sumEntries) * 100 : 0;
@@ -174,6 +229,18 @@ function StyleBreakdownPanel({ strategyStats, totalRaces, allHorses, strategyCol
                     id="style-breakdown-info"
                     tip="A style's win rate exceeding its popularity means its win rate is above average."
                 />
+                {canExcludeDominators && (
+                    <button
+                        type="button"
+                        className={`sa-sb-header-toggle${excludeDominatorUsers ? " sa-sb-header-toggle--active" : ""}`}
+                        onClick={() => setExcludeDominatorUsers((value) => !value)}
+                        aria-pressed={excludeDominatorUsers}
+                        title="Exclude horses that learned skill 201151 (Dominator)."
+                    >
+                        <span className="sa-sb-header-toggle-label">Exclude Dominator users</span>
+                        <span className="sa-sb-header-toggle-state">{excludeDominatorUsers ? "On" : "Off"}</span>
+                    </button>
+                )}
                 {hasScoreData && (
                     <div className="sa-sb-view-toggle">
                         <button className={`sa-sb-toggle-btn${viewMode === 'bars' ? ' sa-sb-toggle-btn--active' : ''}`} onClick={() => setViewMode('bars')}>Overview</button>
@@ -438,10 +505,12 @@ function CrossSaturationView({ strategyStats, totalRaces, strategyColors }: { st
     );
 }
 
-function CompositionSection({ strategyStats, totalRaces, roomCompositions, strategyColors }: {
+function CompositionSection({ datasetId, strategyStats, totalRaces, roomCompositions, allHorses, strategyColors }: {
+    datasetId?: string | null;
     strategyStats: StrategyStats[];
     totalRaces: number;
     roomCompositions: RoomCompositionEntry[];
+    allHorses?: HorseEntry[];
     strategyColors: Record<number, string>;
 }) {
     const topRows = roomCompositions.slice(0, 12);
@@ -449,6 +518,42 @@ function CompositionSection({ strategyStats, totalRaces, roomCompositions, strat
         const stat = strategyStats.find(s => s.strategy === sId);
         return totalRaces > 0 ? (stat?.totalRaces ?? 0) / totalRaces : 0;
     });
+    const datasetRoomFeatures = useMemo(() => {
+        const normalizedDatasetId = datasetId?.toLowerCase();
+        const defs = normalizedDatasetId ? DATASET_ROOM_FEATURES[normalizedDatasetId] ?? [] : [];
+        if (!allHorses || defs.length === 0) return [];
+        const raceMap = new Map<string, HorseEntry[]>();
+        for (const horse of allHorses) {
+            if (!raceMap.has(horse.raceId)) raceMap.set(horse.raceId, []);
+            raceMap.get(horse.raceId)!.push(horse);
+        }
+        const raceCount = raceMap.size;
+        return defs.map((feature) => {
+            const compositionSums = new Map<string, { total: number; races: number }>();
+            let totalValue = 0;
+            for (const horses of raceMap.values()) {
+                const compKey = ANALYSIS_STRATEGY_IDS
+                    .map((strategyId) => horses.filter((horse) => horse.strategy === strategyId).length)
+                    .join("_");
+                const value = feature.value(horses);
+                totalValue += value;
+                const entry = compositionSums.get(compKey) ?? { total: 0, races: 0 };
+                entry.total += value;
+                entry.races += 1;
+                compositionSums.set(compKey, entry);
+            }
+            return {
+                ...feature,
+                rawValue: raceCount > 0 ? totalValue / raceCount : 0,
+                byComposition: new Map(
+                    Array.from(compositionSums.entries()).map(([key, entry]) => [
+                        key,
+                        entry.races > 0 ? entry.total / entry.races : 0,
+                    ])
+                ),
+            };
+        });
+    }, [allHorses, datasetId]);
     const colMaxes = ANALYSIS_STRATEGY_IDS.map((_, i) =>
         Math.max(...topRows.map(c => c.counts[i]), avgCounts[i], 1)
     );
@@ -494,6 +599,17 @@ function CompositionSection({ strategyStats, totalRaces, roomCompositions, strat
                                 </span>
                             </th>
                         ))}
+                        {datasetRoomFeatures.map((feature) => (
+                            <th key={feature.label} className="sa-comp-th">
+                                <span
+                                    className="sa-comp-th-label"
+                                    style={{ color: feature.accentColor }}
+                                    title={feature.description}
+                                >
+                                    {feature.label.toUpperCase()}
+                                </span>
+                            </th>
+                        ))}
                         <th className="sa-comp-th-freq">
                             <span className="sa-comp-th-freq-label">FREQUENCY</span>
                         </th>
@@ -509,6 +625,19 @@ function CompositionSection({ strategyStats, totalRaces, roomCompositions, strat
                                 {avg > 0 ? avg.toFixed(1) : "-"}
                             </td>
                         ))}
+                        {datasetRoomFeatures.map((feature) => (
+                            <td
+                                key={feature.label}
+                                className="sa-comp-td sa-comp-td--avg"
+                                style={{
+                                    background: "rgba(246, 193, 119, 0.28)",
+                                    color: "#f7fafc",
+                                }}
+                                title={feature.description}
+                            >
+                                {feature.rawValue > 0 ? feature.rawValue.toFixed(2) : "-"}
+                            </td>
+                        ))}
                         <td className="sa-comp-td-avg-freq">all rooms average</td>
                     </tr>
                     {topRows.map((comp, idx) => (
@@ -521,6 +650,18 @@ function CompositionSection({ strategyStats, totalRaces, roomCompositions, strat
                                         color: count > 0 ? "#f7fafc" : "#4a5568",
                                     }}>
                                         {count > 0 ? count : "-"}
+                                    </td>
+                                );
+                            })}
+                            {datasetRoomFeatures.map((feature) => {
+                                const value = feature.byComposition.get(comp.counts.join("_"));
+                                return (
+                                    <td
+                                        key={feature.label}
+                                        className="sa-comp-td sa-comp-td--row sa-comp-td--derived"
+                                        title={feature.description}
+                                    >
+                                        {value != null && value > 0 ? value.toFixed(2) : "-"}
                                     </td>
                                 );
                             })}
@@ -1343,6 +1484,7 @@ function StyleTeamCompositionPanel({
 }
 
 const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
+    datasetId,
     strategyStats,
     totalRaces,
     roomCompositions,
@@ -1360,15 +1502,17 @@ const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
             {hasData ? (
                 <>
                     <div className="sa-top-panels-row">
-                        <StyleBreakdownPanel strategyStats={strategyStats!} totalRaces={totalRaces!} allHorses={allHorses} strategyColors={activeStrategyColors} />
+                        <StyleBreakdownPanel datasetId={datasetId} strategyStats={strategyStats!} totalRaces={totalRaces!} allHorses={allHorses} strategyColors={activeStrategyColors} />
                         <SaturationPanel strategyStats={strategyStats!} totalRaces={totalRaces!} strategyColors={activeStrategyColors} />
                     </div>
                     {roomCompositions && (
                         <div className="sa-comp-row">
                             <CompositionSection
+                                datasetId={datasetId}
                                 strategyStats={strategyStats!}
                                 totalRaces={totalRaces!}
                                 roomCompositions={roomCompositions ?? []}
+                                allHorses={allHorses}
                                 strategyColors={activeStrategyColors}
                             />
                             {styleReps && <StyleRepsPanel styleReps={styleReps} allHorses={allHorses} skillStats={skillStats} strategyColors={activeStrategyColors} />}

@@ -1191,7 +1191,9 @@ const UmaLogsPage: React.FC = () => {
     }, [colorblindMode]);
 
     useEffect(() => {
-        fetch(import.meta.env.BASE_URL + 'data/umalogs-manifest.json')
+        const manifestUrl = new URL(import.meta.env.BASE_URL + 'data/umalogs-manifest.json', window.location.origin);
+        manifestUrl.searchParams.set("t", Date.now().toString());
+        fetch(manifestUrl.toString(), { cache: "no-store" })
             .then((r) => {
                 if (!r.ok) throw new Error(`HTTP ${r.status} - manifest not found`);
                 return r.json() as Promise<Manifest>;

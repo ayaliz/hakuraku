@@ -1,10 +1,9 @@
 import { TrainedCharaData } from "../../../data/TrainedCharaData";
 import { calculateTargetSpeed, getDistanceCategory, calculateReferenceHpConsumption, computeGroundPowerBonus } from "./speedCalculations";
-import { getActiveSpeedModifier, getSkillBaseTime } from "./SkillDataUtils";
+import { getActiveSpeedModifier, getSkillDurationSecs } from "./SkillDataUtils";
 import GameDataLoader from "../../../data/GameDataLoader";
 import { RaceSimulateHorseResultData_RunningStyle } from "../../../data/race_data_pb";
 import {
-    SKILL_TIME_SCALE,
     DOWNHILL_BONUS_BASE, DOWNHILL_BONUS_DIVISOR,
     DOWNHILL_HP_RATIO_THRESHOLD, DOWNHILL_HP_RATIO_STRONG, DOWNHILL_HP_RATIO_PACE_DOWN,
     PACE_UP_MULTIPLIER, OVERTAKE_MULTIPLIER, PACE_DOWN_MULTIPLIER,
@@ -207,12 +206,9 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
             if (skillActivations && skillActivations[i]) {
                 skillActivations[i].forEach(activation => {
                     const skillId = activation.param[1];
-                    const baseTime = getSkillBaseTime(skillId);
-                    if (baseTime > 0) {
-                        const duration = (baseTime / SKILL_TIME_SCALE) * (goalInX / 1000);
-                        if (time >= activation.time && time < activation.time + duration) {
-                            activeSpeedBuff += getActiveSpeedModifier(skillId);
-                        }
+                    const duration = getSkillDurationSecs(skillId, goalInX, activation.time, activation.param?.[2]);
+                    if (time >= activation.time && time < activation.time + duration) {
+                        activeSpeedBuff += getActiveSpeedModifier(skillId);
                     }
                 });
             }

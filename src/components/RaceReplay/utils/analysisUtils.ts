@@ -1,7 +1,7 @@
 import { RaceSimulateData, RaceSimulateEventData_SimulateEventType } from "../../../data/race_data_pb";
 import { fromRaceHorseData, TrainedCharaData } from "../../../data/TrainedCharaData";
 import { getDistanceCategory, calculateTargetSpeed, adjustStat, calculateReferenceHpConsumption, computeGroundPowerBonus } from "./speedCalculations";
-import { getPassiveStatModifiers, getSkillBaseTime, getActiveSpeedModifier, hasSkillEffect } from "./SkillDataUtils";
+import { getPassiveStatModifiers, getSkillDurationSecs, getActiveSpeedModifier, hasSkillEffect } from "./SkillDataUtils";
 import { filterCharaSkills } from "../../../data/RaceDataUtils";
 import GameDataLoader from "../../../data/GameDataLoader";
 import {
@@ -9,7 +9,6 @@ import {
     HP_CONSUMPTION_SCALE, HP_CONSUMPTION_SPEED_OFFSET, HP_CONSUMPTION_DIVISOR,
     SLOPE_SCALE, SLOPE_PENALTY_COEFF,
     DOWNHILL_BONUS_BASE, DOWNHILL_BONUS_DIVISOR, DOWNHILL_HP_RATIO_THRESHOLD,
-    SKILL_TIME_SCALE, DEFAULT_SKILL_DURATION,
     SPOT_STRUGGLE_GUTS_BASE, SPOT_STRUGGLE_GUTS_EXPONENT, SPOT_STRUGGLE_GUTS_SCALE,
     DUELING_GUTS_BASE, DUELING_GUTS_EXPONENT, DUELING_GUTS_SCALE,
 } from "./raceConstants";
@@ -141,8 +140,7 @@ export function computeOtherEvents(
                     let activeSpeedBuff = 0;
                     if (skillActivations && skillActivations[frameOrder]) {
                         skillActivations[frameOrder].forEach(s => {
-                            const baseTime = getSkillBaseTime(s.param[1]);
-                            const duration = baseTime > 0 ? (baseTime / SKILL_TIME_SCALE) * (goalInX / 1000) : DEFAULT_SKILL_DURATION;
+                            const duration = getSkillDurationSecs(s.param[1], goalInX, s.time, s.param?.[2]);
                             if (frameTime >= s.time && frameTime < s.time + duration) {
                                 activeSpeedBuff += getActiveSpeedModifier(s.param[1]);
                             }
@@ -202,8 +200,7 @@ export function computeOtherEvents(
                             let futureActiveSpeedBuff = 0;
                             if (skillActivations && skillActivations[frameOrder]) {
                                 skillActivations[frameOrder].forEach(s => {
-                                    const baseTime = getSkillBaseTime(s.param[1]);
-                                    const dur = baseTime > 0 ? (baseTime / SKILL_TIME_SCALE) * (goalInX / 1000) : DEFAULT_SKILL_DURATION;
+                                    const dur = getSkillDurationSecs(s.param[1], goalInX, s.time, s.param?.[2]);
                                     if (futureTime >= s.time && futureTime < s.time + dur) {
                                         futureActiveSpeedBuff += getActiveSpeedModifier(s.param[1]);
                                     }
@@ -339,8 +336,7 @@ export function calculateMaxAdjustedSpeed(
         // Skills
         if (skillActivations && skillActivations[frameOrder]) {
             skillActivations[frameOrder].forEach(s => {
-                const baseTime = getSkillBaseTime(s.param[1]);
-                const duration = baseTime > 0 ? (baseTime / SKILL_TIME_SCALE) * (raceDistance / 1000) : DEFAULT_SKILL_DURATION;
+                const duration = getSkillDurationSecs(s.param[1], raceDistance, s.time, s.param?.[2]);
                 if (time >= s.time && time < s.time + duration) {
                     const mod = getActiveSpeedModifier(s.param[1]);
                     if (mod !== 0) {

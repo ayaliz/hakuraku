@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect, type MutableRefObject, type RefObject } from "react";
 import { bisectFrameIndex, clamp01, lerp, getCharaIcon, formatSigned, mixWithWhite } from "../RaceReplay.utils";
 import { buildPositionKeepSeries, teamColorFor } from "../utils/chartBuilders";
-import { getSkillDurationSecs, getActiveSpeedDebuff, hasSkillEffect, getSkillBaseTime, getActiveSpeedModifier } from "../utils/SkillDataUtils";
+import { getSkillDurationSecs, getActiveSpeedDebuff, hasSkillEffect, getActiveSpeedModifier } from "../utils/SkillDataUtils";
 import { calculateTargetSpeed, getDistanceCategory, computeGroundPowerBonus } from "../utils/speedCalculations";
 import GameDataLoader from "../../../data/GameDataLoader";
 import { InterpolatedFrame } from "../RaceReplay.types";
@@ -290,12 +290,9 @@ export function useCanvasOverlay(
                 let activeSpeedBuff = 0;
                 (p.skillActivations?.[idx] ?? []).forEach((s: any) => {
                     const skillId = s.param[1];
-                    const baseTime = getSkillBaseTime(skillId);
-                    if (baseTime > 0) {
-                        const duration = (baseTime / 10000) * (p.goalInX / 1000);
-                        if (time >= s.time && time < s.time + duration) {
-                            activeSpeedBuff += getActiveSpeedModifier(skillId);
-                        }
+                    const duration = getSkillDurationSecs(skillId, p.goalInX, s.time, s.param?.[2]);
+                    if (time >= s.time && time < s.time + duration) {
+                        activeSpeedBuff += getActiveSpeedModifier(skillId);
                     }
                 });
 
@@ -307,7 +304,7 @@ export function useCanvasOverlay(
                     const skillId = s.param[1];
                     const debuff = getActiveSpeedDebuff(skillId);
                     if (debuff <= 0) return;
-                    const dur = getSkillDurationSecs(skillId, p.goalInX);
+                    const dur = getSkillDurationSecs(skillId, p.goalInX, s.time, s.param?.[2]);
                     if (time >= s.time && time < s.time + dur) activeSpeedDebuff += debuff;
                 });
 
@@ -525,12 +522,12 @@ export function useCanvasOverlay(
                 if (p.toggles.skills) {
                     (p.skillActivations?.[idx] ?? [])
                         .filter(s => {
-                            const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.param?.[2]);
+                            const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2]);
                             return time >= s.time && time < s.time + dur && !EXCLUDE_SKILL_RE.test(s.name);
                         })
                         .sort((a, b) => a.time - b.time || a.name.localeCompare(b.name))
                         .forEach(s => {
-                            const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.param?.[2]);
+                            const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2]);
                             const remaining = Math.max(0, s.time + dur - time);
                             addMergedSkillLabel(s.name, bgColor, remaining, s.time);
                         });
@@ -541,11 +538,11 @@ export function useCanvasOverlay(
                             if ((targetMask & (1 << idx)) === 0) return false;
                             if ((p.skillActivations?.[idx] ?? []).some((self: any) => self === s)) return false;
                             if (getActiveSpeedDebuff(s.param[1]) <= 0 && !hasSkillEffect(s.param[1], 9)) return false;
-                            const dur = getSkillDurationSecs(s.param[1], p.goalInX);
+                            const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2]);
                             return time >= s.time && time < s.time + dur && !EXCLUDE_SKILL_RE.test(s.name);
                         })
                         .forEach(s => {
-                            const dur = getSkillDurationSecs(s.param[1], p.goalInX);
+                            const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2]);
                             const remaining = Math.max(0, s.time + dur - time);
                             addMergedSkillLabel(s.name, "#ffcccb", remaining, s.time, "↓ ");
                         });

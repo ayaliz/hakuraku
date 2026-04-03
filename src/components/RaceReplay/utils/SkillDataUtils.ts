@@ -86,11 +86,24 @@ export function getSkillBaseTime(skillId: number): number {
     return def.conditionGroups[0].baseTime ?? 0;
 }
 
-// Returns skill duration in seconds, derived from base_time * courseDistance/1000.
-// Falls back to param[2] (raw event data) if base_time is unavailable, then to 2s as a last resort.
-export function getSkillDurationSecs(skillId: number, courseDistance: number, fallbackParam?: number): number {
+// Skill timing is hybrid:
+// - frame_time === 0 skills still use the local base_time calculation
+// - later skills trust the server-reported duration in param[2]
+// - 0 / -1 / missing durations fall back to 2 seconds
+export function getSkillDurationSecs(
+    skillId: number,
+    courseDistance: number,
+    frameTime?: number,
+    reportedDurationParam?: number
+): number {
+    if (frameTime != null && Math.abs(frameTime) > 1e-9) {
+        if (reportedDurationParam != null && reportedDurationParam > 0) {
+            return reportedDurationParam / 10000;
+        }
+        return 2;
+    }
+
     const baseTime = getSkillBaseTime(skillId);
     if (baseTime > 0) return (baseTime / 10000) * (courseDistance / 1000);
-    if (fallbackParam != null && fallbackParam > 0) return fallbackParam / 10000;
     return 2;
 }

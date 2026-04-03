@@ -172,7 +172,7 @@ For gold skills:
 
 Result: `p = 3.08625316723481 × 10^-19`
 
-The largest mismatch is in the `1` and `2` lineage buckets, which carry a lot of weight due to the high sample size.. The base rates look broadly fine, but the first couple of lineage copies do not appear to add as much as the community formula says they should.
+The largest mismatch is in the `1` and `2` lineage buckets, which carry a lot of weight due to the high sample size. The base rates look broadly fine, but the first couple of lineage copies do not appear to add as much as the community formula says they should.
 
 ### Plausible replacements
 
@@ -199,6 +199,9 @@ Those piecewise models fit the dataset very well, but they should still be treat
 - White piecewise-at-2 variant: `p = 0.794791256430539`
 - Double circle piecewise-at-2 variant: `p = 0.999960866125893`
 - Gold piecewise-at-2 variant: `p = 0.983140492227282`
+
+This behavior of white sparks was also previously observed by aoneko_pochi in 2024, see https://x.com/aoneko_pochi/status/1762370579603304731/.
+He proposed that white spark generation follows `base_rate * 1.1^(lineage_count)`, which is also a good fit for my data (`p >= 0.84` for all three categories), which is also an elegant solution here.
 
 ## White spark star count
 
@@ -236,4 +239,4 @@ Interpretation: The mid-score white spark rates also look consistent with the ex
 - Pink star generation looks good.
 - White skill factor generation looks directionally consistent with the community understanding, but linear lineage boosts aren't a good fit. A piecewise rule with smaller boosts at lineage `1-2` fits much better.
 - White spark stars look good in both usable score bands.
-- Blue spark generation is one place where we can see a small but statistically real mismatch. Blue star odds are very close to the community expectations, but blue type odds are a worse fit to the equal-distribution expectation and look more consistent with a mild weighting toward stronger stats.
+- Blue spark generation is one place where we can see a small but statistically real mismatch. Blue star odds are very close to the community expectations, but blue type odds are a worse fit to the equal-distribution expectation and look more consistent with a mild weighting toward higher stats.

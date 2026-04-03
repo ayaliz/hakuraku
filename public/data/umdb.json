@@ -12368,6 +12368,28 @@
       "iconId": 20013
     },
     {
+      "id": 110051,
+      "name": "Ravissant",
+      "gradeValue": 340,
+      "tagId": [
+        "401"
+      ],
+      "rarity": 5,
+      "conditionGroups": [
+        {
+          "condition": "is_finalcorner==1&change_order_onetime<0&order_rate<=40",
+          "baseTime": 40000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 4500
+            }
+          ]
+        }
+      ],
+      "iconId": 20013
+    },
+    {
       "id": 110061,
       "name": "Festive Miracle",
       "gradeValue": 340,
@@ -12530,6 +12552,43 @@
       "conditionGroups": [
         {
           "condition": "phase==1&order>=3&order_rate<=50&is_overtake==1",
+          "baseTime": 50000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 3500
+            }
+          ]
+        }
+      ],
+      "iconId": 20013
+    },
+    {
+      "id": 110201,
+      "name": "Break It Down!",
+      "gradeValue": 340,
+      "tagId": [
+        "401",
+        "403"
+      ],
+      "rarity": 5,
+      "conditionGroups": [
+        {
+          "condition": "phase>=2&corner==0&order<=2&straight_front_type==2",
+          "baseTime": 50000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 3500
+            },
+            {
+              "type": 31,
+              "value": 1000
+            }
+          ]
+        },
+        {
+          "condition": "phase>=2&corner==0&order<=2",
           "baseTime": 50000,
           "effects": [
             {
@@ -18896,6 +18955,31 @@
       "iconId": 20051
     },
     {
+      "id": 201271,
+      "name": "Top Runner",
+      "gradeValue": 508,
+      "tagId": [
+        "101",
+        "301",
+        "302",
+        "401"
+      ],
+      "rarity": 2,
+      "conditionGroups": [
+        {
+          "condition": "running_style==1&phase<=1&change_order_onetime>0&accumulatetime>=5@running_style==1&phase<=1&blocked_side_continuetime>=2&accumulatetime>=5",
+          "baseTime": 30000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 3500
+            }
+          ]
+        }
+      ],
+      "iconId": 20012
+    },
+    {
       "id": 201272,
       "name": "Leader's Pride",
       "gradeValue": 217,
@@ -21133,6 +21217,160 @@
       "iconId": 20021
     },
     {
+      "id": 202081,
+      "name": "From the Brink",
+      "gradeValue": 508,
+      "tagId": [
+        "203",
+        "303",
+        "403"
+      ],
+      "rarity": 2,
+      "conditionGroups": [
+        {
+          "condition": "distance_type==3&phase_random==2&order_rate>=50",
+          "baseTime": 12000,
+          "effects": [
+            {
+              "type": 31,
+              "value": 4000
+            }
+          ]
+        }
+      ],
+      "iconId": 20042
+    },
+    {
+      "id": 202082,
+      "name": "Take the Chance",
+      "gradeValue": 217,
+      "tagId": [
+        "203",
+        "303",
+        "403"
+      ],
+      "rarity": 1,
+      "conditionGroups": [
+        {
+          "condition": "distance_type==3&phase_random==2&order_rate>=50",
+          "baseTime": 12000,
+          "effects": [
+            {
+              "type": 31,
+              "value": 2000
+            }
+          ]
+        }
+      ],
+      "iconId": 20041
+    },
+    {
+      "id": 202091,
+      "name": "Burning Soul",
+      "gradeValue": 508,
+      "tagId": [
+        "203",
+        "302",
+        "401",
+        "402"
+      ],
+      "rarity": 2,
+      "conditionGroups": [
+        {
+          "condition": "distance_type==3&phase==1&order_rate<=70&order_rate>=40&blocked_side_continuetime>=2",
+          "baseTime": 18000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 2500
+            },
+            {
+              "type": 9,
+              "value": 350
+            }
+          ]
+        }
+      ],
+      "iconId": 20012
+    },
+    {
+      "id": 202092,
+      "name": "Fighting Spirit",
+      "gradeValue": 217,
+      "tagId": [
+        "203",
+        "302",
+        "401",
+        "402"
+      ],
+      "rarity": 1,
+      "conditionGroups": [
+        {
+          "condition": "distance_type==3&phase==1&order_rate<=70&order_rate>=40&blocked_side_continuetime>=2",
+          "baseTime": 18000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 1500
+            },
+            {
+              "type": 9,
+              "value": 50
+            }
+          ]
+        }
+      ],
+      "iconId": 20011
+    },
+    {
+      "id": 202101,
+      "name": "Elated",
+      "gradeValue": 508,
+      "tagId": [
+        "203",
+        "302",
+        "401"
+      ],
+      "rarity": 2,
+      "conditionGroups": [
+        {
+          "condition": "distance_type==3&phase_random==1&order_rate>=50",
+          "baseTime": 24000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 3500
+            }
+          ]
+        }
+      ],
+      "iconId": 20012
+    },
+    {
+      "id": 202102,
+      "name": "Eager",
+      "gradeValue": 217,
+      "tagId": [
+        "203",
+        "302",
+        "401"
+      ],
+      "rarity": 1,
+      "conditionGroups": [
+        {
+          "condition": "distance_type==3&phase_random==1&order_rate>=50",
+          "baseTime": 24000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 1500
+            }
+          ]
+        }
+      ],
+      "iconId": 20011
+    },
+    {
       "id": 210011,
       "name": "Burning Spirit SPD",
       "gradeValue": 633,
@@ -23073,6 +23311,28 @@
       "iconId": 20011
     },
     {
+      "id": 910051,
+      "name": "Ravissant",
+      "gradeValue": 180,
+      "tagId": [
+        "401"
+      ],
+      "rarity": 1,
+      "conditionGroups": [
+        {
+          "condition": "is_finalcorner==1&change_order_onetime<0&order_rate<=40",
+          "baseTime": 24000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 2500
+            }
+          ]
+        }
+      ],
+      "iconId": 20011
+    },
+    {
       "id": 910061,
       "name": "Festive Miracle",
       "gradeValue": 180,
@@ -23235,6 +23495,43 @@
       "conditionGroups": [
         {
           "condition": "phase==1&order>=3&order_rate<=50&is_overtake==1",
+          "baseTime": 30000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 1500
+            }
+          ]
+        }
+      ],
+      "iconId": 20011
+    },
+    {
+      "id": 910201,
+      "name": "Break It Down!",
+      "gradeValue": 180,
+      "tagId": [
+        "401",
+        "403"
+      ],
+      "rarity": 1,
+      "conditionGroups": [
+        {
+          "condition": "phase>=2&corner==0&order<=2&straight_front_type==2",
+          "baseTime": 30000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 1500
+            },
+            {
+              "type": 31,
+              "value": 500
+            }
+          ]
+        },
+        {
+          "condition": "phase>=2&corner==0&order<=2",
           "baseTime": 30000,
           "effects": [
             {
@@ -23700,7 +23997,7 @@
     },
     {
       "id": 103201,
-      "name": "[tach-nology]"
+      "name": "[Tach-nology]"
     },
     {
       "id": 103301,
@@ -25412,6 +25709,19 @@
       ]
     },
     {
+      "id": 20045,
+      "name": "[Almost... an Umadol?! ♡] Smart Falcon",
+      "charaId": 1046,
+      "raceBonus": 5,
+      "raceBonusByLimitBreak": [
+        0,
+        1,
+        1,
+        5,
+        5
+      ]
+    },
+    {
       "id": 30001,
       "name": "[The Brightest Star in Japan!] Special Week",
       "charaId": 1001,
@@ -26455,6 +26765,45 @@
       "id": 30089,
       "name": "[A MORE MARVELOUS WORLD! ☆] Marvelous Sunday",
       "charaId": 1055,
+      "raceBonus": 5,
+      "raceBonusByLimitBreak": [
+        1,
+        1,
+        1,
+        5,
+        5
+      ]
+    },
+    {
+      "id": 30090,
+      "name": "[Enchaînement] Symboli Rudolf",
+      "charaId": 1017,
+      "raceBonus": 10,
+      "raceBonusByLimitBreak": [
+        0,
+        0,
+        0,
+        5,
+        10
+      ]
+    },
+    {
+      "id": 30091,
+      "name": "[Escorte Étoile] Sirius Symboli",
+      "charaId": 1070,
+      "raceBonus": 10,
+      "raceBonusByLimitBreak": [
+        0,
+        0,
+        0,
+        5,
+        10
+      ]
+    },
+    {
+      "id": 30092,
+      "name": "[Mag!c Number] Air Shakur",
+      "charaId": 1036,
       "raceBonus": 5,
       "raceBonusByLimitBreak": [
         1,
@@ -35570,6 +35919,13 @@
       "solvableType": 0
     },
     {
+      "id": 201271,
+      "needSkillPoint": 180,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
       "id": 201272,
       "needSkillPoint": 180,
       "statusType": 0,
@@ -36221,6 +36577,48 @@
       "solvableType": 0
     },
     {
+      "id": 202081,
+      "needSkillPoint": 160,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
+      "id": 202082,
+      "needSkillPoint": 160,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
+      "id": 202091,
+      "needSkillPoint": 160,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
+      "id": 202092,
+      "needSkillPoint": 160,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
+      "id": 202101,
+      "needSkillPoint": 160,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
+      "id": 202102,
+      "needSkillPoint": 160,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
       "id": 210011,
       "needSkillPoint": 200,
       "statusType": 0,
@@ -36697,6 +37095,13 @@
       "solvableType": 0
     },
     {
+      "id": 910051,
+      "needSkillPoint": 200,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
       "id": 910061,
       "needSkillPoint": 200,
       "statusType": 0,
@@ -36740,6 +37145,13 @@
     },
     {
       "id": 910181,
+      "needSkillPoint": 200,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
+      "id": 910201,
       "needSkillPoint": 200,
       "statusType": 0,
       "statusValue": 0,

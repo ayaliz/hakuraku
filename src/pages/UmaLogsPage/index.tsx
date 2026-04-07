@@ -4,6 +4,7 @@ import { Nav, Spinner, Alert } from "react-bootstrap";
 import type {
     AggregatedStats,
     CharacterStats,
+    EmpiricalBayesTeamEntry,
     GateBlockedStats,
     GateStats,
     GateStatsMode,
@@ -71,6 +72,7 @@ type SerializedStats = {
     gateWinRates?: GateWinRateStats[];
     gateWinRatesByFlavor?: GateWinRateSplitStats;
     trueskillRanking?: TrueSkillTeamEntry[];
+    empiricalBayesRanking?: EmpiricalBayesTeamEntry[];
 };
 
 type SerializedGroup = {
@@ -156,6 +158,7 @@ function deserializeStats(s: SerializedStats): AggregatedStats {
         pairSynergy: s.pairSynergy ?? [],
         gateStats,
         trueskillRanking: s.trueskillRanking ?? [],
+        empiricalBayesRanking: s.empiricalBayesRanking ?? [],
     };
 }
 
@@ -613,7 +616,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                         <li>Per-team data: prior m = 1/3, C = 18</li>
                         <li>Per-skill win rates: prior m = uma's base win rate in the data, C = 54</li>
                     </ul>
-                    <p>CM12 data collection is ongoing.</p>
+                    <p>CM12 data collection is over.</p>
                 </div>
             )}
 
@@ -859,7 +862,15 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                         </div>
                         {group.stats.trueskillRanking && group.stats.trueskillRanking.length > 0 && (
                             <TrueSkillTeamPanel
+                                variant="trueskill"
                                 ranking={group.stats.trueskillRanking}
+                                skillStats={group.stats.skillStats}
+                            />
+                        )}
+                        {group.stats.empiricalBayesRanking && group.stats.empiricalBayesRanking.length > 0 && (
+                            <TrueSkillTeamPanel
+                                variant="empiricalBayes"
+                                ranking={group.stats.empiricalBayesRanking}
                                 skillStats={group.stats.skillStats}
                             />
                         )}

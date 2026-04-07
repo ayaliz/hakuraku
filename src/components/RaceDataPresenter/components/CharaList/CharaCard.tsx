@@ -193,7 +193,7 @@ const CharaTable: React.FC<CharaTableProps> = ({ data, courseId, showPredictionC
                                                                     ) : (
                                                                         <div className="skill-icon"></div>
                                                                     )}
-                                                                    <span>{UMDatabaseWrapper.skillName(cs.skillId)}</span>
+                                                                    <span>{UMDatabaseWrapper.skillNameWithEnglishFallback(cs.skillId)}</span>
                                                                 </div>
                                                                 {count ? (
                                                                     <span className={`skill-badge ${count > 1 ? 'multiple' : ''}`}>

@@ -107,7 +107,7 @@ function renderWinBreakdown(skill: SkillStats, horses: HorseEntry[]) {
     const rows: { label: string; apps: number; isTotal: boolean; variantId: number | null }[] = [];
     if (showVariants) {
         for (const vid of variantIds) {
-            const baseName = UMDatabaseWrapper.skills[vid]?.name ?? `#${vid}`;
+            const baseName = UMDatabaseWrapper.skillNameWithEnglishFallback(vid);
             const label = (vid >= 900000 && vid < 1000000) ? `${baseName} (Inherit)` : baseName;
             const apps = byVariantAll.get(vid)?.apps ?? 0;
             rows.push({ label, apps, isTotal: false, variantId: vid });

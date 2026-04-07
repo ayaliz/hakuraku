@@ -139,7 +139,7 @@ export const computeHpSpurtStats = (
             const frameOrder = i;
             const skills = filterCharaSkills(raceData, frameOrder).map(event => ({
                 time: event.frameTime ?? 0,
-                name: UMDatabaseWrapper.skillName(event.param[1]),
+                name: UMDatabaseWrapper.skillNameWithEnglishFallback(event.param[1]),
                 param: event.param
             }));
             skillActivations[frameOrder] = skills;

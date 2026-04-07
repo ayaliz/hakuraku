@@ -1076,7 +1076,7 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
     }, [profileHorse.learnedSkillIds]);
 
     const getSkillName = (id: number) =>
-        skillStats.get(id)?.skillName ?? UMDatabaseWrapper.skillName(id);
+        skillStats.get(id)?.skillName ?? UMDatabaseWrapper.skillNameWithEnglishFallback(id);
 
     const getSkillIconUrl = (id: number) => {
         const iconId = skillIconMap.get(resolveIconSkillId(id));

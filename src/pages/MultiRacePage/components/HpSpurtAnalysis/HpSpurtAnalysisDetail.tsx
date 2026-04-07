@@ -279,7 +279,7 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) 
 
                             return (
                                 <tr key={`${cs.skillId}-${idx}`}>
-                                    <td>{UMDatabaseWrapper.skillNameWithId(cs.skillId)}</td>
+                                    <td>{UMDatabaseWrapper.skillNameWithIdEnglishFallback(cs.skillId)}</td>
                                     <td>Lv {cs.level}</td>
                                     <td>
                                         <span style={{ fontWeight: 'bold', color: rate > 50 ? '#4ade80' : '#e2e8f0' }}>{rate.toFixed(1)}%</span>

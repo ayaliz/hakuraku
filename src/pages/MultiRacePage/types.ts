@@ -143,7 +143,7 @@ export type TeamCompositionStats = {
     bayesianWinRate: number; // Bayesian-smoothed win rate (prior = 1/3, k = 5)
 };
 
-export type TrueSkillMember = {
+export type TeamRankingMember = {
     charaId: number;
     charaName: string;
     cardId: number;
@@ -168,12 +168,20 @@ export type TrueSkillMember = {
 };
 
 export type TrueSkillTeamEntry = {
-    members: TrueSkillMember[];  // 3 members, sorted canonically
+    members: TeamRankingMember[];  // 3 members, sorted canonically
     appearances: number;
     wins: number;
     mu: number;       // sum of member mu's (team-level mean)
     sigma: number;    // sqrt of sum of member sigma²'s (team-level uncertainty)
     conservative: number; // mu − 3σ (team conservative skill estimate)
+};
+
+export type EmpiricalBayesTeamEntry = {
+    members: TeamRankingMember[]; // 3 members, sorted canonically
+    appearances: number;
+    wins: number;
+    rawWinRate: number;
+    bayesWinRate: number;
 };
 
 export type GateWinRateStats = {
@@ -228,4 +236,5 @@ export type AggregatedStats = {
     pairSynergy: PairSynergyStats[];
     gateStats: GateStats;
     trueskillRanking?: TrueSkillTeamEntry[];
+    empiricalBayesRanking?: EmpiricalBayesTeamEntry[];
 };

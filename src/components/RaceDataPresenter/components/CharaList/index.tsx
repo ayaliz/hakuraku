@@ -82,7 +82,7 @@ const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData, detected
         <div className="chara-list-section">
             {showPredictionBanner && (
                 <div className="prediction-banner">
-                    Trying out displaying predicted win probabilities for CM11 rooms based on stats, known skills and gate draws. Possibly horribly incorrect for some umas.
+                    Trying out displaying predicted win probabilities for CM12 rooms based on stats, known skills and gate draws. Possibly horribly incorrect for some umas.
                 </div>
             )}
             <CharaTable data={sortedData} courseId={effectiveCourseId} showPredictionColumn={showPredictionColumn} />

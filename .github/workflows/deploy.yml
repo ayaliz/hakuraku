@@ -1,7 +1,5 @@
 name: Deploy to GitHub Pages
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 env:
@@ -29,6 +27,7 @@ jobs:
       - run: yarn build
         env:
           VITE_SHARE_SECRET: ${{ secrets.REACT_APP_SHARE_SECRET }}
+          VITE_BASE_PATH: /hakuraku/
       - name: Package Pages artifact
         run: |
           tar \

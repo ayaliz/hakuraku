@@ -1,6 +1,7 @@
 import pako from "pako";
 import { create, fromBinary } from "@bufbuild/protobuf";
 import { Card, Chara, RaceInstance, SingleModeRank, Skill, SupportCard, TextData, UMDatabase, UMDatabaseSchema } from './data_pb';
+import GameDataLoader from "./GameDataLoader";
 
 class _UMDatabaseWrapper {
     umdb: UMDatabase = create(UMDatabaseSchema);
@@ -91,8 +92,18 @@ class _UMDatabaseWrapper {
     skillName = (skillId: number) =>
         this.skills[skillId]?.name ?? `Unknown Skill ${skillId}`;
 
+    skillNameWithEnglishFallback = (skillId: number) =>
+        this.skills[skillId]?.name
+        ?? GameDataLoader.getSkillNameFallback(skillId)?.enname
+        ?? `Unknown Skill ${skillId}`;
+
     skillNameWithId = (skillId: number) =>
         `[${skillId}] ${this.skills[skillId]?.name ?? 'Unknown Skill'}`;
+
+    skillNameWithIdEnglishFallback = (skillId: number) =>
+        `[${skillId}] ${this.skills[skillId]?.name
+        ?? GameDataLoader.getSkillNameFallback(skillId)?.enname
+        ?? 'Unknown Skill'}`;
 
     getTextData = (category: number, index: number): TextData | undefined =>
         this.textData[category]?.[index];

@@ -101,7 +101,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
             const frameOrder = i;
             const skills = filterCharaSkills(raceData, frameOrder).map(event => ({
                 time: event.frameTime!,
-                name: UMDatabaseWrapper.skillName(event.param[1]),
+                name: UMDatabaseWrapper.skillNameWithEnglishFallback(event.param[1]),
                 param: event.param,
             }));
             allSkillActivations[frameOrder] = skills;

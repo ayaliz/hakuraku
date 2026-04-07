@@ -86,7 +86,7 @@ const RaceGraph: React.FC<RaceGraphProps> = ({
         .map(event => {
             return {
                 xAxis: event.frameTime,
-                name: UMDatabaseWrapper.skillName(event.param[1]),
+                name: UMDatabaseWrapper.skillNameWithEnglishFallback(event.param[1]),
                 label: { show: true, position: 'insideStartBottom' },
                 lineStyle: { color: '#666' },
             } as MarkLine1DDataItemOption;
@@ -96,7 +96,7 @@ const RaceGraph: React.FC<RaceGraphProps> = ({
         .map(event => {
             return {
                 xAxis: event.frameTime,
-                name: `${UMDatabaseWrapper.skillName(event.param[1])} by ${displayNames[event.param[0]]}`,
+                name: `${UMDatabaseWrapper.skillNameWithEnglishFallback(event.param[1])} by ${displayNames[event.param[0]]}`,
                 label: { show: true, position: 'insideStartBottom' },
                 lineStyle: { color: 'rgba(255, 0, 0, 0.6)' },
             } as MarkLine1DDataItemOption;

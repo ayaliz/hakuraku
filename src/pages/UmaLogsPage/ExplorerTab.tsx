@@ -621,7 +621,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ allHorses, skillStats, strate
         return Array.from(map.entries())
             .map(([skillId, count]) => ({
                 skillId,
-                skillName: UMDatabaseWrapper.skillName(skillId),
+                skillName: UMDatabaseWrapper.skillNameWithEnglishFallback(skillId),
                 isInherit: skillId >= 900000 && skillId < 1000000,
                 count,
             }))

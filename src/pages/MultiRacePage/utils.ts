@@ -886,8 +886,8 @@ export function aggregateStats(races: ParsedRace[], options?: { releaseProcessed
                 }
             }
 
-            const dbData = UMDatabaseWrapper.skills[id];
-            const name = (isInherited ? `${dbData?.name ?? `Skill #${id}`} (Inherit)` : dbData?.name) ?? `Skill #${id}`;
+            const fallbackName = UMDatabaseWrapper.skillNameWithEnglishFallback(id);
+            const name = isInherited ? `${fallbackName} (Inherit)` : fallbackName;
             if (!distinctNames.has(name) || rarity > distinctNames.get(name)!) {
                 distinctNames.set(name, rarity);
             }
@@ -898,8 +898,7 @@ export function aggregateStats(races: ParsedRace[], options?: { releaseProcessed
             .sort((a, b) => b[1] - a[1])
             .map(e => e[0]);
 
-        const skillData = UMDatabaseWrapper.skills[representativeId];
-        const skillName = skillData?.name ?? `Skill #${representativeId}`;
+        const skillName = UMDatabaseWrapper.skillNameWithEnglishFallback(representativeId);
 
         const uniqueRaces = new Set(groupPoints.map(p => p.raceId)).size;
         const uniqueHorses = new Set(groupPoints.map(p => `${p.raceId}_${p.horseFrameOrder}`)).size;

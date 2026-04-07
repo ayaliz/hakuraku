@@ -46,7 +46,7 @@ const StatsCell: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) => {
                 upgrade = UMDatabaseWrapper.skillNeedPoints[pairedId] ?? 0;
             }
         }
-        return { name: UMDatabaseWrapper.skillName(cs.skillId), base, upgrade, total: base + upgrade };
+        return { name: UMDatabaseWrapper.skillNameWithEnglishFallback(cs.skillId), base, upgrade, total: base + upgrade };
     }).filter(s => s.total > 0);
 
     const totalSkillPoints = skillBreakdown.reduce((sum, s) => sum + s.total, 0);

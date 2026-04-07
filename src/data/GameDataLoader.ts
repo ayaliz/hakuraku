@@ -1,8 +1,15 @@
 import * as pako from "pako";
 import type { CourseBaseRatioData, CourseShapeData } from "./CourseShapeLoader";
 
+export type SkillNameFallbackEntry = {
+    id: number;
+    enname?: string;
+    jpname?: string;
+};
+
 class GameDataLoaderClass {
     private data: Record<string, any> | null = null;
+    private skillNameFallbacksById: Record<number, SkillNameFallbackEntry> | null = null;
 
     async initialize(): Promise<void> {
         if (this.data) return;
@@ -14,6 +21,7 @@ class GameDataLoaderClass {
         const buffer = await response.arrayBuffer();
         const inflated = pako.inflate(new Uint8Array(buffer), { to: "string" });
         this.data = JSON.parse(inflated);
+        this.skillNameFallbacksById = null;
     }
 
     private ensureLoaded() {
@@ -77,6 +85,24 @@ class GameDataLoaderClass {
     get shopRefreshData(): any {
         this.ensureLoaded();
         return this.data!["shop_refresh/data"];
+    }
+
+    get skillNameFallbacks(): SkillNameFallbackEntry[] {
+        this.ensureLoaded();
+        return this.data!["skills"] ?? [];
+    }
+
+    getSkillNameFallback(skillId: number): SkillNameFallbackEntry | undefined {
+        this.ensureLoaded();
+
+        if (!this.skillNameFallbacksById) {
+            this.skillNameFallbacksById = {};
+            for (const entry of this.skillNameFallbacks) {
+                this.skillNameFallbacksById[entry.id] = entry;
+            }
+        }
+
+        return this.skillNameFallbacksById[skillId];
     }
 }
 

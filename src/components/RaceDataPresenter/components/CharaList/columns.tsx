@@ -103,7 +103,7 @@ const StatsCell: React.FC<{ row: CharaTableData }> = ({ row }) => {
                 upgrade = UMDatabaseWrapper.skillNeedPoints[pairedId] ?? 0;
             }
         }
-        return { name: UMDatabaseWrapper.skillName(cs.skillId), base, upgrade, total: base + upgrade };
+        return { name: UMDatabaseWrapper.skillNameWithEnglishFallback(cs.skillId), base, upgrade, total: base + upgrade };
     }).filter(s => s.total > 0);
 
     const spTooltip = (

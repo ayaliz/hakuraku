@@ -21,7 +21,7 @@ const serveGzRaw = (): Plugin => ({
 
 export default defineConfig({
     plugins: [react(), serveGzRaw()],
-    base: '/hakuraku/',
+    base: process.env.VITE_BASE_PATH ?? '/',
     build: {
         rollupOptions: {
             output: {

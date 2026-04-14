@@ -93,7 +93,7 @@ export default function InlineFilterSelector({ show, onAddFilter, onClose, avail
     };
 
     const renderEqualRow = (items: { label: string; selected: boolean; onClick: () => void; disabled?: boolean; isApply?: boolean }[]) => (
-        <div style={{ gridColumn: 'span 5', display: 'flex', width: '100%' }}>
+        <div className="ifs-span-5-row">
             {items.map((item, index) => {
                 const style = getButtonStyle(item.selected, !!item.disabled, !!item.isApply);
                 return (
@@ -129,17 +129,14 @@ export default function InlineFilterSelector({ show, onAddFilter, onClose, avail
     ]);
 
     const renderSearchBar = () => (
-        <div style={{ gridColumn: 'span 5' }}>
+        <div className="ifs-span-5">
             <input
                 ref={inputRef}
                 type="text"
                 placeholder="Search..."
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                style={{
-                    width: '100%', height: '100%', boxSizing: 'border-box', padding: '8px',
-                    border: '1px solid #555', backgroundColor: '#444', color: '#fff', fontSize: '0.9rem', outline: 'none',
-                }}
+                className="ifs-search-input"
             />
         </div>
     );
@@ -150,7 +147,7 @@ export default function InlineFilterSelector({ show, onAddFilter, onClose, avail
 
     const renderStatList = () => {
         if (filteredStats.length === 0) {
-            return <div style={{ gridColumn: 'span 5', padding: '10px', color: '#999', textAlign: 'center' }}>No matches found</div>;
+            return <div className="ifs-no-matches">No matches found</div>;
         }
         return filteredStats.map(statKey => (
             <React.Fragment key={statKey}>
@@ -184,12 +181,7 @@ export default function InlineFilterSelector({ show, onAddFilter, onClose, avail
     };
 
     return (
-        <div style={{
-            position: 'absolute', backgroundColor: '#2b2b2b', border: '1px solid #444',
-            marginTop: '0.5rem', zIndex: 1000, boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
-            width: '400px', maxHeight: '400px', overflowY: 'auto',
-            display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0'
-        }}>
+        <div className="ifs-dropdown">
             {selectorType === 'uniques' && (
                 <>
                     {renderEqualStarRow(1)}

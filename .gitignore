@@ -12,9 +12,14 @@
 
 # production
 /dist
+.wrangler
 
 # misc
 .DS_Store
+.env
+.env.example
+.env.cloudflare
+.cloudflare-postgres-ca.pem
 .env.local
 .env.development.local
 .env.test.local
@@ -28,6 +33,22 @@ __pycache__/
 umdb/*.py
 umdb/*.pyi
 /*.bat
+
+# local tooling and private backend
+/db
+/docs
+/logs
+/tools
+/worker
+/wrangler.toml
+/search.json
+
+# private site assets and generated datasets
+/public/assets
+/public/data
+/public/notes
+
+# internal-only source material
 /assets
 /scripts
 /Learning

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { OverlayTrigger, ProgressBar, Tooltip } from 'react-bootstrap';
+import './HpSpurtAnalysis.css';
 import { CharaHpSpurtStats } from './types';
 import UMDatabaseWrapper from '../../../../data/UMDatabaseWrapper';
 import { unknownCharaTag } from "../../../../components/RaceDataPresenter/utils/RacePresenterUtils";
@@ -53,7 +54,7 @@ const StatsCell: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) => {
 
     const spTooltip = (
         <Tooltip id={`sp-${stat.uniqueId}`}>
-            <div style={{ textAlign: 'left', fontSize: '0.85em' }}>
+            <div className="hp-skill-cell">
                 {skillBreakdown.map((s, i) => (
                     <div key={i}>{s.name}: {s.upgrade > 0 ? `${s.base}+${s.upgrade}` : s.base}</div>
                 ))}
@@ -63,7 +64,7 @@ const StatsCell: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) => {
 
     const icons = getStatIcons();
     return (
-        <div style={{ lineHeight: 1.4 }}>
+        <div className="hp-skill-info">
             <div>
                 <span className="stat-label-item"><img src={icons.speed}   alt="Speed"   className="stat-icon" />{tc.speed}</span>
                 <span className="stat-label-item"><img src={icons.stamina} alt="Stamina" className="stat-icon" />{tc.stamina}</span>

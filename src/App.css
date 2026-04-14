@@ -53,3 +53,103 @@
     letter-spacing: 0.01em;
     text-transform: none;
 }
+
+.haku-footer {
+    margin-top: 32px;
+    padding: 18px 0 28px;
+    border-top: 1px solid rgba(127, 149, 189, 0.18);
+}
+
+.haku-footer-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.haku-footer-links {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    justify-content: center;
+    color: rgba(235, 240, 255, 0.7);
+    font-size: 0.95rem;
+}
+
+.haku-footer-links a {
+    color: rgba(235, 240, 255, 0.82);
+    text-decoration: none;
+}
+
+.haku-footer-links a:hover {
+    color: #a8e6b8;
+}
+
+.haku-footer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 28px;
+}
+
+.haku-footer-inline-icon {
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    flex: 0 0 auto;
+    color: rgba(235, 240, 255, 0.72);
+}
+
+.haku-footer-inline-icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.haku-footer-brand-icon {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    display: block;
+    flex: 0 0 auto;
+}
+
+.haku-footer-disclaimer {
+    color: rgba(235, 240, 255, 0.56);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .haku-footer {
+        margin-top: 24px;
+        padding-bottom: 24px;
+    }
+
+    .haku-footer-links {
+        flex-direction: column;
+        gap: 10px;
+        font-size: 0.92rem;
+    }
+
+    .haku-footer-disclaimer {
+        font-size: 0.86rem;
+    }
+}
+
+.home-promo {
+    max-width: 900px;
+    margin: 32px auto;
+}
+
+.home-promo-card {
+    border-radius: 12px;
+    box-shadow: var(--haku-shadow-lg);
+    overflow: hidden;
+}
+
+.home-promo-img {
+    width: 100%;
+    display: block;
+}

@@ -1,0 +1,12 @@
+.race-graph-chart {
+    height: 700px;
+}
+
+.race-graph-debug {
+    margin-top: 12px;
+}
+
+.race-graph-debug-content {
+    margin-top: 8px;
+    overflow-x: auto;
+}

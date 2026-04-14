@@ -13,7 +13,7 @@ const RaceListPanel: React.FC<RaceListPanelProps> = ({ races, onRemoveRace, onCl
             <div className="race-list-header">
                 <h3 className="race-list-title">
                     Loaded Races
-                    <span className="race-count-badge" style={{ marginLeft: "10px" }}>
+                    <span className="race-count-badge">
                         {races.length}
                     </span>
                 </h3>

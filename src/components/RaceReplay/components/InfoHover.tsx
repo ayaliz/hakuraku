@@ -12,9 +12,9 @@ const InfoHover: React.FC<{ title?: string; content?: React.ReactNode }> = ({
     ),
 }) => {
     const overlay = (
-        <Popover id="race-replay-info" style={{ maxWidth: "48ch" }}>
+        <Popover id="race-replay-info" className="replay-info-popover">
             <div className="popover-header py-2">
-                <h3 className="h6 m-0" style={{ color: "#f87171" }}>{title}</h3>
+                <h3 className="h6 m-0 replay-info-title">{title}</h3>
             </div>
             <div className="popover-body">{content}</div>
         </Popover>

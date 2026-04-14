@@ -1,6 +1,14 @@
 import { Veteran } from "./types";
+import type { AccountVeteranRosterResponse } from "../../auth/authShared";
 
-const WORKER_URL = 'https://cors-proxy.ayaliz.workers.dev';
+async function readError(res: Response): Promise<string> {
+    try {
+        const payload = await res.json() as { error?: string };
+        return payload.error ?? `HTTP ${res.status}`;
+    } catch {
+        return `HTTP ${res.status}`;
+    }
+}
 
 type NewBorrowResponse = {
     items?: Array<{
@@ -178,31 +186,48 @@ export function buildShareBody(veterans: Veteran[]): string {
 }
 
 export async function uploadVeteransToWorker(body: string): Promise<string> {
-    const res = await fetch(`${WORKER_URL}/share`, {
+    const res = await fetch(`/api/share`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-Share-Secret': import.meta.env.VITE_SHARE_SECRET ?? '',
         },
         body,
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const { key } = await res.json();
-    return `${window.location.origin}${window.location.pathname}#/veterans?kv=${key}`;
+    return `${window.location.origin}/veterans?kv=${key}`;
 }
 
 export async function fetchVeteransFromWorker(key: string): Promise<Veteran[]> {
-    const res = await fetch(`${WORKER_URL}/share/${key}`);
+    const res = await fetch(`/api/share/${encodeURIComponent(key)}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json() as Promise<Veteran[]>;
 }
 
-export async function fetchLoanedChara(viewerId: string): Promise<Veteran> {
-    const res = await fetch(`${WORKER_URL}/uma-search?viewer_id=${encodeURIComponent(viewerId)}`, {
-        headers: {
-            'X-Share-Secret': import.meta.env.VITE_SHARE_SECRET ?? '',
-        },
+export async function fetchAccountVeterans(): Promise<{
+    viewerId: number;
+    veteranCount: number;
+    updatedAt: string;
+    veterans: Veteran[];
+}> {
+    const res = await fetch(`/api/account/veterans`, {
+        credentials: "same-origin",
     });
+    if (!res.ok) throw new Error(await readError(res));
+    const data = await res.json() as AccountVeteranRosterResponse;
+    return {
+        viewerId: data.viewerId,
+        veteranCount: data.veteranCount,
+        updatedAt: data.updatedAt,
+        veterans: data.veterans as Veteran[],
+    };
+}
+
+export async function fetchLoanedChara(viewerId: string): Promise<Veteran> {
+    const url = new URL(`/api/uma-search`, window.location.origin);
+    url.searchParams.set("viewer_id", viewerId);
+    url.searchParams.set("max_follower_num", "1000");
+    const res = await fetch(url.toString());
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (data?.practice_partner_info) {
@@ -212,7 +237,9 @@ export async function fetchLoanedChara(viewerId: string): Promise<Veteran> {
 }
 
 export function getKvKeyFromUrl(): string | null {
-    const parts = window.location.hash.split('?');
-    if (parts.length < 2) return null;
-    return new URLSearchParams(parts[1]).get('kv');
+    return new URLSearchParams(window.location.search).get('kv');
+}
+
+export function shouldLoadAccountVeterans(): boolean {
+    return new URLSearchParams(window.location.search).get("mine") === "1";
 }

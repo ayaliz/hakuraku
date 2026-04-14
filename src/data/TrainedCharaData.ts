@@ -6,6 +6,11 @@ export type CharaSkill = {
     level: number,
 }
 
+type CourseAptitudeFilters = {
+    ground: number,
+    distance: number,
+};
+
 export type TrainedCharaData = {
     viewerId: number,
     viewerName: string,
@@ -31,6 +36,87 @@ export type TrainedCharaData = {
 
     rawData: any,
 };
+
+const DISTANCE_FIELD_BY_CATEGORY: Record<number, string> = {
+    1: "proper_distance_short",
+    2: "proper_distance_mile",
+    3: "proper_distance_middle",
+    4: "proper_distance_long",
+};
+
+const RUNNING_STYLE_FIELD_BY_ID: Record<number, string> = {
+    1: "proper_running_style_nige",
+    2: "proper_running_style_senko",
+    3: "proper_running_style_sashi",
+    4: "proper_running_style_oikomi",
+    5: "proper_running_style_nige",
+};
+
+const GROUND_FIELD_BY_ID: Record<number, string> = {
+    1: "proper_ground_turf",
+    2: "proper_ground_dirt",
+};
+
+function normalizeSkillArray(skills: any): CharaSkill[] {
+    if (!Array.isArray(skills)) return [];
+    return skills
+        .map((skill: any) => {
+            if (typeof skill === "number") {
+                return { skillId: skill, level: 1 } as CharaSkill;
+            }
+            if (!skill || typeof skill !== "object") return null;
+            const skillId = Number(skill["skillId"] ?? skill["skill_id"]);
+            if (!Number.isFinite(skillId) || skillId <= 0) return null;
+            const level = Number(skill["level"]);
+            return {
+                skillId,
+                level: Number.isFinite(level) && level > 0 ? level : 1,
+            } as CharaSkill;
+        })
+        .filter((skill): skill is CharaSkill => skill !== null);
+}
+
+export function hydrateCompactRaceHorseData(
+    raceHorseData: any,
+    options?: { courseAptitudeFilters?: CourseAptitudeFilters | null },
+): any {
+    if (!raceHorseData || typeof raceHorseData !== "object") {
+        return raceHorseData;
+    }
+
+    const normalized = {
+        ...raceHorseData,
+    };
+
+    if (Array.isArray(normalized["skill_array"])) {
+        normalized["skill_array"] = normalizeSkillArray(normalized["skill_array"]);
+    }
+
+    const courseAptitudeFilters = options?.courseAptitudeFilters ?? null;
+    const compactGround = normalized["apt_ground"];
+    const compactDistance = normalized["apt_distance"];
+    const compactStyle = normalized["apt_style"];
+    const runningStyle = Number(normalized["running_style"]);
+
+    if (courseAptitudeFilters) {
+        const groundField = GROUND_FIELD_BY_ID[courseAptitudeFilters.ground];
+        if (groundField && normalized[groundField] === undefined && Number.isFinite(Number(compactGround))) {
+            normalized[groundField] = Number(compactGround);
+        }
+
+        const distanceField = DISTANCE_FIELD_BY_CATEGORY[courseAptitudeFilters.distance];
+        if (distanceField && normalized[distanceField] === undefined && Number.isFinite(Number(compactDistance))) {
+            normalized[distanceField] = Number(compactDistance);
+        }
+    }
+
+    const runningStyleField = RUNNING_STYLE_FIELD_BY_ID[runningStyle];
+    if (runningStyleField && normalized[runningStyleField] === undefined && Number.isFinite(Number(compactStyle))) {
+        normalized[runningStyleField] = Number(compactStyle);
+    }
+
+    return normalized;
+}
 
 type StatusPoints = {
     speed: number,
@@ -88,42 +174,40 @@ function calcRankScore(raceHorseData: any, statusPoints: StatusPoints, charaSkil
 }
 
 export function fromRaceHorseData(raceHorseData: any): TrainedCharaData {
-    const charaSkills: CharaSkill[] = raceHorseData['skill_array'].map((skill: any) => ({
-        skillId: skill['skill_id'],
-        level: skill['level'],
-    } as CharaSkill));
+    const normalizedRaceHorseData = hydrateCompactRaceHorseData(raceHorseData);
+    const charaSkills: CharaSkill[] = normalizeSkillArray(normalizedRaceHorseData['skill_array']);
 
     const statusPoints = {
-        speed: raceHorseData['speed'],
-        stamina: raceHorseData['stamina'],
-        pow: raceHorseData['pow'] || raceHorseData['power'], // 'power' in trained_chara
-        guts: raceHorseData['guts'],
-        wiz: raceHorseData['wiz'],
+        speed: normalizedRaceHorseData['speed'],
+        stamina: normalizedRaceHorseData['stamina'],
+        pow: normalizedRaceHorseData['pow'] || normalizedRaceHorseData['power'], // 'power' in trained_chara
+        guts: normalizedRaceHorseData['guts'],
+        wiz: normalizedRaceHorseData['wiz'],
     };
 
     const properDistances: Record<number, number> = {
-        1: raceHorseData['proper_distance_short'],
-        2: raceHorseData['proper_distance_mile'],
-        3: raceHorseData['proper_distance_middle'],
-        4: raceHorseData['proper_distance_long'],
+        1: normalizedRaceHorseData['proper_distance_short'],
+        2: normalizedRaceHorseData['proper_distance_mile'],
+        3: normalizedRaceHorseData['proper_distance_middle'],
+        4: normalizedRaceHorseData['proper_distance_long'],
     };
     const properRunningStyles: Record<number, number> = {
-        1: raceHorseData['proper_running_style_nige'],
-        2: raceHorseData['proper_running_style_senko'],
-        3: raceHorseData['proper_running_style_sashi'],
-        4: raceHorseData['proper_running_style_oikomi'],
+        1: normalizedRaceHorseData['proper_running_style_nige'],
+        2: normalizedRaceHorseData['proper_running_style_senko'],
+        3: normalizedRaceHorseData['proper_running_style_sashi'],
+        4: normalizedRaceHorseData['proper_running_style_oikomi'],
     };
 
-    const turf = raceHorseData['proper_ground_turf'];
-    const dirt = raceHorseData['proper_ground_dirt'];
+    const turf = normalizedRaceHorseData['proper_ground_turf'];
+    const dirt = normalizedRaceHorseData['proper_ground_dirt'];
 
     return {
-        viewerId: raceHorseData['viewer_id'],
-        viewerName: raceHorseData['trainer_name'],
+        viewerId: normalizedRaceHorseData['viewer_id'],
+        viewerName: normalizedRaceHorseData['trainer_name'],
 
-        trainedCharaId: raceHorseData['trained_chara_id'],
-        charaId: raceHorseData['chara_id'],
-        cardId: raceHorseData['card_id'],
+        trainedCharaId: normalizedRaceHorseData['trained_chara_id'],
+        charaId: normalizedRaceHorseData['chara_id'],
+        cardId: normalizedRaceHorseData['card_id'],
 
         skills: charaSkills,
 
@@ -135,9 +219,9 @@ export function fromRaceHorseData(raceHorseData: any): TrainedCharaData {
         properGroundDirt: dirt,
 
         rankScore: calcRankScore(
-            raceHorseData, statusPoints, charaSkills, properRunningStyles, properDistances, {1: turf, 2: dirt}),
+            normalizedRaceHorseData, statusPoints, charaSkills, properRunningStyles, properDistances, {1: turf, 2: dirt}),
 
-        rawData: raceHorseData,
+        rawData: normalizedRaceHorseData,
     };
 }
 

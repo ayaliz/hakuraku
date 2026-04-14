@@ -1,7 +1,7 @@
 import { Table } from "react-bootstrap";
 import { TrainedCharaData } from "../data/TrainedCharaData";
 import * as UMDatabaseUtils from "../data/UMDatabaseUtils";
-
+import './CharaProperLabels.css';
 import AssetLoader from "../data/AssetLoader";
 
 const gradeLetters = ["", "G", "F", "E", "D", "C", "B", "A", "S"];
@@ -20,7 +20,7 @@ function getGradeImages(): Record<number, string> {
 const GradeDisplay = ({ value }: { value: number }) => {
   const src = getGradeImages()[value];
   if (!src) return <>{UMDatabaseUtils.charaProperLabels[value]}</>;
-  return <img src={src} alt={UMDatabaseUtils.charaProperLabels[value]} style={{ height: '20px', width: 'auto', verticalAlign: 'middle' }} />;
+  return <img src={src} alt={UMDatabaseUtils.charaProperLabels[value]} className="cpl-grade-img" />;
 };
 
 type CharaProperLabelsProps = {
@@ -43,7 +43,7 @@ export default function CharaProperLabels({ chara, groundFilter, distanceFilter,
     .filter(([k]) => runningStyleFilter == null || Number(k) === runningStyleFilter);
 
   return (
-    <Table size="sm" className="w-auto mx-auto my-2" style={{ backgroundColor: 'transparent' }}>
+    <Table size="sm" className="w-auto mx-auto my-2 cpl-table">
       <tbody>
         <tr>
           {(groundFilter == null || groundFilter === 1) && <>

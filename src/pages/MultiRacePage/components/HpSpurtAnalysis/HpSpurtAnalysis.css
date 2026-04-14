@@ -352,3 +352,44 @@
     color: #94a3b8;
     line-height: 1.15;
 }
+
+/* ── HpSpurtAnalysisDetail ─────────────────────────────────────────────────── */
+
+.hp-count-note {
+    margin-left: 8px;
+    font-size: 0.9em;
+}
+
+/* ── HpSpurtTable ──────────────────────────────────────────────────────────── */
+
+.hp-skill-cell {
+    text-align: left;
+    font-size: 0.85em;
+}
+
+.hp-skill-info {
+    line-height: 1.4;
+}
+
+/* ── HpDistributionModal ───────────────────────────────────────────────────── */
+
+.hp-dist-modal-title {
+    font-size: 1.2rem;
+}
+
+.hp-dist-modal-desc {
+    margin-bottom: 15px;
+    color: #a0aec0;
+    font-size: 0.9em;
+}
+
+.hp-dist-modal-chart-wrap {
+    width: 100%;
+    height: 70vh;
+}
+
+.hp-dist-modal-chart {
+    height: 100%;
+    width: 100%;
+    min-height: 400px;
+}

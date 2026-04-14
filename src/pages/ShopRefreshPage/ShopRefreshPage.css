@@ -91,6 +91,7 @@
 .srp-turn-chip-bar span {
     display: block;
     height: 100%;
+    width: 100%;
     border-radius: 999px;
     background: linear-gradient(90deg, #65d283, #a8e6b8);
 }

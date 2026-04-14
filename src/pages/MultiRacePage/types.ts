@@ -13,8 +13,10 @@ export type ParsedRace = {
     uploadedAt: Date;
     playerIndices: Set<number>;
     raceType?: string;
-    /** trainedCharaId → support cards in slot order (positions 1–6) */
+    /** trainedCharaId → support cards in slot order (positions 1–6); non-unique fallback */
     deckByTrainedCharaId: Map<number, { id: number; lb: number }[]>;
+    /** "${viewerId}:${cardId}" → support cards; primary lookup key (uniquely identifies a horse in the room) */
+    deckByViewerAndCard: Map<string, { id: number; lb: number }[]>;
 };
 
 export type HorseEntry = {
@@ -86,8 +88,12 @@ export type SkillStats = {
     activationDistances: number[]; // For heatmap
     learnedByCharaIds: Set<number>; // IDs of characters who learned this skill
     learnedByStrategies: Set<number>; // Strategies of horses who learned/used this skill
+    learnedByHorsesByStrategy?: Record<string, number>;
     meanDistance: number;
     medianDistance: number;
+    timesActivatedByStrategy?: Record<string, number>;
+    meanDistanceByStrategy?: Record<string, number>;
+    medianDistanceByStrategy?: Record<string, number>;
 };
 
 export type SkillActivationPoint = {

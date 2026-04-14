@@ -1,0 +1,104 @@
+.pp-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    margin-bottom: 8px;
+    cursor: help;
+}
+
+.pp-item-inner {
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    max-width: 180px;
+}
+
+.pp-icon-wrap {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    margin-right: 10px;
+}
+
+.pp-icon-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.pp-strategy-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+    flex-shrink: 0;
+}
+
+.pp-item-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pp-value {
+    margin-left: 4px;
+    font-weight: bold;
+}
+
+.pp-pop-count {
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+.pp-header {
+    font-size: 13px;
+    font-weight: bold;
+    color: #a0aec0;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #4a5568;
+    padding-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pp-hint-badge {
+    font-size: 10px;
+    color: #718096;
+    border: 1px solid #718096;
+    border-radius: 50%;
+    width: 14px;
+    height: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: help;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.pp-section {
+    margin-bottom: 12px;
+}
+
+.pp-section-label {
+    font-size: 11px;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pp-section-label--over {
+    color: #68d391;
+}
+
+.pp-section-label--under {
+    color: #fc8181;
+}

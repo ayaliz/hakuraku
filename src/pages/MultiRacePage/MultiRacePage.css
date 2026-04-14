@@ -1,5 +1,13 @@
 /* Multi-Race Analysis Page Styles */
 
+.ruz-file-input {
+    display: none;
+}
+
+.upload-label--processing {
+    margin-top: 15px;
+}
+
 .multirace-container {
     padding: 20px 0;
 }
@@ -37,6 +45,7 @@
     border-radius: 20px;
     font-size: 13px;
     font-weight: 500;
+    margin-left: 10px;
 }
 
 .race-list {
@@ -533,6 +542,8 @@
 
 .skill-analysis-section .analysis-table-container {
     border: 1px solid rgba(101, 210, 131, 0.5);
+    max-height: 720px;
+    overflow-y: auto;
 }
 
 /* Expandable skill table */
@@ -662,7 +673,8 @@
 .team-sample-select {
     position: relative;
     display: inline-block;
-    width: min(100%, 720px);
+    width: 100%;
+    min-width: 280px;
 }
 
 .team-sample-select-trigger {
@@ -678,6 +690,7 @@
     cursor: pointer;
     font-size: 13px;
     transition: border-color 0.15s ease;
+    justify-content: space-between;
 }
 
 .team-sample-select-trigger:hover {
@@ -730,9 +743,12 @@
 }
 
 .team-sample-select-samples {
+    margin-left: auto;
     color: #718096;
     font-size: 12px;
     white-space: nowrap;
+    padding-left: 8px;
+    flex-shrink: 0;
 }
 
 .team-sample-select-arrow {
@@ -746,6 +762,8 @@
     top: calc(100% + 4px);
     left: 0;
     min-width: 100%;
+    width: max-content;
+    max-width: min(100vw - 32px, 420px);
     max-height: 320px;
     overflow-y: auto;
     background: #1a202c;
@@ -768,6 +786,7 @@
     color: #d1d5db;
     cursor: pointer;
     text-align: left;
+    justify-content: space-between;
 }
 
 .team-sample-select-option:hover {
@@ -788,7 +807,29 @@
     background: rgba(255, 255, 255, 0.04);
     border-radius: 4px;
     overflow: hidden;
+    height: 65px;
+    display: flex;
 }
+
+/* Phase separator markers inside inline heatmaps */
+.heatmap-phase-marker {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.4);
+    pointer-events: none;
+}
+.heatmap-phase-marker--mid  { left: 16.67%; }
+.heatmap-phase-marker--late { left: 66.67%; }
+.heatmap-phase-marker--spurt { left: 83.33%; }
+
+/* Phase labels inside inline-heatmap-legend */
+.heatmap-label--start { position: absolute; left: 0; }
+.heatmap-label--mid   { position: absolute; left: 16.67%; transform: translateX(-50%); }
+.heatmap-label--late  { position: absolute; left: 66.67%; transform: translateX(-50%); }
+.heatmap-label--spurt { position: absolute; left: 83.33%; transform: translateX(-50%); }
+.heatmap-label--end   { position: absolute; right: 0; }
 
 .inline-heatmap-legend {
     position: relative;
@@ -1051,4 +1092,61 @@
     font-size: 12px;
     color: #718096;
     margin-left: 4px;
+}
+
+/* ── SkillAnalysis controls ───────────────────────────────────────────────── */
+
+.skill-strategy-select {
+    width: auto;
+    margin-left: 10px;
+    padding-right: 30px;
+}
+
+.skill-range-filter {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 10px;
+}
+
+.skill-range-input {
+    width: 110px;
+    padding: 12px 10px;
+}
+
+.skill-range-sep {
+    color: #718096;
+    margin: 0 8px;
+}
+
+.skill-count-label {
+    color: #718096;
+    margin-left: 15px;
+    font-size: 13px;
+}
+
+/* ── SkillAnalysis table cells ────────────────────────────────────────────── */
+
+.skill-no-data-cell {
+    padding: 18px 16px;
+    color: #a0aec0;
+}
+
+.skill-help-hint {
+    border-bottom: 1px dotted #a0aec0;
+    cursor: help;
+}
+
+.skill-rank-col {
+    width: 40px;
+}
+
+.skill-name-line {
+    line-height: 1.2;
+    margin-bottom: 2px;
+}
+
+.skill-activation-pct {
+    color: #718096;
+    margin-left: 6px;
+    font-size: 12px;
 }

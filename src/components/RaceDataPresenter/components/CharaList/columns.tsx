@@ -228,8 +228,8 @@ const baseCharaTableColumns: CharaColumnDef[] = [
                     )}
                     <div>
                         <span className="chara-name-primary">{row.chara.name}</span>
-                        {row.trainedChara.viewerName && (
-                            <span className="chara-viewer-name">[{row.trainedChara.viewerName}]</span>
+                        {row.subLabel && (
+                            <span className="chara-viewer-name">{row.subLabel}</span>
                         )}
                     </div>
                 </div>

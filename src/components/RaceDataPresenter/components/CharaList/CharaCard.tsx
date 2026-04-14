@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import './CharaList.css';
 import { CharaTableData, ParentEntry } from "./types";
 import { aggregateFactors, formatFactor, getCharaImageUrl, getFactorColor } from "./utils";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
@@ -51,7 +52,7 @@ const ParentGroup = ({ parents }: { parents: ParentEntry[] }) => {
                     return (
                         <span key={fIdx} className="factor-badge">
                             <span style={{ color: getFactorColor(f.id), fontWeight: 600 }}>{name}</span>
-                            <span style={{ color: '#9ca3af' }}>{f.level}★</span>
+                            <span className="cc-factor-level">{f.level}★</span>
                         </span>
                     );
                 })}
@@ -92,7 +93,7 @@ const CharaTable: React.FC<CharaTableProps> = ({ data, courseId, showPredictionC
                                         <button
                                             onClick={() => setTableCollapsed(prev => !prev)}
                                             title={tableCollapsed ? 'Expand table' : 'Collapse table'}
-                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: '0 4px', fontSize: '0.75rem' }}
+                                            className="cc-expand-btn"
                                         >
                                             {tableCollapsed ? '▶' : '▼'}
                                         </button>
@@ -155,13 +156,12 @@ const CharaTable: React.FC<CharaTableProps> = ({ data, courseId, showPredictionC
                                         <div className="dashboard-panel panel-skills">
                                             <div
                                                 className="dashboard-panel-header"
-                                                style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                                                 onClick={() => setSelectedSkillRow(row)}
                                             >
                                                 <span>Skills ({row.trainedChara.skills.length})</span>
                                                 <span className="skills-breakdown-hint">Click for breakdown</span>
                                             </div>
-                                            <div className="skills-list" style={{ cursor: 'pointer' }} onClick={() => setSelectedSkillRow(row)}>
+                                            <div className="skills-list" onClick={() => setSelectedSkillRow(row)}>
                                                 {(() => {
                                                     const inherentSkill = row.trainedChara.skills.length > 0 ? row.trainedChara.skills[0] : undefined;
 
@@ -227,7 +227,7 @@ const CharaTable: React.FC<CharaTableProps> = ({ data, courseId, showPredictionC
 
                                             {row.deck && row.deck.length > 0 && (
                                                 <>
-                                                    <div className="dashboard-panel-header" style={{ marginTop: 'auto', paddingTop: '16px' }}>
+                                                    <div className="dashboard-panel-header dashboard-panel-header--footer">
                                                         Support Deck
                                                     </div>
                                                     <div className="support-deck-grid">

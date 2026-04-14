@@ -273,7 +273,7 @@ const SkillBreakdownModal: React.FC<SkillBreakdownModalProps> = ({ show, onHide,
                     })()}
                 </div>
             </div>
-            <Modal.Body style={{ maxHeight: '60vh', overflowY: 'scroll', overflowX: 'hidden', padding: 0 }}>
+            <Modal.Body className="sbm-modal-body">
                 <div className="sbm-list-container">
                     {validEvents.map((evt, idx) => {
                         if (evt.isGroupedZeroM) {
@@ -285,22 +285,22 @@ const SkillBreakdownModal: React.FC<SkillBreakdownModalProps> = ({ show, onHide,
                                     className="sbm-list-item"
                                 >
                                     <div className="sbm-item-left">
-                                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                        <div className="sbm-skill-icons">
                                             {evt.events.map((e: any, i: number) => {
                                                 const skillDef = getSkillDef(e.skillId);
                                                 const iconUrl = e.iconId ? AssetLoader.getSkillIcon(e.iconId) : (skillDef?.iconId ? AssetLoader.getSkillIcon(skillDef.iconId) : null);
                                                 return iconUrl ? (
                                                     <OverlayTrigger key={i} placement="top" overlay={<Tooltip id={`tt-${idx}-${i}`}>{e.name}</Tooltip>}>
-                                                        <img src={iconUrl} alt="skill" className="sbm-item-icon" style={{ margin: 0, width: '24px', height: '24px' }} />
+                                                        <img src={iconUrl} alt="skill" className="sbm-item-icon sbm-item-icon--sm" />
                                                     </OverlayTrigger>
                                                 ) : (
                                                     <OverlayTrigger key={i} placement="top" overlay={<Tooltip id={`tt-${idx}-${i}`}>{e.name}</Tooltip>}>
-                                                        <span style={{ fontSize: '10px', display: 'inline-block', padding: '2px', backgroundColor: '#eee', borderRadius: '2px', cursor: 'help' }}>{e.name}</span>
+                                                        <span className="sbm-skill-fallback-badge">{e.name}</span>
                                                     </OverlayTrigger>
                                                 );
                                             })}
                                         </div>
-                                        <span className="sbm-item-name" style={{ marginLeft: '8px' }}>
+                                        <span className="sbm-item-name">
                                             {evt.name}
                                         </span>
                                     </div>

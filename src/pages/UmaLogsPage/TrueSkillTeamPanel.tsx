@@ -6,7 +6,7 @@ import type {
     TeamRankingMember,
     TrueSkillTeamEntry,
 } from "../MultiRacePage/types";
-import { TeamMemberCard } from "../MultiRacePage/components/WinDistributionCharts/StrategyAnalysis";
+import { TeamMemberCard } from "../MultiRacePage/components/WinDistributionCharts/TeamMemberCard";
 import AssetLoader from "../../data/AssetLoader";
 import "./UmaLogsPage.css";
 

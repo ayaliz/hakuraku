@@ -33,6 +33,7 @@ export type SkillEventData = {
 export type CharaTableData = {
     trainedChara: TrainedCharaData,
     chara: Chara | undefined,
+    subLabel?: string,
 
     frameOrder: number,
     finishOrder: number,

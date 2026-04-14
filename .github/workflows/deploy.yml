@@ -24,10 +24,7 @@ jobs:
           node-version: 20
           cache: yarn
       - run: yarn --frozen-lockfile
-      - run: yarn build
-        env:
-          VITE_SHARE_SECRET: ${{ secrets.REACT_APP_SHARE_SECRET }}
-          VITE_BASE_PATH: /hakuraku/
+      - run: yarn build:github-pages-redirect
       - name: Package Pages artifact
         run: |
           tar \

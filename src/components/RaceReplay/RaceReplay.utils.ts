@@ -1,5 +1,6 @@
 import { RaceSimulateData } from "../../data/race_data_pb";
 import AssetLoader from "../../data/AssetLoader";
+import { normalizeSeasonValue } from "../../utils/season";
 
 export const clamp = (x: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, x));
 export const clamp01 = (x: number) => clamp(x, 0, 1);
@@ -46,6 +47,47 @@ export function bisectFrameIndex(frames: RaceSimulateData["frame"], t: number) {
 }
 
 export function formatSigned(x: number) { const v = x / 100; const s = v.toFixed(2); return (v > 0 ? "+" : "") + s; }
+
+const TRACK_DETAIL_ICON_LABELS = {
+    season: {
+        "1": { fileName: "Spring", label: "Spring" },
+        "2": { fileName: "Summer", label: "Summer" },
+        "3": { fileName: "Fall", label: "Fall" },
+        "4": { fileName: "Winter", label: "Winter" },
+        "5": { fileName: "Spring", label: "Spring" },
+        spring: { fileName: "Spring", label: "Spring" },
+        summer: { fileName: "Summer", label: "Summer" },
+        autumn: { fileName: "Fall", label: "Fall" },
+        fall: { fileName: "Fall", label: "Fall" },
+        winter: { fileName: "Winter", label: "Winter" },
+        cherryblossom: { fileName: "Spring", label: "Spring" },
+        cherry_blossom: { fileName: "Spring", label: "Spring" },
+        "cherry blossom": { fileName: "Spring", label: "Spring" },
+    },
+    weather: {
+        "1": { fileName: "Sunny", label: "Sunny" },
+        "2": { fileName: "Cloudy", label: "Cloudy" },
+        "3": { fileName: "Rainy", label: "Rainy" },
+        "4": { fileName: "Snowy", label: "Snow" },
+        sunny: { fileName: "Sunny", label: "Sunny" },
+        cloudy: { fileName: "Cloudy", label: "Cloudy" },
+        rainy: { fileName: "Rainy", label: "Rainy" },
+        snow: { fileName: "Snowy", label: "Snow" },
+        snowy: { fileName: "Snowy", label: "Snow" },
+    },
+} as const;
+
+export function getTrackDetailIcon(kind: "season" | "weather", value?: string | number | null) {
+    if (value == null || value === "") return null;
+    const normalizedValue = kind === "season" ? normalizeSeasonValue(value) : value;
+    const key = String(normalizedValue).trim().toLowerCase();
+    const resolved = TRACK_DETAIL_ICON_LABELS[kind][key as keyof typeof TRACK_DETAIL_ICON_LABELS[typeof kind]];
+    if (!resolved) return null;
+    return {
+        label: resolved.label,
+        url: AssetLoader.getAssetUrl(`track_details/${resolved.fileName}.webp`),
+    };
+}
 
 
 const ICON_CACHE = new Map<number, string | null>();

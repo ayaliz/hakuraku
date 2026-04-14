@@ -133,7 +133,7 @@ const VeteranCard: React.FC<VeteranCardProps> = ({ veteran, config, affinityChar
                                                 {treeAffinities && (() => {
                                                     const chance = calculateSparkChance(factor.category, factor.factorId, factor.level, treeAffinities[factor.sourceSlot]);
                                                     return chance !== null ? (
-                                                        <span style={{ marginLeft: '3px', fontSize: '0.72rem', opacity: 0.85 }}>({chance.toFixed(2)}%)</span>
+                                                        <span className="vet-factor-chance">({chance.toFixed(2)}%)</span>
                                                     ) : null;
                                                 })()}
                                             </span>

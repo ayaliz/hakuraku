@@ -34,6 +34,28 @@
     gap: 6px;
 }
 
+.sa-panel-header-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.sa-mobile-expand-btn {
+    display: none;
+    margin-left: auto;
+    border: 1px solid #4a5568;
+    background: rgba(255, 255, 255, 0.05);
+    color: #cbd5e1;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
 /* Saturation panel header variant: tighter gap + less bottom margin */
 .sa-panel-header--sat {
     gap: 8px;
@@ -862,6 +884,90 @@
     min-width: 460px;
 }
 
+.sa-sat-svg--expanded {
+    width: 760px;
+    max-width: none;
+    height: 320px;
+}
+
+.sa-cross-grid--expanded {
+    min-width: 760px;
+}
+
+.sa-mobile-chart-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    background: rgba(2, 6, 23, 0.82);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.sa-mobile-chart-dialog-panel {
+    width: min(960px, 100%);
+    max-height: min(88vh, 920px);
+    background: #111827;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 16px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.sa-mobile-chart-dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.sa-mobile-chart-dialog-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+.sa-mobile-chart-dialog-close {
+    border: 1px solid #4a5568;
+    background: rgba(255, 255, 255, 0.05);
+    color: #cbd5e1;
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.sa-mobile-chart-dialog-body {
+    padding: 14px 16px 18px;
+    overflow: auto;
+}
+
+.sa-mobile-chart-dialog-note {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-bottom: 10px;
+}
+
+.sa-mobile-chart-scroll {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+.sa-mobile-chart-scroll-inner {
+    min-width: 100%;
+}
+
+.sa-mobile-chart-scroll-inner--wide {
+    min-width: 760px;
+}
+
 @media (max-width: 900px) {
     .sa-reps-columns,
     .sa-reps-columns--full {
@@ -873,4 +979,113 @@
     background: rgba(246, 193, 119, 0.18);
     color: #f6e6c3;
     font-weight: 700;
+}
+
+@media (max-width: 768px) {
+    .sa-mobile-expand-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .sa-panel-header--sat {
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+
+    .sa-sat-view-toggle {
+        order: 2;
+        margin-left: 0;
+    }
+
+    .sa-sat-legend {
+        order: 3;
+        width: 100%;
+        margin-left: 0;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+
+    .sa-panel--saturation {
+        min-width: 0;
+    }
+
+    .sa-comp-section {
+        padding: 10px 10px 12px;
+        overflow-x: auto;
+    }
+
+    .sa-comp-table {
+        margin: 0;
+        border-spacing: 2px 2px;
+    }
+
+    .sa-comp-th {
+        width: 46px;
+        padding-bottom: 2px;
+    }
+
+    .sa-comp-th-freq {
+        padding: 0 0 2px 6px;
+    }
+
+    .sa-comp-th-label,
+    .sa-comp-th-freq-label {
+        font-size: 8px;
+        letter-spacing: 0.02em;
+    }
+
+    .sa-comp-td--avg {
+        padding: 4px 0 7px;
+        font-size: 11px;
+    }
+
+    .sa-comp-td--row {
+        padding: 4px 0;
+        font-size: 12px;
+    }
+
+    .sa-comp-td-freq {
+        padding: 4px 0 4px 6px;
+        font-size: 10px;
+    }
+
+    .sa-comp-td-avg-freq {
+        padding: 4px 0 7px 6px;
+        font-size: 9px;
+    }
+
+    .sa-mobile-chart-dialog {
+        padding: 0;
+    }
+
+    .sa-mobile-chart-dialog-panel {
+        width: 100vw;
+        height: 100vh;
+        max-height: none;
+        border-radius: 0;
+        border: none;
+    }
+
+    .sa-mobile-chart-dialog-header {
+        padding: 12px 14px;
+    }
+
+    .sa-mobile-chart-dialog-body {
+        flex: 1;
+        padding: 10px 12px 14px;
+    }
+
+    .sa-mobile-chart-scroll-inner--wide {
+        min-width: 920px;
+    }
+
+    .sa-sat-svg--expanded {
+        width: 920px;
+        height: 380px;
+    }
+
+    .sa-cross-grid--expanded {
+        min-width: 920px;
+    }
 }

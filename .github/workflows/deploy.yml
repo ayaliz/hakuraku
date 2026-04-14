@@ -24,7 +24,47 @@ jobs:
           node-version: 20
           cache: yarn
       - run: yarn --frozen-lockfile
-      - run: yarn build:github-pages-redirect
+      - name: Build static redirect page
+        run: |
+          mkdir -p dist
+          cat > dist/index.html <<'HTML'
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width,initial-scale=1" />
+            <title>Moved to hakuraku.moe</title>
+            <meta http-equiv="refresh" content="0; url=https://hakuraku.moe/" />
+            <link rel="canonical" href="https://hakuraku.moe/" />
+            <style>
+              body {
+                margin: 0;
+                min-height: 100vh;
+                display: grid;
+                place-items: center;
+                font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+                background: #0f172a;
+                color: #e2e8f0;
+              }
+              main {
+                text-align: center;
+                max-width: 36rem;
+                padding: 1.5rem;
+              }
+              a {
+                color: #93c5fd;
+              }
+            </style>
+          </head>
+          <body>
+            <main>
+              <h1>Moved to hakuraku.moe</h1>
+              <p>This site has moved to <a href="https://hakuraku.moe/">https://hakuraku.moe/</a>.</p>
+              <p>If you are not redirected automatically, use the link above.</p>
+            </main>
+          </body>
+          </html>
+          HTML
       - name: Package Pages artifact
         run: |
           tar \

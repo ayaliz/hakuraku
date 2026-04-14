@@ -146,6 +146,12 @@ export const computeCharaTableData = (
         const horseResult = raceData.horseResult[frameOrder];
 
         const trainedCharaData = fromRaceHorseData(data);
+        const teamId = typeof data['team_id'] === 'number' ? data['team_id'] : undefined;
+        const subLabel = trainedCharaData.viewerName
+            ? `[${trainedCharaData.viewerName}]`
+            : teamId !== undefined
+                ? `[Team ${teamId}]`
+                : undefined;
 
 
         // Calculate Last Spurt Speed
@@ -277,9 +283,10 @@ export const computeCharaTableData = (
         if (skillActivations && skillActivations[frameOrder]) {
             skillActivations[frameOrder].forEach(act => {
                 const skillId = act.param[1];
-                let durationSecs = getSkillDurationSecs(skillId, raceDistance, act.param[2]);
+                const reportedDuration = act.param?.[2];
+                let durationSecs = getSkillDurationSecs(skillId, raceDistance, act.time, reportedDuration);
                 const baseTime = getSkillBaseTime(skillId);
-                const isInstant = baseTime <= 0 && act.param[2] <= 0;
+                const isInstant = baseTime <= 0 && (reportedDuration ?? 0) <= 0;
 
                 const startDistance = interpolateDistance(raceData.frame ?? [], frameOrder, act.time);
                 const endDistance = isInstant ? startDistance : interpolateDistance(raceData.frame ?? [], frameOrder, act.time + durationSecs);
@@ -504,6 +511,7 @@ export const computeCharaTableData = (
         return {
             trainedChara: trainedCharaData,
             chara: UMDatabaseWrapper.charas[trainedCharaData.charaId],
+            subLabel,
 
             frameOrder: frameOrder + 1,
             finishOrder: horseResult.finishOrder! + 1,

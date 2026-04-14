@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useEffect } from 'react';
 import { Modal } from 'react-bootstrap';
+import './HpSpurtAnalysis.css';
 import EChartsReactCore from "echarts-for-react/lib/core";
 import { BarChart, BarSeriesOption } from "echarts/charts";
 import {
@@ -210,19 +211,19 @@ const HpDistributionModal: React.FC<Props> = ({ isOpen, onClose, title, data }) 
     return (
         <Modal show={isOpen} onHide={onClose} centered size="xl" contentClassName="bg-dark text-light border-secondary" animation={false}>
             <Modal.Header closeButton className="border-secondary">
-                <Modal.Title style={{ fontSize: '1.2rem' }}>{title}</Modal.Title>
+                <Modal.Title className="hp-dist-modal-title">{title}</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                <div style={{ marginBottom: '15px', color: '#a0aec0', fontSize: '0.9em' }}>
+                <div className="hp-dist-modal-desc">
                     Total Samples: {totalCount}
                 </div>
-                <div style={{ width: '100%', height: '70vh' }}>
+                <div className="hp-dist-modal-chart-wrap">
                     {/* @ts-ignore */}
                     <EChartsReactCore
                         ref={chartRef}
                         echarts={echarts}
                         option={options}
-                        style={{ height: '100%', width: '100%', minHeight: '400px' }}
+                        className="hp-dist-modal-chart"
                         theme="dark"
                     />
                 </div>

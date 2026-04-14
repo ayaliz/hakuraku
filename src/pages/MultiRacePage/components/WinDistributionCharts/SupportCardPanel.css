@@ -61,3 +61,8 @@
     min-width: 72px;
     flex-shrink: 0;
 }
+
+.scp-row .sa-sb-value {
+    width: auto;
+    min-width: 72px;
+}

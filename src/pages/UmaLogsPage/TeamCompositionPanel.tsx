@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import type { TeamCompositionStats, HorseEntry, SkillStats } from "../MultiRacePage/types";
 import AssetLoader from "../../data/AssetLoader";
-import { STRATEGY_COLORS, STRATEGY_NAMES, BAYES_TEAM } from "../MultiRacePage/components/WinDistributionCharts/constants";
-import { TeamMemberCard } from "../MultiRacePage/components/WinDistributionCharts/StrategyAnalysis";
-import TeamSampleSelect from "../MultiRacePage/components/WinDistributionCharts/TeamSampleSelect";
+import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
+import { STRATEGY_COLORS, STRATEGY_NAMES } from "../MultiRacePage/components/WinDistributionCharts/constants";
+import { TeamMemberCard } from "../MultiRacePage/components/WinDistributionCharts/TeamMemberCard";
 import "./UmaLogsPage.css";
 
 const MIN_APPEARANCES = 5;
@@ -11,102 +11,89 @@ const MAX_ITEMS = 10;
 const BAYES_PRIOR = 1 / 3;
 
 interface TeamCompositionPanelProps {
+    cmId?: string | null;
+    courseId?: number;
+    apiBase?: string;
+    apiMode?: boolean;
     teamStats: TeamCompositionStats[];
-    allHorses?: HorseEntry[];
     skillStats?: Map<number, SkillStats>;
     strategyColors?: Record<number, string>;
 }
 
-const TeamCompositionPanel: React.FC<TeamCompositionPanelProps> = ({ teamStats, allHorses, skillStats, strategyColors }) => {
+type SerializedHorseEntry = Omit<HorseEntry, "activatedSkillIds" | "learnedSkillIds" | "trainerName" | "raceDistance" | "isPlayer" | "charaName"> & {
+    activatedSkillIds: number[];
+    learnedSkillIds: number[];
+    supportCardIds: number[];
+    supportCardLimitBreaks: number[];
+};
+
+type CompositionRepResponse = {
+    cmId: string;
+    courseId: number;
+    compositionKey: string;
+    horses: SerializedHorseEntry[];
+};
+
+function deserializeHorseEntry(entry: SerializedHorseEntry): HorseEntry {
+    return {
+        ...entry,
+        charaName: UMDatabaseWrapper.charas[entry.charaId]?.name ?? `Unknown (${entry.charaId})`,
+        trainerName: "",
+        raceDistance: 0,
+        isPlayer: false,
+        activatedSkillIds: new Set(entry.activatedSkillIds),
+        learnedSkillIds: new Set(entry.learnedSkillIds),
+        supportCardIds: entry.supportCardIds ?? [],
+        supportCardLimitBreaks: entry.supportCardLimitBreaks ?? [],
+    };
+}
+
+function deserializeHorseEntries(entries: SerializedHorseEntry[] | undefined): HorseEntry[] {
+    return (entries ?? []).map(deserializeHorseEntry);
+}
+
+function buildCompositionRepsUrl(cmId: string, courseId: number, compositionKey: string, apiBase = ""): string {
+    return `${apiBase}/api/umalogs/${encodeURIComponent(cmId)}/groups/${courseId}/composition-reps/${encodeURIComponent(compositionKey)}`;
+}
+
+const TeamCompositionPanel: React.FC<TeamCompositionPanelProps> = ({ cmId, courseId, apiBase, apiMode, teamStats, skillStats, strategyColors }) => {
     const [selectedKey, setSelectedKey] = useState<string | null>(null);
-    const [selectedTeamInstanceKey, setSelectedTeamInstanceKey] = useState<string | null>(null);
+    const [compositionRepCache, setCompositionRepCache] = useState<Record<string, HorseEntry[]>>({});
+    const [compositionRepLoadingKeys, setCompositionRepLoadingKeys] = useState<string[]>([]);
+    const [compositionRepError, setCompositionRepError] = useState<string | null>(null);
 
-    const teamInstancesByCompositionKey = useMemo(() => {
-        type TeamInstance = {
-            instanceKey: string;
-            horses: HorseEntry[];
-            appearances: number;
-            wins: number;
-            memberWins: number[];
-        };
-        const bayesTeamWR = (wins: number, appearances: number) =>
-            (wins + BAYES_TEAM.K * BAYES_TEAM.PRIOR) / (appearances + BAYES_TEAM.K);
+    const canUseApiDrilldown = !!(apiMode && cmId && courseId && skillStats);
+    const canExpand = !!(skillStats && canUseApiDrilldown);
 
-        const compMap = new Map<string, Map<string, TeamInstance>>();
-        if (!allHorses) return new Map<string, TeamInstance[]>();
-
-        const raceMap = new Map<string, HorseEntry[]>();
-        for (const h of allHorses) {
-            if (!raceMap.has(h.raceId)) raceMap.set(h.raceId, []);
-            raceMap.get(h.raceId)!.push(h);
-        }
-
-        for (const horses of raceMap.values()) {
-            const teamMap = new Map<number, HorseEntry[]>();
-            for (const h of horses) {
-                if (h.teamId === 0) continue;
-                if (!teamMap.has(h.teamId)) teamMap.set(h.teamId, []);
-                teamMap.get(h.teamId)!.push(h);
-            }
-
-            const winningTeamId = horses.find(h => h.finishOrder === 1)?.teamId ?? 0;
-
-            for (const team of teamMap.values()) {
-                if (team.length !== 3) continue;
-                const sorted = [...team].sort((a, b) => (a.cardId * 10 + a.strategy) - (b.cardId * 10 + b.strategy));
-                const compKey = sorted.map(h => `${h.cardId}_${h.strategy}`).join("__");
-                const instanceKey = sorted
-                    .map(h => `${h.speed}_${h.stamina}_${h.pow}_${h.guts}_${h.wiz}_${h.rankScore}`)
-                    .join("__");
-
-                const teamId = sorted[0]?.teamId ?? 0;
-                const teamWon = teamId > 0 && teamId === winningTeamId;
-                const firstPlaceHorse = teamWon ? sorted.find(h => h.finishOrder === 1) ?? null : null;
-
-                if (!compMap.has(compKey)) compMap.set(compKey, new Map());
-                const byFingerprint = compMap.get(compKey)!;
-                if (!byFingerprint.has(instanceKey)) {
-                    byFingerprint.set(instanceKey, {
-                        instanceKey,
-                        horses: sorted,
-                        appearances: 0,
-                        wins: 0,
-                        memberWins: new Array(sorted.length).fill(0),
-                    });
-                }
-
-                const inst = byFingerprint.get(instanceKey)!;
-                inst.appearances++;
-                if (teamWon) {
-                    inst.wins++;
-                    if (firstPlaceHorse) {
-                        const idx = inst.horses.findIndex(h => h.cardId === firstPlaceHorse.cardId && h.strategy === firstPlaceHorse.strategy);
-                        if (idx >= 0) inst.memberWins[idx]++;
-                    }
-                }
-            }
-        }
-
-        const out: Map<string, TeamInstance[]> = new Map();
-        for (const [compKey, byFingerprint] of compMap) {
-            const instances = Array.from(byFingerprint.values());
-            instances.sort((a, b) => {
-                const aBayes = bayesTeamWR(a.wins, a.appearances);
-                const bBayes = bayesTeamWR(b.wins, b.appearances);
-                if (bBayes !== aBayes) return bBayes - aBayes;
-                if (b.appearances !== a.appearances) return b.appearances - a.appearances;
-                const aBest = Math.max(...a.horses.map(h => h.rankScore ?? 0), 0);
-                const bBest = Math.max(...b.horses.map(h => h.rankScore ?? 0), 0);
-                if (bBest !== aBest) return bBest - aBest;
-                return a.instanceKey.localeCompare(b.instanceKey);
+    useEffect(() => {
+        if (!canUseApiDrilldown || !selectedKey || !cmId || !courseId) return;
+        if (compositionRepCache[selectedKey] || compositionRepLoadingKeys.includes(selectedKey)) return;
+        const controller = new AbortController();
+        setCompositionRepLoadingKeys((keys) => [...keys, selectedKey]);
+        setCompositionRepError(null);
+        fetch(buildCompositionRepsUrl(cmId, courseId, selectedKey, apiBase ?? ""), { signal: controller.signal })
+            .then(async (response) => {
+                if (!response.ok) throw new Error(`Failed to load representative team (${response.status})`);
+                return await response.json() as CompositionRepResponse;
+            })
+            .then((payload) => {
+                setCompositionRepCache((cache) => ({
+                    ...cache,
+                    [payload.compositionKey]: deserializeHorseEntries(payload.horses),
+                }));
+            })
+            .catch((error) => {
+                if (controller.signal.aborted) return;
+                console.error("Failed to load team composition representatives", { selectedKey, error });
+                setCompositionRepError(error instanceof Error ? error.message : "Failed to load representative team.");
+                setCompositionRepCache((cache) => ({ ...cache, [selectedKey]: [] }));
+            })
+            .finally(() => {
+                if (controller.signal.aborted) return;
+                setCompositionRepLoadingKeys((keys) => keys.filter((key) => key !== selectedKey));
             });
-            out.set(compKey, instances);
-        }
-
-        return out;
-    }, [allHorses]);
-
-    const canExpand = !!(allHorses && skillStats);
+        return () => controller.abort();
+    }, [apiBase, canUseApiDrilldown, cmId, compositionRepCache, compositionRepLoadingKeys, courseId, selectedKey]);
 
     const eligible = teamStats.filter(t => t.appearances >= MIN_APPEARANCES);
     if (eligible.length === 0) return null;
@@ -119,39 +106,19 @@ const TeamCompositionPanel: React.FC<TeamCompositionPanelProps> = ({ teamStats, 
 
     const renderComposition = (t: TeamCompositionStats, positive: boolean) => {
         const valueColor = positive ? "#68d391" : "#fc8181";
-        const key = t.members.map(m => `${m.cardId}_${m.strategy}`).join('__');
+        const key = t.members
+            .slice()
+            .sort((a, b) => (a.cardId * 10 + a.strategy) - (b.cardId * 10 + b.strategy))
+            .map(m => `${m.cardId}_${m.strategy}`)
+            .join('__');
         const isSelected = selectedKey === key;
-        const instances = canExpand ? (teamInstancesByCompositionKey.get(key) ?? []) : [];
-        const selectedInstance = isSelected
-            ? (instances.find(i => i.instanceKey === selectedTeamInstanceKey) ?? instances[0] ?? null)
-            : null;
-
-        const instanceOptions = instances.map(inst => {
-            const n = inst.appearances;
-            return {
-                value: inst.instanceKey,
-                samples: n,
-                members: inst.horses.map((h, i) => ({
-                    cardId: h.cardId,
-                    strategy: h.strategy,
-                    winRatePct: n > 0 ? ((inst.memberWins[i] ?? 0) / n) * 100 : 0,
-                })),
-            };
-        });
         return (
             <React.Fragment key={key}>
                 <div
                     className={`tcp-row${canExpand ? " sa-stcp-item--clickable" : ""}${isSelected ? " ca-row--selected" : ""}`}
                     onClick={canExpand ? () => {
                         setSelectedKey(k => {
-                            const next = k === key ? null : key;
-                            if (next === key) {
-                                const first = (teamInstancesByCompositionKey.get(key) ?? [])[0]?.instanceKey ?? null;
-                                setSelectedTeamInstanceKey(first);
-                            } else {
-                                setSelectedTeamInstanceKey(null);
-                            }
-                            return next;
+                            return k === key ? null : key;
                         });
                     } : undefined}
                 >
@@ -194,19 +161,15 @@ const TeamCompositionPanel: React.FC<TeamCompositionPanelProps> = ({ teamStats, 
                 </div>
                 {isSelected && canExpand && (
                     <div className="tcp-member-drilldown">
-                        {instances.length > 1 && (
-                            <div className="tcp-rep-team-select">
-                                <TeamSampleSelect
-                                    value={selectedInstance?.instanceKey ?? (instanceOptions[0]?.value ?? "")}
-                                    options={instanceOptions}
-                                    onChange={setSelectedTeamInstanceKey}
-                                    strategyColors={strategyColors ?? STRATEGY_COLORS}
-                                />
-                            </div>
+                        {canUseApiDrilldown && compositionRepLoadingKeys.includes(key) && (
+                            <div className="sa-no-data">Loading representative team samples...</div>
+                        )}
+                        {canUseApiDrilldown && !compositionRepLoadingKeys.includes(key) && (compositionRepCache[key]?.length ?? 0) === 0 && compositionRepError && (
+                            <div className="sa-no-data">{compositionRepError}</div>
                         )}
                         <div className="stcp-team-members-row">
-                            {(selectedInstance?.horses ?? []).map((horse, i) => (
-                                <TeamMemberCard key={i} horse={horse} skillStats={skillStats!} strategyColors={strategyColors} allHorses={allHorses} />
+                            {(compositionRepCache[key] ?? []).map((horse, i) => (
+                                <TeamMemberCard key={i} horse={horse} skillStats={skillStats!} strategyColors={strategyColors} />
                             ))}
                         </div>
                     </div>

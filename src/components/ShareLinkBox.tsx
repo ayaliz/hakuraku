@@ -1,5 +1,6 @@
 import {useState} from "react";
 import {InputGroup, FormControl, Button} from "react-bootstrap";
+import './ShareLinkBox.css';
 
 type ShareLinkBoxProps = {
     shareUrl: string,
@@ -21,7 +22,7 @@ export default function ShareLinkBox(props: ShareLinkBoxProps) {
                 readOnly
                 value={props.shareUrl}
                 onClick={handleCopy}
-                style={{cursor: 'pointer'}}
+                className="slb-input"
             />
             <Button variant={copied ? "success" : "outline-secondary"} onClick={handleCopy}>
                 {copied ? "Copied!" : "Copy"}

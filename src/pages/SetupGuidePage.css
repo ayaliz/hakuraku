@@ -1,3 +1,7 @@
+.sg-page {
+    padding: 32px 0;
+}
+
 .sg-container {
     padding: 20px;
     max-width: 1200px;

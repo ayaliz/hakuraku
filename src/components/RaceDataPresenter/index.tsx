@@ -39,7 +39,8 @@ type RaceDataPresenterProps = {
         condition?: string,
         weather?: string,
         season?: string,
-    }
+    },
+    showRawJsonTools?: boolean,
 };
 
 type RaceDataPresenterState = {
@@ -116,6 +117,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
 
 
     render() {
+        const showRawJsonTools = this.props.showRawJsonTools ?? true;
         const sectionDividerStyle = {
             height: '1px',
             background: 'linear-gradient(90deg, transparent 0%, rgba(165, 201, 184, 0.4) 20%, rgba(165, 201, 184, 0.4) 80%, transparent 100%)',
@@ -212,27 +214,31 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 }
             </div>
 
-            <div style={sectionDividerStyle} />
+            {showRawJsonTools && (
+                <>
+                    <div style={sectionDividerStyle} />
 
-            <div className="haku-json-download">
-                <button
-                    onClick={() => {
-                        const json = toJson(RaceSimulateDataSchema, this.props.raceData);
-                        const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'race_data.json';
-                        a.click();
-                        URL.revokeObjectURL(url);
-                    }}
-                    className="btn btn-outline-secondary btn-sm"
-                >
-                    Save JSON
-                </button>
-            </div>
+                    <div className="haku-json-download">
+                        <button
+                            onClick={() => {
+                                const json = toJson(RaceSimulateDataSchema, this.props.raceData);
+                                const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'race_data.json';
+                                a.click();
+                                URL.revokeObjectURL(url);
+                            }}
+                            className="btn btn-outline-secondary btn-sm"
+                        >
+                            Save JSON
+                        </button>
+                    </div>
 
-            <JsonView data={toJson(RaceSimulateDataSchema, this.props.raceData) as object} style={hakuJsonStyles} shouldExpandNode={collapseAllNested} />
+                    <JsonView data={toJson(RaceSimulateDataSchema, this.props.raceData) as object} style={hakuJsonStyles} shouldExpandNode={collapseAllNested} />
+                </>
+            )}
         </div>;
     }
 }

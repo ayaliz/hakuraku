@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import "./VeteransPage/VeteransPage.css";
 import { Alert, Button, Container, Form, InputGroup } from "react-bootstrap";
 import { Veteran, BaseFilter, BluesFilter, AptitudeFilter, UniquesFilter, RacesFilter, SkillsFilter, SortOption, SortDirection } from "./VeteransPage/types";
@@ -14,7 +13,15 @@ import AffinityCalculatorPanel from "./VeteransPage/AffinityCalculatorPanel";
 import RacePlannerModal from "./VeteransPage/RacePlannerModal";
 import SparkProcModal from "./VeteransPage/SparkProcModal";
 import { applyFiltersAndSort, getAvailableStats } from "./VeteransPage/VeteransLogic";
-import { getKvKeyFromUrl, buildShareBody, uploadVeteransToWorker, fetchVeteransFromWorker, fetchLoanedChara } from "./VeteransPage/UrlSharing";
+import {
+    getKvKeyFromUrl,
+    buildShareBody,
+    uploadVeteransToWorker,
+    fetchVeteransFromWorker,
+    fetchLoanedChara,
+    fetchAccountVeterans,
+    shouldLoadAccountVeterans,
+} from "./VeteransPage/UrlSharing";
 
 const FILTER_CONFIG = {
     blues: { categoryId: 1, stateKey: "bluesFilters" as const, label: "Blues", color: "rgb(55, 183, 244)", selectorType: "blues" as SelectorType },
@@ -33,6 +40,11 @@ export default function VeteransPage() {
     const [successMessage, setSuccessMessage] = useState("");
     const [sharing, setSharing] = useState(false);
     const [shareCache, setShareCache] = useState<Record<string, string>>({});
+    const [accountVeteranMeta, setAccountVeteranMeta] = useState<{
+        viewerId: number;
+        veteranCount: number;
+        updatedAt: string;
+    } | null>(null);
 
     const [affinityParent1, setAffinityParent1] = useState<Veteran | null>(null);
     const [affinityParent2, setAffinityParent2] = useState<Veteran | null>(null);
@@ -105,8 +117,22 @@ export default function VeteransPage() {
         const kvKey = getKvKeyFromUrl();
         if (kvKey) {
             fetchVeteransFromWorker(kvKey)
-                .then(v => setVeterans(v))
+                .then(v => {
+                    setVeterans(v);
+                    setAccountVeteranMeta(null);
+                })
                 .catch(err => setError(`Failed to load shared roster: ${err.message}`));
+            return;
+        }
+
+        if (shouldLoadAccountVeterans()) {
+            fetchAccountVeterans()
+                .then(({ viewerId, veteranCount, updatedAt, veterans: loadedVeterans }) => {
+                    setVeterans(loadedVeterans);
+                    setAccountVeteranMeta({ viewerId, veteranCount, updatedAt });
+                    setError("");
+                })
+                .catch(err => setError(`Failed to load your veteran roster: ${err.message}`));
         }
     }, []);
 
@@ -247,7 +273,7 @@ export default function VeteransPage() {
 
     return (
         <Container className="vet-page-container">
-            <input ref={fileInputRef} type="file" accept=".json" onChange={handleFileChange} style={{ display: "none" }} />
+            <input ref={fileInputRef} type="file" accept=".json" onChange={handleFileChange} className="vet-file-input" />
 
             {successMessage && (
                 <Alert variant="success" dismissible onClose={() => setSuccessMessage("")}>
@@ -268,14 +294,19 @@ export default function VeteransPage() {
                         <div className="upload-label">No veterans loaded</div>
                         <div className="upload-sublabel">Upload a JSON file or share link to get started</div>
                     </div>
-                    <Alert variant="info" style={{ marginTop: "20px" }}>
-                        This page supports both veteran data extracted via the hachimi plugin on the <Link to="/setup">setup page</Link>, as well as the standalone umaextractor on <a href="https://github.com/xancia/UmaExtractor/releases/latest" target="_blank" rel="noreferrer">https://github.com/xancia/UmaExtractor/releases/latest</a>.
+                    <Alert variant="info" className="vet-upload-alert">
+                        This page supports both veteran data extracted via the hachimi plugin on the <a href="https://github.com/ayaliz/horseACT#installation" target="_blank" rel="noreferrer">horseACT setup guide</a>, as well as the standalone umaextractor on <a href="https://github.com/xancia/UmaExtractor/releases/latest" target="_blank" rel="noreferrer">https://github.com/xancia/UmaExtractor/releases/latest</a>.
                     </Alert>
                 </>
             )}
 
             {veterans.length > 0 && !renderError && (
                 <>
+                    {accountVeteranMeta ? (
+                        <Alert variant="info">
+                            Loaded your stored veteran roster for viewer ID {accountVeteranMeta.viewerId}. Snapshot contains {accountVeteranMeta.veteranCount} veterans and was last updated on {new Date(accountVeteranMeta.updatedAt).toLocaleString()}.
+                        </Alert>
+                    ) : null}
                     <div className="vet-top-layout">
                         <div className="vet-top-left">
                             <section className="vet-panel-card vet-panel-card--filters">

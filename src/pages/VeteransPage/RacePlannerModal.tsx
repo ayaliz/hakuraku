@@ -349,7 +349,7 @@ const RacePlannerModal: React.FC<Props> = ({ show, onHide, mainCharId, parent1, 
     return (
         <Modal show={show} onHide={onHide} size="xl" scrollable>
             <Modal.Header closeButton>
-                <div className="planner-toolbar" style={{ marginBottom: 0 }}>
+                <div className="planner-toolbar mb-0">
                     <Form.Check
                         type="switch"
                         id="lock-career-races"

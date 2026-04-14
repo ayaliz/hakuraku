@@ -3,6 +3,7 @@ import React from "react";
 import { PerformanceMetrics } from "./types";
 import { getCharaIcon } from "./utils";
 import { STRATEGY_COLORS, STRATEGY_NAMES } from "./constants";
+import './PerformancePanel.css';
 
 interface PerformancePanelProps {
     items: PerformanceMetrics[];
@@ -49,15 +50,16 @@ const PerformancePanel: React.FC<PerformancePanelProps> = ({
     if (overperformers.length === 0 && underperformers.length === 0) return null;
 
     const renderValue = (item: PerformanceMetrics, isPositive: boolean) => {
+        const valueColor = isPositive ? "#68d391" : "#fc8181";
         if (displayMode === "winRatePop") {
             return (
-                <span style={{ marginLeft: "4px", fontWeight: "bold", color: isPositive ? "#68d391" : "#fc8181" }}>
-                    {item.actualWinRate.toFixed(0)}% <span style={{ fontSize: "0.9em", opacity: 0.8 }}>({item.popCount})</span>
+                <span className="pp-value" style={{ color: valueColor }}>
+                    {item.actualWinRate.toFixed(0)}% <span className="pp-pop-count">({item.popCount})</span>
                 </span>
             );
         }
         return (
-            <span style={{ marginLeft: "4px", fontWeight: "bold", color: isPositive ? "#68d391" : "#fc8181" }}>
+            <span className="pp-value" style={{ color: valueColor }}>
                 x{item.impact.toFixed(2)}
             </span>
         );
@@ -73,12 +75,12 @@ const PerformancePanel: React.FC<PerformancePanelProps> = ({
             <div
                 key={item.id}
                 title={`${item.fullLabel || item.label}\n${item.winCount} wins / ${item.popCount} entries\nWin Rate: ${item.actualWinRate.toFixed(1)}%\nWin Share: ${item.winPct.toFixed(1)}%\nPop Share: ${item.popPct.toFixed(1)}%`}
-                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", marginBottom: "8px", cursor: "help" }}
+                className="pp-item-row"
             >
-                <div style={{ display: "flex", alignItems: "center", overflow: "hidden", maxWidth: columns === 2 ? "180px" : "180px" }}>
+                <div className="pp-item-inner">
                     {showIcons && iconUrl && item.strategyId && STRATEGY_COLORS[item.strategyId] ? (
                         <div
-                            style={{ position: "relative", width: "40px", height: "40px", flexShrink: 0, marginRight: "10px" }}
+                            className="pp-icon-wrap"
                             title={STRATEGY_NAMES[item.strategyId]}
                         >
                             <div
@@ -97,34 +99,19 @@ const PerformancePanel: React.FC<PerformancePanelProps> = ({
                             <img
                                 src={iconUrl}
                                 alt={item.label}
-                                style={{
-                                    position: "absolute",
-                                    top: 0,
-                                    left: 0,
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "cover",
-                                    borderRadius: "50%"
-                                }}
+                                className="pp-icon-img"
                             />
                         </div>
                     ) : (
                         item.strategyId && STRATEGY_COLORS[item.strategyId] && (
                             <span
-                                style={{
-                                    display: "inline-block",
-                                    width: "8px",
-                                    height: "8px",
-                                    borderRadius: "50%",
-                                    backgroundColor: STRATEGY_COLORS[item.strategyId],
-                                    marginRight: "4px",
-                                    flexShrink: 0,
-                                }}
+                                className="pp-strategy-dot"
+                                style={{ backgroundColor: STRATEGY_COLORS[item.strategyId] }}
                                 title={STRATEGY_NAMES[item.strategyId]}
                             />
                         )
                     )}
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: isPositive ? "#68d391" : "#fc8181" }}>
+                    <span className="pp-item-label" style={{ color: isPositive ? "#68d391" : "#fc8181" }}>
                         {item.label}
                     </span>
                 </div>
@@ -145,21 +132,16 @@ const PerformancePanel: React.FC<PerformancePanelProps> = ({
 
     return (
         <div className="performance-panel" style={containerStyle}>
-            <div style={{ fontSize: "13px", fontWeight: "bold", color: "#a0aec0", marginBottom: "8px", borderBottom: "1px solid #4a5568", paddingBottom: "4px", display: "flex", alignItems: "center", gap: "6px" }}>
+            <div className="pp-header">
                 {title}
                 {headerNote && (
-                    <span
-                        title={headerNote}
-                        style={{ fontSize: "10px", color: "#718096", border: "1px solid #718096", borderRadius: "50%", width: "14px", height: "14px", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "help", flexShrink: 0, lineHeight: 1 }}
-                    >
-                        i
-                    </span>
+                    <span title={headerNote} className="pp-hint-badge">i</span>
                 )}
             </div>
 
             {overperformers.length > 0 && (
-                <div style={{ marginBottom: "12px" }}>
-                    <div style={{ fontSize: "11px", color: "#68d391", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Overperformers</div>
+                <div className="pp-section">
+                    <div className="pp-section-label pp-section-label--over">Overperformers</div>
                     <div style={gridStyle}>
                         {overperformers.map(item => renderItem(item, true))}
                     </div>
@@ -168,7 +150,7 @@ const PerformancePanel: React.FC<PerformancePanelProps> = ({
 
             {underperformers.length > 0 && (
                 <div>
-                    <div style={{ fontSize: "11px", color: "#fc8181", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Underperformers</div>
+                    <div className="pp-section-label pp-section-label--under">Underperformers</div>
                     <div style={gridStyle}>
                         {underperformers.map(item => renderItem(item, false))}
                     </div>

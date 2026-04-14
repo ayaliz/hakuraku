@@ -53,7 +53,7 @@ const RaceUploadZone: React.FC<RaceUploadZoneProps> = ({ onFilesSelected, isProc
                 type="file"
                 accept=".json,application/json"
                 multiple
-                style={{ display: "none" }}
+                className="ruz-file-input"
                 onChange={handleFileChange}
             />
             <div
@@ -66,7 +66,7 @@ const RaceUploadZone: React.FC<RaceUploadZoneProps> = ({ onFilesSelected, isProc
                 {isProcessing ? (
                     <>
                         <Spinner animation="border" variant="primary" />
-                        <div className="upload-label" style={{ marginTop: "15px" }}>
+                        <div className="upload-label upload-label--processing">
                             Processing files...
                         </div>
                     </>

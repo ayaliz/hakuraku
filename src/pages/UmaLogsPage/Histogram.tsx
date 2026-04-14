@@ -1,8 +1,10 @@
 import React, { useMemo } from "react";
+import type { HistogramData } from "./panelData";
 import "./UmaLogsPage.css";
 
 interface HistogramProps {
-    values: number[];
+    values?: number[];
+    data?: HistogramData | null;
     title: string;
     formatX: (v: number) => string;
     xAxisLabel: string;
@@ -26,7 +28,8 @@ const PLOT_W = VIEW_W - PAD.left - PAD.right;
 const PLOT_H = VIEW_H - PAD.top - PAD.bottom;
 
 const Histogram: React.FC<HistogramProps> = ({
-    values,
+    values = [],
+    data,
     title,
     formatX,
     xAxisLabel,
@@ -35,6 +38,14 @@ const Histogram: React.FC<HistogramProps> = ({
     headerRight,
 }) => {
     const { bins, step, mean, median } = useMemo(() => {
+        if (data) {
+            return {
+                bins: data.bins,
+                step: data.step,
+                mean: data.mean,
+                median: data.median,
+            };
+        }
         if (values.length === 0) return { bins: [], step: 1, mean: 0, median: 0 };
 
         const sorted = [...values].sort((a, b) => a - b);
@@ -62,7 +73,7 @@ const Histogram: React.FC<HistogramProps> = ({
                 : sorted[mid];
 
         return { bins, step, mean, median };
-    }, [values]);
+    }, [data, values]);
 
     if (bins.length === 0) return null;
 

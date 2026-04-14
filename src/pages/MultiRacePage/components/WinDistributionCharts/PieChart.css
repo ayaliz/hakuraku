@@ -1,0 +1,13 @@
+.pie-slice {
+    transition: opacity 0.2s;
+    cursor: pointer;
+}
+
+.pie-label {
+    pointer-events: none;
+    text-shadow: 0px 0px 3px rgba(0, 0, 0, 0.8);
+}
+
+.pie-icon-group {
+    pointer-events: none;
+}

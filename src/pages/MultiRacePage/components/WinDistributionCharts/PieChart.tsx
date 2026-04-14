@@ -2,6 +2,7 @@ import React from "react";
 import { PieSlice, StrategyPieSlice } from "./types";
 import { getCharaIcon } from "./utils";
 import { STRATEGY_COLORS } from "./constants";
+import './PieChart.css';
 
 interface PieChartProps {
     slices: PieSlice[];
@@ -100,7 +101,7 @@ const PieChart: React.FC<PieChartProps> = ({ slices, size, unit, chartId, onClic
                             fill={slice.color}
                             stroke="#1a1a2e"
                             strokeWidth="2"
-                            style={{ transition: "opacity 0.2s", cursor: "pointer" }}
+                            className="pie-slice"
                         >
                             <title>{tooltipText}</title>
                         </path>
@@ -113,13 +114,13 @@ const PieChart: React.FC<PieChartProps> = ({ slices, size, unit, chartId, onClic
                                 fill="#fff"
                                 fontSize="11px"
                                 fontWeight="bold"
-                                style={{ pointerEvents: "none", textShadow: "0px 0px 3px rgba(0,0,0,0.8)" }}
+                                className="pie-label"
                             >
                                 {Math.round(slice.percentage)}%
                             </text>
                         )}
                         {iconUrl && (
-                            <g style={{ pointerEvents: "none" }}>
+                            <g className="pie-icon-group">
                                 <defs>
                                     <clipPath id={clipId}>
                                         <circle cx={iconX} cy={iconY} r={iconSize / 2} />

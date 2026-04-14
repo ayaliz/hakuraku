@@ -1,0 +1,15 @@
+.rdp-root {
+    padding-top: 20px;
+}
+
+.rdp-file-input {
+    display: none;
+}
+
+.rdp-share-error {
+    font-size: 0.85rem;
+}
+
+.rdp-error {
+    margin-bottom: 12px;
+}

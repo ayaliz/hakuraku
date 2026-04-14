@@ -133,7 +133,7 @@ const AffinityCalculatorPanel: React.FC<Props> = ({
                         <span className="aff-breakdown-item total">Total: <strong>+{total}</strong></span>
                     </div>
                 ) : (
-                    <div style={{ width: '83px' }} />
+                    <div className="vet-aff-spacer" />
                 )}
                 {renderMainSlot()}
                 {renderLegacySlot('p1')}

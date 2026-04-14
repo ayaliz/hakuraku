@@ -1,0 +1,129 @@
+.auth-shell {
+    max-width: 960px;
+    margin: 36px auto;
+}
+
+.auth-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+    gap: 20px;
+}
+
+.auth-panel {
+    background: rgba(17, 24, 39, 0.78);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.22);
+}
+
+.auth-panel h1,
+.auth-panel h2 {
+    margin-bottom: 14px;
+}
+
+.auth-panel p:last-child {
+    margin-bottom: 0;
+}
+
+.auth-form-toggle {
+    display: inline-flex;
+    gap: 8px;
+    padding: 6px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    margin-bottom: 18px;
+}
+
+.auth-form-toggle button {
+    border: 0;
+    border-radius: 999px;
+    padding: 8px 14px;
+    background: transparent;
+    color: #cbd5e1;
+    font-weight: 700;
+}
+
+.auth-form-toggle button.is-active {
+    background: rgba(59, 130, 246, 0.22);
+    color: #e0f2fe;
+}
+
+.auth-help-list {
+    margin: 0;
+    padding-left: 18px;
+    color: #cbd5e1;
+    line-height: 1.7;
+}
+
+.auth-summary-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.auth-summary-row:last-child {
+    border-bottom: 0;
+}
+
+.auth-summary-label {
+    color: #94a3b8;
+    font-size: 0.92rem;
+}
+
+.auth-summary-value {
+    color: #f8fafc;
+    font-weight: 700;
+    text-align: right;
+}
+
+.auth-result-panel {
+    border-top: 1px solid rgba(148, 163, 184, 0.14);
+    padding-top: 16px;
+}
+
+.auth-code-panel {
+    margin-top: 18px;
+    padding: 16px;
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.68);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.auth-mono-value {
+    font-family: "JetBrains Mono", "Fira Code", monospace;
+    font-size: 0.92rem;
+}
+
+.auth-inline-note {
+    color: #cbd5e1;
+    line-height: 1.6;
+}
+
+.auth-instruction-list {
+    margin-bottom: 0;
+}
+
+.auth-comment-block {
+    margin-top: 16px;
+}
+
+.auth-comment-text {
+    white-space: pre-wrap;
+    line-height: 1.6;
+    color: #e2e8f0;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    border-radius: 12px;
+    padding: 14px 16px;
+}
+
+@media (max-width: 900px) {
+    .auth-grid {
+        grid-template-columns: 1fr;
+    }
+}

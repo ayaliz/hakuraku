@@ -1,12 +1,21 @@
 import { useEffect, useRef, useState } from "react";
+import "./RaceDataPage.css";
 import { Alert, Button } from "react-bootstrap";
-import { Link } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import RaceDataPresenter from "../components/RaceDataPresenter";
 import { RaceSimulateData } from "../data/race_data_pb";
 import { deserializeFromBase64 } from "../data/RaceDataParser";
+import { hydrateCompactRaceHorseData } from "../data/TrainedCharaData";
 import ShareLinkBox from "../components/ShareLinkBox";
+import type { ShareCreateResponse } from "../auth/authShared";
+import { normalizeSeasonValue } from "../utils/season";
+import { getCourseAptitudeFilters } from "./MultiRacePage/utils";
+import { buildReplayPresenterInput, type ReplayPayloadResponse } from "./UmaLogsPage/replaysShared";
 
 const RaceDataPresenterAny = RaceDataPresenter as any;
+const HORSEACT_RELEASE_URL = "https://github.com/ayaliz/horseACT/releases/latest";
+const HORSEACT_SETUP_URL = "https://github.com/ayaliz/horseACT#installation";
+const CURRENT_HORSEACT_VERSION = "1.1.0";
 
 type ShareCache = Record<string, string>;
 type TrackDetails = { condition?: string, weather?: string, season?: string };
@@ -30,6 +39,8 @@ const hashPayload = async (payload: string): Promise<string> => {
 };
 
 export default function RaceDataPage() {
+    const location = useLocation();
+    const { raceUid } = useParams<{ raceUid?: string }>();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [parsedHorseInfo, setParsedHorseInfo] = useState<any[] | undefined>(undefined);
@@ -40,7 +51,7 @@ export default function RaceDataPage() {
     const [detectedCourseId, setDetectedCourseId] = useState<number | undefined>(undefined);
     const [shareStatus, setShareStatus] = useState<'' | 'sharing' | 'shared'>('');
     const [shareError, setShareError] = useState('');
-    const [shareKey, setShareKey] = useState('');
+    const [shareUrl, setShareUrl] = useState('');
     const [shareCache, setShareCache] = useState<ShareCache>({});
     const [horseActVersion, setHorseActVersion] = useState<string | undefined>(undefined);
     const [isShared, setIsShared] = useState(false);
@@ -48,12 +59,15 @@ export default function RaceDataPage() {
     const [trackDetails, setTrackDetails] = useState<TrackDetails | undefined>(undefined);
     const [laneDistanceMax, setLaneDistanceMax] = useState<number | undefined>(undefined);
     const [dragOver, setDragOver] = useState(false);
+    const [routeReplayLoading, setRouteReplayLoading] = useState(false);
+    const isArchiveReplayRoute = Boolean(raceUid);
 
     useEffect(() => {
-        const params = new URLSearchParams(window.location.hash.split('?')[1]);
+        if (raceUid) return;
+        const params = new URLSearchParams(location.search);
         const kvKey = params.get('kv');
         if (kvKey) {
-            fetch(`https://cors-proxy.ayaliz.workers.dev/share/${kvKey}`)
+            fetch(`/api/share/${encodeURIComponent(kvKey)}`)
                 .then(res => {
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
                     return res.json();
@@ -64,7 +78,42 @@ export default function RaceDataPage() {
                     setError(`Failed to load shared data: ${err.message}`);
                 });
         }
-    }, []);
+    }, [location.search, raceUid]);
+
+    useEffect(() => {
+        if (!raceUid) return;
+        const controller = new AbortController();
+        setRouteReplayLoading(true);
+        setError("");
+        setParsedHorseInfo(undefined);
+        setParsedRaceData(undefined);
+        setRawHorseInfo(undefined);
+        setRawScenario("");
+        fetch(`/api/races/${encodeURIComponent(raceUid)}/replay`, { signal: controller.signal })
+            .then(async (response) => {
+                if (!response.ok) throw new Error(await response.text() || `HTTP ${response.status}`);
+                return response.json() as Promise<ReplayPayloadResponse>;
+            })
+            .then((payload) => {
+                const presenterInput = buildReplayPresenterInput(payload);
+                finalizeParsing(
+                    presenterInput.raceHorseInfo,
+                    presenterInput.raceScenario,
+                    presenterInput.detectedCourseId,
+                    payload.replay.horseACTVersion,
+                    presenterInput.raceType,
+                    presenterInput.trackDetails,
+                    presenterInput.laneDistanceMax,
+                );
+                setRouteReplayLoading(false);
+            })
+            .catch((err: any) => {
+                if (err?.name === "AbortError") return;
+                setError(`Failed to load replay: ${err.message}`);
+                setRouteReplayLoading(false);
+            });
+        return () => controller.abort();
+    }, [raceUid]);
 
     function loadSharedData(data: { raceHorseInfo: string, raceScenario: string, detectedCourseId?: number, laneDistanceMax?: number, raceType?: string, trackDetails?: TrackDetails }) {
         try {
@@ -80,7 +129,10 @@ export default function RaceDataPage() {
             setError('');
             setIsShared(true);
             setRaceType(data.raceType);
-            setTrackDetails(data.trackDetails);
+            setTrackDetails(data.trackDetails ? {
+                ...data.trackDetails,
+                season: normalizeSeasonValue(data.trackDetails.season)?.toString(),
+            } : undefined);
             setLaneDistanceMax(data.laneDistanceMax);
         } catch (err: any) {
             setError(`Failed to parse shared data: ${err.message}`);
@@ -98,11 +150,14 @@ export default function RaceDataPage() {
         setError('');
         setShareStatus('');
         setShareError('');
-        setShareKey('');
+        setShareUrl('');
         setHorseActVersion(actVersion);
         setIsShared(false);
         setRaceType(type);
-        setTrackDetails(tDetails);
+        setTrackDetails(tDetails ? {
+            ...tDetails,
+            season: normalizeSeasonValue(tDetails.season)?.toString(),
+        } : undefined);
         setLaneDistanceMax(laneDistanceMaxValue);
     }
 
@@ -135,7 +190,7 @@ export default function RaceDataPage() {
         const type = json['<RaceType>k__BackingField'];
         const condition = json['<GroundCondition>k__BackingField'];
         const weather = json['<Weather>k__BackingField'];
-        const season = json['<Season>k__BackingField'];
+        const season = normalizeSeasonValue(json['<Season>k__BackingField'])?.toString();
         const tDetails = { condition, weather, season };
 
         const horseInfo = raceHorseArray
@@ -197,11 +252,11 @@ export default function RaceDataPage() {
             const rawHorses = json['race_horse_data_array'];
             const trainedCharas = json['trained_chara_array'] || [];
             const actVersion = json['horseACT_version'];
-            const type = json['race_type'] || json['RaceType'];
-            const condition = json['ground_condition'] || json['GroundCondition'];
-            const weather = json['weather'] || json['Weather'];
-            const season = json['season'] || json['Season'];
-            const tDetails = { condition, weather, season };
+            const type = json['race_type'] ?? json['RaceType'];
+            const condition = json['ground_condition'] ?? json['GroundCondition'];
+            const weather = json['weather'] ?? json['Weather'];
+        const season = normalizeSeasonValue(json['season'] ?? json['Season'])?.toString();
+        const tDetails = { condition, weather, season };
 
             let courseId: number | undefined;
             let laneDistanceMaxValue: number | undefined;
@@ -214,6 +269,7 @@ export default function RaceDataPage() {
                 laneDistanceMaxValue = json['lane_distance_max'] ?? json.LaneDistanceMax;
             }
 
+            const courseAptitudeFilters = getCourseAptitudeFilters(courseId);
             const horseInfo = rawHorses.map((horseData: any, index: number) => {
                 if (!horseData) return null;
                 const trainedChara = trainedCharas[index];
@@ -222,10 +278,10 @@ export default function RaceDataPage() {
                 let parents: { positionId: number, cardId: number, rank: number, factors: { id: number, level: number }[] }[] = [];
 
                 if (trainedChara) {
-                    const supportCards = trainedChara['support_card_array'] || trainedChara['SupportCardArray'];
+                    const supportCards = trainedChara['support_card_array'] || trainedChara['support_card_list'] || trainedChara['SupportCardArray'];
                     if (Array.isArray(supportCards)) {
-                        deck = supportCards.map((card: any) => ({
-                            position: card['position'] ?? card['Position'],
+                        deck = supportCards.map((card: any, cardIndex: number) => ({
+                            position: card['position'] ?? card['Position'] ?? (cardIndex + 1),
                             id: card['support_card_id'] ?? card['SupportCardId'],
                             lb: card['limit_break_count'] ?? card['LimitBreakCount'],
                             exp: card['exp'] ?? card['Exp']
@@ -256,7 +312,7 @@ export default function RaceDataPage() {
                     }
                 }
 
-                return { ...horseData, deck, parents };
+                return { ...hydrateCompactRaceHorseData(horseData, { courseAptitudeFilters }), deck, parents };
             }).filter((h: any) => h !== null);
 
             finalizeParsing(horseInfo, json['race_scenario'], courseId, actVersion, type, tDetails, laneDistanceMaxValue);
@@ -306,6 +362,14 @@ export default function RaceDataPage() {
     const share = async (anonymous: boolean) => {
         if (!rawScenario) { alert('No race data loaded.'); return; }
 
+        if (isArchiveReplayRoute) {
+            const canonicalUrl = `${window.location.origin}${location.pathname}`;
+            setShareStatus('shared');
+            setShareError('');
+            setShareUrl(canonicalUrl);
+            return;
+        }
+
         let content: string | null;
         if (anonymous) {
             if (!rawHorseInfo) { alert('Failed to anonymize horse data.'); return; }
@@ -316,7 +380,7 @@ export default function RaceDataPage() {
                     const copy = { ...horse };
                     copy.viewer_id = 0;
                     if (copy.trainer_name) {
-                        if (!nameMap.has(copy.trainer_name)) nameMap.set(copy.trainer_name, `Anon${anonCounter++}`);
+                        if (!nameMap.has(copy.trainer_name)) nameMap.set(copy.trainer_name, `Team ${anonCounter++}`);
                         copy.trainer_name = nameMap.get(copy.trainer_name);
                     }
                     return copy;
@@ -339,46 +403,66 @@ export default function RaceDataPage() {
         }
 
         const hash = await hashPayload(content);
-        const cachedKey = shareCache[hash];
-        if (cachedKey) { setShareStatus('shared'); setShareError(''); setShareKey(cachedKey); return; }
+        const cachedUrl = shareCache[hash];
+        if (cachedUrl) { setShareStatus('shared'); setShareError(''); setShareUrl(cachedUrl); return; }
 
         setShareStatus('sharing');
         setShareError('');
         try {
-            const res = await fetch('https://cors-proxy.ayaliz.workers.dev/share', {
+            const parsedPayload = JSON.parse(content);
+            const res = await fetch('/api/share', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Share-Secret': import.meta.env.VITE_SHARE_SECRET ?? '' },
-                body: content,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    shareType: 'race-upload',
+                    anonymous,
+                    payload: parsedPayload,
+                }),
             });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const { key } = await res.json();
+            const { url } = await res.json() as ShareCreateResponse;
             setShareStatus('shared');
-            setShareKey(key);
-            setShareCache(prev => ({ ...prev, [hash]: key }));
+            setShareUrl(url);
+            setShareCache(prev => ({ ...prev, [hash]: url }));
         } catch (err: any) {
             setShareStatus('');
             setShareError(err.message);
         }
     };
 
-    const shareUrl = `${window.location.origin}${window.location.pathname}#/racedata?kv=${shareKey}`;
-
     const isHorseActOutdated = (ver: string | undefined) => {
         if (!ver) return true;
-        const [ma, mi, pa] = ver.split('.').map(Number);
-        return ma < 1 || (ma === 1 && mi < 0) || (ma === 1 && mi === 0 && pa < 2);
+        const parseVersion = (value: string) =>
+            value.split('.').map(part => Number.parseInt(part, 10) || 0);
+        const current = parseVersion(CURRENT_HORSEACT_VERSION);
+        const actual = parseVersion(ver);
+        const length = Math.max(current.length, actual.length);
+        for (let index = 0; index < length; index += 1) {
+            const actualPart = actual[index] ?? 0;
+            const currentPart = current[index] ?? 0;
+            if (actualPart !== currentPart) {
+                return actualPart < currentPart;
+            }
+        }
+        return false;
     };
 
-    return <div style={{ paddingTop: 20 }}>
+    return <div className="rdp-root">
         <input
             ref={fileInputRef}
             type="file"
             accept=".json,application/json"
-            style={{ display: 'none' }}
+            className="rdp-file-input"
             onChange={handleFileChange}
         />
 
-        {!parsedRaceData ? (
+        {routeReplayLoading ? (
+            <div className="p-4 text-center">
+                <Button variant="secondary" size="sm" disabled>
+                    Loading replay...
+                </Button>
+            </div>
+        ) : !parsedRaceData ? (
             <div
                 className={`upload-zone${dragOver ? ' drag-over' : ''}`}
                 onClick={() => fileInputRef.current?.click()}
@@ -397,20 +481,22 @@ export default function RaceDataPage() {
                 <Button variant="secondary" size="sm" onClick={() => share(false)} disabled={shareStatus === 'sharing'}>
                     {shareStatus === 'sharing' ? 'Sharing...' : 'Share'}
                 </Button>
-                <Button variant="secondary" size="sm" onClick={() => share(true)} disabled={shareStatus === 'sharing'}>
-                    Share (anonymous)
-                </Button>
+                {!isArchiveReplayRoute ? (
+                    <Button variant="secondary" size="sm" onClick={() => share(true)} disabled={shareStatus === 'sharing'}>
+                        Share (anonymous)
+                    </Button>
+                ) : null}
                 {shareStatus === 'shared' && <ShareLinkBox shareUrl={shareUrl} />}
-                {shareError && <span className="text-danger" style={{ fontSize: '0.85rem' }}>{shareError}</span>}
+                {shareError && <span className="text-danger rdp-share-error">{shareError}</span>}
             </div>
         )}
 
-        {error && <div className="text-danger" style={{ marginBottom: '12px' }}>{error}</div>}
+        {error && <div className="text-danger rdp-error">{error}</div>}
 
         {parsedRaceData && parsedHorseInfo ? (
             <>
-                {(!isShared && isHorseActOutdated(horseActVersion)) && <Alert variant="info">
-                    The version of horseACT used to generate this file appears to be outdated. A newer version is available at <a href="https://github.com/ayaliz/horseACT/releases/latest" target="_blank" rel="noreferrer">https://github.com/ayaliz/horseACT/releases/latest</a>. It's recommended to update by replacing your existing horseACT.dll.
+                {(!isArchiveReplayRoute && !isShared && isHorseActOutdated(horseActVersion)) && <Alert variant="info">
+                    The version of horseACT used to generate this file appears to be outdated. The current release is {CURRENT_HORSEACT_VERSION}, available at <a href={HORSEACT_RELEASE_URL} target="_blank" rel="noreferrer">{HORSEACT_RELEASE_URL}</a>. It's recommended to update by replacing your existing horseACT.dll.
                 </Alert>}
                 <RaceDataPresenterAny
                     raceHorseInfo={parsedHorseInfo}
@@ -422,7 +508,7 @@ export default function RaceDataPage() {
             </>
         ) : (
             <Alert variant="info">
-                Visit the <Link to="/setup">setup page</Link> if you don't know how to get your race data.
+                Visit the <a href={HORSEACT_SETUP_URL} target="_blank" rel="noreferrer">horseACT setup guide</a> if you don't know how to get your race data.
             </Alert>
         )}
     </div>;

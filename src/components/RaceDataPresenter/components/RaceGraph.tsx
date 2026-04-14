@@ -1,4 +1,5 @@
 import React from "react";
+import './RaceGraph.css';
 import EChartsReactCore from "echarts-for-react/lib/core";
 import { LineChart, LineSeriesOption } from "echarts/charts";
 import {
@@ -349,10 +350,10 @@ const RaceGraph: React.FC<RaceGraphProps> = ({
     };
 
     return <div>
-        <EChartsReactCore echarts={echarts} option={options} style={{ height: '700px' }} theme="dark" />
-        <details style={{ marginTop: '12px' }}>
+        <EChartsReactCore echarts={echarts} option={options} className="race-graph-chart" theme="dark" />
+        <details className="race-graph-debug">
             <summary>Non-Skill Race Events ({nonSkillEventsForHorse.length})</summary>
-            <div style={{ marginTop: '8px', overflowX: 'auto' }}>
+            <div className="race-graph-debug-content">
                 <table className="table table-sm table-dark mb-0">
                     <thead>
                         <tr>

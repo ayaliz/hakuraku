@@ -1,0 +1,110 @@
+/* ── SQL Explorer tab ──────────────────────────────────────────────────────── */
+
+.mdb-tables-col {
+    max-height: 70vh;
+    overflow-y: auto;
+    border-right: 1px solid #444;
+}
+
+.mdb-tables-header {
+    gap: 6px;
+}
+
+.mdb-table-search {
+    flex: 1;
+}
+
+.mdb-table-item {
+    cursor: pointer;
+    padding: 2px 4px;
+    font-size: 0.85rem;
+}
+
+.mdb-editor {
+    font-family: monospace;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.mdb-filter-input {
+    width: 180px;
+    vertical-align: middle;
+}
+
+.mdb-results-scroll {
+    max-height: 55vh;
+    overflow-y: auto;
+    overflow-x: auto;
+    margin-top: 1rem;
+}
+
+.mdb-results-table {
+    font-size: 0.8rem;
+}
+
+.mdb-col-header {
+    cursor: pointer;
+}
+
+.mdb-crossref-box {
+    border: 1px solid #555;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.mdb-crossref-badge {
+    cursor: pointer;
+}
+
+/* ── Version history tab ───────────────────────────────────────────────────── */
+
+.mdb-version-entry {
+    border: 1px solid #444;
+    border-radius: 4px;
+}
+
+.mdb-version-hash {
+    font-size: 0.85rem;
+}
+
+.mdb-diff-header {
+    cursor: pointer;
+    background-color: #2a2a2a;
+}
+
+.mdb-diff-table-wrap {
+    overflow-x: auto;
+}
+
+.mdb-diff-table {
+    font-size: 0.78rem;
+}
+
+.mdb-diff-change-col {
+    width: 60px;
+}
+
+.mdb-diff-row--added {
+    background-color: rgba(40, 167, 69, 0.2);
+}
+
+.mdb-diff-row--removed {
+    background-color: rgba(220, 53, 69, 0.2);
+}
+
+.mdb-diff-row--modified {
+    background-color: rgba(255, 193, 7, 0.15);
+}
+
+.mdb-diff-cell--unchanged {
+    color: #777;
+}
+
+.mdb-diff-val--before {
+    color: #ff6b6b;
+    text-decoration: line-through;
+}
+
+.mdb-diff-val--after {
+    color: #69db7c;
+}

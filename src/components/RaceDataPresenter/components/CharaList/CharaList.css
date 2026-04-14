@@ -316,11 +316,17 @@
     align-items: center;
 }
 
+.dashboard-panel-header--footer {
+    margin-top: auto;
+    padding-top: 16px;
+}
+
 /* Skills list styling */
 .skills-list {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    cursor: pointer;
 }
 
 .skill-item {
@@ -769,4 +775,24 @@
 
 .late-heal-warning-text {
     color: #e5e7eb;
+}
+
+/* ── CharaCard ─────────────────────────────────────────────────────────────── */
+
+.cc-factor-level {
+    color: #9ca3af;
+}
+
+.cc-expand-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+    padding: 0 4px;
+    font-size: 0.75rem;
+}
+
+.panel-skills .dashboard-panel-header {
+    cursor: pointer;
+    gap: 6px;
 }

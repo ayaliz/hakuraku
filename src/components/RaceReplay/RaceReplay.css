@@ -278,3 +278,186 @@
     stroke: rgba(0, 0, 0, 0.45);
     stroke-width: 1.5;
 }
+
+/* Toolbar layout sections */
+.rr-toolbar-left {
+    flex: 0 1 auto;
+}
+
+.rr-toolbar-mid {
+    flex: 1 1 350px;
+    margin-top: 4px;
+}
+
+.rr-toolbar-right {
+    flex: 0 1 auto;
+}
+
+/* Track selector */
+.rr-track-label {
+    font-weight: 600;
+}
+
+.rr-track-select {
+    width: auto;
+    max-width: 240px;
+}
+
+.rr-track-status {
+    font-size: 0.85em;
+    min-height: 18px;
+    margin-top: 2px;
+}
+
+.rr-status-good {
+    color: #28a745;
+}
+
+.rr-status-warn {
+    color: darkorange;
+}
+
+/* View window controls */
+.rr-window-label {
+    white-space: nowrap;
+    font-weight: 600;
+    font-size: 0.95em;
+}
+
+.rr-window-input {
+    width: 65px;
+    margin-left: 8px;
+    margin-right: 4px;
+}
+
+.rr-unit-label {
+    color: #aaa;
+    font-size: 0.9em;
+}
+
+.rr-track-icons {
+    gap: 8px;
+}
+
+/* Toggles grid */
+.rr-toggles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px 12px;
+}
+
+.rr-toggle-label {
+    font-size: 0.85em;
+    white-space: nowrap;
+}
+
+/* Legend row */
+.rr-legend-row {
+    gap: 10px;
+    font-size: 0.85em;
+}
+
+/* Frame display */
+.rr-frame-display {
+    font-size: 0.95em;
+    color: #ccc;
+    white-space: nowrap;
+}
+
+/* Chart container */
+.rr-chart-container {
+    position: relative;
+    height: 500px;
+}
+
+.rr-chart {
+    height: 500px;
+    width: 100%;
+}
+
+.rr-chart-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.rr-mobile-fullscreen-row {
+    display: none;
+    margin: 8px 0 6px;
+}
+
+.rr-fullscreen-target {
+    position: relative;
+}
+
+.rr-fullscreen-target.rr-fullscreen-target--fullscreen {
+    background: #0f1114;
+    padding: 8px;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.rr-fullscreen-target.rr-fullscreen-target--fullscreen .rr-chart-container,
+.rr-fullscreen-target.rr-fullscreen-target--fullscreen .rr-chart {
+    height: calc(100dvh - 96px) !important;
+    min-height: 280px;
+    flex: 1 1 auto;
+}
+
+.rr-fullscreen-target.rr-fullscreen-target--fullscreen .rr-playback-row {
+    margin-top: 0 !important;
+}
+
+.rr-fullscreen-exit {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 20;
+}
+
+/* ClipMaker flex groups */
+.clip-maker-group {
+    gap: 12px;
+}
+
+.clip-maker-inner {
+    gap: 6px;
+}
+
+.clip-maker-input-time {
+    width: 75px;
+}
+
+.clip-maker-input-speed {
+    width: 60px;
+}
+
+.clip-maker-input-fps {
+    width: auto;
+}
+
+/* InfoHover popover */
+.replay-info-popover {
+    max-width: 48ch;
+}
+
+.replay-info-title {
+    color: #f87171;
+}
+
+/* LegendItem label */
+.legend-item-label {
+    font-size: 12px;
+}
+
+@media (max-width: 768px) {
+    .rr-mobile-fullscreen-row {
+        display: flex;
+        justify-content: flex-end;
+    }
+}

@@ -24,14 +24,16 @@ interface SupportCardRow {
 }
 
 interface SupportCardPanelProps {
-    horses: HorseEntry[];
+    horses?: HorseEntry[];
+    rows?: SupportCardRow[];
 }
 
-const SupportCardPanel: React.FC<SupportCardPanelProps> = ({ horses }) => {
+const SupportCardPanel: React.FC<SupportCardPanelProps> = ({ horses = [], rows: providedRows }) => {
     const [sortMode, setSortMode] = useState<"pop" | "winRate">("pop");
     const [minPopPct, setMinPopPct] = useState<0 | 0.5 | 1 | 2>(0.5);
 
     const rows = useMemo((): SupportCardRow[] => {
+        if (providedRows) return providedRows;
         if (horses.length === 0) return [];
 
         // Bayesian prior from raw per-match data
@@ -81,7 +83,7 @@ const SupportCardPanel: React.FC<SupportCardPanelProps> = ({ horses }) => {
                 adjWinRate: (wins + BAYES_UMA.K * priorMean) / (apps + BAYES_UMA.K),
             };
         });
-    }, [horses]);
+    }, [horses, providedRows]);
 
     const effectiveMinPopPct = sortMode === "pop" ? 0 : minPopPct;
     const filteredRows = useMemo(
@@ -148,7 +150,7 @@ const SupportCardPanel: React.FC<SupportCardPanelProps> = ({ horses }) => {
                                 <div className="sa-sb-track sa-sb-track--pick">
                                     <div className="sa-sb-bar-fill sa-sb-bar-fill--pick" style={{ width: `${(row.popPct / maxPct) * 100}%` }} />
                                 </div>
-                                <div className="sa-sb-value sa-sb-value--pick" style={{ width: "auto", minWidth: "72px" }}>
+                                <div className="sa-sb-value sa-sb-value--pick">
                                     {row.popPct.toFixed(1)}% <span className="ca-abs-count">({row.appearances})</span>
                                 </div>
                             </div>
@@ -157,7 +159,7 @@ const SupportCardPanel: React.FC<SupportCardPanelProps> = ({ horses }) => {
                                 <div className="sa-sb-track sa-sb-track--win">
                                     <div className="sa-sb-bar-fill" style={{ width: `${(row.adjWinRate * 100 / maxPct) * 100}%`, background: "#68d391" }} />
                                 </div>
-                                <div className="sa-sb-value sa-sb-value--win" style={{ width: "auto", minWidth: "72px" }}>
+                                <div className="sa-sb-value sa-sb-value--win">
                                     {(row.adjWinRate * 100).toFixed(1)}%
                                 </div>
                             </div>

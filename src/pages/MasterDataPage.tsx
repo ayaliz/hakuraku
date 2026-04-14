@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import './MasterDataPage.css';
 import { Alert, Button, ButtonGroup, Col, Container, Dropdown, Row, Spinner, Tab, Tabs } from 'react-bootstrap';
 import pako from 'pako';
 import initSqlJs, { Database, QueryExecResult } from 'sql.js';
@@ -194,9 +195,9 @@ function SqlBrowserTab() {
     };
 
     const copyShareLink = () => {
-        const base = window.location.href.split('#')[0];
+        const base = `${window.location.origin}/masterdata`;
         const qs = new URLSearchParams({ q: sql, ...(filterText ? { filter: filterText } : {}) });
-        const url = `${base}#/masterdata?${qs.toString()}`;
+        const url = `${base}?${qs.toString()}`;
         navigator.clipboard.writeText(url).then(() => {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
@@ -216,16 +217,15 @@ function SqlBrowserTab() {
 
             {dbLoaded && (
                 <Row>
-                    <Col md={3} style={{ maxHeight: '70vh', overflowY: 'auto', borderRight: '1px solid #444' }}>
-                        <div className="mb-2 d-flex align-items-center" style={{ gap: 6 }}>
+                    <Col md={3} className="mdb-tables-col">
+                        <div className="mb-2 d-flex align-items-center mdb-tables-header">
                             <strong>Tables</strong>
                             <input
                                 type="text"
-                                className="form-control form-control-sm"
+                                className="form-control form-control-sm mdb-table-search"
                                 placeholder="Search..."
                                 value={tableSearch}
                                 onChange={(e) => setTableSearch(e.target.value)}
-                                style={{ flex: 1 }}
                             />
                         </div>
                         {tableList
@@ -234,8 +234,7 @@ function SqlBrowserTab() {
                                 <div
                                     key={t}
                                     onClick={() => handleTableClick(t)}
-                                    style={{ cursor: 'pointer', padding: '2px 4px', fontSize: '0.85rem' }}
-                                    className="table-row-hover"
+                                    className="table-row-hover mdb-table-item"
                                 >
                                     {t}
                                 </div>
@@ -249,7 +248,7 @@ function SqlBrowserTab() {
                             extensions={[sqlLang({ dialect: SQLite, schema: sqlSchema })]}
                             theme={oneDark}
                             basicSetup={{ lineNumbers: false, foldGutter: false }}
-                            style={{ fontFamily: 'monospace', fontSize: '0.9rem', marginBottom: '0.5rem' }}
+                            className="mdb-editor"
                         />
                         <Button variant="success" onClick={runQuery} disabled={!sql.trim()}>
                             Run Query
@@ -271,24 +270,23 @@ function SqlBrowserTab() {
                         {' '}
                         <input
                             type="text"
-                            className="form-control d-inline-block ms-1"
+                            className="form-control d-inline-block ms-1 mdb-filter-input"
                             placeholder="Filter rows..."
                             value={filterText}
                             onChange={(e) => setFilterText(e.target.value)}
-                            style={{ width: 180, verticalAlign: 'middle' }}
                         />
                         {queryError && <Alert variant="danger" className="mt-2">{queryError}</Alert>}
                         {results !== null && results.length === 0 && (
                             <Alert variant="info" className="mt-2">Query returned no results.</Alert>
                         )}
                         {results && results.length > 0 && (
-                            <div style={{ maxHeight: '55vh', overflowY: 'auto', overflowX: 'auto', marginTop: '1rem' }}>
+                            <div className="mdb-results-scroll">
                                 {results.map((res, i) => (
-                                    <table key={i} className="table table-sm table-bordered haku-table" style={{ fontSize: '0.8rem' }}>
+                                    <table key={i} className="table table-sm table-bordered haku-table mdb-results-table">
                                         <thead>
                                             <tr>
                                                 {res.columns.map((c) => (
-                                                    <th key={c} onClick={() => handleColumnClick(c)} style={{ cursor: 'pointer' }} title="Find tables with this column">
+                                                    <th key={c} onClick={() => handleColumnClick(c)} className="mdb-col-header" title="Find tables with this column">
                                                         {c}
                                                     </th>
                                                 ))}
@@ -318,7 +316,7 @@ function SqlBrowserTab() {
                             </div>
                         )}
                         {crossRef && (
-                            <div className="mt-3 p-2" style={{ border: '1px solid #555', borderRadius: 4, fontSize: '0.85rem' }}>
+                            <div className="mt-3 p-2 mdb-crossref-box">
                                 <div className="d-flex justify-content-between align-items-center mb-2">
                                     <span>
                                         <strong><code>{crossRef.column}</code></strong>
@@ -332,8 +330,7 @@ function SqlBrowserTab() {
                                         <span
                                             key={t}
                                             onClick={() => handleTableClick(t)}
-                                            className="badge text-bg-secondary me-1"
-                                            style={{ cursor: 'pointer' }}
+                                            className="badge text-bg-secondary me-1 mdb-crossref-badge"
                                         >
                                             {t}
                                         </span>
@@ -426,8 +423,7 @@ function VersionHistoryTab() {
         if (!selectedDiff) return;
         const search = '?' + new URLSearchParams({ diff: selectedDiff, table: tableName }).toString();
         navigate({ search }, { replace: true });
-        const hashBase = window.location.hash.split('?')[0];
-        const fullUrl = window.location.origin + window.location.pathname + hashBase + search;
+        const fullUrl = `${window.location.origin}/masterdata${search}`;
         navigator.clipboard.writeText(fullUrl);
     };
 
@@ -438,10 +434,10 @@ function VersionHistoryTab() {
     return (
         <div className="mt-3">
             {versions.map((v) => (
-                <div key={v.hash} className="mb-2 p-2" style={{ border: '1px solid #444', borderRadius: 4 }}>
+                <div key={v.hash} className="mb-2 p-2 mdb-version-entry">
                     <div className="d-flex align-items-center justify-content-between">
                         <div>
-                            <code style={{ fontSize: '0.85rem' }}>{v.short_hash}</code>
+                            <code className="mdb-version-hash">{v.short_hash}</code>
                             {' '}
                             <span className="text-muted">{v.date}</span>
                             {v.summary && (
@@ -530,8 +526,7 @@ function DiffViewer({ diff, collapsedTables, onToggleTable, scrollToTable, onLin
                         ref={el => { if (el) tableRefs.current.set(tableName, el); else tableRefs.current.delete(tableName); }}
                     >
                         <div
-                            className="p-2 d-flex align-items-center justify-content-between"
-                            style={{ cursor: 'pointer', backgroundColor: '#2a2a2a' }}
+                            className="p-2 d-flex align-items-center justify-content-between mdb-diff-header"
                             onClick={() => onToggleTable(tableName)}
                         >
                             <span className="d-flex align-items-center gap-2">
@@ -553,40 +548,40 @@ function DiffViewer({ diff, collapsedTables, onToggleTable, scrollToTable, onLin
                             </span>
                         </div>
                         {!collapsed && (
-                            <div style={{ overflowX: 'auto' }}>
-                                <table className="table table-sm table-bordered haku-table mb-0" style={{ fontSize: '0.78rem' }}>
+                            <div className="mdb-diff-table-wrap">
+                                <table className="table table-sm table-bordered haku-table mb-0 mdb-diff-table">
                                     <thead>
                                         <tr>
-                                            <th style={{ width: 60 }}>Change</th>
+                                            <th className="mdb-diff-change-col">Change</th>
                                             {td.columns.map((c) => <th key={c}>{c}</th>)}
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {td.added.map((row, i) => (
-                                            <tr key={`add-${i}`} style={{ backgroundColor: 'rgba(40,167,69,0.2)' }}>
+                                            <tr key={`add-${i}`} className="mdb-diff-row--added">
                                                 <td><span className="badge text-bg-success">added</span></td>
                                                 {row.map((cell, ci) => <td key={ci}>{cell === null ? <em>NULL</em> : String(cell)}</td>)}
                                             </tr>
                                         ))}
                                         {td.removed.map((row, i) => (
-                                            <tr key={`rem-${i}`} style={{ backgroundColor: 'rgba(220,53,69,0.2)' }}>
+                                            <tr key={`rem-${i}`} className="mdb-diff-row--removed">
                                                 <td><span className="badge text-bg-danger">removed</span></td>
                                                 {row.map((cell, ci) => <td key={ci}>{cell === null ? <em>NULL</em> : String(cell)}</td>)}
                                             </tr>
                                         ))}
                                         {td.modified.map((mod, i) => (
-                                            <tr key={`mod-${i}`} style={{ backgroundColor: 'rgba(255,193,7,0.15)' }}>
+                                            <tr key={`mod-${i}`} className="mdb-diff-row--modified">
                                                 <td><span className="badge text-bg-warning">~</span></td>
                                                 {mod.before.map((beforeCell, ci) => {
                                                     const afterCell = mod.after[ci];
                                                     const changed = beforeCell !== afterCell;
                                                     const val = (v: any) => v === null ? <em>NULL</em> : String(v);
-                                                    if (!changed) return <td key={ci} style={{ color: '#777' }}>{val(beforeCell)}</td>;
+                                                    if (!changed) return <td key={ci} className="mdb-diff-cell--unchanged">{val(beforeCell)}</td>;
                                                     return (
                                                         <td key={ci}>
-                                                            <span style={{ color: '#ff6b6b', textDecoration: 'line-through' }}>{val(beforeCell)}</span>
+                                                            <span className="mdb-diff-val--before">{val(beforeCell)}</span>
                                                             {' → '}
-                                                            <span style={{ color: '#69db7c' }}>{val(afterCell)}</span>
+                                                            <span className="mdb-diff-val--after">{val(afterCell)}</span>
                                                         </td>
                                                     );
                                                 })}

@@ -8,6 +8,42 @@ import { STRATEGY_COLORS, STRATEGY_NAMES } from "../MultiRacePage/components/Win
 import { getRankIcon } from "../../components/RaceDataPresenter/components/CharaList/rankUtils";
 import "./UmaLogsPage.css";
 
+type SerializedHorseEntry = Omit<HorseEntry, "activatedSkillIds" | "learnedSkillIds" | "trainerName" | "raceDistance" | "isPlayer" | "charaName"> & {
+    activatedSkillIds: number[];
+    learnedSkillIds: number[];
+    supportCardIds: number[];
+    supportCardLimitBreaks: number[];
+};
+
+type RaceTeamResponse = {
+    raceUid: string;
+    teamId: number;
+    horses: SerializedHorseEntry[];
+};
+
+const rawUmaLogsApiBase = (import.meta.env.VITE_UMALOGS_API_BASE ?? "").trim();
+const UMA_LOGS_API_BASE = rawUmaLogsApiBase === "same-origin"
+    ? ""
+    : rawUmaLogsApiBase.replace(/\/$/, "");
+
+function buildRaceTeamUrl(raceId: string, teamId: number): string {
+    return `${UMA_LOGS_API_BASE}/api/races/${encodeURIComponent(raceId)}/teams/${teamId}`;
+}
+
+function deserializeHorseEntries(horses: SerializedHorseEntry[] | undefined): HorseEntry[] {
+    return (horses ?? []).map((h) => ({
+        ...h,
+        charaName: UMDatabaseWrapper.charas[h.charaId]?.name ?? `Unknown (${h.charaId})`,
+        trainerName: "",
+        raceDistance: 0,
+        isPlayer: false,
+        activatedSkillIds: new Set(h.activatedSkillIds),
+        learnedSkillIds: new Set(h.learnedSkillIds),
+        supportCardIds: h.supportCardIds ?? [],
+        supportCardLimitBreaks: h.supportCardLimitBreaks ?? [],
+    }));
+}
+
 function resolveIconSkillId(id: number): number {
     const s = String(id);
     return s.startsWith("9") ? parseInt("1" + s.slice(1), 10) : id;
@@ -27,12 +63,13 @@ interface UmaFeatCardProps {
     showRankIcon?: boolean;
     skillStats: Map<number, SkillStats>;
     strategyColors?: Record<number, string>;
-    allHorses?: HorseEntry[];
 }
 
-const UmaFeatCard: React.FC<UmaFeatCardProps> = ({ horse, label, displayValue, displayValueColor, showRankIcon, skillStats, strategyColors, allHorses }) => {
+const UmaFeatCard: React.FC<UmaFeatCardProps> = ({ horse, label, displayValue, displayValueColor, showRankIcon, skillStats, strategyColors }) => {
     const [showModal, setShowModal] = useState(false);
     const [profileHorse, setProfileHorse] = useState(horse);
+    const [fetchedTeamHorses, setFetchedTeamHorses] = useState<HorseEntry[] | null>(null);
+    const [isLoadingTeamHorses, setIsLoadingTeamHorses] = useState(false);
 
     const skillIconMap = useMemo<Map<number, number>>(() => {
         const map = new Map<number, number>();
@@ -45,7 +82,6 @@ const UmaFeatCard: React.FC<UmaFeatCardProps> = ({ horse, label, displayValue, d
     const activeStrategyColors = strategyColors ?? STRATEGY_COLORS;
     const strategyColor = activeStrategyColors[profileHorse.strategy] ?? "#718096";
     const strategyName = STRATEGY_NAMES[profileHorse.strategy] ?? `Strategy ${profileHorse.strategy}`;
-    const cardName = UMDatabaseWrapper.cards[profileHorse.cardId]?.name ?? null;
     const rankInfo = getRankIcon(profileHorse.rankScore);
 
     const portraitUrl = AssetLoader.getCharaThumb(profileHorse.cardId);
@@ -69,9 +105,40 @@ const UmaFeatCard: React.FC<UmaFeatCardProps> = ({ horse, label, displayValue, d
         (id) => !profileHorse.activatedSkillIds.has(id)
     );
 
+    React.useEffect(() => {
+        if (!showModal) return;
+        if (profileHorse.teamId <= 0 || !profileHorse.raceId) {
+            setFetchedTeamHorses([]);
+            setIsLoadingTeamHorses(false);
+            return;
+        }
+
+        const controller = new AbortController();
+        setIsLoadingTeamHorses(true);
+        fetch(buildRaceTeamUrl(profileHorse.raceId, profileHorse.teamId), { signal: controller.signal })
+            .then(async (response) => {
+                if (!response.ok) {
+                    throw new Error(`Failed to load teammates: HTTP ${response.status}`);
+                }
+                const payload = await response.json() as RaceTeamResponse;
+                setFetchedTeamHorses(deserializeHorseEntries(payload.horses));
+            })
+            .catch((error: unknown) => {
+                if (error instanceof DOMException && error.name === "AbortError") return;
+                setFetchedTeamHorses([]);
+            })
+            .finally(() => {
+                if (!controller.signal.aborted) {
+                    setIsLoadingTeamHorses(false);
+                }
+            });
+
+        return () => controller.abort();
+    }, [profileHorse.raceId, profileHorse.teamId, showModal]);
+
     const teammates = useMemo(() => {
-        if (!allHorses || profileHorse.teamId <= 0 || !profileHorse.raceId) return [];
-        return allHorses
+        if (!fetchedTeamHorses || profileHorse.teamId <= 0 || !profileHorse.raceId) return [];
+        return fetchedTeamHorses
             .filter(h =>
                 h.raceId === profileHorse.raceId &&
                 h.teamId === profileHorse.teamId &&
@@ -79,7 +146,7 @@ const UmaFeatCard: React.FC<UmaFeatCardProps> = ({ horse, label, displayValue, d
             )
             .sort((a, b) => a.frameOrder - b.frameOrder)
             .slice(0, 2);
-    }, [allHorses, profileHorse]);
+    }, [fetchedTeamHorses, profileHorse]);
 
     const renderSkillChip = (id: number, activated: boolean) => {
         const name = getSkillName(id);
@@ -178,13 +245,14 @@ const UmaFeatCard: React.FC<UmaFeatCardProps> = ({ horse, label, displayValue, d
 
                 <Modal.Body>
                     <div className="fup-identity">
-                        <div className="fup-portrait" style={{ border: `3px solid ${strategyColor}` }}>
-                            <img src={portraitUrl} alt={profileHorse.charaName} onError={handleImgError} />
+                        <div className="fup-identity-left">
+                            <div className="fup-portrait" style={{ border: `3px solid ${strategyColor}` }}>
+                                <img src={portraitUrl} alt={profileHorse.charaName} onError={handleImgError} />
+                            </div>
+                            <div className="fup-portrait-caption">{profileHorse.charaName}</div>
                         </div>
 
                         <div className="fup-identity-info">
-                            <div className="fup-name">{profileHorse.charaName}</div>
-                            {cardName && <div className="fup-card-name">{cardName}</div>}
                             <div className="fup-time">{formatTime(profileHorse.finishTime)}</div>
                             <div className="fup-rank-row">
                                 <img src={rankInfo.icon} alt={rankInfo.name} className="fup-rank-icon--md" />
@@ -192,27 +260,34 @@ const UmaFeatCard: React.FC<UmaFeatCardProps> = ({ horse, label, displayValue, d
                             </div>
                             <div className="fup-training-wins">Career mode wins: {profileHorse.careerWinCount.toLocaleString()}</div>
                         </div>
-                        {teammates.length > 0 && (
+                        {(teammates.length > 0 || isLoadingTeamHorses) && (
                             <div className="fup-teammates-panel">
                                 <div className="fup-teammates-title">Team mates</div>
-                                <div className="fup-teammates">
-                                    {teammates.map(renderTeammateButton)}
-                                </div>
+                                {isLoadingTeamHorses && teammates.length === 0 ? (
+                                    <div className="fup-teammates-loading">Loading team mates...</div>
+                                ) : (
+                                    <div className="fup-teammates">
+                                        {teammates.map(renderTeammateButton)}
+                                    </div>
+                                )}
                             </div>
                         )}
                         {profileHorse.supportCardIds.length > 0 && (
-                            <div className="fup-deck">
-                                {profileHorse.supportCardIds.map((id, i) => (
-                                    <div key={i} className="fup-deck-card">
-                                        <img
-                                            src={AssetLoader.getSupportCardIcon(id)}
-                                            alt=""
-                                            className="fup-deck-card-img"
-                                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                                        />
-                                        <div className="fup-deck-card-lb">LB{profileHorse.supportCardLimitBreaks[i] ?? 0}</div>
-                                    </div>
-                                ))}
+                            <div className="fup-deck-panel">
+                                <div className="fup-side-panel-title">Deck</div>
+                                <div className="fup-deck">
+                                    {profileHorse.supportCardIds.map((id, i) => (
+                                        <div key={i} className="fup-deck-card">
+                                            <img
+                                                src={AssetLoader.getSupportCardIcon(id)}
+                                                alt=""
+                                                className="fup-deck-card-img"
+                                                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                                            />
+                                            <div className="fup-deck-card-lb">LB{profileHorse.supportCardLimitBreaks[i] ?? 0}</div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>

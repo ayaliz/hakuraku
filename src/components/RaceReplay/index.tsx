@@ -27,7 +27,7 @@ import {
     CORNER_FINAL_FILL,
     TOOLBAR_GAP,
 } from "./RaceReplay.constants";
-import { clamp } from "./RaceReplay.utils";
+import { clamp, getTrackDetailIcon } from "./RaceReplay.utils";
 import { useRafPlayer } from "./hooks/useRafPlayer";
 import { useInterpolatedFrame } from "./hooks/useInterpolatedFrame";
 import { useCanvasOverlay } from "./hooks/useCanvasOverlay";
@@ -80,6 +80,8 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     trackDetails,
     onTrackChange,
 }) => {
+    const rootRef = useRef<HTMLDivElement>(null);
+    const fullscreenTargetRef = useRef<HTMLDivElement>(null);
     const frames = useMemo(() => raceData.frame ?? [], [raceData]);
     const startTime = frames[0]?.time ?? 0, endTime = frames[frames.length - 1]?.time ?? 0;
     // Stable forwarding callback so useRafPlayer can be declared before useRafChartUpdate
@@ -159,6 +161,8 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
     const { isExporting, handleExport } = useRaceExport(echartsRef, canvasRef, renderTime, isPlaying, playPause, setRenderTime);
     const legendShadowSeries = useMemo(() => buildLegendShadowSeries(displayNames, horseInfoByIdx, trainerColors), [displayNames, horseInfoByIdx, trainerColors]);
+    const seasonIcon = useMemo(() => getTrackDetailIcon("season", trackDetails?.season), [trackDetails?.season]);
+    const weatherIcon = useMemo(() => getTrackDetailIcon("weather", trackDetails?.weather), [trackDetails?.weather]);
 
     const yMaxWithHeadroom = Math.max(6000, maxLanePosition);
 
@@ -339,6 +343,63 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
 
     const [isEditingFrame, setIsEditingFrame] = useState(false);
     const [tempFrameInput, setTempFrameInput] = useState("");
+    const [isFullscreen, setIsFullscreen] = useState(false);
+
+    const resizeChart = useCallback(() => {
+        const instance = echartsRef.current?.getEchartsInstance?.();
+        if (instance) {
+            instance.resize();
+        }
+    }, []);
+
+    useEffect(() => {
+        const onFullscreenChange = () => {
+            const activeFullscreen = document.fullscreenElement === fullscreenTargetRef.current;
+            setIsFullscreen(activeFullscreen);
+            window.setTimeout(() => resizeChart(), 60);
+        };
+        document.addEventListener("fullscreenchange", onFullscreenChange);
+        return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+    }, [resizeChart]);
+
+    const lockLandscape = useCallback(async () => {
+        const orientationApi = (screen as Screen & {
+            orientation?: { lock?: (orientation: string) => Promise<void> };
+        }).orientation;
+        if (!orientationApi?.lock) return;
+        try {
+            await orientationApi.lock("landscape");
+        } catch {
+            // Some devices/browsers reject lock requests outside strict gesture constraints.
+        }
+    }, []);
+
+    const unlockLandscape = useCallback(async () => {
+        const orientationApi = (screen as Screen & {
+            orientation?: { unlock?: () => void };
+        }).orientation;
+        if (!orientationApi?.unlock) return;
+        try {
+            orientationApi.unlock();
+        } catch {
+            // Ignore unsupported unlock failures.
+        }
+    }, []);
+
+    const toggleFullscreen = useCallback(async () => {
+        if (!fullscreenTargetRef.current) return;
+        if (document.fullscreenElement === fullscreenTargetRef.current) {
+            await document.exitFullscreen();
+            await unlockLandscape();
+            return;
+        }
+        try {
+            await fullscreenTargetRef.current.requestFullscreen({ navigationUI: "hide" } as FullscreenOptions);
+            await lockLandscape();
+        } catch {
+            // Ignore failures when fullscreen is blocked by browser policy.
+        }
+    }, [lockLandscape, unlockLandscape]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -395,20 +456,20 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     };
 
     return (
-        <div>
+        <div ref={rootRef} className="rr-root">
             {goalInX > 0 && availableTracks.length > 0 && (
                 <div className="d-flex align-items-start" style={{ flexWrap: "wrap", marginBottom: TOOLBAR_GAP, gap: 24, rowGap: 16 }}>
 
                     {/* LEFT SECTION: Track Info & View Window */}
-                    <div className="d-flex flex-column" style={{ flex: "0 1 auto" }}>
+                    <div className="d-flex flex-column rr-toolbar-left">
                         <div className="d-flex align-items-center">
-                            <Form.Label className="mb-0 me-2" style={{ fontWeight: 600 }}>Track:</Form.Label>
+                            <Form.Label className="mb-0 me-2 rr-track-label">Track:</Form.Label>
                             <Form.Control
                                 as="select"
                                 size="sm"
                                 value={selectedTrackId ?? ""}
                                 onChange={(e) => setSelectedTrackId(e.target.value)}
-                                style={{ width: "auto", maxWidth: 240 }}
+                                className="rr-track-select"
                             >
                                 {availableTracks.map((t) => (<option key={t.id} value={t.id}>{t.name}</option>))}
                                 {guessStatus === "detected" && selectedTrackId && !availableTracks.some(t => t.id === selectedTrackId) && (
@@ -419,14 +480,14 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                             </Form.Control>
                         </div>
 
-                        <div style={{ fontSize: "0.85em", minHeight: 18, marginTop: 2 }}>
-                            {guessStatus === "detected" && <span style={{ color: "#28a745" }}>Detected track from race data</span>}
-                            {guessStatus === "guessed" && <span style={{ color: "#28a745" }}>Guessed track based on CM schedule</span>}
-                            {guessStatus === "fallback" && <span style={{ color: "darkorange" }}>Select track manually</span>}
+                        <div className="rr-track-status">
+                            {guessStatus === "detected" && <span className="rr-status-good">Detected track from race data</span>}
+                            {guessStatus === "guessed" && <span className="rr-status-good">Guessed track based on CM schedule</span>}
+                            {guessStatus === "fallback" && <span className="rr-status-warn">Select track manually</span>}
                         </div>
 
                         <div className="d-flex align-items-center mt-2">
-                            <Form.Label className="mb-0" style={{ whiteSpace: "nowrap", fontWeight: 600, fontSize: "0.95em" }}>
+                            <Form.Label className="mb-0 rr-window-label">
                                 View window:
                                 <OverlayTrigger
                                     placement="top"
@@ -450,13 +511,13 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                                     const v = parseInt(e.target.value, 10);
                                     if (!isNaN(v) && v >= 20 && v <= 400) setCameraWindow(v);
                                 }}
-                                style={{ width: 65, marginLeft: 8, marginRight: 4 }}
+                                className="rr-window-input"
                             />
-                            <span style={{ color: "#aaa", fontSize: "0.9em" }}>m</span>
+                            <span className="rr-unit-label">m</span>
                             {trackDetails && (
-                                <div className="d-flex align-items-center ms-3" style={{ gap: 8 }}>
-                                    {trackDetails.season && <img src={`${import.meta.env.BASE_URL}assets/track_details/${trackDetails.season}.webp`} alt={trackDetails.season} height={22} title={trackDetails.season} />}
-                                    {trackDetails.weather && <img src={`${import.meta.env.BASE_URL}assets/track_details/${trackDetails.weather}.webp`} alt={trackDetails.weather} height={22} title={trackDetails.weather} />}
+                                <div className="d-flex align-items-center ms-3 rr-track-icons">
+                                    {seasonIcon && <img src={seasonIcon.url} alt={seasonIcon.label} height={22} title={seasonIcon.label} />}
+                                    {weatherIcon && <img src={weatherIcon.url} alt={weatherIcon.label} height={22} title={weatherIcon.label} />}
                                     {/* {trackDetails.condition && <img src={`${import.meta.env.BASE_URL}assets/track_details/${trackDetails.condition}.webp`} alt={trackDetails.condition} height={22} title={trackDetails.condition} />} */}
                                 </div>
                             )}
@@ -465,14 +526,14 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                     </div>
 
                     {/* MIDDLE SECTION: Toggles */}
-                    <div className="d-flex flex-column justify-content-center" style={{ flex: "1 1 350px", marginTop: 4 }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "8px 12px" }}>
+                    <div className="d-flex flex-column justify-content-center rr-toolbar-mid">
+                        <div className="rr-toggles-grid">
                             {toggleDefs.map(({ id, label }) => (
                                 <Form.Check
                                     key={id}
                                     type="checkbox"
                                     id={`toggle-${id}`}
-                                    label={<span style={{ fontSize: "0.85em", whiteSpace: "nowrap" }}>{label}</span>}
+                                    label={<span className="rr-toggle-label">{label}</span>}
                                     {...bind(id)}
                                     className="mb-0"
                                 />
@@ -481,15 +542,15 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                     </div>
 
                     {/* RIGHT SECTION: Legends, Frame, ClipMaker */}
-                    <div className="d-flex flex-column align-items-end ms-auto" style={{ flex: "0 1 auto" }}>
-                        <div className="d-flex align-items-center mb-2" style={{ gap: 10, fontSize: "0.85em" }}>
+                    <div className="d-flex flex-column align-items-end ms-auto rr-toolbar-right">
+                        <div className="d-flex align-items-center mb-2 rr-legend-row">
                             <LegendItem color={STRAIGHT_FILL} label="Straight" />
                             <LegendItem color={STRAIGHT_FINAL_FILL} label="Final straight" />
                             <LegendItem color={CORNER_FILL} label="Corner" />
                             <LegendItem color={CORNER_FINAL_FILL} label="Final corner" />
                         </div>
 
-                        <div className="mb-2" style={{ fontSize: "0.95em", color: "#ccc", whiteSpace: "nowrap" }}>
+                        <div className="mb-2 rr-frame-display">
                             Frame: {isEditingFrame ? (
                                 <input
                                     autoFocus
@@ -539,6 +600,12 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                 </div>
             )}
 
+            <div className="rr-mobile-fullscreen-row">
+                <Button size="sm" variant="secondary" onClick={toggleFullscreen}>
+                    {isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+                </Button>
+            </div>
+
             {legendNames.length > 0 && (
                 <div className="char-vis-list">
                     {Object.entries(displayNames).map(([iStr, name]) => {
@@ -558,70 +625,84 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
             )}
 
             <div
-                style={{ position: "relative", height: "500px" }}
-                onMouseMove={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const mx = e.clientX - rect.left;
-                    const my = e.clientY - rect.top;
-                    const containerW = e.currentTarget.offsetWidth;
-                    const HIT_R2 = 32 * 32;
-                    let nearest: { idx: number; x: number; y: number; containerW: number } | null = null;
-                    let nearestD2 = HIT_R2;
-                    for (const entry of horseHoverDataRef.current) {
-                        const dx = mx - entry.cx, dy = my - entry.cy;
-                        const d2 = dx * dx + dy * dy;
-                        if (d2 < nearestD2) { nearestD2 = d2; nearest = { idx: entry.idx, x: mx, y: my, containerW }; }
-                    }
-                    setHoveredHorse(nearest);
-                }}
-                onMouseLeave={() => setHoveredHorse(null)}
+                ref={fullscreenTargetRef}
+                className={`rr-fullscreen-target${isFullscreen ? " rr-fullscreen-target--fullscreen" : ""}`}
             >
-                {toggles.minimap && selectedTrackId && visibleRange && (
-                    <div className="course-minimap-overlay">
-                        <CourseMinimap
-                            trackId={selectedTrackId}
-                            visibleRange={visibleRange}
-                        />
+                {isFullscreen && (
+                    <div className="rr-fullscreen-exit">
+                        <Button size="sm" variant="secondary" onClick={toggleFullscreen}>
+                            Exit fullscreen
+                        </Button>
                     </div>
                 )}
-                <EChartsReactCore
-                    ref={echartsRef}
-                    echarts={echarts}
-                    option={options}
-                    style={{ height: "500px", width: "100%" }}
-                    notMerge={true}
-                    theme="dark"
-                />
-                <canvas
-                    ref={canvasRef}
-                    style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none" }}
-                />
-                {hoveredHorse !== null && (
-                    <HorseTooltip
-                        hoveredHorse={hoveredHorse}
-                        entry={horseHoverDataRef.current.find(e => e.idx === hoveredHorse.idx)}
-                        name={displayNames[hoveredHorse.idx] ?? ""}
-                        worldTransform={hoveredHorseWorldTransform}
-                    />
-                )}
-            </div>
 
-            <div className="d-flex align-items-center justify-content-between mt-2">
-                <div className="d-flex align-items-center flex-grow-1">
-                    <Button onClick={playPause} className="me-3">{isPlaying ? "Pause" : "Play"}</Button>
-                    <Form.Control
-                        type="range"
-                        min={startTime}
-                        max={endTime}
-                        step={0.001}
-                        value={clampedRenderTime}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRenderTime(clamp(parseFloat(e.target.value), startTime, endTime))}
-                        className="flex-grow-1"
+                <div
+                    className="rr-chart-container"
+                    onMouseMove={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const mx = e.clientX - rect.left;
+                        const my = e.clientY - rect.top;
+                        const containerW = e.currentTarget.offsetWidth;
+                        const HIT_R2 = 32 * 32;
+                        let nearest: { idx: number; x: number; y: number; containerW: number } | null = null;
+                        let nearestD2 = HIT_R2;
+                        for (const entry of horseHoverDataRef.current) {
+                            const dx = mx - entry.cx, dy = my - entry.cy;
+                            const d2 = dx * dx + dy * dy;
+                            if (d2 < nearestD2) { nearestD2 = d2; nearest = { idx: entry.idx, x: mx, y: my, containerW }; }
+                        }
+                        setHoveredHorse(nearest);
+                    }}
+                    onMouseLeave={() => setHoveredHorse(null)}
+                >
+                    {toggles.minimap && selectedTrackId && visibleRange && (
+                        <div className="course-minimap-overlay">
+                            <CourseMinimap
+                                trackId={selectedTrackId}
+                                visibleRange={visibleRange}
+                            />
+                        </div>
+                    )}
+                    <EChartsReactCore
+                        ref={echartsRef}
+                        echarts={echarts}
+                        option={options}
+                        className="rr-chart"
+                        style={{ height: "500px", width: "100%" }}
+                        notMerge={true}
+                        theme="dark"
                     />
-                    <span className="ms-3">{clampedRenderTime.toFixed(2)}s / {endTime.toFixed(2)}s</span>
+                    <canvas
+                        ref={canvasRef}
+                        className="rr-chart-canvas"
+                    />
+                    {hoveredHorse !== null && (
+                        <HorseTooltip
+                            hoveredHorse={hoveredHorse}
+                            entry={horseHoverDataRef.current.find(e => e.idx === hoveredHorse.idx)}
+                            name={displayNames[hoveredHorse.idx] ?? ""}
+                            worldTransform={hoveredHorseWorldTransform}
+                        />
+                    )}
                 </div>
-                <div className="ms-3">
-                    <InfoHover />
+
+                <div className="d-flex align-items-center justify-content-between mt-2 rr-playback-row">
+                    <div className="d-flex align-items-center flex-grow-1">
+                        <Button onClick={playPause} className="me-3">{isPlaying ? "Pause" : "Play"}</Button>
+                        <Form.Control
+                            type="range"
+                            min={startTime}
+                            max={endTime}
+                            step={0.001}
+                            value={clampedRenderTime}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRenderTime(clamp(parseFloat(e.target.value), startTime, endTime))}
+                            className="flex-grow-1"
+                        />
+                        <span className="ms-3">{clampedRenderTime.toFixed(2)}s / {endTime.toFixed(2)}s</span>
+                    </div>
+                    <div className="ms-3">
+                        <InfoHover />
+                    </div>
                 </div>
             </div>
         </div>

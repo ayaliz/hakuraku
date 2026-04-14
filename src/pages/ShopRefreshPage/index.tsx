@@ -354,7 +354,7 @@ export default function ShopRefreshPage() {
                                 <span className="srp-turn-chip-label">Race</span>
                                 <span className="srp-turn-chip-count">n={gradedRacePool.n}</span>
                                 <span className="srp-turn-chip-bar">
-                                    <span style={{ width: '100%' }} />
+                                    <span />
                                 </span>
                             </div>
                         )}

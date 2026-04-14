@@ -41,43 +41,40 @@ const ClipMaker: React.FC<ClipMakerProps> = ({
     return (
         <div className="d-flex align-items-center p-2 mt-2 clip-maker">
             {/* Time range inputs */}
-            <div className="d-flex align-items-center" style={{ gap: "12px" }}>
-                <div className="d-flex align-items-center" style={{ gap: "6px" }}>
+            <div className="d-flex align-items-center clip-maker-group">
+                <div className="d-flex align-items-center clip-maker-inner">
                     <Form.Label className="mb-0 text-white clip-maker-label">Start (s):</Form.Label>
                     <Form.Control
                         type="number"
                         value={start}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStart(Number(e.target.value))}
                         step={0.1}
-                        className="clip-maker-input"
-                        style={{ width: "75px" }}
+                        className="clip-maker-input clip-maker-input-time"
                     />
                 </div>
 
-                <div className="d-flex align-items-center" style={{ gap: "6px" }}>
+                <div className="d-flex align-items-center clip-maker-inner">
                     <Form.Label className="mb-0 text-white clip-maker-label">End (s):</Form.Label>
                     <Form.Control
                         type="number"
                         value={end}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEnd(Number(e.target.value))}
                         step={0.1}
-                        className="clip-maker-input"
-                        style={{ width: "75px" }}
+                        className="clip-maker-input clip-maker-input-time"
                     />
                 </div>
             </div>
 
             {/* Speed and FPS controls */}
-            <div className="d-flex align-items-center" style={{ gap: "12px" }}>
-                <div className="d-flex align-items-center" style={{ gap: "6px" }}>
+            <div className="d-flex align-items-center clip-maker-group">
+                <div className="d-flex align-items-center clip-maker-inner">
                     <Form.Label className="mb-0 text-white clip-maker-label">Speed:</Form.Label>
                     <Form.Control
                         type="number"
                         value={speed}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSpeed(Number(e.target.value))}
                         step={0.1}
-                        className="clip-maker-input"
-                        style={{ width: "60px" }}
+                        className="clip-maker-input clip-maker-input-speed"
                     />
                 </div>
 
@@ -86,8 +83,7 @@ const ClipMaker: React.FC<ClipMakerProps> = ({
                     size="sm"
                     value={fps}
                     onChange={(e) => setFps(Number(e.target.value))}
-                    className="clip-maker-input"
-                    style={{ width: "auto" }}
+                    className="clip-maker-input clip-maker-input-fps"
                     title="Frame Rate"
                 >
                     <option value={30}>30 FPS</option>

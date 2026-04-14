@@ -1,5 +1,6 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { Alert, Nav, Spinner, Tab } from "react-bootstrap";
+import { useSearchParams } from "react-router-dom";
 import { ParsedRace, AggregatedStats } from "./types";
 import { parseRaceJson, aggregateStats, getGroundConditionLabel, getSeasonLabel, getTrackLabel, getWeatherLabel } from "./utils";
 import "./MultiRacePage.css";
@@ -12,6 +13,9 @@ import HpSpurtAnalysis from "./components/HpSpurtAnalysis";
 import { computeHpSpurtStats } from "./components/HpSpurtAnalysis/processData";
 import { CharaHpSpurtStats } from "./components/HpSpurtAnalysis/types";
 import ExplorerTab from "../UmaLogsPage/ExplorerTab";
+import type { AccountDatasetRaceExportResponse } from "../../auth/authShared";
+
+const HORSEACT_SETUP_URL = "https://github.com/ayaliz/horseACT#installation";
 
 // Group races by track
 interface TrackGroup {
@@ -25,10 +29,13 @@ interface TrackGroup {
 }
 
 const MultiRacePage: React.FC = () => {
+    const [searchParams] = useSearchParams();
     const [races, setRaces] = useState<ParsedRace[]>([]);
     const [errors, setErrors] = useState<string[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const [activeTrackTab, setActiveTrackTab] = useState<string | null>(null);
+    const [accountImportLoading, setAccountImportLoading] = useState(false);
+    const [accountImportLabel, setAccountImportLabel] = useState<string | null>(null);
 
     const handleFilesSelected = useCallback(async (files: File[]) => {
         setIsProcessing(true);
@@ -77,7 +84,60 @@ const MultiRacePage: React.FC = () => {
         setRaces([]);
         setErrors([]);
         setActiveTrackTab(null);
+        setAccountImportLabel(null);
     }, []);
+
+    useEffect(() => {
+        const datasetKey = searchParams.get("accountDataset");
+        if (!datasetKey) {
+            return;
+        }
+
+        let cancelled = false;
+        setAccountImportLoading(true);
+        setErrors([]);
+
+        void (async () => {
+            try {
+                const response = await fetch(`/api/account/races/datasets/${encodeURIComponent(datasetKey)}/export`, {
+                    credentials: "same-origin",
+                });
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(text || `HTTP ${response.status}`);
+                }
+                const payload = await response.json() as AccountDatasetRaceExportResponse;
+                const nextRaces: ParsedRace[] = [];
+                const nextErrors: string[] = [];
+                for (const race of payload.races) {
+                    const parsed = parseRaceJson(race.payload, race.fileName);
+                    if ("error" in parsed) {
+                        nextErrors.push(`${race.fileName}: ${parsed.error}`);
+                    } else {
+                        nextRaces.push(parsed);
+                    }
+                }
+                if (cancelled) return;
+                setRaces(nextRaces);
+                setErrors(nextErrors);
+                setActiveTrackTab(null);
+                setAccountImportLabel(payload.datasetLabel);
+            } catch (err: any) {
+                if (cancelled) return;
+                setRaces([]);
+                setErrors([`Failed to load linked-account races: ${err.message ?? String(err)}`]);
+                setAccountImportLabel(null);
+            } finally {
+                if (!cancelled) {
+                    setAccountImportLoading(false);
+                }
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [searchParams]);
 
     // Group races by track and compute stats per track
     const trackGroups: TrackGroup[] = useMemo(() => {
@@ -129,8 +189,23 @@ const MultiRacePage: React.FC = () => {
 
             <RaceUploadZone
                 onFilesSelected={handleFilesSelected}
-                isProcessing={isProcessing}
+                isProcessing={isProcessing || accountImportLoading}
             />
+
+            {accountImportLoading && (
+                <Alert variant="info">
+                    <div className="d-flex align-items-center gap-2">
+                        <Spinner animation="border" size="sm" />
+                        <span>Loading linked-account races into Multi-Race Analysis…</span>
+                    </div>
+                </Alert>
+            )}
+
+            {!accountImportLoading && accountImportLabel && races.length > 0 && (
+                <Alert variant="info">
+                    Loaded {races.length} race(s) from {accountImportLabel}.
+                </Alert>
+            )}
 
             {errors.length > 0 && (
                 <Alert variant="warning" dismissible onClose={() => setErrors([])}>
@@ -141,6 +216,12 @@ const MultiRacePage: React.FC = () => {
                         ))}
                         {errors.length > 5 && <li>...and {errors.length - 5} more</li>}
                     </ul>
+                </Alert>
+            )}
+
+            {races.length === 0 && !accountImportLoading && (
+                <Alert variant="info">
+                    Visit the <a href={HORSEACT_SETUP_URL} target="_blank" rel="noreferrer">horseACT setup guide</a> if you don't know how to get your race data.
                 </Alert>
             )}
 
@@ -209,7 +290,10 @@ const MultiRacePage: React.FC = () => {
                                             <h4 className="section-heading">
                                                 Explorer
                                             </h4>
-                                            <ExplorerTab allHorses={group.stats.allHorses} />
+                                            <ExplorerTab
+                                                apiMode={false}
+                                                skillStats={group.stats.skillStats}
+                                            />
                                         </div>
                                     </Tab.Pane>
                                 ))}

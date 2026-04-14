@@ -1,29 +1,14 @@
 import React, { useState, useEffect, useMemo } from "react";
-import pako from "pako";
 import { Nav, Spinner, Alert } from "react-bootstrap";
+import { useSearchParams } from "react-router-dom";
 import type {
-    AggregatedStats,
-    CharacterStats,
-    EmpiricalBayesTeamEntry,
-    GateBlockedStats,
-    GateStats,
     GateStatsMode,
     GateWinRateFlavor,
-    GateWinRateStats,
-    GateWinRateSplitStats,
-    HorseEntry,
-    PairSynergyStats,
-    RoomCompositionEntry,
-    SkillActivationBuckets,
     SkillStats,
-    StrategyStats,
-    TeamCompositionStats,
-    TrueSkillTeamEntry,
 } from "../MultiRacePage/types";
-import StrategyAnalysis, { type StyleRepEntry } from "../MultiRacePage/components/WinDistributionCharts/StrategyAnalysis";
-import { BAYES_UMA, COLORBLIND_STRATEGY_COLORS, POP_FILTER_OPTIONS, STRATEGY_COLORS, STRATEGY_NAMES, STRATEGY_DISPLAY_ORDER } from "../MultiRacePage/components/WinDistributionCharts/constants";
+import StrategyAnalysis from "../MultiRacePage/components/WinDistributionCharts/StrategyAnalysis";
+import { COLORBLIND_STRATEGY_COLORS, STRATEGY_COLORS, STRATEGY_NAMES, STRATEGY_DISPLAY_ORDER } from "../MultiRacePage/components/WinDistributionCharts/constants";
 import CharacterAnalysis from "../MultiRacePage/components/WinDistributionCharts/CharacterAnalysis";
-import { useWinDistributionData } from "../MultiRacePage/components/WinDistributionCharts/useWinDistributionData";
 import SkillAnalysis from "../MultiRacePage/components/SkillAnalysis";
 import Histogram from "./Histogram";
 import UmaFeatCard from "./FastestUmaPanel";
@@ -31,181 +16,39 @@ import { formatTime } from "../../data/UMDatabaseUtils";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 import AssetLoader from "../../data/AssetLoader";
 import TrueSkillTeamPanel from "./TrueSkillTeamPanel";
-import SupportCardPanel from "../MultiRacePage/components/WinDistributionCharts/SupportCardPanel";
 import ExplorerTab from "./ExplorerTab";
+import ReplaysTab from "./ReplaysTab";
 import InfoTooltip from "../MultiRacePage/components/WinDistributionCharts/InfoTooltip";
-import { getHorseDeckRaceBonus } from "./deckUtils";
+import type { GroupSkillDetailPayload } from "./skillCache";
+import type {
+    GroupDeckData,
+    GroupPanelData,
+    GroupSkillDetailResponse,
+    GroupSkillOverviewResponse,
+    Manifest,
+    Section,
+    TrackGroup,
+    TrackGroupContentProps,
+    UmaLogsData,
+} from "./umaLogsTypes";
+import {
+    PANEL_DATA_SECTIONS,
+    UMA_LOGS_SECTIONS,
+} from "./umaLogsTypes";
+import { deserializeHorseEntry, deserializeSkillOverviewStats, deserializeStats } from "./deserialize";
+import CardUsageModal from "./CardUsageModal";
+import SkillsByStrategyModal from "./SkillsByStrategyModal";
+import StyleDecksModal from "./StyleDecksModal";
 import "../MultiRacePage/MultiRacePage.css";
 import "./UmaLogsPage.css";
 
-type SerializedSkillStats = Omit<SkillStats, 'learnedByCharaIds' | 'learnedByStrategies'> & {
-    learnedByCharaIds: number[];
-    learnedByStrategies: number[];
-};
+const rawUmaLogsApiBase = (import.meta.env.VITE_UMALOGS_API_BASE ?? "").trim();
+const UMA_LOGS_API_BASE = rawUmaLogsApiBase === "same-origin"
+    || rawUmaLogsApiBase.length === 0
+    ? ""
+    : rawUmaLogsApiBase.replace(/\/$/, "");
 
-type SerializedHorseEntry = Omit<HorseEntry, 'activatedSkillIds' | 'learnedSkillIds' | 'trainerName' | 'raceDistance' | 'isPlayer' | 'charaName'> & {
-    activatedSkillIds: number[];
-    learnedSkillIds: number[];
-    supportCardIds: number[];
-    supportCardLimitBreaks: number[];
-};
-
-type SerializedGateStats = Partial<GateStats> & {
-    blockedRates?: GateBlockedStats[];
-};
-
-type SerializedStats = {
-    totalRaces: number;
-    totalHorses: number;
-    avgRaceDistance: number;
-    characterStats: CharacterStats[];
-    strategyStats: StrategyStats[];
-    rawStrategyTotals: Record<number, number>;
-    roomCompositions: RoomCompositionEntry[];
-    skillStats: [number, SerializedSkillStats][];
-    skillBuckets: [number, SkillActivationBuckets][];
-    allHorses: SerializedHorseEntry[];
-    teamStats: TeamCompositionStats[];
-    pairSynergy: PairSynergyStats[];
-    gateStats?: SerializedGateStats;
-    blockedRates?: GateBlockedStats[];
-    gateWinRates?: GateWinRateStats[];
-    gateWinRatesByFlavor?: GateWinRateSplitStats;
-    trueskillRanking?: TrueSkillTeamEntry[];
-    empiricalBayesRanking?: EmpiricalBayesTeamEntry[];
-};
-
-type SerializedGroup = {
-    raceId: string;
-    courseId: number;
-    trackLabel: string;
-    raceCount: number;
-    stats: SerializedStats;
-};
-
-type UmaLogsData = {
-    generatedAt: string;
-    cmId?: string;
-    cmLabel?: string;
-    groups: SerializedGroup[];
-};
-
-type ManifestEntry = {
-    cmId: string;
-    cmLabel: string;
-    generatedAt: string;
-    totalRaces: number;
-    trackSummary?: string;
-};
-
-type Manifest = {
-    datasets: ManifestEntry[];
-};
-
-function deserializeStats(s: SerializedStats): AggregatedStats {
-    const legacyGateWinRatesByFlavor = s.gateWinRatesByFlavor ?? {
-        total: s.gateWinRates ?? [],
-        front: [],
-        pace: [],
-        late: [],
-        end: [],
-    };
-    const gateStats = {
-        winRatesByFlavor: s.gateStats?.winRatesByFlavor ?? legacyGateWinRatesByFlavor,
-        blockedRatesByFlavor: s.gateStats?.blockedRatesByFlavor ?? {
-            total: s.gateStats?.blockedRates ?? s.blockedRates ?? [],
-            front: [],
-            pace: [],
-            late: [],
-            end: [],
-        },
-        dodgingDangerRates: s.gateStats?.dodgingDangerRates ?? [],
-    };
-
-    return {
-        totalRaces: s.totalRaces,
-        totalHorses: s.totalHorses,
-        avgRaceDistance: s.avgRaceDistance,
-        characterStats: s.characterStats,
-        strategyStats: s.strategyStats,
-        rawStrategyTotals: s.rawStrategyTotals ?? {},
-        roomCompositions: s.roomCompositions ?? [],
-        skillStats: new Map(
-            s.skillStats.map(([id, skill]) => [
-                id,
-                {
-                    ...skill,
-                    learnedByCharaIds: new Set(skill.learnedByCharaIds),
-                    learnedByStrategies: new Set(skill.learnedByStrategies),
-                },
-            ])
-        ),
-        skillActivations: new Map(),
-        skillActivationBuckets: new Map(s.skillBuckets),
-        allHorses: s.allHorses.map((h) => ({
-            ...h,
-            charaName: UMDatabaseWrapper.charas[h.charaId]?.name ?? `Unknown (${h.charaId})`,
-            trainerName: '',
-            raceDistance: 0,
-            isPlayer: false,
-            activatedSkillIds: new Set(h.activatedSkillIds),
-            learnedSkillIds: new Set(h.learnedSkillIds),
-            careerWinCount: h.careerWinCount ?? 0,
-            supportCardIds: h.supportCardIds ?? [],
-            supportCardLimitBreaks: h.supportCardLimitBreaks ?? [],
-        })),
-        teamStats: s.teamStats,
-        pairSynergy: s.pairSynergy ?? [],
-        gateStats,
-        trueskillRanking: s.trueskillRanking ?? [],
-        empiricalBayesRanking: s.empiricalBayesRanking ?? [],
-    };
-}
-
-interface TrackGroup {
-    courseId: number;
-    trackLabel: string;
-    raceCount: number;
-    stats: AggregatedStats;
-}
-
-type Section = 'introduction' | 'overview' | 'strategy' | 'character' | 'skill' | 'explorer';
-
-interface TrackGroupContentProps {
-    group: TrackGroup;
-    cmId: string | null;
-    cmLabel: string;
-    scoreWinnersOnly: boolean;
-    setScoreWinnersOnly: (v: boolean) => void;
-    totalRaces: number;
-    totalUniqueUmas: number;
-    strategyColors: Record<number, string>;
-}
-
-type StyleDeckRow = {
-    deckKey: string;
-    cardIds: number[];
-    appearances: number;
-    wins: number;
-    popPct: number;
-    adjWinRate: number;
-    raceBonus: number;
-};
-
-type RaceBonusOverviewRow = {
-    bucketStart: number;
-    bucketEnd: number;
-    appearances: number;
-    wins: number;
-    popPct: number;
-    adjWinRate: number;
-    isOther: boolean;
-};
-
-const RACE_BONUS_OTHER_MIN_POP_PCT = 0.5;
-
-const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLabel, scoreWinnersOnly, setScoreWinnersOnly, totalRaces, totalUniqueUmas, strategyColors }) => {
-    const [section, setSection] = useState<Section>('introduction');
+const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLabel, section, onSectionChange, scoreWinnersOnly, setScoreWinnersOnly, totalRaces, totalUniqueUmas, strategyColors }) => {
     const [cardUsageOpen, setCardUsageOpen] = useState(false);
     const [styleDecksOpen, setStyleDecksOpen] = useState(false);
     const [skillsOpen, setSkillsOpen] = useState(false);
@@ -217,132 +60,161 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
     const [styleDeckMinPopPct, setStyleDeckMinPopPct] = useState<0 | 0.5 | 1 | 2>(0.5);
     const [gateMode, setGateMode] = useState<GateStatsMode>('winRate');
     const [gateFlavor, setGateFlavor] = useState<GateWinRateFlavor>('total');
+    const [panelData, setPanelData] = useState<GroupPanelData | null>(null);
+    const [panelDataLoading, setPanelDataLoading] = useState(false);
+    const [panelDataError, setPanelDataError] = useState<string | null>(null);
+    const [deckData, setDeckData] = useState<GroupDeckData | null>(null);
+    const [deckDataLoading, setDeckDataLoading] = useState(false);
+    const [deckDataError, setDeckDataError] = useState<string | null>(null);
+    const [skillOverview, setSkillOverview] = useState<Map<number, SkillStats> | null>(null);
+    const [skillOverviewLoading, setSkillOverviewLoading] = useState(false);
+    const [skillOverviewError, setSkillOverviewError] = useState<string | null>(null);
+    const [skillDetailCache, setSkillDetailCache] = useState<Map<number, GroupSkillDetailPayload>>(new Map());
+    const [skillDetailLoadingIds, setSkillDetailLoadingIds] = useState<Set<number>>(new Set());
 
-    const allHorses = group.stats.allHorses;
+    const sectionNeedsPanelData = PANEL_DATA_SECTIONS.includes(section);
+    const sectionNeedsSkillOverview = section === 'skill';
+    const shouldFetchPanelData = sectionNeedsPanelData;
+    const shouldFetchDeckData = styleDecksOpen;
+    const panelDataUnavailable = sectionNeedsPanelData && !panelData;
+    const deckDataUnavailable = styleDecksOpen && !deckData;
+    const skillDataUnavailable = section === 'skill' && !skillOverview;
 
-    const winners = useMemo(
-        () => allHorses.filter(h => h.finishOrder === 1 && h.finishTime > 0),
-        [allHorses]
-    );
-    const scoredWinners = useMemo(() => winners.filter(h => h.rankScore > 0), [winners]);
-    const fastestWin = useMemo(() => winners.reduce<HorseEntry | null>((b, h) => !b || h.finishTime < b.finishTime ? h : b, null), [winners]);
-    const slowestWin = useMemo(() => winners.reduce<HorseEntry | null>((b, h) => !b || h.finishTime > b.finishTime ? h : b, null), [winners]);
-    const highestWinner = useMemo(() => scoredWinners.reduce<HorseEntry | null>((b, h) => !b || h.rankScore > b.rankScore ? h : b, null), [scoredWinners]);
-    const lowestWinner = useMemo(() => scoredWinners.reduce<HorseEntry | null>((b, h) => !b || h.rankScore < b.rankScore ? h : b, null), [scoredWinners]);
+    useEffect(() => {
+        setPanelData(null);
+        setPanelDataLoading(false);
+        setPanelDataError(null);
+        setDeckData(null);
+        setDeckDataLoading(false);
+        setDeckDataError(null);
+        setSkillOverview(null);
+        setSkillOverviewLoading(false);
+        setSkillOverviewError(null);
+        setSkillDetailCache(new Map());
+        setSkillDetailLoadingIds(new Set());
+    }, [cmId, group.courseId]);
 
-    const styleReps = useMemo<Record<number, StyleRepEntry[]>>(() => {
-        const BAYES_PRIOR = BAYES_UMA.PRIOR;
-        const BAYES_K = BAYES_UMA.K;
-        const DISTANCE_PRIOR_K = 72;
-        const SCORE_BUCKET_K = 24;
-        const SCORE_BUCKET_SIZE = 500;
-        type Tally = {
-            cardId: number;
-            charaId: number;
-            charaName: string;
-            wins: number;
-            appearances: number;
-            expectedWins: number;
-        };
-        type CountStat = { wins: number; appearances: number };
-        const map = new Map<string, Tally>();
-        const totalsByStrategy = new Map<number, number>();
-        const strategyStrength = new Map<number, CountStat>();
-        const distanceStrength = new Map<string, CountStat>();
-        const scoreBucketStrength = new Map<string, CountStat>();
+    useEffect(() => {
+        if (!shouldFetchPanelData || !cmId || panelData !== null || panelDataLoading) return;
 
-        const recordCount = (statsMap: Map<string | number, CountStat>, key: string | number, win: boolean) => {
-            if (!statsMap.has(key)) {
-                statsMap.set(key, { wins: 0, appearances: 0 });
-            }
-            const entry = statsMap.get(key)!;
-            entry.appearances += 1;
-            if (win) entry.wins += 1;
-        };
-
-        const getExpectedWinRate = (horse: HorseEntry): number => {
-            const strategyStats = strategyStrength.get(horse.strategy);
-            const strategyPrior = strategyStats && strategyStats.appearances > 0
-                ? strategyStats.wins / strategyStats.appearances
-                : BAYES_PRIOR;
-            if (horse.rankScore <= 0) {
-                return strategyPrior;
-            }
-
-            const aptDistance = Number(horse.aptDistance ?? 0);
-            const distanceKey = `${horse.strategy}_${aptDistance}`;
-            const scoreBucket = Math.floor(horse.rankScore / SCORE_BUCKET_SIZE) * SCORE_BUCKET_SIZE;
-            const scoreBucketKey = `${distanceKey}_${scoreBucket}`;
-            const distanceStats = distanceStrength.get(distanceKey);
-            const distancePrior = distanceStats && distanceStats.appearances > 0
-                ? (distanceStats.wins + DISTANCE_PRIOR_K * strategyPrior) / (distanceStats.appearances + DISTANCE_PRIOR_K)
-                : strategyPrior;
-            const bucketStats = scoreBucketStrength.get(scoreBucketKey);
-            return bucketStats && bucketStats.appearances > 0
-                ? (bucketStats.wins + SCORE_BUCKET_K * distancePrior) / (bucketStats.appearances + SCORE_BUCKET_K)
-                : distancePrior;
-        };
-
-        for (const h of allHorses) {
-            const win = h.finishOrder === 1;
-            totalsByStrategy.set(h.strategy, (totalsByStrategy.get(h.strategy) ?? 0) + 1);
-            recordCount(strategyStrength, h.strategy, win);
-            if (h.rankScore > 0) {
-                const aptDistance = Number(h.aptDistance ?? 0);
-                const distanceKey = `${h.strategy}_${aptDistance}`;
-                const scoreBucket = Math.floor(h.rankScore / SCORE_BUCKET_SIZE) * SCORE_BUCKET_SIZE;
-                const scoreBucketKey = `${distanceKey}_${scoreBucket}`;
-                recordCount(distanceStrength, distanceKey, win);
-                recordCount(scoreBucketStrength, scoreBucketKey, win);
-            }
-        }
-
-        for (const h of allHorses) {
-            const key = `${h.strategy}_${h.cardId}`;
-            if (!map.has(key)) {
-                map.set(key, {
-                    cardId: h.cardId,
-                    charaId: h.charaId,
-                    charaName: h.charaName,
-                    wins: 0,
-                    appearances: 0,
-                    expectedWins: 0,
-                });
-            }
-            const t = map.get(key)!;
-            t.appearances++;
-            if (h.finishOrder === 1) t.wins++;
-            t.expectedWins += getExpectedWinRate(h);
-        }
-        const result: Record<number, StyleRepEntry[]> = {};
-        for (const [key, t] of map.entries()) {
-            if (t.wins === 0) continue;
-            const strategy = Number(key.split('_')[0]);
-            if (!result[strategy]) result[strategy] = [];
-            const totalAppearances = totalsByStrategy.get(strategy) ?? 0;
-            const winRate = t.wins / t.appearances;
-            const bayesianWinRate = (t.wins + BAYES_K * BAYES_PRIOR) / (t.appearances + BAYES_K);
-            const expectedWinRate = t.expectedWins / Math.max(t.appearances, 1);
-            const scoreAdjustedWinRate = (t.wins + BAYES_K * expectedWinRate) / (t.appearances + BAYES_K);
-            const scoreAdjustedLift = scoreAdjustedWinRate - expectedWinRate;
-            const popPct = totalAppearances > 0 ? (t.appearances / totalAppearances) * 100 : 0;
-            result[strategy].push({
-                ...t,
-                popPct,
-                winRate,
-                bayesianWinRate,
-                expectedWinRate,
-                scoreAdjustedWinRate,
-                scoreAdjustedLift,
+        const controller = new AbortController();
+        setPanelDataLoading(true);
+        setPanelDataError(null);
+        fetch(`${UMA_LOGS_API_BASE}/api/umalogs/${encodeURIComponent(cmId)}/groups/${group.courseId}/panel-data`, {
+            signal: controller.signal,
+        })
+            .then((r) => {
+                if (!r.ok) throw new Error(`HTTP ${r.status} - group panel data not found`);
+                return r.json() as Promise<GroupPanelData>;
+            })
+            .then((json) => {
+                setPanelData(json);
+                setPanelDataLoading(false);
+            })
+            .catch((err: Error) => {
+                if (err.name === "AbortError") return;
+                setPanelDataError(err.message);
+                setPanelDataLoading(false);
             });
-        }
-        for (const sId of [1, 2, 3, 4]) {
-            if (result[sId]) {
-                result[sId].sort((a, b) => b.bayesianWinRate - a.bayesianWinRate);
-            }
-        }
-        return result;
-    }, [allHorses]);
+
+        return () => controller.abort();
+    }, [cmId, group.courseId, panelData, shouldFetchPanelData]);
+
+    useEffect(() => {
+        if (!shouldFetchDeckData || !cmId || deckData !== null || deckDataLoading) return;
+
+        const controller = new AbortController();
+        setDeckDataLoading(true);
+        setDeckDataError(null);
+        fetch(`${UMA_LOGS_API_BASE}/api/umalogs/${encodeURIComponent(cmId)}/groups/${group.courseId}/deck-data`, {
+            signal: controller.signal,
+        })
+            .then((r) => {
+                if (!r.ok) throw new Error(`HTTP ${r.status} - group deck data not found`);
+                return r.json() as Promise<GroupDeckData>;
+            })
+            .then((json) => {
+                setDeckData(json);
+                setDeckDataLoading(false);
+            })
+            .catch((err: Error) => {
+                if (err.name === "AbortError") return;
+                setDeckDataError(err.message);
+                setDeckDataLoading(false);
+            });
+
+        return () => controller.abort();
+    }, [cmId, deckData, group.courseId, shouldFetchDeckData]);
+
+    useEffect(() => {
+        if (!sectionNeedsSkillOverview || !cmId || skillOverview !== null || skillOverviewLoading) return;
+
+        const controller = new AbortController();
+        setSkillOverviewLoading(true);
+        setSkillOverviewError(null);
+        fetch(`${UMA_LOGS_API_BASE}/api/umalogs/${encodeURIComponent(cmId)}/groups/${group.courseId}/skills`, {
+            signal: controller.signal,
+        })
+            .then((r) => {
+                if (!r.ok) throw new Error(`HTTP ${r.status} - group skill data not found`);
+                return r.json() as Promise<GroupSkillOverviewResponse>;
+            })
+            .then((json) => {
+                setSkillOverview(deserializeSkillOverviewStats(json.skillStats));
+                setSkillOverviewLoading(false);
+            })
+            .catch((err: Error) => {
+                if (err.name === "AbortError") return;
+                setSkillOverviewError(err.message);
+                setSkillOverviewLoading(false);
+            });
+
+        return () => controller.abort();
+    }, [cmId, group.courseId, sectionNeedsSkillOverview, skillOverview]);
+
+    const loadSkillDetail = (skillId: number) => {
+        if (!cmId || skillDetailCache.has(skillId) || skillDetailLoadingIds.has(skillId)) return;
+        setSkillDetailLoadingIds((prev) => {
+            const next = new Set(prev);
+            next.add(skillId);
+            return next;
+        });
+        fetch(`${UMA_LOGS_API_BASE}/api/umalogs/${encodeURIComponent(cmId)}/groups/${group.courseId}/skills/${skillId}`)
+            .then((r) => {
+                if (!r.ok) throw new Error(`HTTP ${r.status} - skill detail not found`);
+                return r.json() as Promise<GroupSkillDetailResponse>;
+            })
+            .then((json) => {
+                setSkillDetailCache((prev) => {
+                    const next = new Map(prev);
+                    next.set(skillId, {
+                        buckets: json.buckets,
+                        winBreakdown: json.winBreakdown,
+                    });
+                    return next;
+                });
+            })
+            .catch((err: Error) => {
+                setSkillOverviewError(err.message);
+            })
+            .finally(() => {
+                setSkillDetailLoadingIds((prev) => {
+                    const next = new Set(prev);
+                    next.delete(skillId);
+                    return next;
+                });
+            });
+    };
+
+    const fastestWin = deserializeHorseEntry(panelData?.topHorses.fastestWin);
+    const slowestWin = deserializeHorseEntry(panelData?.topHorses.slowestWin);
+    const highestWinner = deserializeHorseEntry(panelData?.topHorses.highestWinner);
+    const lowestWinner = deserializeHorseEntry(panelData?.topHorses.lowestWinner);
+    const winningTimeHistogram = panelData?.winningTimeHistogram ?? null;
+    const scoreHistogram = scoreWinnersOnly
+        ? (panelData?.scoreHistogramWinners ?? null)
+        : (panelData?.scoreHistogramAll ?? null);
+    const styleReps = panelData?.styleReps ?? {};
 
     const skillIconMap = useMemo<Map<number, number>>(() => {
         const map = new Map<number, number>();
@@ -357,47 +229,11 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
         return iconId ? AssetLoader.getSkillIcon(iconId) : null;
     };
 
-    type OverviewSkillRow = { skillId: number; name: string; isInherit: boolean; appearances: number; winAppearances: number; popPct: number; adjWinRate: number };
-    const skillsByStrategy = useMemo((): Record<number, OverviewSkillRow[]> => {
-        const result: Record<number, OverviewSkillRow[]> = {};
-        for (const strategyId of [1, 2, 3, 4, 5]) {
-            const horses = allHorses.filter(h => h.strategy === strategyId);
-            const total = horses.length;
-            if (total === 0) continue;
-            const totalWins = horses.filter(h => h.finishOrder === 1).length;
-            const BAYES_K = BAYES_UMA.K;
-            const priorMean = totalWins / total;
-            const counts = new Map<number, { apps: number; winApps: number }>();
-            for (const h of horses) {
-                for (const sid of h.learnedSkillIds) {
-                    const c = counts.get(sid) ?? { apps: 0, winApps: 0 };
-                    c.apps++;
-                    if (h.finishOrder === 1) c.winApps++;
-                    counts.set(sid, c);
-                }
-            }
-            const rows: OverviewSkillRow[] = [];
-            for (const [skillId, { apps, winApps }] of counts) {
-                rows.push({
-                    skillId,
-                    name: UMDatabaseWrapper.skillName(skillId),
-                    isInherit: skillId >= 900000 && skillId < 1000000,
-                    appearances: apps,
-                    winAppearances: winApps,
-                    popPct: (apps / total) * 100,
-                    adjWinRate: (winApps + BAYES_K * priorMean) / (apps + BAYES_K),
-                });
-            }
-            result[strategyId] = rows;
-        }
-        return result;
-    }, [allHorses]);
+    const skillsByStrategy = panelData?.skillsByStrategy ?? {};
 
-    const {
-        rawUnifiedCharacterWinsAll,
-        rawUnifiedCharacterWinsOpp,
-        rawUnifiedCharacterPop,
-    } = useWinDistributionData(allHorses);
+    const rawUnifiedCharacterWinsAll = panelData?.rawUnifiedCharacterWinsAll ?? [];
+    const rawUnifiedCharacterWinsOpp = panelData?.rawUnifiedCharacterWinsOpp ?? [];
+    const rawUnifiedCharacterPop = panelData?.rawUnifiedCharacterPop ?? [];
     const gateFlavorLabels: Record<GateWinRateFlavor, string> = {
         total: 'Total',
         front: 'Front',
@@ -462,13 +298,11 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
         group.stats.gateStats.blockedRatesByFlavor.total.length > 0 ||
         group.stats.gateStats.dodgingDangerRates.length > 0;
     const availableDeckStyleIds = useMemo(() => {
-        const present = new Set(allHorses.filter(h => h.supportCardIds.length === 6).map(h => h.strategy));
-        const ordered = STRATEGY_DISPLAY_ORDER.filter(sid => present.has(sid)) as number[];
-        for (const sid of present) {
-            if (!ordered.includes(sid)) ordered.push(sid);
+        if (deckData) {
+            return Object.keys(deckData.styleDeckRowsByStyle).map(Number).sort((a, b) => a - b);
         }
-        return ordered;
-    }, [allHorses]);
+        return [];
+    }, [deckData]);
     const [selectedDeckStyle, setSelectedDeckStyle] = useState<number>(availableDeckStyleIds[0] ?? 1);
     useEffect(() => {
         if (!availableDeckStyleIds.includes(selectedDeckStyle)) {
@@ -480,86 +314,9 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
             setGateFlavor('front');
         }
     }, [gateFlavor, gateMode]);
-    const raceBonusRows = useMemo(() => {
-        const horses = allHorses.filter(h => h.supportCardIds.length === 6);
-        const map = new Map<number, { appearances: number; wins: number }>();
-        for (const h of horses) {
-            const rb = getHorseDeckRaceBonus(h);
-            if (rb === null) continue;
-            const bucketStart = Math.floor(rb / 5) * 5;
-            if (!map.has(bucketStart)) map.set(bucketStart, { appearances: 0, wins: 0 });
-            const e = map.get(bucketStart)!;
-            e.appearances++;
-            if (h.finishOrder === 1) e.wins++;
-        }
-        const total = horses.length;
-        const priorMean = total > 0 ? horses.filter(h => h.finishOrder === 1).length / total : 1 / 9;
-        const entries = Array.from(map.entries());
-        const meetsOverviewThreshold = (appearances: number) =>
-            total > 0 && (appearances / total) * 100 >= RACE_BONUS_OTHER_MIN_POP_PCT;
-        const rows: RaceBonusOverviewRow[] = entries
-            .filter(([, { appearances }]) => meetsOverviewThreshold(appearances))
-            .map(([bucketStart, { appearances, wins }]) => ({
-                bucketStart,
-                bucketEnd: bucketStart + 4,
-                appearances,
-                wins,
-                popPct: (appearances / total) * 100,
-                adjWinRate: (wins + BAYES_UMA.K * priorMean) / (appearances + BAYES_UMA.K),
-                isOther: false,
-            }))
-            .sort((a, b) => a.bucketStart - b.bucketStart);
-        const otherFiltered = entries.filter(([, { appearances }]) => !meetsOverviewThreshold(appearances));
-        const otherAppearances = otherFiltered.reduce((sum, [, { appearances }]) => sum + appearances, 0);
-        const otherWins = otherFiltered.reduce((sum, [, { wins }]) => sum + wins, 0);
-        if (otherAppearances > 0) {
-            rows.push({
-                bucketStart: -1,
-                bucketEnd: -1,
-                appearances: otherAppearances,
-                wins: otherWins,
-                popPct: (otherAppearances / total) * 100,
-                adjWinRate: 0,
-                isOther: true,
-            });
-        }
-        return rows;
-    }, [allHorses]);
+    const raceBonusRows = panelData?.raceBonusRows ?? [];
 
-    const styleDeckRowsByStyle = useMemo(() => {
-        const result: Record<number, StyleDeckRow[]> = {};
-        for (const sid of availableDeckStyleIds) {
-            const horses = allHorses.filter(h => h.strategy === sid && h.supportCardIds.length === 6);
-            const total = horses.length;
-            if (total === 0) {
-                result[sid] = [];
-                continue;
-            }
-            const stat = group.stats.strategyStats.find(s => s.strategy === sid);
-            const priorMean = stat && stat.totalRaces > 0 ? stat.wins / stat.totalRaces : horses.filter(h => h.finishOrder === 1).length / total;
-            const deckMap = new Map<string, { cardIds: number[]; apps: number; wins: number; raceBonus: number }>();
-            for (const h of horses) {
-                const raceBonus = getHorseDeckRaceBonus(h);
-                if (raceBonus === null) continue;
-                const sortedCardIds = [...h.supportCardIds].sort((a, b) => a - b);
-                const key = `${sortedCardIds.join('_')}|rb${raceBonus}`;
-                if (!deckMap.has(key)) deckMap.set(key, { cardIds: sortedCardIds, apps: 0, wins: 0, raceBonus });
-                const d = deckMap.get(key)!;
-                d.apps++;
-                if (h.finishOrder === 1) d.wins++;
-            }
-            result[sid] = Array.from(deckMap.values()).map(({ cardIds, apps, wins, raceBonus }) => ({
-                deckKey: `${cardIds.join('_')}|rb${raceBonus}`,
-                cardIds,
-                appearances: apps,
-                wins,
-                popPct: (apps / total) * 100,
-                adjWinRate: (wins + BAYES_UMA.K * priorMean) / (apps + BAYES_UMA.K),
-                raceBonus,
-            }));
-        }
-        return result;
-    }, [allHorses, availableDeckStyleIds, group.stats.strategyStats]);
+    const styleDeckRowsByStyle = deckData?.styleDeckRowsByStyle ?? {};
     const selectedStyleDeckRows = styleDeckRowsByStyle[selectedDeckStyle] ?? [];
     const effectiveStyleDeckMinPopPct = styleDeckSort === "pop" ? 0 : styleDeckMinPopPct;
     const filteredStyleDeckRows = useMemo(
@@ -578,11 +335,11 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
     return (
         <>
             <Nav variant="tabs" className="uma-section-nav">
-                {(['introduction', 'overview', 'strategy', 'character', 'skill', 'explorer'] as Section[]).map((s) => (
+                {UMA_LOGS_SECTIONS.map((s) => (
                     <Nav.Item key={s}>
                         <Nav.Link
                             active={section === s}
-                            onClick={() => setSection(s)}
+                            onClick={() => onSectionChange(s)}
                             className="uma-section-link"
                         >
                             {s === 'introduction' ? 'Introduction' :
@@ -590,7 +347,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                                     s === 'strategy' ? 'Strategy Analysis' :
                                         s === 'character' ? 'Character Analysis' :
                                             s === 'skill' ? 'Skill Analysis' :
-                                                'Explorer'}
+                                                s === 'explorer' ? 'Explorer' : 'Replays'}
                         </Nav.Link>
                     </Nav.Item>
                 ))}
@@ -601,8 +358,13 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                     <p>
                         Welcome to the public room data page, aka UmaLogs.
                         It currently serves stats for <strong>{totalRaces.toLocaleString()}</strong> total{' '}
-                        {cmLabel} room matches featuring <strong>{totalUniqueUmas.toLocaleString()}</strong> unique umas.
+                        {cmLabel} room matches featuring <strong>{(panelData?.uniqueUmaCount ?? totalUniqueUmas)?.toLocaleString() ?? "..."}</strong> unique umas.
                     </p>
+                    {(panelData?.uniqueUmaCount ?? totalUniqueUmas) === null && (
+                        <p className="text-muted mb-0">
+                            Unique-uma counts now come from the server-side panel cache and load when you open Overview, Strategy Analysis, or Character Analysis.
+                        </p>
+                    )}
                     <h5>Adjusted Win Rates</h5>
                     <p>
                         In many places you'll see references to adjusted win rates over raw win rates.
@@ -620,14 +382,42 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                 </div>
             )}
 
-            {section === 'overview' && (
+            {panelDataError && panelDataUnavailable && (
+                <Alert variant="warning" className="mt-3">
+                    <strong>Panel data not available.</strong>
+                    <br />
+                    <small className="text-muted">{panelDataError}</small>
+                </Alert>
+            )}
+
+            {panelDataLoading && panelDataUnavailable && (
+                <div className="p-4 text-center">
+                    <Spinner animation="border" /> Loading panel data...
+                </div>
+            )}
+
+            {skillOverviewError && skillDataUnavailable && (
+                <Alert variant="warning" className="mt-3">
+                    <strong>Skill data not available.</strong>
+                    <br />
+                    <small className="text-muted">{skillOverviewError}</small>
+                </Alert>
+            )}
+
+            {skillOverviewLoading && skillDataUnavailable && (
+                <div className="p-4 text-center">
+                    <Spinner animation="border" /> Loading skill data...
+                </div>
+            )}
+
+            {!panelDataUnavailable && section === 'overview' && (
                 <div className="uma-overview-tab">
                     <div className="uma-stats-top">
                         <div className="uma-overview-main">
                             <div className="uma-overview-left">
                                 <div className="uma-win-row">
                                     <Histogram
-                                        values={winners.map(h => h.finishTime)}
+                                        data={winningTimeHistogram}
                                         title="Winning Time Distribution"
                                         formatX={(v) => {
                                             const m = Math.floor(v / 60);
@@ -640,9 +430,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                                 </div>
                                 <div className="uma-score-row">
                                     <Histogram
-                                        values={allHorses
-                                            .filter(h => h.rankScore > 0 && (!scoreWinnersOnly || h.finishOrder === 1))
-                                            .map(h => h.rankScore)}
+                                        data={scoreHistogram}
                                         title="Score Distribution"
                                         formatX={(v) => Math.round(v).toLocaleString()}
                                         xAxisLabel="Score"
@@ -677,7 +465,6 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                                                 displayValue={formatTime(fastestWin.finishTime)}
                                                 skillStats={group.stats.skillStats}
                                                 strategyColors={strategyColors}
-                                                allHorses={group.stats.allHorses}
                                             />
                                         )}
                                         {slowestWin && (
@@ -687,7 +474,6 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                                                 displayValue={formatTime(slowestWin.finishTime)}
                                                 skillStats={group.stats.skillStats}
                                                 strategyColors={strategyColors}
-                                                allHorses={group.stats.allHorses}
                                             />
                                         )}
                                         {highestWinner && (
@@ -699,7 +485,6 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                                                 showRankIcon
                                                 skillStats={group.stats.skillStats}
                                                 strategyColors={strategyColors}
-                                                allHorses={group.stats.allHorses}
                                             />
                                         )}
                                         {lowestWinner && (
@@ -711,7 +496,6 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                                                 showRankIcon
                                                 skillStats={group.stats.skillStats}
                                                 strategyColors={strategyColors}
-                                                allHorses={group.stats.allHorses}
                                             />
                                         )}
                                     </div>
@@ -776,7 +560,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                                                     ))}
                                                     {displayedGateWinRates.length === 0 && (
                                                         <div className="uma-gate-body-row" style={{ gridTemplateColumns: gateGridColumns }}>
-                                                            <div style={{ gridColumn: '1 / span 4', textAlign: 'center', color: '#718096' }}>
+                                                            <div className="uma-gate-no-data-wide">
                                                                 No data
                                                             </div>
                                                         </div>
@@ -805,7 +589,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                                                     ))}
                                                     {displayedBlockedRates.length === 0 && (
                                                         <div className="uma-gate-body-row" style={{ gridTemplateColumns: gateGridColumns }}>
-                                                            <div style={{ gridColumn: '1 / span 3', textAlign: 'center', color: '#718096' }}>
+                                                            <div className="uma-gate-no-data">
                                                                 No data
                                                             </div>
                                                         </div>
@@ -834,7 +618,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                                                     ))}
                                                     {displayedDodgingDangerRates.length === 0 && (
                                                         <div className="uma-gate-body-row" style={{ gridTemplateColumns: gateGridColumns }}>
-                                                            <div style={{ gridColumn: '1 / span 3', textAlign: 'center', color: '#718096' }}>
+                                                            <div className="uma-gate-no-data">
                                                                 No data
                                                             </div>
                                                         </div>
@@ -877,305 +661,113 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                     </div>
                 </div>
             )}
-            {cardUsageOpen && (
-                <div className="cdt-overlay" onClick={() => setCardUsageOpen(false)}>
-                    <div className="cdt-modal ca-cards-modal" onClick={e => e.stopPropagation()}>
-                        <div className="cdt-header">
-                            <h3 className="cdt-title">Support Card Usage</h3>
-                            <button className="cdt-close-btn" onClick={() => setCardUsageOpen(false)}>&times;</button>
-                        </div>
-                        <div className="cdt-content">
-                            <SupportCardPanel horses={group.stats.allHorses} />
-                        </div>
-                    </div>
-                </div>
-            )}
-            {skillsOpen && (() => {
-                const strategyRows = skillsByStrategy[skillsStrategyTab] ?? [];
-                const effectiveMinPop = skillsSort === "winRate" ? skillsMinPopPct : 0;
-                const filtered = effectiveMinPop > 0 ? strategyRows.filter(r => r.popPct >= effectiveMinPop) : strategyRows;
-                const sorted = skillsSort === "pop"
-                    ? [...filtered].sort((a, b) => b.popPct - a.popPct)
-                    : [...filtered].filter(r => r.winAppearances > 0).sort((a, b) => b.adjWinRate - a.adjWinRate);
-                const maxP = Math.max(...sorted.map(r => Math.max(r.popPct, r.adjWinRate * 100)), 1);
-                const activeStrategies = ([5, 1, 2, 3, 4] as const).filter(s => (skillsByStrategy[s]?.length ?? 0) > 0);
-                return (
-                    <div className="cdt-overlay" onClick={() => setSkillsOpen(false)}>
-                        <div className="cdt-modal ca-skills-modal" onClick={e => e.stopPropagation()}>
-                            <div className="cdt-header">
-                                <h3 className="cdt-title">Skills by Strategy</h3>
-                                <div className="ca-sort-toggle ca-sort-toggle--modal">
-                                    <button className={`ca-sort-btn${skillsSort === "pop" ? " ca-sort-btn--active" : ""}`} onClick={() => setSkillsSort("pop")}>By Population</button>
-                                    <button className={`ca-sort-btn${skillsSort === "winRate" ? " ca-sort-btn--active" : ""}`} onClick={() => setSkillsSort("winRate")}>By Adj. Win%</button>
-                                </div>
-                                <button className="cdt-close-btn" onClick={() => setSkillsOpen(false)}>&times;</button>
-                            </div>
-                            <div className="cdt-content">
-                                <div className="histogram-toggle uma-gate-toggle uma-toggle-row-spaced">
-                                    {activeStrategies.map(sId => (
-                                        <button
-                                            key={sId}
-                                            className={`histogram-toggle-btn uma-gate-toggle-btn${skillsStrategyTab === sId ? " active" : ""}`}
-                                            onClick={() => setSkillsStrategyTab(sId)}
-                                        >
-                                            {STRATEGY_NAMES[sId] ?? `Strategy ${sId}`}
-                                        </button>
-                                    ))}
-                                </div>
-                                {skillsSort === "winRate" && (
-                                    <div className="scp-pop-filter-toggle uma-toggle-row-spaced">
-                                        {POP_FILTER_OPTIONS.map(opt => (
-                                            <button
-                                                key={opt.value}
-                                                className={`scp-pop-filter-btn${skillsMinPopPct === opt.value ? " active" : ""}`}
-                                                onClick={() => setSkillsMinPopPct(opt.value as 0 | 0.5 | 1 | 2)}
-                                            >
-                                                {opt.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                                {sorted.length === 0 ? (
-                                    <span className="sa-no-data">No skill data for this strategy.</span>
-                                ) : sorted.map(row => {
-                                    const iconUrl = getSkillIconUrl(row.skillId);
-                                    return (
-                                    <div key={row.skillId} className="sa-sb-row">
-                                        <div className="ca-char-label">
-                                            {iconUrl && <img src={iconUrl} alt="" className="ca-skills-skill-icon" />}
-                                            <span className="ca-skills-skill-name">{row.name}</span>
-                                            {row.isInherit && <span className="exp-skill-inherit-tag">(inherit)</span>}
-                                        </div>
-                                        <div className="sa-sb-bar-row">
-                                            <div className="sa-sb-bar-label">Pop%</div>
-                                            <div className="sa-sb-track sa-sb-track--pick">
-                                                <div className="sa-sb-bar-fill sa-sb-bar-fill--pick" style={{ width: `${(row.popPct / maxP) * 100}%` }} />
-                                            </div>
-                                            <div className="sa-sb-value sa-sb-value--pick uma-bar-value-wide">
-                                                {row.popPct.toFixed(1)}% <span className="ca-abs-count">({row.appearances})</span>
-                                            </div>
-                                        </div>
-                                        <div className="sa-sb-bar-row">
-                                            <div className="sa-sb-bar-label">Win%</div>
-                                            <div className="sa-sb-track sa-sb-track--win">
-                                                <div className="sa-sb-bar-fill" style={{ width: `${(row.adjWinRate * 100 / maxP) * 100}%`, background: "#68d391" }} />
-                                            </div>
-                                            <div className="sa-sb-value sa-sb-value--win uma-bar-value-wide">
-                                                {(row.adjWinRate * 100).toFixed(1)}% <span className="ca-abs-count">({row.winAppearances})</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </div>
-                );
-            })()}
-            {styleDecksOpen && (
-                <div className="cdt-overlay" onClick={() => setStyleDecksOpen(false)}>
-                    <div className="cdt-modal ca-decks-modal" onClick={e => e.stopPropagation()}>
-                        <div className="cdt-header">
-                            <h3 className="cdt-title">Decks</h3>
-                            <div className="ca-sort-toggle ca-sort-toggle--modal">
-                                <button
-                                    className={`ca-sort-btn${deckModalTab === "overview" ? " ca-sort-btn--active" : ""}`}
-                                    onClick={() => setDeckModalTab("overview")}>
-                                    Overview
-                                </button>
-                                <button
-                                    className={`ca-sort-btn${deckModalTab === "decks" ? " ca-sort-btn--active" : ""}`}
-                                    onClick={() => setDeckModalTab("decks")}>
-                                    Decks
-                                </button>
-                            </div>
-                            <button className="cdt-close-btn" onClick={() => setStyleDecksOpen(false)}>&times;</button>
-                        </div>
-                        <div className="cdt-content">
-                            {deckModalTab === "overview" && (() => {
-                                const maxPct = Math.max(...raceBonusRows.filter(r => !r.isOther).map(r => Math.max(r.popPct, r.adjWinRate * 100)), 1);
-                                return raceBonusRows.length === 0
-                                    ? <span className="sa-no-data">No deck data available.</span>
-                                    : (
-                                        <table className="rb-table">
-                                            <thead>
-                                                <tr>
-                                                    <th className="rb-th">Race Bonus</th>
-                                                    <th className="rb-th rb-th--r">Entries</th>
-                                                    <th className="rb-th rb-th--r">Wins</th>
-                                                    <th className="rb-th rb-th--bars">Pop% / Adj. Win%</th>
-                                                </tr>
-                                            </thead>
-                                                <tbody>
-                                                    {raceBonusRows.map(row => (
-                                                    <tr key={row.isOther ? "other" : row.bucketStart} className="rb-row">
-                                                        <td className="rb-td rb-td--bonus">
-                                                            {row.isOther ? (
-                                                                <span className="uma-muted-inline">
-                                                                    Other{" "}
-                                                                    <InfoTooltip
-                                                                        id="race-bonus-other-info"
-                                                                        tip={`Race bonus buckets with under ${RACE_BONUS_OTHER_MIN_POP_PCT}% population are grouped here.`}
-                                                                    />
-                                                                </span>
-                                                            ) : `${row.bucketStart}-${row.bucketEnd}%`}
-                                                        </td>
-                                                        <td className="rb-td rb-td--r">{row.appearances}</td>
-                                                        <td className="rb-td rb-td--r">{row.wins}</td>
-                                                        <td className="rb-td rb-td--bars">
-                                                            <div className="sa-sb-bar-row">
-                                                                <div className="sa-sb-bar-label">Pop%</div>
-                                                                <div className="sa-sb-track sa-sb-track--pick">
-                                                                    <div className="sa-sb-bar-fill sa-sb-bar-fill--pick" style={{ width: `${(row.popPct / maxPct) * 100}%` }} />
-                                                                </div>
-                                                                <div className="sa-sb-value sa-sb-value--pick">{row.popPct.toFixed(1)}%</div>
-                                                            </div>
-                                                            {!row.isOther && (
-                                                                <div className="sa-sb-bar-row">
-                                                                    <div className="sa-sb-bar-label">Win%</div>
-                                                                    <div className="sa-sb-track sa-sb-track--win">
-                                                                        <div className="sa-sb-bar-fill" style={{ width: `${(row.adjWinRate * 100 / maxPct) * 100}%`, background: "#68d391" }} />
-                                                                    </div>
-                                                                    <div className="sa-sb-value sa-sb-value--win">{(row.adjWinRate * 100).toFixed(1)}%</div>
-                                                                </div>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    );
-                            })()}
-                            {deckModalTab === "decks" && (
-                                <>
-                                    <div className="histogram-toggle uma-gate-toggle uma-toggle-row-spaced">
-                                        {availableDeckStyleIds.map((sid) => (
-                                            <button
-                                                key={sid}
-                                                className={`histogram-toggle-btn uma-gate-toggle-btn${selectedDeckStyle === sid ? " active" : ""}`}
-                                                onClick={() => setSelectedDeckStyle(sid)}
-                                            >
-                                                {STRATEGY_NAMES[sid] ?? `Style ${sid}`}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <div className="ca-sort-toggle uma-toggle-row-spaced">
-                                        <button
-                                            className={`ca-sort-btn${styleDeckSort === "pop" ? " ca-sort-btn--active" : ""}`}
-                                            onClick={() => setStyleDeckSort("pop")}>
-                                            By Population
-                                        </button>
-                                        <button
-                                            className={`ca-sort-btn${styleDeckSort === "winRate" ? " ca-sort-btn--active" : ""}`}
-                                            onClick={() => setStyleDeckSort("winRate")}>
-                                            By Adj. Win%
-                                        </button>
-                                    </div>
-                                    {styleDeckSort === "winRate" && (
-                                        <div className="histogram-toggle uma-gate-toggle uma-toggle-row-spaced">
-                                            {POP_FILTER_OPTIONS.map((opt) => (
-                                                <button
-                                                    key={opt.value}
-                                                    className={`histogram-toggle-btn uma-gate-toggle-btn${styleDeckMinPopPct === opt.value ? " active" : ""}`}
-                                                    onClick={() => setStyleDeckMinPopPct(opt.value as 0 | 0.5 | 1 | 2)}
-                                                >
-                                                    {opt.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                    {selectedStyleDeckList.length === 0 ? (
-                                        <span className="sa-no-data">No deck data for this style.</span>
-                                    ) : selectedStyleDeckList.slice(0, 20).map(row => (
-                                        <div key={`${selectedDeckStyle}_${row.deckKey}`} className="sa-sb-row deck-row">
-                                            <div className="deck-cards-grid">
-                                                {row.cardIds.map((id, i) => (
-                                                    <img
-                                                        key={i}
-                                                        src={AssetLoader.getSupportCardIcon(id)}
-                                                        alt={`Card ${id}`}
-                                                        className="deck-card-icon"
-                                                        onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                                                    />
-                                                ))}
-                                            </div>
-                                            <div className="deck-bars">
-                                                <div className="uma-race-bonus-line">Race bonus: <span className="uma-race-bonus-value">{row.raceBonus}%</span></div>
-                                                <div className="sa-sb-bar-row">
-                                                    <div className="sa-sb-bar-label">Pop%</div>
-                                                    <div className="sa-sb-track sa-sb-track--pick">
-                                                        <div className="sa-sb-bar-fill sa-sb-bar-fill--pick" style={{ width: `${(row.popPct / selectedStyleDeckMaxPct) * 100}%` }} />
-                                                    </div>
-                                                    <div className="sa-sb-value sa-sb-value--pick uma-bar-value-wide">
-                                                        {row.popPct.toFixed(1)}% <span className="ca-abs-count">({row.appearances})</span>
-                                                    </div>
-                                                </div>
-                                                <div className="sa-sb-bar-row">
-                                                    <div className="sa-sb-bar-label">Win%</div>
-                                                    <div className="sa-sb-track sa-sb-track--win">
-                                                        <div className="sa-sb-bar-fill" style={{ width: `${(row.adjWinRate * 100 / selectedStyleDeckMaxPct) * 100}%`, background: "#68d391" }} />
-                                                    </div>
-                                                    <div className="sa-sb-value sa-sb-value--win uma-bar-value-wide">
-                                                        {(row.adjWinRate * 100).toFixed(1)}% <span className="ca-abs-count">({row.wins})</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
+            <CardUsageModal
+                open={cardUsageOpen}
+                onClose={() => setCardUsageOpen(false)}
+                rows={panelData?.supportCardRows}
+            />
+            <SkillsByStrategyModal
+                open={skillsOpen}
+                onClose={() => setSkillsOpen(false)}
+                skillsByStrategy={skillsByStrategy}
+                skillsStrategyTab={skillsStrategyTab}
+                setSkillsStrategyTab={setSkillsStrategyTab}
+                skillsSort={skillsSort}
+                setSkillsSort={setSkillsSort}
+                skillsMinPopPct={skillsMinPopPct}
+                setSkillsMinPopPct={setSkillsMinPopPct}
+                getSkillIconUrl={getSkillIconUrl}
+            />
+            <StyleDecksModal
+                open={styleDecksOpen}
+                onClose={() => setStyleDecksOpen(false)}
+                deckDataLoading={deckDataLoading}
+                deckDataUnavailable={deckDataUnavailable}
+                deckDataError={deckDataError}
+                deckModalTab={deckModalTab}
+                setDeckModalTab={setDeckModalTab}
+                raceBonusRows={raceBonusRows}
+                availableDeckStyleIds={availableDeckStyleIds}
+                selectedDeckStyle={selectedDeckStyle}
+                setSelectedDeckStyle={setSelectedDeckStyle}
+                styleDeckSort={styleDeckSort}
+                setStyleDeckSort={setStyleDeckSort}
+                styleDeckMinPopPct={styleDeckMinPopPct}
+                setStyleDeckMinPopPct={setStyleDeckMinPopPct}
+                selectedStyleDeckList={selectedStyleDeckList}
+                selectedStyleDeckMaxPct={selectedStyleDeckMaxPct}
+            />
 
-            {section === 'strategy' && (
+            {!panelDataUnavailable && section === 'strategy' && (
                 <div className="win-distribution-section">
                     <StrategyAnalysis
-                        datasetId={cmId}
+                        cmId={cmId}
+                        courseId={group.courseId}
+                        apiBase={UMA_LOGS_API_BASE}
+                        apiMode
                         strategyStats={group.stats.strategyStats}
                         totalRaces={group.stats.totalRaces}
                         roomCompositions={group.stats.roomCompositions}
-                        teamStats={group.stats.teamStats}
+                        styleCompositionRows={panelData?.styleCompositionRows ?? []}
                         styleReps={styleReps}
-                        allHorses={group.stats.allHorses}
                         skillStats={group.stats.skillStats}
                         strategyColors={strategyColors}
                     />
                 </div>
             )}
 
-            {section === 'character' && (
+            {!panelDataUnavailable && section === 'character' && (
                 <div className="win-distribution-section">
                     <CharacterAnalysis
+                        cmId={cmId}
+                        courseId={group.courseId}
+                        apiBase={UMA_LOGS_API_BASE}
+                        apiMode
                         rawWinsAll={rawUnifiedCharacterWinsAll}
                         rawWinsOpp={rawUnifiedCharacterWinsOpp}
                         rawPop={rawUnifiedCharacterPop}
                         spectatorMode
                         characterStats={group.stats.characterStats}
-                        allHorses={group.stats.allHorses}
                         skillStats={group.stats.skillStats}
-                        teamStats={group.stats.teamStats}
+                        characterTeamRates={panelData?.characterTeamRates ?? []}
                         strategyColors={strategyColors}
                     />
                 </div>
             )}
 
-            {section === 'skill' && (
+            {!skillDataUnavailable && section === 'skill' && (
                 <SkillAnalysis
-                    skillStats={group.stats.skillStats}
+                    skillStats={skillOverview ?? group.stats.skillStats}
                     skillActivations={group.stats.skillActivations}
                     avgRaceDistance={group.stats.avgRaceDistance}
                     characterStats={group.stats.characterStats}
                     strategyStats={group.stats.strategyStats}
-                    allHorses={group.stats.allHorses}
                     ownCharas={[]}
-                    precomputedBuckets={group.stats.skillActivationBuckets}
+                    precomputedBuckets={skillOverview ? undefined : group.stats.skillActivationBuckets}
+                    lazySkillDetails={skillOverview ? skillDetailCache : undefined}
+                    onLoadLazySkillDetail={skillOverview ? loadSkillDetail : undefined}
+                    lazySkillDetailLoadingIds={skillOverview ? skillDetailLoadingIds : undefined}
                 />
             )}
 
             {section === 'explorer' && (
-                <ExplorerTab allHorses={group.stats.allHorses} skillStats={group.stats.skillStats} strategyColors={strategyColors} />
+                <ExplorerTab
+                    cmId={cmId}
+                    courseId={group.courseId}
+                    apiBase={UMA_LOGS_API_BASE}
+                    apiMode
+                    skillStats={group.stats.skillStats}
+                    strategyColors={strategyColors}
+                />
+            )}
+
+            {section === 'replays' && (
+                <ReplaysTab
+                    cmId={cmId}
+                    courseId={group.courseId}
+                    apiBase={UMA_LOGS_API_BASE}
+                    strategyColors={strategyColors}
+                />
             )}
 
         </>
@@ -1183,6 +775,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
 };
 
 const UmaLogsPage: React.FC = () => {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [manifest, setManifest] = useState<Manifest | null>(null);
     const [manifestError, setManifestError] = useState<string | null>(null);
     const [selectedCmId, setSelectedCmId] = useState<string | null>(null);
@@ -1191,6 +784,21 @@ const UmaLogsPage: React.FC = () => {
     const [datasetError, setDatasetError] = useState<string | null>(null);
     const [scoreWinnersOnly, setScoreWinnersOnly] = useState(false);
     const [colorblindMode, setColorblindMode] = useState(false);
+    const tabParam = searchParams.get("tab");
+    const section: Section = UMA_LOGS_SECTIONS.includes(tabParam as Section)
+        ? (tabParam as Section)
+        : "introduction";
+
+    const handleSectionChange = (nextSection: Section) => {
+        if (nextSection === section) return;
+        const nextParams = new URLSearchParams(searchParams);
+        if (nextSection === "introduction") {
+            nextParams.delete("tab");
+        } else {
+            nextParams.set("tab", nextSection);
+        }
+        setSearchParams(nextParams, { replace: false });
+    };
 
     useEffect(() => {
         const stored = localStorage.getItem("umalogsColorblindMode");
@@ -1202,9 +810,7 @@ const UmaLogsPage: React.FC = () => {
     }, [colorblindMode]);
 
     useEffect(() => {
-        const manifestUrl = new URL(import.meta.env.BASE_URL + 'data/umalogs-manifest.json', window.location.origin);
-        manifestUrl.searchParams.set("t", Date.now().toString());
-        fetch(manifestUrl.toString(), { cache: "no-store" })
+        fetch(`${UMA_LOGS_API_BASE}/api/umalogs/manifest`)
             .then((r) => {
                 if (!r.ok) throw new Error(`HTTP ${r.status} - manifest not found`);
                 return r.json() as Promise<Manifest>;
@@ -1233,14 +839,13 @@ const UmaLogsPage: React.FC = () => {
         setLoadingCmId(selectedCmId);
         setDatasetError(null);
         setLoadedDataset(null);
-        const url = import.meta.env.BASE_URL + `data/umalogs-${selectedCmId}-stats.json.gz`;
-        fetch(url, { signal: controller.signal })
+        const request = fetch(`${UMA_LOGS_API_BASE}/api/umalogs/${encodeURIComponent(selectedCmId)}/summary`, { signal: controller.signal })
             .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status} - stats file not found`);
-                return r.arrayBuffer();
-            })
-            .then((buf) => {
-                const json = JSON.parse(pako.inflate(new Uint8Array(buf), { to: 'string' })) as UmaLogsData;
+                if (!r.ok) throw new Error(`HTTP ${r.status} - summary not found`);
+                return r.json() as Promise<UmaLogsData>;
+            });
+        request
+            .then((json) => {
                 setLoadedDataset({ cmId: selectedCmId, data: json });
                 setLoadingCmId(null);
             })
@@ -1278,16 +883,7 @@ const UmaLogsPage: React.FC = () => {
     const cmLabel = manifest?.datasets.find((d) => d.cmId === selectedCmId)?.cmLabel
         ?? data?.cmLabel
         ?? (selectedCmId?.toUpperCase() ?? '');
-    const totalUniqueUmas = useMemo(() => {
-        const seen = new Set<string>();
-        for (const g of trackGroups) {
-            for (const h of g.stats.allHorses) {
-                const skillKey = [...h.learnedSkillIds].sort((a, b) => a - b).join(',');
-                seen.add(`${h.cardId}_${h.speed}_${h.stamina}_${h.pow}_${h.guts}_${h.wiz}_${skillKey}`);
-            }
-        }
-        return seen.size;
-    }, [trackGroups]);
+    const totalUniqueUmas = useMemo<number | null>(() => null, []);
     const strategyColors = colorblindMode ? COLORBLIND_STRATEGY_COLORS : STRATEGY_COLORS;
 
     if (loading) {
@@ -1364,10 +960,12 @@ const UmaLogsPage: React.FC = () => {
 
             {trackGroups.map((group) => (
                 <TrackGroupContent
-                    key={group.courseId}
+                    key={`${selectedCmId ?? "unknown"}:${group.courseId}`}
                     group={group}
                     cmId={selectedCmId}
                     cmLabel={cmLabel}
+                    section={section}
+                    onSectionChange={handleSectionChange}
                     scoreWinnersOnly={scoreWinnersOnly}
                     setScoreWinnersOnly={setScoreWinnersOnly}
                     totalRaces={totalRaces}

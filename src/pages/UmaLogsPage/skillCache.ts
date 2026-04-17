@@ -15,6 +15,7 @@ export type SerializedSkillOverviewStats = {
     learnedByCharaIds: number[];
     learnedByStrategies: number[];
     learnedByHorsesByStrategy?: Record<string, number>;
+    uniqueHorsesByStrategy?: Record<string, number>;
     meanDistance: number;
     medianDistance: number;
     timesActivatedByStrategy?: Record<string, number>;
@@ -201,6 +202,7 @@ export function extractGroupSkillCachePayload(cmId: string, group: SerializedGro
                     learnedByCharaIds: skill.learnedByCharaIds ?? [],
                     learnedByStrategies: skill.learnedByStrategies ?? [],
                     learnedByHorsesByStrategy: skill.learnedByHorsesByStrategy,
+                    uniqueHorsesByStrategy: skill.uniqueHorsesByStrategy,
                     meanDistance: skill.meanDistance,
                     medianDistance: skill.medianDistance,
                     timesActivatedByStrategy,

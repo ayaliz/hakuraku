@@ -202,6 +202,8 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                     ...skill,
                     timesActivated: skill.timesActivatedByStrategy?.[stratKey] ?? skill.timesActivated,
                     learnedByHorses: skill.learnedByHorsesByStrategy?.[stratKey] ?? skill.learnedByHorses,
+                    // Backward-compatible fallback: older cached payloads may not include uniqueHorsesByStrategy yet.
+                    uniqueHorses: skill.uniqueHorsesByStrategy?.[stratKey] ?? skill.timesActivatedByStrategy?.[stratKey] ?? skill.uniqueHorses,
                     meanDistance: skill.meanDistanceByStrategy?.[stratKey] ?? skill.meanDistance,
                     medianDistance: skill.medianDistanceByStrategy?.[stratKey] ?? skill.medianDistance,
                 }));

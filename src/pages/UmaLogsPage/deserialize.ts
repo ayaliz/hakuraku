@@ -39,6 +39,7 @@ export function deserializeSkillOverviewStats(entries: [number, SerializedSkillO
                 learnedByCharaIds: new Set(skill.learnedByCharaIds),
                 learnedByStrategies: new Set(skill.learnedByStrategies),
                 learnedByHorsesByStrategy: skill.learnedByHorsesByStrategy,
+                uniqueHorsesByStrategy: skill.uniqueHorsesByStrategy,
                 timesActivatedByStrategy: skill.timesActivatedByStrategy,
                 meanDistanceByStrategy: skill.meanDistanceByStrategy,
                 medianDistanceByStrategy: skill.medianDistanceByStrategy,

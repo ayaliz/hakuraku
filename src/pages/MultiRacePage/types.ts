@@ -89,6 +89,7 @@ export type SkillStats = {
     learnedByCharaIds: Set<number>; // IDs of characters who learned this skill
     learnedByStrategies: Set<number>; // Strategies of horses who learned/used this skill
     learnedByHorsesByStrategy?: Record<string, number>;
+    uniqueHorsesByStrategy?: Record<string, number>;
     meanDistance: number;
     medianDistance: number;
     timesActivatedByStrategy?: Record<string, number>;

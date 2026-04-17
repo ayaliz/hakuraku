@@ -3,7 +3,22 @@ import { STRATEGY_NAMES } from "../MultiRacePage/components/WinDistributionChart
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 import { getHorseDeckRaceBonus } from "./deckUtils";
 
-export type FilterProperty = "none" | "speed" | "stamina" | "pow" | "guts" | "wiz" | "totalSkillPoints" | "rankScore" | "careerWinCount" | "deckRaceBonus" | "skill" | "supportCard";
+export type FilterProperty =
+    | "none"
+    | "speed"
+    | "stamina"
+    | "pow"
+    | "guts"
+    | "wiz"
+    | "aptGround"
+    | "aptDistance"
+    | "aptStyle"
+    | "totalSkillPoints"
+    | "rankScore"
+    | "careerWinCount"
+    | "deckRaceBonus"
+    | "skill"
+    | "supportCard";
 export type StatOp = ">" | "<" | "=";
 export type SortKey = "label" | "entries" | "teams" | "wins" | "awPct";
 export type SkillFilterMode = "learned" | "activated";
@@ -138,7 +153,7 @@ function matchStatProperty(filter: PropertyFilter, horse: HorseEntry): boolean {
         : filter.property === "deckRaceBonus"
             ? getHorseDeckRaceBonus(horse)
             : horse[filter.property as Exclude<FilterProperty, "none" | "skill" | "totalSkillPoints" | "deckRaceBonus" | "supportCard">] as number;
-    if (value === null) return false;
+    if (value == null) return false;
     if (filter.statOp === ">") return value > filter.statValue;
     if (filter.statOp === "<") return value < filter.statValue;
     return value === filter.statValue;
@@ -242,6 +257,10 @@ export function defaultStatValueForProperty(property: FilterProperty): number {
         case "guts":
         case "wiz":
             return 1200;
+        case "aptGround":
+        case "aptDistance":
+        case "aptStyle":
+            return 8;
         case "totalSkillPoints":
             return 3000;
         case "careerWinCount":
@@ -352,8 +371,7 @@ export function buildCardVariants(horses: HorseEntry[]): CharaVariant[] {
         }
         map.get(horse.cardId)!.count += 1;
     }
-    const any: CharaVariant = { cardId: 0, charaId: 0, charaName: "", cardName: "Any character", count: 0 };
-    return [any, ...Array.from(map.values()).sort((a, b) => b.count - a.count)];
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
 }
 
 export function buildSkillVariants(horses: HorseEntry[]): SkillVariant[] {
@@ -438,50 +456,46 @@ export function runExplorerQuery(
     selectedRowKey: string | null,
 ): ExplorerQueryPayload {
     const teamMap = buildTeamMap(horses);
-    const playerHorses = horses.filter((horse) => horse.teamId > 0);
     const hasCharacterFilter = characterFeatures.length > 0;
+    const displayHorses: HorseEntry[] = [];
+    let filteredTeams = 0;
+    let filteredEntries = 0;
+    let filteredTeamWins = 0;
 
-    const filteredTeamResults = !hasCharacterFilter
-        ? Array.from(teamMap.entries()).map(([teamKey, teammates]) => ({
-            teamKey,
-            teammates,
-            matchedCharacterHorses: [] as HorseEntry[],
-        }))
-        : Array.from(teamMap.entries())
-            .map(([teamKey, teammates]) => ({
-                teamKey,
-                teammates,
-                matchedCharacterHorses: findDistinctFeatureMatches(teammates, characterFeatures),
-            }))
-            .filter((result): result is { teamKey: string; teammates: HorseEntry[]; matchedCharacterHorses: HorseEntry[] } => result.matchedCharacterHorses !== null);
+    for (const teammates of teamMap.values()) {
+        const matchedCharacterHorses = hasCharacterFilter
+            ? findDistinctFeatureMatches(teammates, characterFeatures)
+            : [];
+        if (hasCharacterFilter && matchedCharacterHorses === null) continue;
 
-    const filteredHorses = !hasCharacterFilter
-        ? playerHorses
-        : (() => {
-            const qualifyingKeys = new Set(filteredTeamResults.map((result) => result.teamKey));
-            return playerHorses.filter((horse) => qualifyingKeys.has(`${horse.raceId}|${horse.teamId}`));
-        })();
+        filteredTeams += 1;
+        let teamWon = false;
 
-    const displayHorses = hasCharacterFilter
-        ? filteredTeamResults.flatMap((result) => result.matchedCharacterHorses.filter((horse) => horse.teamId > 0))
-        : filteredHorses;
+        for (const horse of teammates) {
+            if (horse.teamId <= 0) continue;
+            filteredEntries += 1;
+            if (horse.finishOrder === 1) teamWon = true;
+            if (!hasCharacterFilter) displayHorses.push(horse);
+        }
+
+        if (teamWon) filteredTeamWins += 1;
+
+        if (hasCharacterFilter && matchedCharacterHorses) {
+            for (const horse of matchedCharacterHorses) {
+                if (horse.teamId > 0) displayHorses.push(horse);
+            }
+        }
+    }
 
     const rows = aggregateHorses(displayHorses, hasCharacterFilter ? "card-strategy" : "strategy", sortKey, sortDesc);
     const selectedRow = rows.find((row) => row.key === selectedRowKey && row.cardId !== undefined && row.strategy !== undefined) ?? null;
-
-    const filteredTeams = new Set(filteredHorses.map((horse) => `${horse.raceId}|${horse.teamId}`)).size;
-    const filteredTeamWins = new Set(
-        filteredHorses
-            .filter((horse) => horse.finishOrder === 1)
-            .map((horse) => `${horse.raceId}|${horse.teamId}`),
-    ).size;
 
     return {
         totalTeams: teamMap.size,
         filteredTeams,
         filteredTeamWins,
         filteredTeamWinPct: filteredTeams > 0 ? (100 * filteredTeamWins) / filteredTeams : 0,
-        filteredEntries: filteredHorses.length,
+        filteredEntries,
         hasCharacterFilter,
         rows,
         drilldown: buildExplorerDrilldown(horses, selectedRow),

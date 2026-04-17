@@ -33,7 +33,7 @@ export interface TeamMemberCardProps {
 export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStats, strategyColors, teamHorses, teamOptions }) => {
     const [open, setOpen] = useState(false);
     const [profileHorse, setProfileHorse] = useState(horse);
-    const [selectedTeamOptionValue, setSelectedTeamOptionValue] = useState<string>(teamOptions?.[0]?.value ?? "");
+    const [selectedTeamOptionValue, setSelectedTeamOptionValue] = useState<string>("");
     const [fetchedTeamHorses, setFetchedTeamHorses] = useState<HorseEntry[] | null>(null);
     const [isLoadingTeamHorses, setIsLoadingTeamHorses] = useState(false);
 
@@ -95,13 +95,32 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
 
     useEffect(() => {
         setProfileHorse(horse);
-        setSelectedTeamOptionValue(teamOptions?.[0]?.value ?? "");
+        setSelectedTeamOptionValue("");
     }, [horse, teamOptions]);
 
     const selectedTeamOption = useMemo(
-        () => teamOptions?.find((option) => option.value === selectedTeamOptionValue) ?? teamOptions?.[0],
+        () => teamOptions?.find((option) => option.value === selectedTeamOptionValue),
         [selectedTeamOptionValue, teamOptions],
     );
+
+    const handleTeamOptionChange = (value: string) => {
+        setSelectedTeamOptionValue(value);
+        if (!value) {
+            setProfileHorse(horse);
+            return;
+        }
+
+        const nextOption = teamOptions?.find((option) => option.value === value);
+        if (!nextOption?.teamHorses?.length) return;
+
+        const matchingHorse = nextOption.teamHorses.find((candidate) =>
+            candidate.cardId === horse.cardId && candidate.strategy === horse.strategy,
+        ) ?? nextOption.teamHorses[0];
+
+        if (matchingHorse) {
+            setProfileHorse(matchingHorse);
+        }
+    };
 
     useEffect(() => {
         if (!open) return;
@@ -275,10 +294,11 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
                                         {teamOptions && teamOptions.length > 1 && (
                                             <div className="tcp-rep-team-select">
                                                 <TeamSampleSelect
-                                                    value={selectedTeamOption?.value ?? teamOptions[0]?.value ?? ""}
+                                                    value={selectedTeamOptionValue}
                                                     options={teamOptions}
-                                                    onChange={setSelectedTeamOptionValue}
+                                                    onChange={handleTeamOptionChange}
                                                     strategyColors={activeStrategyColors}
+                                                    placeholderLabel="Current team"
                                                 />
                                             </div>
                                         )}

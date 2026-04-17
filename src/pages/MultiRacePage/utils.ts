@@ -976,6 +976,14 @@ export function aggregateStats(races: ParsedRace[], options?: { releaseProcessed
 
         const uniqueRaces = new Set(groupPoints.map(p => p.raceId)).size;
         const uniqueHorses = new Set(groupPoints.map(p => `${p.raceId}_${p.horseFrameOrder}`)).size;
+        const uniqueHorsesByStrategy = groupPoints.reduce<Record<string, Set<string>>>((acc, point) => {
+            const horseKey = `${point.raceId}_${point.horseFrameOrder}`;
+            const strategy = horseStrategyByKey.get(horseKey);
+            if (strategy === undefined) return acc;
+            const strategyKey = String(strategy);
+            (acc[strategyKey] ??= new Set<string>()).add(horseKey);
+            return acc;
+        }, {});
 
         // Find horses that used any skill in this group
         const horsesWithSkill = allHorses.filter(h =>
@@ -1056,6 +1064,9 @@ export function aggregateStats(races: ParsedRace[], options?: { releaseProcessed
             learnedByCharaIds,
             learnedByStrategies,
             learnedByHorsesByStrategy,
+            uniqueHorsesByStrategy: Object.fromEntries(
+                Object.entries(uniqueHorsesByStrategy).map(([strategyKey, horseKeys]) => [strategyKey, horseKeys.size])
+            ),
             meanDistance,
             medianDistance,
             meanDistanceByStrategy,

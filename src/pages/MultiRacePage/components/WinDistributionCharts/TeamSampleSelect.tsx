@@ -21,9 +21,10 @@ interface TeamSampleSelectProps {
     options: TeamSampleSelectOption[];
     onChange: (value: string) => void;
     strategyColors: Record<number, string>;
+    placeholderLabel?: string;
 }
 
-const TeamSampleSelect: React.FC<TeamSampleSelectProps> = ({ value, options, onChange, strategyColors }) => {
+const TeamSampleSelect: React.FC<TeamSampleSelectProps> = ({ value, options, onChange, strategyColors, placeholderLabel = "Current team" }) => {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
@@ -35,8 +36,8 @@ const TeamSampleSelect: React.FC<TeamSampleSelectProps> = ({ value, options, onC
         return () => document.removeEventListener("mousedown", handleOutside);
     }, []);
 
-    const selected = options.find(o => o.value === value) ?? options[0] ?? null;
-    if (!selected) return null;
+    const selected = value ? (options.find(o => o.value === value) ?? null) : null;
+    if (!selected && options.length === 0) return null;
 
     const renderMembers = (members: TeamSampleSelectMember[]) => (
         <div className="team-sample-select-members">
@@ -66,17 +67,24 @@ const TeamSampleSelect: React.FC<TeamSampleSelectProps> = ({ value, options, onC
     return (
         <div ref={ref} className="team-sample-select">
             <button type="button" className="team-sample-select-trigger" onClick={() => setOpen(o => !o)}>
-                {renderMembers(selected.members)}
-                <span className="team-sample-select-samples">({selected.samples})</span>
+                {selected ? renderMembers(selected.members) : <span className="team-sample-select-placeholder">{placeholderLabel}</span>}
+                {selected && <span className="team-sample-select-samples">({selected.samples})</span>}
                 <span className="team-sample-select-arrow">{open ? "▴" : "▾"}</span>
             </button>
             {open && (
                 <div className="team-sample-select-menu">
+                    <button
+                        type="button"
+                        className={`team-sample-select-option${!selected ? " is-selected" : ""}`}
+                        onClick={() => { onChange(""); setOpen(false); }}
+                    >
+                        <span className="team-sample-select-placeholder">{placeholderLabel}</span>
+                    </button>
                     {options.map(opt => (
                         <button
                             key={opt.value}
                             type="button"
-                            className={`team-sample-select-option${opt.value === selected.value ? " is-selected" : ""}`}
+                            className={`team-sample-select-option${opt.value === selected?.value ? " is-selected" : ""}`}
                             onClick={() => { onChange(opt.value); setOpen(false); }}
                             title={opt.members.map(m => `${STRATEGY_NAMES[m.strategy] ?? `Style ${m.strategy}`} ${Math.round(m.winRatePct)}%`).join(" · ")}
                         >

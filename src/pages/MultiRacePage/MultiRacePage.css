@@ -757,6 +757,13 @@
     flex-shrink: 0;
 }
 
+.team-sample-select-placeholder {
+    color: #cbd5e0;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
 .team-sample-select-menu {
     position: absolute;
     top: calc(100% + 4px);

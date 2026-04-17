@@ -44,6 +44,9 @@ const PROPERTY_LABELS: Record<FilterProperty, string> = {
     pow: "Power",
     guts: "Guts",
     wiz: "Wit",
+    aptGround: "Aptitude (Ground)",
+    aptDistance: "Aptitude (Distance)",
+    aptStyle: "Aptitude (Style)",
     totalSkillPoints: "Skill pts",
     rankScore: "Score",
     careerWinCount: "Career wins",
@@ -53,6 +56,16 @@ const PROPERTY_LABELS: Record<FilterProperty, string> = {
 };
 
 const STRATEGIES = [5, 1, 2, 3, 4] as const;
+const APTITUDE_GRADE_OPTIONS = [
+    { value: 8, label: "S" },
+    { value: 7, label: "A" },
+    { value: 6, label: "B" },
+    { value: 5, label: "C" },
+    { value: 4, label: "D" },
+    { value: 3, label: "E" },
+    { value: 2, label: "F" },
+    { value: 1, label: "G" },
+] as const;
 
 const ExplorerInfoIcon = ({ id, tip }: { id: string; tip: React.ReactNode }) => (
     <InfoTooltip
@@ -90,9 +103,7 @@ function buildExplorerQueryUrl(cmId: string, courseId: number, apiBase = UMA_LOG
 
 function normalizeCardVariant(variant: CharaVariant): CharaVariant {
     const charaName = UMDatabaseWrapper.charas[variant.charaId]?.name ?? variant.charaName ?? `Unknown (${variant.charaId})`;
-    const cardName = variant.cardId === 0
-        ? "Any character"
-        : UMDatabaseWrapper.cards[variant.cardId]?.name ?? variant.cardName ?? charaName;
+    const cardName = UMDatabaseWrapper.cards[variant.cardId]?.name ?? variant.cardName ?? charaName;
     return { ...variant, charaName, cardName };
 }
 
@@ -134,7 +145,10 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
     const [queryLoading, setQueryLoading] = useState(false);
     const [queryError, setQueryError] = useState<string | null>(null);
 
-    const cardVariants = bootstrap?.cardVariants ?? [];
+    const cardVariants = useMemo(
+        () => (bootstrap?.cardVariants ?? []).filter((variant) => variant.cardId !== 0),
+        [bootstrap],
+    );
     const skillVariants = bootstrap?.skillVariants ?? [];
     const supportCardVariants = bootstrap?.supportCardVariants ?? [];
 
@@ -245,6 +259,25 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
         };
     }, [apiBase, apiMode, appliedCharacterFeatures, bootstrap, cmId, courseId, queryVersion, selectedRowKey, sortDesc, sortKey]);
 
+    useEffect(() => {
+        const fallbackCardId = cardVariants[0]?.cardId ?? null;
+        if (fallbackCardId === null) return;
+        setCharacterFeatures((previous) =>
+            previous.map((feature) => (
+                feature.cardId === 0
+                    ? { ...feature, cardId: fallbackCardId }
+                    : feature
+            )),
+        );
+        setAppliedCharacterFeatures((previous) =>
+            previous.map((feature) => (
+                feature.cardId === 0
+                    ? { ...feature, cardId: fallbackCardId }
+                    : feature
+            )),
+        );
+    }, [cardVariants]);
+
     const addCharacterFeature = () => setCharacterFeatures(prev => [...prev, {
         id: `${Date.now()}-${Math.random()}`,
         characterMatchMode: "is",
@@ -349,6 +382,8 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
     }, [filtersDirty, selectedRowKey]);
 
     const canDrilldown = !!skillStats;
+    const isAptitudeProperty = (property: FilterProperty) =>
+        property === "aptGround" || property === "aptDistance" || property === "aptStyle";
 
     const renderRow = (row: AggRow) => {
         const stratColor = row.strategy !== undefined
@@ -540,7 +575,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                                                 ))}
                                             </select>
 
-                                            {req.property !== "none" && req.property !== "skill" && req.property !== "supportCard" && (
+                                            {req.property !== "none" && req.property !== "skill" && req.property !== "supportCard" && !isAptitudeProperty(req.property) && (
                                                 <>
                                                     <div className="exp-toggle">
                                                         <button
@@ -569,6 +604,39 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                                                         min={0}
                                                         onChange={e => updateCharacterRequirement(feature.id, req.id, { statValue: Number(e.target.value) })}
                                                     />
+                                                </>
+                                            )}
+                                            {isAptitudeProperty(req.property) && (
+                                                <>
+                                                    <div className="exp-toggle">
+                                                        <button
+                                                            className={`exp-toggle-btn${req.statOp === ">" ? " active" : ""}`}
+                                                            onClick={() => updateCharacterRequirement(feature.id, req.id, { statOp: ">" })}
+                                                        >
+                                                            {">"}
+                                                        </button>
+                                                        <button
+                                                            className={`exp-toggle-btn${req.statOp === "=" ? " active" : ""}`}
+                                                            onClick={() => updateCharacterRequirement(feature.id, req.id, { statOp: "=" })}
+                                                        >
+                                                            =
+                                                        </button>
+                                                        <button
+                                                            className={`exp-toggle-btn${req.statOp === "<" ? " active" : ""}`}
+                                                            onClick={() => updateCharacterRequirement(feature.id, req.id, { statOp: "<" })}
+                                                        >
+                                                            &lt;
+                                                        </button>
+                                                    </div>
+                                                    <select
+                                                        className="exp-select"
+                                                        value={req.statValue}
+                                                        onChange={e => updateCharacterRequirement(feature.id, req.id, { statValue: Number(e.target.value) })}
+                                                    >
+                                                        {APTITUDE_GRADE_OPTIONS.map((opt) => (
+                                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                        ))}
+                                                    </select>
                                                 </>
                                             )}
 

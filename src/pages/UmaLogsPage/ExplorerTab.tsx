@@ -102,8 +102,12 @@ function buildExplorerQueryUrl(cmId: string, courseId: number, apiBase = UMA_LOG
 }
 
 function normalizeCardVariant(variant: CharaVariant): CharaVariant {
-    const charaName = UMDatabaseWrapper.charas[variant.charaId]?.name ?? variant.charaName ?? `Unknown (${variant.charaId})`;
-    const cardName = UMDatabaseWrapper.cards[variant.cardId]?.name ?? variant.cardName ?? charaName;
+    const charaName = variant.cardId === 0
+        ? ""
+        : UMDatabaseWrapper.charas[variant.charaId]?.name ?? variant.charaName ?? `Unknown (${variant.charaId})`;
+    const cardName = variant.cardId === 0
+        ? "Any character"
+        : UMDatabaseWrapper.cards[variant.cardId]?.name ?? variant.cardName ?? charaName;
     return { ...variant, charaName, cardName };
 }
 
@@ -146,7 +150,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
     const [queryError, setQueryError] = useState<string | null>(null);
 
     const cardVariants = useMemo(
-        () => (bootstrap?.cardVariants ?? []).filter((variant) => variant.cardId !== 0),
+        () => bootstrap?.cardVariants ?? [],
         [bootstrap],
     );
     const skillVariants = bootstrap?.skillVariants ?? [];
@@ -259,25 +263,6 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
         };
     }, [apiBase, apiMode, appliedCharacterFeatures, bootstrap, cmId, courseId, queryVersion, selectedRowKey, sortDesc, sortKey]);
 
-    useEffect(() => {
-        const fallbackCardId = cardVariants[0]?.cardId ?? null;
-        if (fallbackCardId === null) return;
-        setCharacterFeatures((previous) =>
-            previous.map((feature) => (
-                feature.cardId === 0
-                    ? { ...feature, cardId: fallbackCardId }
-                    : feature
-            )),
-        );
-        setAppliedCharacterFeatures((previous) =>
-            previous.map((feature) => (
-                feature.cardId === 0
-                    ? { ...feature, cardId: fallbackCardId }
-                    : feature
-            )),
-        );
-    }, [cardVariants]);
-
     const addCharacterFeature = () => setCharacterFeatures(prev => [...prev, {
         id: `${Date.now()}-${Math.random()}`,
         characterMatchMode: "is",
@@ -340,7 +325,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
     const hasCharacterFilter = queryResult?.hasCharacterFilter ?? characterFeatures.length > 0;
     const rows = queryResult?.rows ?? [];
     const showTeamsColumn = !hasCharacterFilter;
-    const drilldownColSpan = 3 + (showTeamsColumn ? 1 : 0);
+    const drilldownColSpan = 4 + (showTeamsColumn ? 1 : 0);
     const selectedRow = useMemo(
         () => rows.find(row => row.key === selectedRowKey && row.cardId !== undefined && row.strategy !== undefined) ?? null,
         [rows, selectedRowKey]
@@ -418,6 +403,10 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                     <td className="exp-td exp-td--r">
                         {row.wins}
                         {row.entries > 0 && <span className="exp-wins-pct"> ({formatPercent(row.awPct)}%)</span>}
+                    </td>
+                    <td className="exp-td exp-td--r">
+                        {row.teamWins}
+                        {row.teams > 0 && <span className="exp-wins-pct"> ({formatPercent(row.teamWinPct)}%)</span>}
                     </td>
                 </tr>
                 {isSelected && selectedRow && drilldownHorses.length > 0 && (
@@ -723,6 +712,9 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                                 )}
                                 <th className="exp-th exp-th--r" onClick={() => handleSort("wins")} title="1st place finishes">
                                     Wins <SortArrow col="wins" />
+                                </th>
+                                <th className="exp-th exp-th--r" onClick={() => handleSort("teamWins")} title="Distinct teams containing this row that won the race">
+                                    Team Wins <SortArrow col="teamWins" />
                                 </th>
                             </tr>
                         </thead>

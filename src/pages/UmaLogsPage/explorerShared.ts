@@ -20,7 +20,7 @@ export type FilterProperty =
     | "skill"
     | "supportCard";
 export type StatOp = ">" | "<" | "=";
-export type SortKey = "label" | "entries" | "teams" | "wins" | "awPct";
+export type SortKey = "label" | "entries" | "teams" | "wins" | "teamWins" | "awPct";
 export type SkillFilterMode = "learned" | "activated";
 export type CharacterMatchMode = "is" | "isNot";
 export type FeatureCardMode = "include" | "exclude";
@@ -58,7 +58,9 @@ export interface AggRow {
     entries: number;
     teams: number;
     wins: number;
+    teamWins: number;
     awPct: number;
+    teamWinPct: number;
 }
 
 export interface CharaVariant {
@@ -286,6 +288,7 @@ export function aggregateHorses(
         strategy?: number;
         entries: number;
         teams: Set<string>;
+        winningTeams: Set<string>;
         wins: number;
     }>();
 
@@ -307,6 +310,7 @@ export function aggregateHorses(
                     strategy: horse.strategy,
                     entries: 0,
                     teams: new Set(),
+                    winningTeams: new Set(),
                     wins: 0,
                 });
             } else {
@@ -315,15 +319,18 @@ export function aggregateHorses(
                     strategy: horse.strategy,
                     entries: 0,
                     teams: new Set(),
+                    winningTeams: new Set(),
                     wins: 0,
                 });
             }
         }
 
         const group = groups.get(key)!;
+        const teamKey = `${horse.raceId}|${horse.teamId}`;
         group.entries += 1;
-        group.teams.add(`${horse.raceId}|${horse.teamId}`);
+        group.teams.add(teamKey);
         if (horse.finishOrder === 1) group.wins += 1;
+        if (horse.finishOrder === 1) group.winningTeams.add(teamKey);
     }
 
     const result: AggRow[] = Array.from(groups.values()).map((group) => ({
@@ -336,7 +343,9 @@ export function aggregateHorses(
         entries: group.entries,
         teams: group.teams.size,
         wins: group.wins,
+        teamWins: group.winningTeams.size,
         awPct: group.entries > 0 ? (100 * group.wins) / group.entries : 0,
+        teamWinPct: group.teams.size > 0 ? (100 * group.winningTeams.size) / group.teams.size : 0,
     }));
 
     result.sort((a, b) => {
@@ -344,6 +353,11 @@ export function aggregateHorses(
             if (a.awPct !== b.awPct) return sortDesc ? b.awPct - a.awPct : a.awPct - b.awPct;
             if (a.wins !== b.wins) return sortDesc ? b.wins - a.wins : a.wins - b.wins;
             return sortDesc ? b.entries - a.entries : a.entries - b.entries;
+        }
+        if (sortKey === "teamWins") {
+            if (a.teamWinPct !== b.teamWinPct) return sortDesc ? b.teamWinPct - a.teamWinPct : a.teamWinPct - b.teamWinPct;
+            if (a.teamWins !== b.teamWins) return sortDesc ? b.teamWins - a.teamWins : a.teamWins - b.teamWins;
+            return sortDesc ? b.teams - a.teams : a.teams - b.teams;
         }
         const va = a[sortKey];
         const vb = b[sortKey];

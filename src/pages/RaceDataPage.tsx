@@ -15,7 +15,7 @@ import { buildReplayPresenterInput, type ReplayPayloadResponse } from "./UmaLogs
 const RaceDataPresenterAny = RaceDataPresenter as any;
 const HORSEACT_RELEASE_URL = "https://github.com/ayaliz/horseACT/releases/latest";
 const HORSEACT_SETUP_URL = "https://github.com/ayaliz/horseACT#installation";
-const CURRENT_HORSEACT_VERSION = "1.1.0";
+const CURRENT_HORSEACT_VERSION = "1.1.2";
 
 type ShareCache = Record<string, string>;
 type TrackDetails = { condition?: string, weather?: string, season?: string };

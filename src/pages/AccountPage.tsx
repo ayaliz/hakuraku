@@ -259,6 +259,15 @@ async function readError(response: Response): Promise<string> {
     }
 }
 
+function sanitizeVerificationErrorMessage(message: string | null): string | null {
+    if (!message) {
+        return null;
+    }
+    return /uma\.moe/i.test(message)
+        ? "Game account verification failed. Please try again."
+        : message;
+}
+
 export default function AccountPage() {
     const { loading, authenticated, user, logout } = useAuth();
     const location = useLocation();
@@ -329,7 +338,7 @@ export default function AccountPage() {
                 const payload = await response.json() as AccountHorseActVerificationStatusResponse;
                 if (!cancelled && requestVersion === verificationRequestVersionRef.current) {
                     setVerificationStatus(payload);
-                    setVerificationError(payload.lastError);
+                    setVerificationError(sanitizeVerificationErrorMessage(payload.lastError));
                     if (["verified", "cancelled", "expired", "failed"].includes(payload.status)) {
                         setVerificationSecret(null);
                     }
@@ -634,7 +643,7 @@ export default function AccountPage() {
             }
             const payload = await response.json() as AccountHorseActVerificationStatusResponse;
             setVerificationStatus(payload);
-            setVerificationError(payload.lastError);
+            setVerificationError(sanitizeVerificationErrorMessage(payload.lastError));
             if (["verified", "cancelled", "expired", "failed"].includes(payload.status)) {
                 setVerificationSecret(null);
             }

@@ -11,7 +11,7 @@ import AssetLoader from "../../../../data/AssetLoader";
 import SkillBreakdownModal from "./SkillBreakdownModal";
 
 const ChevronIcon = () => (
-    <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+    <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor">
         <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
     </svg>
 );
@@ -63,7 +63,6 @@ const ParentGroup = ({ parents }: { parents: ParentEntry[] }) => {
 
 const CharaTable: React.FC<CharaTableProps> = ({ data, courseId, showPredictionColumn = false }) => {
     const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
-    const [tableCollapsed, setTableCollapsed] = useState(false);
     const [selectedSkillRow, setSelectedSkillRow] = useState<CharaTableData | null>(null);
 
     const aptitudeFilters = getCourseAptitudeFilters(courseId);
@@ -91,11 +90,11 @@ const CharaTable: React.FC<CharaTableProps> = ({ data, courseId, showPredictionC
                                 return (
                                     <th key={col.key}>
                                         <button
-                                            onClick={() => setTableCollapsed(prev => !prev)}
-                                            title={tableCollapsed ? 'Expand table' : 'Collapse table'}
+                                            onClick={() => setExpandedRows(new Set())}
+                                            title="Collapse all rows"
                                             className="cc-expand-btn"
                                         >
-                                            {tableCollapsed ? '▶' : '▼'}
+                                            {expandedRows.size === 0 ? '' : '⊟'}
                                         </button>
                                     </th>
                                 );
@@ -105,7 +104,7 @@ const CharaTable: React.FC<CharaTableProps> = ({ data, courseId, showPredictionC
                     </tr>
                 </thead>
                 <tbody>
-                    {!tableCollapsed && data.flatMap(row => {
+                    {data.flatMap(row => {
                         const isExpanded = expandedRows.has(row.frameOrder);
                         const rank = row.finishOrder;
                         const rankClass = rank <= 3 ? `rank-${rank}` : '';

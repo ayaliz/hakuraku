@@ -7,6 +7,9 @@ import { buildAverageScoreSummary, buildCharacterPopulationSlices, getBestPlacin
 
 const WinDistributionCharts: React.FC<WinDistributionChartsProps> = ({
     characterStats,
+    strategyStats,
+    totalRaces,
+    roomCompositions,
     allHorses,
     skillStats,
     spectatorMode,
@@ -28,7 +31,12 @@ const WinDistributionCharts: React.FC<WinDistributionChartsProps> = ({
 
     return (
         <div className="win-distribution-section">
-            <StrategyAnalysis />
+            <StrategyAnalysis
+                strategyStats={strategyStats}
+                totalRaces={totalRaces}
+                roomCompositions={roomCompositions}
+                skillStats={skillStats}
+            />
             <CharacterAnalysis
                 rawWinsAll={rawUnifiedCharacterWinsAll}
                 rawWinsOpp={rawUnifiedCharacterWinsOpp}

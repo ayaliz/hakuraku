@@ -1,4 +1,4 @@
-import { HorseEntry, CharacterStats, SkillStats } from "../../types";
+import { HorseEntry, CharacterStats, RoomCompositionEntry, SkillStats, StrategyStats } from "../../types";
 
 export interface PieSlice {
     value: number;
@@ -35,6 +35,9 @@ export interface PerformanceMetrics {
 
 export interface WinDistributionChartsProps {
     characterStats: CharacterStats[];
+    strategyStats?: StrategyStats[];
+    totalRaces?: number;
+    roomCompositions?: RoomCompositionEntry[];
     allHorses: HorseEntry[];
     skillStats?: Map<number, SkillStats>;
     /** When true, hides the opponent-specific views and removes "opponent" wording.

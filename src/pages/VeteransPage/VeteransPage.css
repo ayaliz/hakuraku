@@ -18,6 +18,10 @@
   transition: box-shadow var(--haku-transition);
 }
 
+.vet-card--clickable {
+  cursor: pointer;
+}
+
 .vet-card:hover {
   box-shadow: var(--haku-shadow-lg);
 }
@@ -289,6 +293,60 @@
 .vet-no-factors {
   font-size: 0.8rem;
   color: var(--haku-text-muted);
+}
+
+.vet-fup-meta {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: var(--haku-text-muted);
+}
+
+.vet-fup-apt-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.vet-fup-apt-grid > .vet-fup-apt-card:nth-child(-n+2) {
+  grid-column: span 2;
+}
+
+.vet-fup-apt-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.vet-fup-apt-label {
+  font-size: 0.8rem;
+  color: var(--haku-text-secondary);
+}
+
+.vet-fup-apt-icon {
+  height: 20px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.vet-fup-apt-fallback {
+  color: var(--haku-text-muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .vet-fup-apt-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .vet-fup-apt-grid > .vet-fup-apt-card:nth-child(-n+2) {
+    grid-column: span 1;
+  }
 }
 
 .race-affinity-accent {

@@ -15,7 +15,7 @@
     "echarts": "^6.0.0",
     "echarts-for-react": "^3.0.6",
     "katex": "^0.16.28",
-    "lodash": "^4.17.23",
+    "lodash": "^4.18.1",
     "memoize-one": "^6.0.0",
     "pako": "^2.1.0",
     "pg": "^8.20.0",
@@ -29,7 +29,6 @@
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
     "sql.js": "^1.14.0",
-    "wanakana": "^5.3.1",
     "webm-muxer": "^5.1.4"
   },
   "scripts": {
@@ -66,11 +65,9 @@
     "@types/react-dom": "^19",
     "@types/sql.js": "^1.4.9",
     "@vitejs/plugin-react": "^5.1.4",
-    "sharp": "^0.34.5",
-    "ts-trueskill": "^5.1.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1",
+    "vite": "^7.3.2",
     "wrangler": "4.81.0"
   },
   "packageManager": "yarn@4.12.0"

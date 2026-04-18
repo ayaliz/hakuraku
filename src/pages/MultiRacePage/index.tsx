@@ -12,12 +12,13 @@ import SkillAnalysis from "./components/SkillAnalysis";
 import HpSpurtAnalysis from "./components/HpSpurtAnalysis";
 import { computeHpSpurtStats } from "./components/HpSpurtAnalysis/processData";
 import { CharaHpSpurtStats } from "./components/HpSpurtAnalysis/types";
+import TeamSampleSelect, { type TeamSampleSelectOption } from "./components/WinDistributionCharts/TeamSampleSelect";
+import { STRATEGY_COLORS } from "./components/WinDistributionCharts/constants";
 import ExplorerTab from "../UmaLogsPage/ExplorerTab";
 import type { AccountDatasetRaceExportResponse } from "../../auth/authShared";
 
 const HORSEACT_SETUP_URL = "https://github.com/ayaliz/horseACT#installation";
 
-// Group races by track
 interface TrackGroup {
     groupKey: string;
     courseId: number;
@@ -26,6 +27,119 @@ interface TrackGroup {
     races: ParsedRace[];
     stats: AggregatedStats;
     hpSpurtStats: CharaHpSpurtStats[];
+    playerTeamOptions: TeamSampleSelectOption[];
+    raceIdsByPlayerTeamKey: Map<string, Set<string>>;
+}
+
+interface FilteredTrackGroup extends TrackGroup {
+    selectedTeamKey: string;
+    filteredStats: AggregatedStats;
+    filteredHpSpurtStats: CharaHpSpurtStats[];
+}
+
+function buildExactTeamMemberKey(horse: AggregatedStats["allHorses"][number]): string {
+    const learnedSkillKey = Array.from(horse.learnedSkillIds).sort((a, b) => a - b).join(",");
+    return [
+        horse.cardId,
+        horse.strategy,
+        horse.speed,
+        horse.stamina,
+        horse.pow,
+        horse.guts,
+        horse.wiz,
+        horse.rankScore,
+        learnedSkillKey,
+    ].join("_");
+}
+
+function buildPlayerTeamFilterData(
+    races: ParsedRace[],
+    stats: AggregatedStats,
+): {
+    playerTeamOptions: TeamSampleSelectOption[];
+    raceIdsByPlayerTeamKey: Map<string, Set<string>>;
+} {
+    const horsesByRaceId = new Map<string, typeof stats.allHorses>();
+    const raceIdsByPlayerTeamKey = new Map<string, Set<string>>();
+    const teamDataByKey = new Map<string, {
+        samples: number;
+        winsByMemberKey: Map<string, number>;
+        members: { cardId: number; strategy: number; sortKey: number }[];
+    }>();
+
+    stats.allHorses.forEach((horse) => {
+        const existing = horsesByRaceId.get(horse.raceId);
+        if (existing) {
+            existing.push(horse);
+            return;
+        }
+        horsesByRaceId.set(horse.raceId, [horse]);
+    });
+
+    races.forEach((race) => {
+        const playerTeam = (horsesByRaceId.get(race.id) ?? [])
+            .filter((horse) => horse.isPlayer)
+            .slice()
+            .sort((a, b) => (a.cardId * 10 + a.strategy) - (b.cardId * 10 + b.strategy));
+
+        if (playerTeam.length !== 3) {
+            return;
+        }
+
+        const teamKey = playerTeam.map((horse) => buildExactTeamMemberKey(horse)).join("__");
+        const raceIds = raceIdsByPlayerTeamKey.get(teamKey) ?? new Set<string>();
+        raceIds.add(race.id);
+        raceIdsByPlayerTeamKey.set(teamKey, raceIds);
+
+        const teamData = teamDataByKey.get(teamKey) ?? {
+            samples: 0,
+            winsByMemberKey: new Map<string, number>(),
+            members: playerTeam.map((horse) => ({
+                cardId: horse.cardId,
+                strategy: horse.strategy,
+                sortKey: horse.cardId * 10 + horse.strategy,
+            })),
+        };
+        teamData.samples += 1;
+        playerTeam.forEach((horse) => {
+            if (horse.finishOrder !== 1) {
+                return;
+            }
+            const memberKey = buildExactTeamMemberKey(horse);
+            teamData.winsByMemberKey.set(memberKey, (teamData.winsByMemberKey.get(memberKey) ?? 0) + 1);
+        });
+        teamDataByKey.set(teamKey, teamData);
+    });
+
+    const playerTeamOptions = Array.from(teamDataByKey.entries())
+        .map(([value, teamData]) => ({
+            value,
+            samples: teamData.samples,
+            members: teamData.members
+                .slice()
+                .sort((a, b) => a.sortKey - b.sortKey)
+                .map((member) => {
+                    const memberKey = [
+                        member.cardId,
+                        member.strategy,
+                    ].join("_");
+                    return {
+                        cardId: member.cardId,
+                        strategy: member.strategy,
+                        winRatePct: teamData.samples > 0
+                            ? ((Array.from(teamData.winsByMemberKey.entries())
+                                .filter(([key]) => key.startsWith(`${memberKey}_`))
+                                .reduce((sum, [, wins]) => sum + wins, 0)) / teamData.samples) * 100
+                            : 0,
+                    };
+                }),
+        }))
+        .sort((a, b) => b.samples - a.samples || a.value.localeCompare(b.value));
+
+    return {
+        playerTeamOptions,
+        raceIdsByPlayerTeamKey,
+    };
 }
 
 const MultiRacePage: React.FC = () => {
@@ -36,6 +150,7 @@ const MultiRacePage: React.FC = () => {
     const [activeTrackTab, setActiveTrackTab] = useState<string | null>(null);
     const [accountImportLoading, setAccountImportLoading] = useState(false);
     const [accountImportLabel, setAccountImportLabel] = useState<string | null>(null);
+    const [selectedTeamFilters, setSelectedTeamFilters] = useState<Record<string, string>>({});
 
     const handleFilesSelected = useCallback(async (files: File[]) => {
         setIsProcessing(true);
@@ -58,8 +173,7 @@ const MultiRacePage: React.FC = () => {
                 if ("error" in result) {
                     newErrors.push(`${file.name}: ${result.error}`);
                 } else {
-                    // Check for duplicate (same file name already loaded)
-                    const isDuplicate = races.some(r => r.fileName === file.name);
+                    const isDuplicate = races.some((race) => race.fileName === file.name);
                     if (isDuplicate) {
                         newErrors.push(`${file.name}: Already loaded`);
                     } else {
@@ -71,13 +185,13 @@ const MultiRacePage: React.FC = () => {
             }
         }
 
-        setRaces(prev => [...prev, ...newRaces]);
-        setErrors(prev => [...prev, ...newErrors]);
+        setRaces((prev) => [...prev, ...newRaces]);
+        setErrors((prev) => [...prev, ...newErrors]);
         setIsProcessing(false);
     }, [races]);
 
     const handleRemoveRace = useCallback((raceId: string) => {
-        setRaces(prev => prev.filter(r => r.id !== raceId));
+        setRaces((prev) => prev.filter((race) => race.id !== raceId));
     }, []);
 
     const handleClearAll = useCallback(() => {
@@ -85,6 +199,7 @@ const MultiRacePage: React.FC = () => {
         setErrors([]);
         setActiveTrackTab(null);
         setAccountImportLabel(null);
+        setSelectedTeamFilters({});
     }, []);
 
     useEffect(() => {
@@ -122,11 +237,13 @@ const MultiRacePage: React.FC = () => {
                 setErrors(nextErrors);
                 setActiveTrackTab(null);
                 setAccountImportLabel(payload.datasetLabel);
+                setSelectedTeamFilters({});
             } catch (err: any) {
                 if (cancelled) return;
                 setRaces([]);
                 setErrors([`Failed to load linked-account races: ${err.message ?? String(err)}`]);
                 setAccountImportLabel(null);
+                setSelectedTeamFilters({});
             } finally {
                 if (!cancelled) {
                     setAccountImportLoading(false);
@@ -139,13 +256,18 @@ const MultiRacePage: React.FC = () => {
         };
     }, [searchParams]);
 
-    // Group races by track and compute stats per track
     const trackGroups: TrackGroup[] = useMemo(() => {
         if (races.length === 0) return [];
 
-        const groupMap = new Map<string, { courseId: number; races: ParsedRace[]; season?: string | number; weather?: string | number; groundCondition?: number }>();
+        const groupMap = new Map<string, {
+            courseId: number;
+            races: ParsedRace[];
+            season?: string | number;
+            weather?: string | number;
+            groundCondition?: number;
+        }>();
 
-        races.forEach(race => {
+        races.forEach((race) => {
             const courseId = race.detectedCourseId ?? 0;
             const groupKey = `${courseId}|${race.season ?? ""}|${race.weather ?? ""}|${race.groundCondition ?? ""}`;
             if (!groupMap.has(groupKey)) {
@@ -160,33 +282,65 @@ const MultiRacePage: React.FC = () => {
             groupMap.get(groupKey)!.races.push(race);
         });
 
-        const groups: TrackGroup[] = Array.from(groupMap.entries())
-            .map(([groupKey, groupData]) => ({
-                groupKey,
-                courseId: groupData.courseId,
-                trackLabel: getTrackLabel(groupData.courseId),
-                conditionLabel: `${getSeasonLabel(groupData.season)} · ${getWeatherLabel(groupData.weather)} · ${getGroundConditionLabel(groupData.groundCondition)}`,
-                races: groupData.races,
-                stats: aggregateStats(groupData.races),
-                hpSpurtStats: computeHpSpurtStats(groupData.races, undefined, true, undefined, true),
-            }))
-            .sort((a, b) => b.races.length - a.races.length); // Sort by number of races descending
+        return Array.from(groupMap.entries())
+            .map(([groupKey, groupData]) => {
+                const stats = aggregateStats(groupData.races);
+                const hpSpurtStats = computeHpSpurtStats(groupData.races, undefined, true, undefined, true);
+                const { playerTeamOptions, raceIdsByPlayerTeamKey } = buildPlayerTeamFilterData(groupData.races, stats);
 
-        return groups;
+                return {
+                    groupKey,
+                    courseId: groupData.courseId,
+                    trackLabel: getTrackLabel(groupData.courseId),
+                    conditionLabel: `${getSeasonLabel(groupData.season)} \u00b7 ${getWeatherLabel(groupData.weather)} \u00b7 ${getGroundConditionLabel(groupData.groundCondition)}`,
+                    races: groupData.races,
+                    stats,
+                    hpSpurtStats,
+                    playerTeamOptions,
+                    raceIdsByPlayerTeamKey,
+                };
+            })
+            .sort((a, b) => b.races.length - a.races.length);
     }, [races]);
 
-    // Default to the most common track
-    const defaultTrackTab = useMemo(() => {
-        if (trackGroups.length === 0) return null;
-        return `track-${trackGroups[0].groupKey}`;
-    }, [trackGroups]);
+    const filteredTrackGroups: FilteredTrackGroup[] = useMemo(() => (
+        trackGroups.map((group) => {
+            const selectedTeamKey = group.playerTeamOptions.some((option) => option.value === selectedTeamFilters[group.groupKey])
+                ? selectedTeamFilters[group.groupKey]
+                : "";
 
-    // Use active tab or default
+            if (!selectedTeamKey) {
+                return {
+                    ...group,
+                    selectedTeamKey,
+                    filteredStats: group.stats,
+                    filteredHpSpurtStats: group.hpSpurtStats,
+                };
+            }
+
+            const selectedRaceIds = group.raceIdsByPlayerTeamKey.get(selectedTeamKey);
+            const filteredRaces = selectedRaceIds
+                ? group.races.filter((race) => selectedRaceIds.has(race.id))
+                : group.races;
+
+            return {
+                ...group,
+                selectedTeamKey,
+                filteredStats: aggregateStats(filteredRaces),
+                filteredHpSpurtStats: computeHpSpurtStats(filteredRaces, undefined, true, undefined, true),
+            };
+        })
+    ), [selectedTeamFilters, trackGroups]);
+
+    const defaultTrackTab = useMemo(() => {
+        if (filteredTrackGroups.length === 0) return null;
+        return `track-${filteredTrackGroups[0].groupKey}`;
+    }, [filteredTrackGroups]);
+
     const currentTab = activeTrackTab ?? defaultTrackTab;
 
     return (
         <div className="multirace-container">
-
             <RaceUploadZone
                 onFilesSelected={handleFilesSelected}
                 isProcessing={isProcessing || accountImportLoading}
@@ -196,7 +350,7 @@ const MultiRacePage: React.FC = () => {
                 <Alert variant="info">
                     <div className="d-flex align-items-center gap-2">
                         <Spinner animation="border" size="sm" />
-                        <span>Loading linked-account races into Multi-Race Analysis…</span>
+                        <span>Loading linked-account races into Multi-Race Analysis...</span>
                     </div>
                 </Alert>
             )}
@@ -211,8 +365,8 @@ const MultiRacePage: React.FC = () => {
                 <Alert variant="warning" dismissible onClose={() => setErrors([])}>
                     <strong>Some files could not be processed:</strong>
                     <ul className="multirace-error-list">
-                        {errors.slice(0, 5).map((err, i) => (
-                            <li key={i}>{err}</li>
+                        {errors.slice(0, 5).map((err, index) => (
+                            <li key={index}>{err}</li>
                         ))}
                         {errors.length > 5 && <li>...and {errors.length - 5} more</li>}
                     </ul>
@@ -238,17 +392,17 @@ const MultiRacePage: React.FC = () => {
                             <Spinner animation="border" variant="primary" />
                             <span className="loading-text">Processing races...</span>
                         </div>
-                    ) : trackGroups.length > 0 ? (
+                    ) : filteredTrackGroups.length > 0 ? (
                         <Tab.Container
                             activeKey={currentTab ?? undefined}
                             onSelect={(key) => setActiveTrackTab(key as string)}
                         >
                             <div className="analysis-tabs">
                                 <Nav variant="tabs">
-                                    {trackGroups.map((group) => (
+                                    {filteredTrackGroups.map((group) => (
                                         <Nav.Item key={group.groupKey}>
                                             <Nav.Link eventKey={`track-${group.groupKey}`}>
-                                                {group.trackLabel} · {group.conditionLabel} ({group.races.length})
+                                                {group.trackLabel} {" \u00b7 "} {group.conditionLabel} ({group.races.length})
                                             </Nav.Link>
                                         </Nav.Item>
                                     ))}
@@ -256,43 +410,58 @@ const MultiRacePage: React.FC = () => {
                             </div>
 
                             <Tab.Content>
-                                {trackGroups.map((group) => (
+                                {filteredTrackGroups.map((group) => (
                                     <Tab.Pane key={group.groupKey} eventKey={`track-${group.groupKey}`} transition={false}>
                                         <div className="hp-spurt-analysis-section">
-                                            <h4 className="section-heading">
-                                                Personal character analysis
-                                            </h4>
-                                            <HpSpurtAnalysis stats={group.hpSpurtStats} />
+                                            <div className="section-heading-row">
+                                                <h4 className="section-heading">Personal character analysis</h4>
+                                                {group.playerTeamOptions.length > 0 && (
+                                                    <div className="multirace-team-filter">
+                                                        <TeamSampleSelect
+                                                            value={group.selectedTeamKey}
+                                                            options={group.playerTeamOptions}
+                                                            onChange={(value) => {
+                                                                setSelectedTeamFilters((prev) => ({
+                                                                    ...prev,
+                                                                    [group.groupKey]: value,
+                                                                }));
+                                                            }}
+                                                            strategyColors={STRATEGY_COLORS}
+                                                            placeholderLabel="All uploaded teams"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <HpSpurtAnalysis stats={group.filteredHpSpurtStats} />
                                         </div>
 
                                         <WinDistributionCharts
-                                            characterStats={group.stats.characterStats}
-                                            allHorses={group.stats.allHorses}
-                                            skillStats={group.stats.skillStats}
+                                            characterStats={group.filteredStats.characterStats}
+                                            strategyStats={group.filteredStats.strategyStats}
+                                            totalRaces={group.filteredStats.totalRaces}
+                                            roomCompositions={group.filteredStats.roomCompositions}
+                                            allHorses={group.filteredStats.allHorses}
+                                            skillStats={group.filteredStats.skillStats}
                                         />
 
                                         <div className="skill-analysis-section">
-                                            <h4 className="section-heading">
-                                                Skill Analysis
-                                            </h4>
+                                            <h4 className="section-heading">Skill Analysis</h4>
                                             <SkillAnalysis
-                                                skillStats={group.stats.skillStats}
-                                                skillActivations={group.stats.skillActivations}
-                                                avgRaceDistance={group.stats.avgRaceDistance}
-                                                characterStats={group.stats.characterStats}
-                                                strategyStats={group.stats.strategyStats}
-                                                allHorses={group.stats.allHorses}
-                                                ownCharas={group.hpSpurtStats}
+                                                skillStats={group.filteredStats.skillStats}
+                                                skillActivations={group.filteredStats.skillActivations}
+                                                avgRaceDistance={group.filteredStats.avgRaceDistance}
+                                                characterStats={group.filteredStats.characterStats}
+                                                strategyStats={group.filteredStats.strategyStats}
+                                                allHorses={group.filteredStats.allHorses}
+                                                ownCharas={group.filteredHpSpurtStats}
                                             />
                                         </div>
 
                                         <div className="skill-analysis-section">
-                                            <h4 className="section-heading">
-                                                Explorer
-                                            </h4>
+                                            <h4 className="section-heading">Explorer</h4>
                                             <ExplorerTab
                                                 apiMode={false}
-                                                skillStats={group.stats.skillStats}
+                                                skillStats={group.filteredStats.skillStats}
                                             />
                                         </div>
                                     </Tab.Pane>
@@ -302,7 +471,6 @@ const MultiRacePage: React.FC = () => {
                     ) : null}
                 </>
             )}
-
         </div>
     );
 };

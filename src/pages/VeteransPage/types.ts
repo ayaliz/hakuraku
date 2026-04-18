@@ -16,7 +16,8 @@ export type Veteran = {
     wins: number;
     speed: number;
     stamina: number;
-    pow: number;
+    pow?: number;
+    power?: number;
     guts: number;
     wiz: number;
     proper_distance_short: number;

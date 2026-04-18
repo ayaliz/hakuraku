@@ -41,8 +41,15 @@ function formatRecoveryTimingLabel(earlyCount: number, lateCount: number, totalC
     return `${parts.join(", ")} / ${totalCount}`;
 }
 
+function toRecoveryPercent(value: number): number {
+    const absValue = Math.abs(value);
+    return absValue >= 1 ? (absValue / 100) : (absValue * 100);
+}
+
 function formatEffectPercent(value: number): string {
-    return `${(Math.abs(value) / 100).toFixed(1)}%`;
+    const percent = toRecoveryPercent(value);
+    const digits = percent < 1 ? 2 : 1;
+    return `${percent.toFixed(digits)}%`;
 }
 
 function buildDebuffScenarioDescriptor(earlyDebuffTotal: number, lateDebuffTotal: number) {
@@ -369,7 +376,7 @@ export const computeHpSpurtStats = (
                             if (timing === "late") lateCount++;
                         });
 
-                        const pct = (val / 100).toFixed(1); // 550 -> 5.5
+                        const pct = formatEffectPercent(val).replace(/%$/, "");
                         const partId = `${val}-e${earlyCount}-l${lateCount}/${group.ids.length}`;
                         scenarioParts.push(partId);
                         const timingLabel = formatRecoveryTimingLabel(earlyCount, lateCount, group.ids.length);

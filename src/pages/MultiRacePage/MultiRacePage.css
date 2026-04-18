@@ -395,6 +395,15 @@
     .analysis-table-container {
         padding: 15px;
     }
+
+    .section-heading-row {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .multirace-team-filter {
+        width: 100%;
+    }
 }
 
 /* Scrollbar styling */
@@ -526,6 +535,23 @@
 .section-heading {
     color: #e2e8f0;
     margin-bottom: 15px;
+}
+
+.section-heading-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 15px;
+}
+
+.section-heading-row .section-heading {
+    margin-bottom: 0;
+}
+
+.multirace-team-filter {
+    width: min(100%, 420px);
+    flex-shrink: 0;
 }
 
 .multirace-error-list {

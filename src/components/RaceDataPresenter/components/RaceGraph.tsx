@@ -241,11 +241,16 @@ const RaceGraph: React.FC<RaceGraphProps> = ({
     const options: ECOption = {
         grid: [
             {
-                height: '45%',
+                height: '49%',
+                top: '5%',
+                left: '8%',
+                right: '5%',
             },
             {
                 top: '60%',
                 height: '30%',
+                left: '8%',
+                right: '5%',
             },
         ],
         axisPointer: {
@@ -261,14 +266,14 @@ const RaceGraph: React.FC<RaceGraphProps> = ({
                 nameLocation: "middle",
                 type: "value",
                 min: "dataMin",
-                max: "dataMax",
+                max: (value) => Math.ceil(value.max * 100) / 100,
             },
             {
                 gridIndex: 1,
                 type: "value",
                 position: "top",
                 min: "dataMin",
-                max: "dataMax",
+                max: (value) => Math.ceil(value.max * 100) / 100,
             },
         ],
         yAxis: [
@@ -346,11 +351,13 @@ const RaceGraph: React.FC<RaceGraphProps> = ({
         dataZoom: {
             type: 'slider',
             xAxisIndex: [0, 1],
+            moveHandleSize: 10,
+            handleSize: '120%',
         },
     };
 
     return <div>
-        <EChartsReactCore echarts={echarts} option={options} className="race-graph-chart" theme="dark" />
+        <EChartsReactCore echarts={echarts} option={options} className="race-graph-chart" style={{ height: '700px' }} theme="dark" />
         <details className="race-graph-debug">
             <summary>Non-Skill Race Events ({nonSkillEventsForHorse.length})</summary>
             <div className="race-graph-debug-content">

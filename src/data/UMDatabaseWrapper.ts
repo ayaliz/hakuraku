@@ -30,7 +30,12 @@ class _UMDatabaseWrapper {
 
     initialize() {
         return fetch(import.meta.env.BASE_URL + 'data/umdb.binarypb.gz', { cache: 'no-cache' })
-            .then(response => response.arrayBuffer())
+            .then(response => {
+            if (!response.ok) {
+                throw new Error(`Failed to fetch data/umdb.binarypb.gz (${response.status} ${response.statusText})`);
+            }
+            return response.arrayBuffer();
+        })
             .then((response) => {
             this.umdb = fromBinary(UMDatabaseSchema, pako.inflate(new Uint8Array(response)));
             this.supportCardRaceBonusByLimitBreak = {};

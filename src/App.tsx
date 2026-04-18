@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
-import { Container, Nav, Navbar, Spinner } from "react-bootstrap";
+import { Alert, Container, Nav, Navbar, Spinner } from "react-bootstrap";
 import { BrowserRouter, Link, NavLink, Route, Routes } from "react-router-dom";
 import './App.css';
 import './dark-mode.css';
@@ -57,14 +57,46 @@ function FooterPrivacyIcon() {
 
 export default function App() {
     const [umdbLoaded, setUmdbLoaded] = useState(false);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     useEffect(() => {
+        let cancelled = false;
+
         Promise.all([
             UMDatabaseWrapper.initialize(),
             GameDataLoader.initialize(),
-        ]).then(() => setUmdbLoaded(true))
-            .catch(err => console.error("Failed to initialize data loaders:", err));
+        ]).then(() => {
+            if (!cancelled) {
+                setUmdbLoaded(true);
+            }
+        }).catch(err => {
+            console.error("Failed to initialize data loaders:", err);
+            if (!cancelled) {
+                setLoadError(err instanceof Error ? err.message : "Failed to initialize local data files.");
+            }
+        });
+
+        return () => {
+            cancelled = true;
+        };
     }, []);
+
+    if (loadError) {
+        return (
+            <Container className="py-5">
+                <Alert variant="danger">
+                    <Alert.Heading>Failed to load local game data</Alert.Heading>
+                    <p className="mb-2">{loadError}</p>
+                    <p className="mb-0">
+                        Make sure the repository includes the required files in
+                        <code> public/data/</code>, especially
+                        <code> umdb.binarypb.gz</code> and
+                        <code> gamedata.bin.gz</code>.
+                    </p>
+                </Alert>
+            </Container>
+        );
+    }
 
     if (!umdbLoaded) {
         return <div><Spinner animation="border" /> Loading UMDatabase...</div>;

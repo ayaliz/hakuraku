@@ -45,7 +45,10 @@ umdb/*.pyi
 
 # private site assets and generated datasets
 /public/assets
-/public/data
+/public/data/*
+!/public/data/umdb.binarypb.gz
+!/public/data/umdb.json
+!/public/data/gamedata.bin.gz
 /public/notes
 
 # internal-only source material

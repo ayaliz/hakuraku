@@ -52,6 +52,7 @@
     "refresh:umalogs-cache": "node --max-old-space-size=12288 --import tsx tools/refresh-umalogs-cache.mts",
     "refresh:umalogs-worker": "node --import tsx tools/run-umalogs-refresh-worker.mts",
     "build:shop-refresh": "node scripts/build-shop-refresh-data.mjs",
+    "embed:course-data": "node tools/embed-course-data-into-gamedata.mjs",
     "protoc": "protoc --es_out=target=ts:src/data --python_out=umdb/ --pyi_out=umdb/ --proto_path=umdb/ umdb/*.proto",
     "precompute": "node --max-old-space-size=12288 --expose-gc --import tsx scripts/precompute-umalogs.mts"
   },

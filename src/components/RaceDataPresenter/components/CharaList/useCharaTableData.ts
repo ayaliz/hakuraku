@@ -1,12 +1,19 @@
 import { RaceSimulateData } from "../../../../data/race_data_pb";
-import { filterCharaSkills } from "../../../../data/RaceDataUtils";
+import { filterCharaSkills, filterCharaTargetedSkills } from "../../../../data/RaceDataUtils";
 import { fromRaceHorseData, TrainedCharaData } from "../../../../data/TrainedCharaData";
 import GameDataLoader from "../../../../data/GameDataLoader";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import { useAvailableTracks } from "../../../RaceReplay/hooks/useAvailableTracks";
 import { useGuessTrack } from "../../../RaceReplay/hooks/useGuessTrack";
 import { getPassiveStatModifiers, getSkillDurationSecs, getSkillBaseTime } from "../../../RaceReplay/utils/SkillDataUtils";
-import { adjustStat, calculateTargetSpeed, getDistanceCategory, calculateReferenceHpConsumption, computeGroundPowerBonus } from "../../../RaceReplay/utils/speedCalculations";
+import {
+    adjustStat,
+    calculateTargetSpeed,
+    calculateLastSpurtTargetSpeedWithTruncatedLateRaceBase,
+    getDistanceCategory,
+    calculateReferenceHpConsumption,
+    computeGroundPowerBonus,
+} from "../../../RaceReplay/utils/speedCalculations";
 import type { MaxAdjustedSpeedDebug } from "../../../RaceReplay/utils/analysisUtils";
 import {
     CAREER_RACE_STAT_BONUS, DOWNHILL_HP_RATIO_THRESHOLD,
@@ -233,35 +240,36 @@ export const computeCharaTableData = (
         });
 
         const lastSpurtTargetSpeed = lsRes.base;
+        const lastSpurtTargetSpeedTruncatedLateRaceBase = calculateLastSpurtTargetSpeedWithTruncatedLateRaceBase({
+            courseDistance: raceDistance,
+            currentDistance: raceDistance, // Keep the same last-spurt forcing inputs as the primary calculation
+            speedStat: trainedCharaData.speed,
+            wisdomStat: trainedCharaData.wiz,
+            powerStat: trainedCharaData.pow,
+            gutsStat: trainedCharaData.guts,
+            staminaStat: trainedCharaData.stamina,
+            strategy,
+            distanceProficiency: distProficiency,
+            mood: data['motivation'],
+            isOonige,
+            inLastSpurt: true,
+            slope: 0,
+            greenSkillBonuses: { ...passiveStats, speed: passiveStats.speed + groundSpeedBonus, power: passiveStats.power + groundPowerBonus },
+            activeSpeedBuff: 0,
+            courseId: effectiveCourseId
+        });
 
 
         let maxAdjSpeed = 0;
         let maxAdjSpeedTime = 0;
         let maxAdjSpeedDebug: MaxAdjustedSpeedDebug | undefined;
         let adjustedGuts = 0;
-        if (raceData.frame) {
-            adjustedGuts = adjustStat(trainedCharaData.guts, data['motivation'], passiveStats.guts);
-
-            const maxAdj = calculateMaxAdjustedSpeed(
-                raceData.frame,
-                frameOrder,
-                raceDistance,
-                skillActivations,
-                otherEvents,
-                trackSlopes,
-                adjustedGuts,
-                lastSpurtStartDistances[frameOrder] ?? -1
-            );
-            maxAdjSpeed = maxAdj.speed;
-            maxAdjSpeedTime = maxAdj.time;
-            maxAdjSpeedDebug = maxAdj.debug;
-        }
-
-        // HP at phase 3 start (2/3 point) and required HP for full spurt
         let hpAtPhase3Start: number | undefined = undefined;
         let requiredSpurtHp: number | undefined = undefined;
-        const phase3StartDist = raceDistance * 2 / 3;
         if (raceData.frame) {
+            adjustedGuts = adjustStat(trainedCharaData.guts, data['motivation'], passiveStats.guts);
+            const adjustedPower = adjustStat(trainedCharaData.pow, data['motivation'], passiveStats.power + groundPowerBonus);
+            const phase3StartDist = raceDistance * 2 / 3;
             for (const frame of raceData.frame) {
                 const h = frame.horseFrame?.[frameOrder];
                 if (h && (h.distance ?? 0) >= phase3StartDist) {
@@ -269,13 +277,50 @@ export const computeCharaTableData = (
                     break;
                 }
             }
-        }
-        if (lastSpurtTargetSpeed > 0 && adjustedGuts > 0) {
-            const baseSpeed = BASE_SPEED_CONSTANT - (raceDistance - BASE_SPEED_COURSE_OFFSET) / BASE_SPEED_COURSE_SCALE;
-            const gutsModifier = 1.0 + 200 / Math.sqrt(600 * adjustedGuts);
-            const baseHpDrain = HP_CONSUMPTION_SCALE * Math.pow(lastSpurtTargetSpeed - baseSpeed + HP_CONSUMPTION_SPEED_OFFSET, 2) / HP_CONSUMPTION_DIVISOR;
-            const totalHpDrain = baseHpDrain * groundModifier * gutsModifier;
-            requiredSpurtHp = ((raceDistance / 3 - 62) / lastSpurtTargetSpeed) * totalHpDrain;
+            if (lastSpurtTargetSpeed > 0 && adjustedGuts > 0) {
+                const baseSpeed = BASE_SPEED_CONSTANT - (raceDistance - BASE_SPEED_COURSE_OFFSET) / BASE_SPEED_COURSE_SCALE;
+                const gutsModifier = 1.0 + 200 / Math.sqrt(600 * adjustedGuts);
+                const baseHpDrain = HP_CONSUMPTION_SCALE * Math.pow(lastSpurtTargetSpeed - baseSpeed + HP_CONSUMPTION_SPEED_OFFSET, 2) / HP_CONSUMPTION_DIVISOR;
+                const totalHpDrain = baseHpDrain * groundModifier * gutsModifier;
+                requiredSpurtHp = ((raceDistance / 3 - 62) / lastSpurtTargetSpeed) * totalHpDrain;
+            }
+            const expectedObservedSpurtSpeed = Math.floor(lastSpurtTargetSpeed * 100) / 100;
+            const spurtHpSpare = hpAtPhase3Start !== undefined && requiredSpurtHp !== undefined
+                ? hpAtPhase3Start - requiredSpurtHp
+                : undefined;
+            const learnedSkillLevelById = new Map(trainedCharaData.skills.map(skill => [skill.skillId, skill.level]));
+            const leveledSkillActivations = skillActivations
+                ? {
+                    ...skillActivations,
+                    [frameOrder]: (skillActivations[frameOrder] ?? []).map(act => ({
+                        ...act,
+                        skillLevel: learnedSkillLevelById.get(act.param[1]),
+                    })),
+                }
+                : skillActivations;
+            const targetedSkillActivations = filterCharaTargetedSkills(raceData, frameOrder).map(event => ({
+                time: event.frameTime!,
+                name: UMDatabaseWrapper.skillNameWithEnglishFallback(event.param[1]),
+                param: event.param,
+            }));
+
+            const maxAdj = calculateMaxAdjustedSpeed(
+                raceData.frame,
+                frameOrder,
+                raceDistance,
+                leveledSkillActivations,
+                targetedSkillActivations,
+                otherEvents,
+                trackSlopes,
+                adjustedGuts,
+                adjustedPower,
+                lastSpurtStartDistances[frameOrder] ?? -1,
+                expectedObservedSpurtSpeed,
+                spurtHpSpare
+            );
+            maxAdjSpeed = maxAdj.speed;
+            maxAdjSpeedTime = maxAdj.time;
+            maxAdjSpeedDebug = maxAdj.debug;
         }
 
         // Calculate Skill Events
@@ -284,7 +329,7 @@ export const computeCharaTableData = (
             skillActivations[frameOrder].forEach(act => {
                 const skillId = act.param[1];
                 const reportedDuration = act.param?.[2];
-                let durationSecs = getSkillDurationSecs(skillId, raceDistance, act.time, reportedDuration);
+                let durationSecs = getSkillDurationSecs(skillId, raceDistance, act.time, reportedDuration, act.param?.[3]);
                 const baseTime = getSkillBaseTime(skillId);
                 const isInstant = baseTime <= 0 && (reportedDuration ?? 0) <= 0;
 
@@ -376,6 +421,8 @@ export const computeCharaTableData = (
 
         // Calculate Downhill Mode Time by iterating frames
         let downhillModeTime = 0;
+        let downhillModeTimePreLate = 0;
+        let downhillModeTimeLate = 0;
         const downhillSegments: { startDistance: number; endDistance: number }[] = [];
         if (raceData.frame && raceData.frame.length > 1) {
             let currentDownhillStart = -1;
@@ -403,6 +450,18 @@ export const computeCharaTableData = (
                         const expected = calculateReferenceHpConsumption(speed, raceDistance);
                         if (expected > 0 && rate > 0 && rate < expected * DOWNHILL_HP_RATIO_THRESHOLD) {
                             downhillModeTime += dt;
+                            const lateStartDist = raceDistance * 2 / 3;
+                            if (nextDist <= lateStartDist) {
+                                downhillModeTimePreLate += dt;
+                            } else if (dist >= lateStartDist) {
+                                downhillModeTimeLate += dt;
+                            } else if (nextDist > dist) {
+                                const preLateRatio = Math.max(0, Math.min(1, (lateStartDist - dist) / (nextDist - dist)));
+                                downhillModeTimePreLate += dt * preLateRatio;
+                                downhillModeTimeLate += dt * (1 - preLateRatio);
+                            } else {
+                                downhillModeTimeLate += dt;
+                            }
                             isDownhillActive = true;
                         }
                     }
@@ -537,6 +596,7 @@ export const computeCharaTableData = (
             startDelay: horseResult.startDelayTime,
             isLateStart,
             lastSpurtTargetSpeed,
+            lastSpurtTargetSpeedTruncatedLateRaceBase,
             maxAdjustedSpeed: maxAdjSpeed,
             maxAdjustedSpeedTime: maxAdjSpeedTime || undefined,
             maxAdjustedSpeedDebug: maxAdjSpeedDebug,
@@ -544,6 +604,8 @@ export const computeCharaTableData = (
             requiredSpurtHp,
             duelingTime,
             downhillModeTime,
+            downhillModeTimePreLate,
+            downhillModeTimeLate,
             paceUpTime,
             paceDownTime,
             hpOutcome: calculateHpOutcome(

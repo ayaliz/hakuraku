@@ -195,6 +195,32 @@
     font-size: 0.9em;
 }
 
+.hp-mode-time-cell {
+    line-height: 1.25;
+}
+
+.hp-mode-downhill {
+    color: #60a5fa;
+}
+
+.hp-mode-time-sub {
+    font-size: 0.78em;
+    white-space: nowrap;
+}
+
+.hp-mode-downhill-sub {
+    color: #60a5fa;
+    opacity: 0.78;
+}
+
+.hp-mode-time-cell .col-pace-up {
+    color: #4ade80;
+}
+
+.hp-mode-time-cell .col-pace-down {
+    color: #f87171;
+}
+
 /* Progress bar layout */
 .hp-progress-container {
     display: flex;

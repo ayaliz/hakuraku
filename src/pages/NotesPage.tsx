@@ -116,6 +116,12 @@ export default function NotesPage() {
                                         : href;
                                     return <a href={resolved} target="_blank" rel="noreferrer">{children}</a>;
                                 },
+                                img: ({ src, alt }) => {
+                                    const resolved = src?.startsWith('attachments/')
+                                        ? `${import.meta.env.BASE_URL}notes/${src}`
+                                        : src;
+                                    return <img src={resolved} alt={alt ?? ''} />;
+                                },
                                 table: ({ children }) => <div className="table-wrapper"><table>{children}</table></div>,
                                 code: ({ children, className }) => {
                                     const isBlock = className?.startsWith('language-');

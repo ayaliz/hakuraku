@@ -22,6 +22,36 @@ type RaceTeamResponse = {
     horses: SerializedHorseEntry[];
 };
 
+function makeHorseIdentityKey(horse: Pick<HorseEntry, "charaId" | "cardId" | "strategy">): string {
+    return `${horse.charaId}_${horse.cardId}_${horse.strategy}`;
+}
+
+function isSameHorseOccurrence(
+    left: Pick<HorseEntry, "raceId" | "teamId" | "frameOrder">,
+    right: Pick<HorseEntry, "raceId" | "teamId" | "frameOrder">,
+): boolean {
+    return left.raceId === right.raceId
+        && left.teamId === right.teamId
+        && left.frameOrder === right.frameOrder;
+}
+
+function findMatchingHorse(horses: HorseEntry[] | undefined, target: HorseEntry): HorseEntry | null {
+    if (!horses?.length) return null;
+    return horses.find((candidate) => isSameHorseOccurrence(candidate, target))
+        ?? horses.find((candidate) => makeHorseIdentityKey(candidate) === makeHorseIdentityKey(target))
+        ?? null;
+}
+
+function buildTeammateComboKey(horses: HorseEntry[] | undefined, focusHorse: HorseEntry): string | null {
+    if (!horses?.length) return null;
+    const focus = findMatchingHorse(horses, focusHorse) ?? focusHorse;
+    return horses
+        .filter((candidate) => !isSameHorseOccurrence(candidate, focus) && makeHorseIdentityKey(candidate) !== makeHorseIdentityKey(focus))
+        .map((candidate) => makeHorseIdentityKey(candidate))
+        .sort()
+        .join("__");
+}
+
 export interface TeamMemberCardProps {
     horse: HorseEntry;
     skillStats: Map<number, SkillStats>;
@@ -93,38 +123,74 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
         ])
     );
 
-    useEffect(() => {
-        setProfileHorse(horse);
-        setSelectedTeamOptionValue("");
-    }, [horse, teamOptions]);
-
     const selectedTeamOption = useMemo(
         () => teamOptions?.find((option) => option.value === selectedTeamOptionValue),
         [selectedTeamOptionValue, teamOptions],
     );
 
+    const currentTeamOption = useMemo(() => {
+        if (!teamOptions?.length || !teamHorses?.length) return null;
+        const currentComboKey = buildTeammateComboKey(teamHorses, horse);
+        if (!currentComboKey) return null;
+        return teamOptions.find((option) => buildTeammateComboKey(option.teamHorses, horse) === currentComboKey) ?? null;
+    }, [horse, teamHorses, teamOptions]);
+
+    const currentTeamHorses = useMemo(
+        () => currentTeamOption?.teamHorses?.length ? currentTeamOption.teamHorses : (teamHorses ?? []),
+        [currentTeamOption, teamHorses],
+    );
+
+    const currentTeamHorse = useMemo(
+        () => findMatchingHorse(currentTeamHorses, horse) ?? horse,
+        [currentTeamHorses, horse],
+    );
+
+    useEffect(() => {
+        setProfileHorse(currentTeamHorse);
+        setSelectedTeamOptionValue("");
+    }, [currentTeamHorse, teamOptions]);
+
     const handleTeamOptionChange = (value: string) => {
         setSelectedTeamOptionValue(value);
         if (!value) {
-            setProfileHorse(horse);
+            setProfileHorse(currentTeamHorse);
             return;
         }
 
         const nextOption = teamOptions?.find((option) => option.value === value);
         if (!nextOption?.teamHorses?.length) return;
 
-        const matchingHorse = nextOption.teamHorses.find((candidate) =>
-            candidate.cardId === horse.cardId && candidate.strategy === horse.strategy,
-        ) ?? nextOption.teamHorses[0];
+        const matchingHorse = findMatchingHorse(nextOption.teamHorses, profileHorse)
+            ?? findMatchingHorse(nextOption.teamHorses, currentTeamHorse)
+            ?? nextOption.teamHorses[0];
 
         if (matchingHorse) {
             setProfileHorse(matchingHorse);
         }
     };
 
+    const localTeamHorses = useMemo(
+        () => selectedTeamOption?.teamHorses?.length
+            ? selectedTeamOption.teamHorses
+            : currentTeamHorses,
+        [currentTeamHorses, selectedTeamOption],
+    );
+
+    const localTeammates = useMemo(() => {
+        if (!localTeamHorses.length || profileHorse.teamId <= 0 || !profileHorse.raceId) return [];
+        return localTeamHorses
+            .filter((h) =>
+                h.raceId === profileHorse.raceId &&
+                h.teamId === profileHorse.teamId &&
+                h.frameOrder !== profileHorse.frameOrder
+            )
+            .sort((a, b) => a.frameOrder - b.frameOrder)
+            .slice(0, 2);
+    }, [localTeamHorses, profileHorse]);
+
     useEffect(() => {
         if (!open) return;
-        if (selectedTeamOption?.teamHorses?.length || (teamHorses && teamHorses.length > 0)) {
+        if (localTeammates.length > 0) {
             setFetchedTeamHorses(null);
             setIsLoadingTeamHorses(false);
             return;
@@ -160,16 +226,12 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
         open,
         profileHorse.raceId,
         profileHorse.teamId,
-        selectedTeamOption,
-        teamHorses,
+        localTeammates.length,
     ]);
 
     const teammates = useMemo(() => {
-        const sourceHorses = selectedTeamOption?.teamHorses?.length
-            ? selectedTeamOption.teamHorses
-            : (teamHorses && teamHorses.length > 0
-                ? teamHorses
-                : fetchedTeamHorses);
+        if (localTeammates.length > 0) return localTeammates;
+        const sourceHorses = fetchedTeamHorses;
         if (!sourceHorses || profileHorse.teamId <= 0 || !profileHorse.raceId) return [];
         const exactSourceHorses = sourceHorses.filter((h) => h.raceId === profileHorse.raceId && h.teamId === profileHorse.teamId);
         if (exactSourceHorses.length > 0) {
@@ -179,7 +241,7 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
                 .slice(0, 2);
         }
         return [];
-    }, [fetchedTeamHorses, profileHorse, selectedTeamOption, teamHorses]);
+    }, [fetchedTeamHorses, localTeammates, profileHorse]);
 
     const renderSkillChip = (id: number, activated: boolean) => {
         const name = getSkillName(id);

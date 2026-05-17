@@ -13,3 +13,39 @@
 .rdp-error {
     margin-bottom: 12px;
 }
+
+.rdp-team-trial-switcher {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 0 0 16px;
+    padding: 10px 12px;
+    border: 1px solid rgba(165, 201, 184, 0.25);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.rdp-team-trial-summary {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-weight: 600;
+}
+
+.rdp-team-trial-summary span + span {
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.rdp-team-trial-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.rdp-presenter-error {
+    margin-top: 12px;
+}

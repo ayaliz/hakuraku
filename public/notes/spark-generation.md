@@ -233,10 +233,62 @@ Result: `p = 0.127494`
 
 Interpretation: The mid-score white spark rates also look consistent with the expected model. The fit is slightly less perfect than in the top band, but still well within normal sampling variation.
 
+## Addendum: Unique factor star count
+
+I also checked whether unique-factor star count depends on the level of the learned unique skill. This used Tunnelblick's (of uma.moe fame) dataset of roughly 22 million team trial umas he provided me with.
+
+The result was very clean: unique factor stars appear to depend on the same rank-score bands as white factor stars, not on unique skill level. Within each score band, every unique skill level with meaningful sample size followed the same distribution.
+
+| Rank score band | Samples | 1-star | 2-star | 3-star |
+| --- | ---: | ---: | ---: | ---: |
+| `1000 <= score < 6500` | 1,546,921 | 89.99% | 10.01% | 0.00% |
+| `6500 <= score < 17500` | 14,274,987 | 49.97% | 45.01% | 5.02% |
+| `score >= 17500` | 460,910 | 19.94% | 70.05% | 10.00% |
+
+Broken down by unique skill level, the distributions remain effectively unchanged within each score band:
+
+### `1000 <= score < 6500`
+
+| Unique level | Samples | 1-star | 1-star % | 2-star | 2-star % | 3-star | 3-star % |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 1,107,468 | 996,614 | 89.99% | 110,854 | 10.01% | 0 | 0.00% |
+| 2 | 179,990 | 162,166 | 90.10% | 17,824 | 9.90% | 0 | 0.00% |
+| 3 | 177,323 | 159,526 | 89.96% | 17,797 | 10.04% | 0 | 0.00% |
+| 4 | 79,773 | 71,665 | 89.84% | 8,108 | 10.16% | 0 | 0.00% |
+| 5 | 2,349 | 2,091 | 89.02% | 258 | 10.98% | 0 | 0.00% |
+| 6 | 18 | 18 | 100.00% | 0 | 0.00% | 0 | 0.00% |
+| All | 1,546,921 | 1,392,080 | 89.99% | 154,841 | 10.01% | 0 | 0.00% |
+
+### `6500 <= score < 17500`
+
+| Unique level | Samples | 1-star | 1-star % | 2-star | 2-star % | 3-star | 3-star % |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 1,792,316 | 894,974 | 49.93% | 807,208 | 45.04% | 90,134 | 5.03% |
+| 2 | 1,219,102 | 608,555 | 49.92% | 549,371 | 45.06% | 61,176 | 5.02% |
+| 3 | 1,517,912 | 758,749 | 49.99% | 682,844 | 44.99% | 76,319 | 5.03% |
+| 4 | 7,470,609 | 3,733,364 | 49.97% | 3,362,475 | 45.01% | 374,770 | 5.02% |
+| 5 | 2,118,172 | 1,059,494 | 50.02% | 952,849 | 44.98% | 105,829 | 5.00% |
+| 6 | 156,876 | 78,360 | 49.95% | 70,682 | 45.06% | 7,834 | 4.99% |
+| All | 14,274,987 | 7,133,496 | 49.97% | 6,425,429 | 45.01% | 716,062 | 5.02% |
+
+### `score >= 17500`
+
+| Unique level | Samples | 1-star | 1-star % | 2-star | 2-star % | 3-star | 3-star % |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 2 | 1 | 1 | 100.00% | 0 | 0.00% | 0 | 0.00% |
+| 3 | 1,583 | 315 | 19.90% | 1,096 | 69.24% | 172 | 10.87% |
+| 4 | 149,893 | 29,988 | 20.01% | 104,948 | 70.02% | 14,957 | 9.98% |
+| 5 | 263,381 | 52,413 | 19.90% | 184,525 | 70.06% | 26,443 | 10.04% |
+| 6 | 46,052 | 9,205 | 19.99% | 32,306 | 70.15% | 4,541 | 9.86% |
+| All | 460,910 | 91,922 | 19.94% | 322,875 | 70.05% | 46,113 | 10.00% |
+
+This means unique skill level does not appear to be part of the unique-factor star roll.
+
 ## Bottom line
 
 - Pink spark type generation looks good.
 - Pink star generation looks good.
 - White skill factor generation looks directionally consistent with the community understanding, but linear lineage boosts aren't a good fit. A piecewise rule with smaller boosts at lineage `1-2` fits much better.
 - White spark stars look good in both usable score bands.
-- Blue spark generation is one place where we can see a small but statistically real mismatch. Blue star odds are very close to the community expectations, but blue type odds are a worse fit to the equal-distribution expectation and look more consistent with a mild weighting toward higher stats.
+- Blue spark generation is slightly off. However, this discrepency becomes smaller and smaller when filtering to higher score umas, indicating it may simply be a consequence of players deleting a bunch of low score umas with less desirable blue sparks so they're seen less in the wild.
+- Unique spark generation looks to follow the same rules as white spark generation.

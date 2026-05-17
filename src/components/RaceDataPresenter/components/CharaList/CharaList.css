@@ -5,17 +5,6 @@
     margin-bottom: 16px;
 }
 
-.prediction-banner {
-    margin: 0 4px 12px;
-    padding: 8px 12px;
-    border-radius: 8px;
-    background: rgba(16, 185, 129, 0.12);
-    color: #a7f3d0;
-    font-size: 0.85rem;
-    border: 1px solid rgba(16, 185, 129, 0.2);
-}
-
-
 .chara-table-wrapper {
     overflow-x: auto;
     padding: 4px;
@@ -617,6 +606,16 @@
 
 .col-downhill-time {
     color: #60a5fa;
+}
+
+.col-downhill-cell {
+    line-height: 1.25;
+}
+
+.col-downhill-split {
+    font-size: 0.78em;
+    color: #94a3b8;
+    white-space: nowrap;
 }
 
 .col-pace-cell {

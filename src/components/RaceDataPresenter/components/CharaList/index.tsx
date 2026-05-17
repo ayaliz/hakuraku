@@ -76,15 +76,9 @@ const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData, detected
 
     const sortedData = _.sortBy(mergedData, d => d.finishOrder);
     const showPredictionColumn = mergedData.some((row) => row.predictedWinProbability !== undefined);
-    const showPredictionBanner = predictionState.status === "loading" || showPredictionColumn;
 
     return (
         <div className="chara-list-section">
-            {showPredictionBanner && (
-                <div className="prediction-banner">
-                    Trying out displaying predicted win probabilities for CM12 rooms based on stats, known skills and gate draws. Possibly horribly incorrect for some umas.
-                </div>
-            )}
             <CharaTable data={sortedData} courseId={effectiveCourseId} showPredictionColumn={showPredictionColumn} />
         </div>
     );

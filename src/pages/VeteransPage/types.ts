@@ -83,6 +83,8 @@ export type BaseFilter = {
     type: FilterType;
     stat: string;
     stars: number;
+    stats?: string[];
+    starOptions?: number[];
 };
 
 export type BluesFilter = BaseFilter;
@@ -102,4 +104,18 @@ export type OptimizerConfig = {
     scenarioWeight: number;
     highValueSkills: number[];
     highValueSkillBonus: number;
+};
+
+export const getFilterStats = (filter: BaseFilter): string[] => {
+    if (filter.stats && filter.stats.length > 0) {
+        return filter.stats;
+    }
+    return filter.stat ? [filter.stat] : [];
+};
+
+export const getFilterStarOptions = (filter: BaseFilter): number[] => {
+    if (filter.starOptions && filter.starOptions.length > 0) {
+        return filter.starOptions;
+    }
+    return Number.isFinite(filter.stars) ? [filter.stars] : [];
 };

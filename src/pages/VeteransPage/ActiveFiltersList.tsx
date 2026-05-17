@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "react-bootstrap";
-import { BaseFilter } from "./types";
+import { BaseFilter, getFilterStats, getFilterStarOptions } from "./types";
 
 interface ActiveFiltersListProps {
     filters: Record<string, BaseFilter[]>;
@@ -17,6 +17,20 @@ const ActiveFiltersList: React.FC<ActiveFiltersListProps> = ({ filters, config, 
         acc[curr.stateKey] = curr;
         return acc;
     }, {});
+
+    const formatStats = (filter: BaseFilter): string => {
+        const stats = getFilterStats(filter);
+        if (stats.length <= 2) {
+            return stats.join(" + ");
+        }
+        return `${stats.slice(0, 2).join(" + ")} +${stats.length - 2}`;
+    };
+
+    const formatStars = (filter: BaseFilter): string => {
+        const starOptions = getFilterStarOptions(filter);
+        const starLabel = starOptions.map(value => `${value}\u2605`).join(" / ");
+        return filter.type === "Total" ? `Total ${starLabel}` : `Legacy ${starLabel}`;
+    };
 
     return (
         <div className="vet-active-filters">
@@ -37,25 +51,22 @@ const ActiveFiltersList: React.FC<ActiveFiltersListProps> = ({ filters, config, 
                     const conf = stateKeyToConfig[stateKey];
                     if (!conf) return null;
 
-                    return filterList.map(filter => {
-                        const isLegacy = filter.type === "Legacy";
-                        return (
-                            <button
-                                type="button"
-                                key={filter.id}
-                                className={`vet-active-filter-chip vet-active-filter-chip--${stateKey}`}
-                                onClick={() => onRemove(stateKey, filter.id)}
-                            >
-                                <span>{filter.stat}</span>
-                                <span className={`vet-active-filter-chip-stars${isLegacy ? " legacy" : ""}`}>
-                                    {filter.stars}★
-                                </span>
-                                <span className="vet-active-filter-chip-remove" aria-hidden="true">
-                                    ×
-                                </span>
-                            </button>
-                        );
-                    });
+                    return filterList.map(filter => (
+                        <button
+                            type="button"
+                            key={filter.id}
+                            className={`vet-active-filter-chip vet-active-filter-chip--${stateKey}`}
+                            onClick={() => onRemove(stateKey, filter.id)}
+                        >
+                            <span>{formatStats(filter)}</span>
+                            <span className={`vet-active-filter-chip-stars${filter.type === "Legacy" ? " legacy" : ""}`}>
+                                {formatStars(filter)}
+                            </span>
+                            <span className="vet-active-filter-chip-remove" aria-hidden="true">
+                                {"\u00D7"}
+                            </span>
+                        </button>
+                    ));
                 })}
             </div>
         </div>

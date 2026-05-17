@@ -157,6 +157,8 @@ export function useCanvasOverlay(
         latestTimeRef.current = time;
         const instance = echartsRef.current?.getEchartsInstance?.();
         if (!instance) return;
+        const currentOption = instance.getOption?.();
+        if (!Array.isArray(currentOption?.xAxis) || currentOption.xAxis.length === 0) return;
 
         const p = paramsRef.current;
         if (!p.frames.length) return;
@@ -216,15 +218,15 @@ export function useCanvasOverlay(
             if (frontRunnerDistance < (10 / 24) * p.goalInX) {
                 seriesUpdate.push(buildPositionKeepSeries(frontRunnerDistance, p.goalInX, p.yMaxWithHeadroom));
             } else {
-                seriesUpdate.push({ id: "position-keep-areas", markArea: { data: [] } });
+                seriesUpdate.push({ id: "position-keep-areas", type: "scatter", markArea: { data: [] } });
             }
         }
         instance.setOption(
             {
-                xAxis: { min: xMin, max: xMax },
+                xAxis: { id: "distance-axis", type: "value", min: xMin, max: xMax },
                 graphic: {
                     elements: [
-                        { id: "distance-readout", style: { text: `${Math.round(xMax)} m` } },
+                        { id: "distance-readout", type: "text", style: { text: `${Math.round(xMax)} m` } },
                     ],
                 },
                 ...(seriesUpdate.length ? { series: seriesUpdate } : {}),
@@ -286,13 +288,14 @@ export function useCanvasOverlay(
                 const greenStats = p.passiveStatModifiers?.[idx];
                 const trackSurface: number = p.selectedTrackId ? (GameDataLoader.courseData as any)[+p.selectedTrackId]?.surface ?? 0 : 0;
                 const groundPowerBonus = computeGroundPowerBonus(trackSurface, p.groundCondition ?? 0);
+                const learnedSkillLevelById = new Map(trainedChara.skills.map(skill => [skill.skillId, skill.level]));
 
                 let activeSpeedBuff = 0;
                 (p.skillActivations?.[idx] ?? []).forEach((s: any) => {
                     const skillId = s.param[1];
-                    const duration = getSkillDurationSecs(skillId, p.goalInX, s.time, s.param?.[2]);
+                    const duration = getSkillDurationSecs(skillId, p.goalInX, s.time, s.param?.[2], s.param?.[3]);
                     if (time >= s.time && time < s.time + duration) {
-                        activeSpeedBuff += getActiveSpeedModifier(skillId);
+                        activeSpeedBuff += getActiveSpeedModifier(skillId, s.param?.[3], s.skillLevel ?? learnedSkillLevelById.get(skillId));
                     }
                 });
 
@@ -302,9 +305,9 @@ export function useCanvasOverlay(
                     if ((targetMask & (1 << idx)) === 0) return;
                     if ((p.skillActivations?.[idx] ?? []).some((self: any) => self === s)) return;
                     const skillId = s.param[1];
-                    const debuff = getActiveSpeedDebuff(skillId);
+                    const debuff = getActiveSpeedDebuff(skillId, s.param?.[3]);
                     if (debuff <= 0) return;
-                    const dur = getSkillDurationSecs(skillId, p.goalInX, s.time, s.param?.[2]);
+                    const dur = getSkillDurationSecs(skillId, p.goalInX, s.time, s.param?.[2], s.param?.[3]);
                     if (time >= s.time && time < s.time + dur) activeSpeedDebuff += debuff;
                 });
 
@@ -522,12 +525,12 @@ export function useCanvasOverlay(
                 if (p.toggles.skills) {
                     (p.skillActivations?.[idx] ?? [])
                         .filter(s => {
-                            const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2]);
+                            const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2], s.param?.[3]);
                             return time >= s.time && time < s.time + dur && !EXCLUDE_SKILL_RE.test(s.name);
                         })
                         .sort((a, b) => a.time - b.time || a.name.localeCompare(b.name))
                         .forEach(s => {
-                            const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2]);
+                            const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2], s.param?.[3]);
                             const remaining = Math.max(0, s.time + dur - time);
                             addMergedSkillLabel(s.name, bgColor, remaining, s.time);
                         });
@@ -537,12 +540,12 @@ export function useCanvasOverlay(
                             const targetMask = s.param?.[4] ?? 0;
                             if ((targetMask & (1 << idx)) === 0) return false;
                             if ((p.skillActivations?.[idx] ?? []).some((self: any) => self === s)) return false;
-                            if (getActiveSpeedDebuff(s.param[1]) <= 0 && !hasSkillEffect(s.param[1], 9)) return false;
-                            const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2]);
+                            if (getActiveSpeedDebuff(s.param[1], s.param?.[3]) <= 0 && !hasSkillEffect(s.param[1], 9, s.param?.[3])) return false;
+                            const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2], s.param?.[3]);
                             return time >= s.time && time < s.time + dur && !EXCLUDE_SKILL_RE.test(s.name);
                         })
                         .forEach(s => {
-                            const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2]);
+                            const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2], s.param?.[3]);
                             const remaining = Math.max(0, s.time + dur - time);
                             addMergedSkillLabel(s.name, "#ffcccb", remaining, s.time, "↓ ");
                         });

@@ -472,12 +472,23 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    justify-content: space-between;
     font-size: 13px;
     font-weight: bold;
     color: #a0aec0;
     margin-bottom: 8px;
     border-bottom: 1px solid #4a5568;
     padding-bottom: 4px;
+}
+
+.sa-comp-header-stat {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 600;
+    color: #cbd5e0;
+    text-transform: none;
+    letter-spacing: 0;
+    white-space: nowrap;
 }
 
 .sa-comp-table {
@@ -768,6 +779,11 @@
     grid-template-columns: 58px 92px;
 }
 
+.sa-stats-meta--team,
+.sa-reps-stats--team {
+    grid-template-columns: 92px 64px;
+}
+
 .sa-stats-meta--score,
 .sa-reps-stats--score {
     grid-template-columns: 72px 62px 96px;
@@ -868,6 +884,11 @@
 .sa-reps-full-data-modal .sa-stats-meta--bayes,
 .sa-reps-full-data-modal .sa-reps-stats--bayes {
     grid-template-columns: 54px 88px;
+}
+
+.sa-reps-full-data-modal .sa-stats-meta--team,
+.sa-reps-full-data-modal .sa-reps-stats--team {
+    grid-template-columns: 88px 60px;
 }
 
 .sa-reps-full-data-modal .sa-stats-meta--score,

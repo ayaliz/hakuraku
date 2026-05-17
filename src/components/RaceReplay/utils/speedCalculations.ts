@@ -286,6 +286,92 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
     };
 }
 
+export function calculateLastSpurtTargetSpeedWithTruncatedLateRaceBase(params: SpeedCalculationParams): number {
+    const {
+        courseDistance,
+        courseId,
+        speedStat,
+        wisdomStat,
+        powerStat,
+        gutsStat = 0,
+        staminaStat = 0,
+        strategy,
+        distanceProficiency,
+        mood,
+        isOonige,
+        slope,
+        greenSkillBonuses,
+        activeSpeedBuff,
+        isSpotStruggle,
+        isDueling,
+        isRushed,
+        rushedType,
+        activeSpeedDebuff,
+        isPaceUp,
+        isPaceDown,
+        isSpeedUp,
+        isOvertake,
+        isDownhillMode,
+    } = params;
+
+    const trackSpeedMultiplier = getTrackStatThresholdModifier(courseId || 0, { speed: speedStat, stamina: staminaStat, power: powerStat, guts: gutsStat, wisdom: wisdomStat }, mood);
+    const adjustedSpeed = adjustStat(speedStat, mood, greenSkillBonuses?.speed) * trackSpeedMultiplier;
+    const adjustedPower = adjustStat(powerStat, mood, greenSkillBonuses?.power);
+    const adjustedGuts = adjustStat(gutsStat, mood, greenSkillBonuses?.guts);
+
+    const baseSpeed = BASE_SPEED_CONSTANT - (courseDistance - BASE_SPEED_COURSE_OFFSET) / BASE_SPEED_COURSE_SCALE;
+
+    let strategyCoeffs = STRATEGY_PHASE_COEFFS[strategy] || STRATEGY_PHASE_COEFFS[RaceSimulateHorseResultData_RunningStyle.NIGE];
+    if (isOonige) {
+        strategyCoeffs = OONIGE_COEFFS;
+    }
+
+    const distMod = DISTANCE_PROFICIENCY_MODIFIER[distanceProficiency] || 1.0;
+    const speedTerm = Math.sqrt(SPEED_TERM_COEFF * adjustedSpeed) * distMod * SPEED_TERM_SCALE;
+    const gutsTerm = Math.pow(GUTS_TERM_BASE * adjustedGuts, GUTS_TERM_EXPONENT) * GUTS_TERM_SCALE;
+    const lateRaceBase = baseSpeed * strategyCoeffs[2] + speedTerm;
+    const truncatedLateRaceBase = Math.floor(lateRaceBase * 100) / 100;
+
+    let baseTargetSpeed = (truncatedLateRaceBase + LAST_SPURT_BASE_RATIO * baseSpeed) * LAST_SPURT_MULTIPLIER + speedTerm + gutsTerm;
+
+    if (slope > 0) {
+        const slopePer = slope / SLOPE_SCALE;
+        const penalty = (slopePer * SLOPE_PENALTY_COEFF) / adjustedPower;
+        baseTargetSpeed -= penalty;
+    }
+
+    let modeMultiplier = 1.0;
+    if (isPaceUp || isSpeedUp) {
+        modeMultiplier = PACE_UP_MULTIPLIER;
+    } else if (isOvertake) {
+        modeMultiplier = OVERTAKE_MULTIPLIER;
+    } else if (isPaceDown) {
+        modeMultiplier = PACE_DOWN_MULTIPLIER;
+    }
+
+    if (isRushed && rushedType === 2) {
+        modeMultiplier *= RUSHED_TYPE2_MULTIPLIER;
+    }
+
+    baseTargetSpeed *= modeMultiplier;
+
+    if (isDownhillMode) {
+        baseTargetSpeed += DOWNHILL_BONUS_BASE + Math.abs(slope) / DOWNHILL_BONUS_DIVISOR;
+    }
+
+    baseTargetSpeed += (activeSpeedBuff || 0);
+    baseTargetSpeed -= (activeSpeedDebuff || 0);
+
+    if (isSpotStruggle) {
+        baseTargetSpeed += Math.pow(SPOT_STRUGGLE_GUTS_BASE * adjustedGuts, SPOT_STRUGGLE_GUTS_EXPONENT) * SPOT_STRUGGLE_GUTS_SCALE;
+    }
+    if (isDueling) {
+        baseTargetSpeed += Math.pow(DUELING_GUTS_BASE * adjustedGuts, DUELING_GUTS_EXPONENT) * DUELING_GUTS_SCALE;
+    }
+
+    return baseTargetSpeed;
+}
+
 export function calculateReferenceHpConsumption(speed: number, courseDistance: number) {
     const baseSpeed = BASE_SPEED_CONSTANT - (courseDistance - BASE_SPEED_COURSE_OFFSET) / BASE_SPEED_COURSE_SCALE;
     return HP_CONSUMPTION_SCALE * Math.pow(Math.max(0, speed - baseSpeed + HP_CONSUMPTION_SPEED_OFFSET), 2) / HP_CONSUMPTION_DIVISOR;

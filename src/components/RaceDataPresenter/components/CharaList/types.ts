@@ -59,6 +59,7 @@ export type CharaTableData = {
     startDelay?: number;
     isLateStart?: boolean;
     lastSpurtTargetSpeed?: number;
+    lastSpurtTargetSpeedTruncatedLateRaceBase?: number;
     maxAdjustedSpeed?: number;
     maxAdjustedSpeedTime?: number;
     maxAdjustedSpeedDebug?: MaxAdjustedSpeedDebug;
@@ -67,6 +68,8 @@ export type CharaTableData = {
     requiredSpurtHp?: number;
     duelingTime?: number;
     downhillModeTime?: number;
+    downhillModeTimePreLate?: number;
+    downhillModeTimeLate?: number;
     paceUpTime?: number;
     paceDownTime?: number;
     finishDistanceToPrev?: number;

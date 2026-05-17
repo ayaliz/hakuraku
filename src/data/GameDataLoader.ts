@@ -14,17 +14,23 @@ class GameDataLoaderClass {
     async initialize(): Promise<void> {
         if (this.data) return;
 
-        const response = await fetch(
-            import.meta.env.BASE_URL + "data/gamedata.bin.gz",
-            { cache: "no-cache" }
-        );
-        if (!response.ok) {
-            throw new Error(`Failed to fetch data/gamedata.bin.gz (${response.status} ${response.statusText})`);
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), 10000);
+        try {
+            const response = await fetch(
+                import.meta.env.BASE_URL + "data/gamedata.bin.gz",
+                { cache: "no-cache", signal: controller.signal }
+            );
+            if (!response.ok) {
+                throw new Error(`Failed to fetch data/gamedata.bin.gz (${response.status} ${response.statusText})`);
+            }
+            const buffer = await response.arrayBuffer();
+            const inflated = pako.inflate(new Uint8Array(buffer), { to: "string" });
+            this.data = JSON.parse(inflated);
+            this.skillNameFallbacksById = null;
+        } finally {
+            window.clearTimeout(timeoutId);
         }
-        const buffer = await response.arrayBuffer();
-        const inflated = pako.inflate(new Uint8Array(buffer), { to: "string" });
-        this.data = JSON.parse(inflated);
-        this.skillNameFallbacksById = null;
     }
 
     private ensureLoaded() {

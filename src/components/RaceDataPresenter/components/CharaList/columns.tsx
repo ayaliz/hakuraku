@@ -22,6 +22,11 @@ function hasHpRecoveryEffect(skillId: number): boolean {
         group.effects.some(eff => eff.type === 9 && eff.value > 0)
     );
 }
+
+function getExpectedObservedSpurtSpeed(speed: number): number {
+    return Math.floor(speed * 100) / 100;
+}
+
 let _statIcons: Record<string, string> | null = null;
 function getStatIcons() {
     if (!_statIcons) {
@@ -137,7 +142,15 @@ const StatsCell: React.FC<{ row: CharaTableData }> = ({ row }) => {
 
 const predictionColumn: CharaColumnDef = {
     key: 'predictedWin',
-    header: 'Pred Win',
+    header: (
+        <span>
+            Pred Win{' '}
+            <InfoIcon
+                id="tooltip-predicted-win"
+                tip="Estimated win chance for each uma. It considers stats, learned skills, running style, mood, gate draws and the context of the other umas in the room."
+            />
+        </span>
+    ),
     renderCell: (row) => {
         if (row.predictedWinProbability === undefined) {
             return '—';
@@ -316,8 +329,11 @@ const baseCharaTableColumns: CharaColumnDef[] = [
             if (spurtDelay === null) return '-';
 
             const spurtColor = getColorForSpurtDelay(spurtDelay);
-            const speedDiff = (row.maxAdjustedSpeed && row.lastSpurtTargetSpeed)
-                ? row.maxAdjustedSpeed - row.lastSpurtTargetSpeed : 0;
+            const expectedObservedSpurtSpeed = row.lastSpurtTargetSpeed !== undefined
+                ? getExpectedObservedSpurtSpeed(row.lastSpurtTargetSpeed)
+                : undefined;
+            const speedDiff = (row.maxAdjustedSpeed && expectedObservedSpurtSpeed)
+                ? row.maxAdjustedSpeed - expectedObservedSpurtSpeed : 0;
             const speedReached = speedDiff >= -0.05;
             const hasLowHpSpurtSuspicion = hasLowHpNegativeSpurtSuspicion(
                 row.hpAtPhase3Start,
@@ -352,7 +368,7 @@ const baseCharaTableColumns: CharaColumnDef[] = [
                             <span className="col-spurt-speed">
                                 <span className="col-spurt-speed-label">Speed: </span>
                                 <span className={speedReached ? 'col-speed-ok' : 'col-speed-bad'}>
-                                    {row.maxAdjustedSpeed.toFixed(1)}{Math.abs(speedDiff) >= 0.05 && ` (${speedDiff > 0 ? '+' : ''}${speedDiff.toFixed(1)})`}
+                                    {row.maxAdjustedSpeed.toFixed(2)}{Math.abs(speedDiff) >= 0.05 && ` (${speedDiff > 0 ? '+' : ''}${speedDiff.toFixed(2)})`}
                                 </span>
                                 {blockedIconUrl && (
                                     <img src={blockedIconUrl} alt="Potential spurt issue" className="late-heal-icon" />
@@ -380,17 +396,26 @@ const baseCharaTableColumns: CharaColumnDef[] = [
                     <div className="col-hp-tooltip">
                         {row.maxAdjustedSpeedTime !== undefined && row.maxAdjustedSpeedDebug && (() => {
                             const d = row.maxAdjustedSpeedDebug!;
-                            const totalBuff = d.skillBuffs.reduce((s, b) => s + b.value, 0) + d.spotStruggleBuff + d.duelingBuff + d.downhillBuff;
+                            const totalBuff = d.skillBuffs.reduce((s, b) => s + b.value, 0)
+                                + d.spotStruggleBuff
+                                + d.duelingBuff
+                                + d.downhillBuff
+                                - d.uphillPenalty
+                                - d.skillDebuffs.reduce((s, b) => s + b.value, 0);
                             return (
                                 <>
                                     <div>Speed sample: <strong>t={row.maxAdjustedSpeedTime!.toFixed(2)}s</strong>, raw={d.rawSpeed.toFixed(3)}</div>
                                     {d.skillBuffs.map((b, i) => (
                                         <div key={i}>- Skill ({b.name}): <strong>-{b.value.toFixed(3)}</strong></div>
                                     ))}
+                                    {d.skillDebuffs.map((b, i) => (
+                                        <div key={i}>- Speed debuff ({b.name}): <strong>+{b.value.toFixed(3)}</strong></div>
+                                    ))}
                                     {d.spotStruggleBuff > 0 && <div>- Spot Struggle: <strong>-{d.spotStruggleBuff.toFixed(3)}</strong></div>}
                                     {d.duelingBuff > 0 && <div>- Dueling: <strong>-{d.duelingBuff.toFixed(3)}</strong></div>}
+                                    {d.uphillPenalty > 0 && <div>- Uphill penalty: <strong>+{d.uphillPenalty.toFixed(3)}</strong></div>}
                                     {d.downhillBuff > 0 && <div>- Downhill: <strong>-{d.downhillBuff.toFixed(3)}</strong></div>}
-                                    {totalBuff > 0 && <div>= Adjusted: <strong>{(d.rawSpeed - totalBuff).toFixed(3)}</strong></div>}
+                                    {Math.abs(totalBuff) > 1e-6 && <div>= Adjusted: <strong>{(d.rawSpeed - totalBuff).toFixed(3)}</strong></div>}
                                 </>
                             );
                         })()}
@@ -501,7 +526,20 @@ const baseCharaTableColumns: CharaColumnDef[] = [
         cellClassName: 'stat-cell',
         renderCell: (row) => {
             if (!row.downhillModeTime || row.downhillModeTime < 0.01) return '-';
-            return <span className="col-downhill-time">{Math.round(row.downhillModeTime * 15 / 16)}s</span>;
+            const totalSecs = Math.round(row.downhillModeTime * 15 / 16);
+            const preLateSecs = Math.round((row.downhillModeTimePreLate ?? 0) * 15 / 16);
+            const lateSecs = Math.max(0, Math.round((row.downhillModeTimeLate ?? Math.max(0, row.downhillModeTime - (row.downhillModeTimePreLate ?? 0))) * 15 / 16));
+            const hasSplit = preLateSecs > 0 || lateSecs > 0;
+            return (
+                <div className="col-downhill-cell">
+                    <div className="col-downhill-time">{totalSecs}s</div>
+                    {hasSplit && (
+                        <div className="col-downhill-split">
+                            ({preLateSecs}s pre-late{lateSecs > 0 ? ` / ${lateSecs}s late` : ''})
+                        </div>
+                    )}
+                </div>
+            );
         },
     },
     {

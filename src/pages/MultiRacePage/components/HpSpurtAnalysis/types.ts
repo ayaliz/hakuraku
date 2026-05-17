@@ -16,6 +16,11 @@ export interface CharaHpSpurtStats {
     survivalCount: number;
     hpOutcomesFullSpurt: number[];
     hpOutcomesNonFullSpurt: number[];
+    duelingTimeSamples: number[];
+    downhillModeTimeSamples: number[];
+    downhillModeTimePreLateSamples: number[];
+    paceUpTimeSamples: number[];
+    paceDownTimeSamples: number[];
     recoveryStats: Record<string, RecoveryScenarioStats>;
     recoveryStatsWithDebuffs: Record<string, RecoveryScenarioStats>;
     sourceRuns: { race: ParsedRace, horseFrameOrder: number }[];

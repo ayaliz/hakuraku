@@ -9,6 +9,17 @@ export function CompositionSection({ strategyStats, totalRaces, roomCompositions
     strategyColors: Record<number, string>;
 }) {
     const topRows = roomCompositions.slice(0, 12);
+    const runawayIdx = ANALYSIS_STRATEGY_IDS.indexOf(5);
+    const frontIdx = ANALYSIS_STRATEGY_IDS.indexOf(1);
+    const pacePromotionLobbyRate = totalRaces > 0
+        ? roomCompositions.reduce((sum, comp) => {
+            const hasNoRunaway = runawayIdx < 0 || (comp.counts[runawayIdx] ?? 0) === 0;
+            const hasNoFront = frontIdx < 0 || (comp.counts[frontIdx] ?? 0) === 0;
+            return hasNoRunaway && hasNoFront
+                ? sum + (comp.occurrences / totalRaces)
+                : sum;
+        }, 0)
+        : 0;
     const avgCounts = ANALYSIS_STRATEGY_IDS.map(sId => {
         const stat = strategyStats.find(s => s.strategy === sId);
         return totalRaces > 0 ? (stat?.totalRaces ?? 0) / totalRaces : 0;
@@ -46,7 +57,10 @@ export function CompositionSection({ strategyStats, totalRaces, roomCompositions
     return (
         <div className="sa-comp-section">
             <div className="sa-comp-header">
-                Room Composition
+                <span>Room Composition</span>
+                <span className="sa-comp-header-stat">
+                    Rooms with pace promotion: {(pacePromotionLobbyRate * 100).toFixed(1)}%
+                </span>
             </div>
             <table className="sa-comp-table">
                 <thead>

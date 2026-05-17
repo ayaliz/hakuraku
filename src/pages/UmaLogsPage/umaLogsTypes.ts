@@ -161,7 +161,6 @@ export interface TrackGroupContentProps {
     scoreWinnersOnly: boolean;
     setScoreWinnersOnly: (v: boolean) => void;
     totalRaces: number;
-    totalUniqueUmas: number | null;
     strategyColors: Record<number, string>;
 }
 

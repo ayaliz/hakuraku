@@ -202,13 +202,14 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
             const currentSlope = currentSlopeObj?.slope ?? 0;
 
             const greenStats = passiveStatModifiers?.[i];
+            const learnedSkillLevelById = new Map(trainedChara.skills.map(skill => [skill.skillId, skill.level]));
             let activeSpeedBuff = 0;
             if (skillActivations && skillActivations[i]) {
                 skillActivations[i].forEach(activation => {
                     const skillId = activation.param[1];
-                    const duration = getSkillDurationSecs(skillId, goalInX, activation.time, activation.param?.[2]);
+                    const duration = getSkillDurationSecs(skillId, goalInX, activation.time, activation.param?.[2], activation.param?.[3]);
                     if (time >= activation.time && time < activation.time + duration) {
-                        activeSpeedBuff += getActiveSpeedModifier(skillId);
+                        activeSpeedBuff += getActiveSpeedModifier(skillId, activation.param?.[3], activation.skillLevel ?? learnedSkillLevelById.get(skillId));
                     }
                 });
             }

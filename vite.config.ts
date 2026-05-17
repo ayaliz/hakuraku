@@ -22,6 +22,19 @@ const serveGzRaw = (): Plugin => ({
 export default defineConfig({
     plugins: [react(), serveGzRaw()],
     base: process.env.VITE_BASE_PATH ?? '/',
+    server: {
+        watch: {
+            ignored: [
+                '**/.git/**',
+                '**/.wrangler/**',
+                '**/dist/**',
+                '**/logs/**',
+                '**/assets/races/**',
+                '**/umdb/**',
+                '**/__pycache__/**',
+            ],
+        },
+    },
     build: {
         rollupOptions: {
             output: {

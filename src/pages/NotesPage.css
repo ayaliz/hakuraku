@@ -138,6 +138,15 @@
     color: var(--haku-accent);
 }
 
+.np-md-container img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 16px auto;
+    border-radius: 6px;
+    border: 1px solid var(--haku-border);
+}
+
 .np-md-container .table-wrapper {
     overflow-x: auto;
     margin-top: 12px;

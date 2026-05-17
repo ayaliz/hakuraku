@@ -106,8 +106,8 @@ export function createOptions(args: {
 }): ECOption {
     const { xMin, xMax, yMax, series } = args;
     return {
-        xAxis: { type: "value", min: xMin, max: xMax, name: "Distance", axisLabel: { show: false }, axisTick: { show: false }, splitLine: { show: false } },
-        yAxis: { type: "value", min: 0, max: yMax, name: "Lane Position", splitLine: { show: false } },
+        xAxis: { id: "distance-axis", type: "value", min: xMin, max: xMax, name: "Distance", axisLabel: { show: false }, axisTick: { show: false }, splitLine: { show: false } },
+        yAxis: { id: "lane-axis", type: "value", min: 0, max: yMax, name: "Lane Position", splitLine: { show: false } },
         legend: { show: false },
         tooltip: {
             trigger: "item",

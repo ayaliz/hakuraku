@@ -190,6 +190,14 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         groundCondition,
     });
     tickRef.current = tick;
+    const replayInstanceKey = useMemo(() => {
+        const header = raceData.header as { randomSeed?: number | bigint | string } | undefined;
+        const seed = header?.randomSeed?.toString?.() ?? "";
+        return `${seed}-${frames.length}-${startTime}-${endTime}-${raceData.horseResult?.length ?? 0}`;
+    }, [endTime, frames.length, raceData.header, raceData.horseResult?.length, startTime]);
+    const handleChartReady = useCallback(() => {
+        window.setTimeout(() => tick(renderTime), 0);
+    }, [renderTime, tick]);
 
     useEffect(() => {
         if (frames.length > 0) tick(frames[0].time ?? 0);
@@ -664,6 +672,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                         </div>
                     )}
                     <EChartsReactCore
+                        key={replayInstanceKey}
                         ref={echartsRef}
                         echarts={echarts}
                         option={options}
@@ -671,6 +680,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                         style={{ height: "500px", width: "100%" }}
                         notMerge={true}
                         theme="dark"
+                        onChartReady={handleChartReady}
                     />
                     <canvas
                         ref={canvasRef}

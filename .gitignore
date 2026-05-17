@@ -49,7 +49,6 @@ umdb/*.pyi
 !/public/data/umdb.binarypb.gz
 !/public/data/umdb.json
 !/public/data/gamedata.bin.gz
-/public/notes
 
 # internal-only source material
 /assets

@@ -29,7 +29,9 @@ class _UMDatabaseWrapper {
     supportCardRaceBonusByLimitBreak: Record<number, number[]> = {};
 
     initialize() {
-        return fetch(import.meta.env.BASE_URL + 'data/umdb.binarypb.gz', { cache: 'no-cache' })
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), 10000);
+        return fetch(import.meta.env.BASE_URL + 'data/umdb.binarypb.gz', { cache: 'no-cache', signal: controller.signal })
             .then(response => {
             if (!response.ok) {
                 throw new Error(`Failed to fetch data/umdb.binarypb.gz (${response.status} ${response.statusText})`);
@@ -37,6 +39,7 @@ class _UMDatabaseWrapper {
             return response.arrayBuffer();
         })
             .then((response) => {
+            window.clearTimeout(timeoutId);
             this.umdb = fromBinary(UMDatabaseSchema, pako.inflate(new Uint8Array(response)));
             this.supportCardRaceBonusByLimitBreak = {};
 
@@ -88,6 +91,9 @@ class _UMDatabaseWrapper {
                 if (s.raceInstanceId) this.winSaddleToRaceInstance[s.id!] = s.raceInstanceId;
                 this.winSaddleToRaceInstances[s.id!] = Array.from(s.raceInstanceIds);
             });
+        }).catch((error) => {
+            window.clearTimeout(timeoutId);
+            throw error;
         });
     }
 

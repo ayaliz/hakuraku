@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
-import { STRATEGY_NAMES, POP_FILTER_OPTIONS } from "./constants";
+import { STRATEGY_NAMES, POP_FILTER_OPTIONS, BAYES_TEAM } from "./constants";
 import type { HorseEntry, SkillStats } from "../../types";
+import type { CharacterTeamRateRow } from "../../../UmaLogsPage/panelData";
 import AssetLoader from "../../../../data/AssetLoader";
 import InfoTooltip from "./InfoTooltip";
 import { type TeamSampleSelectOption } from "./TeamSampleSelect";
@@ -23,6 +24,10 @@ export type StyleRepEntry = {
     expectedWinRate: number;
     scoreAdjustedWinRate: number;
     scoreAdjustedLift: number;
+    teamWins?: number;
+    teamAppearances?: number;
+    teamWinRate?: number;
+    teamBayesianWinRate?: number;
 };
 
 type StyleRepSelection = {
@@ -55,28 +60,29 @@ type StyleRepDrilldownResponse = {
     }>;
 };
 
-export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, skillStats, strategyColors }: {
+export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, characterTeamRates, skillStats, strategyColors }: {
     cmId?: string | null;
     courseId?: number;
     apiBase?: string;
     apiMode?: boolean;
     styleReps: Record<number, StyleRepEntry[]>;
+    characterTeamRates?: CharacterTeamRateRow[];
     skillStats?: Map<number, SkillStats>;
     strategyColors: Record<number, string>;
 }) {
     const [selected, setSelected] = useState<StyleRepSelection | null>(null);
     const [selectedInModal, setSelectedInModal] = useState<StyleRepSelection | null>(null);
     const [fullDataOpen, setFullDataOpen] = useState(false);
-    const [minPopPct, setMinPopPct] = useState<0 | 0.5 | 1 | 2>(0.5);
-    const [rankingMode, setRankingMode] = useState<"bayes" | "scoreAdjusted">("bayes");
+    const [minPopPct, setMinPopPct] = useState<0 | 0.5 | 1 | 2>(1);
+    const [rankingMode, setRankingMode] = useState<"bayes" | "team">("bayes");
     const [drilldownCache, setDrilldownCache] = useState<Record<string, StyleRepDrilldownEntry[]>>({});
     const [drilldownLoadingKeys, setDrilldownLoadingKeys] = useState<string[]>([]);
     const [drilldownError, setDrilldownError] = useState<string | null>(null);
     const canUseApiDrilldown = !!(apiMode && cmId && courseId && skillStats);
     const canDrilldown = !!skillStats && canUseApiDrilldown;
     const rankingOptions = [
-        { value: "bayes" as const, label: "By win rate" },
-        { value: "scoreAdjusted" as const, label: "Score-adjusted" },
+        { value: "bayes" as const, label: "By individual win rate" },
+        { value: "team" as const, label: "By team win rate" },
     ];
 
     const makeSelectionKey = (selection: StyleRepSelection | null) =>
@@ -127,17 +133,38 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, sk
         return selectionKey ? (drilldownCache[selectionKey] ?? []) : [];
     }, [selectedInModal, drilldownCache]);
 
+    const teamRateByRepKey = useMemo(() => {
+        const map = new Map<string, CharacterTeamRateRow>();
+        for (const row of characterTeamRates ?? []) {
+            map.set(`${row.strategy}_${row.cardId}`, row);
+        }
+        return map;
+    }, [characterTeamRates]);
+
     const entriesByStrategy = useMemo(() => (
         Object.fromEntries(
             REPRESENTATIVE_STRATEGY_IDS.map((sId) => [
                 sId,
                 [...(styleReps[sId] ?? [])]
+                    .map((entry) => {
+                        const teamRate = teamRateByRepKey.get(`${sId}_${entry.cardId}`);
+                        const teamAppearances = entry.teamAppearances ?? teamRate?.appearances ?? 0;
+                        const teamWins = entry.teamWins ?? teamRate?.wins ?? 0;
+                        return {
+                            ...entry,
+                            teamWins,
+                            teamAppearances,
+                            teamWinRate: entry.teamWinRate ?? (teamAppearances > 0 ? teamWins / teamAppearances : 0),
+                            teamBayesianWinRate: entry.teamBayesianWinRate
+                                ?? ((teamWins + BAYES_TEAM.K * BAYES_TEAM.PRIOR) / (teamAppearances + BAYES_TEAM.K)),
+                        };
+                    })
                     .filter(entry => entry.popPct >= minPopPct)
                     .sort((a, b) => {
-                        if (rankingMode === "scoreAdjusted") {
-                            return (b.scoreAdjustedLift - a.scoreAdjustedLift)
-                                || (b.scoreAdjustedWinRate - a.scoreAdjustedWinRate)
-                                || (b.appearances - a.appearances);
+                        if (rankingMode === "team") {
+                            return ((b.teamBayesianWinRate ?? 0) - (a.teamBayesianWinRate ?? 0))
+                                || ((b.teamWinRate ?? 0) - (a.teamWinRate ?? 0))
+                                || ((b.teamAppearances ?? 0) - (a.teamAppearances ?? 0));
                         }
                         return (b.bayesianWinRate - a.bayesianWinRate)
                             || (b.winRate - a.winRate)
@@ -145,7 +172,7 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, sk
                     }),
             ])
         ) as Record<number, StyleRepEntry[]>
-    ), [styleReps, minPopPct, rankingMode]);
+    ), [styleReps, teamRateByRepKey, minPopPct, rankingMode]);
 
     const totalVisibleEntries = REPRESENTATIVE_STRATEGY_IDS.reduce(
         (sum, sId) => sum + (entriesByStrategy[sId]?.length ?? 0),
@@ -183,26 +210,20 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, sk
                     )}
                 </div>
                 <span className="sa-reps-name" title={entry.charaName}>{entry.charaName}</span>
-                <div className={`sa-reps-stats sa-reps-stats--${rankingMode === "scoreAdjusted" ? "score" : "bayes"}`}>
-                    {rankingMode === "scoreAdjusted" ? (
+                <div className={`sa-reps-stats sa-reps-stats--${rankingMode === "team" ? "team" : "bayes"}`}>
+                    {rankingMode === "team" ? (
                         <>
                             <span
                                 className="sa-adj-pct sa-reps-stat"
-                                title={`Lift ${(entry.scoreAdjustedLift * 100).toFixed(1)}%, expected ${(entry.expectedWinRate * 100).toFixed(1)}%, score-adjusted ${(entry.scoreAdjustedWinRate * 100).toFixed(1)}%, Bayesian ${(entry.bayesianWinRate * 100).toFixed(1)}%, raw ${(entry.winRate * 100).toFixed(1)}%`}
+                                title={`Adjusted win rate for teams featuring this character: ${((entry.teamBayesianWinRate ?? 0) * 100).toFixed(1)}%, raw ${((entry.teamWinRate ?? 0) * 100).toFixed(1)}%, wins ${entry.teamWins ?? 0}, appearances ${entry.teamAppearances ?? 0}`}
                             >
-                                {entry.scoreAdjustedLift >= 0 ? "+" : ""}{(entry.scoreAdjustedLift * 100).toFixed(1)}%
+                                {((entry.teamBayesianWinRate ?? 0) * 100).toFixed(1)}%
                             </span>
                             <span
                                 className="sa-raw-pct sa-reps-stat"
-                                title={`Expected win rate from score bucket and distance aptitude: ${(entry.expectedWinRate * 100).toFixed(1)}%`}
+                                title={`Raw win rate for teams featuring this character: ${((entry.teamWinRate ?? 0) * 100).toFixed(1)}% across ${entry.teamAppearances ?? 0} samples`}
                             >
-                                {(entry.expectedWinRate * 100).toFixed(1)}%
-                            </span>
-                            <span
-                                className="sa-raw-pct sa-reps-stat"
-                                title={`Raw win rate: ${(entry.winRate * 100).toFixed(1)}% across ${entry.appearances} samples`}
-                            >
-                                {(entry.winRate * 100).toFixed(1)}% ({entry.appearances})
+                                {((entry.teamWinRate ?? 0) * 100).toFixed(1)}% ({entry.teamAppearances ?? 0})
                             </span>
                         </>
                     ) : (
@@ -231,12 +252,11 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, sk
                     <div key={sId} className="sa-reps-col">
                         <div className="sa-reps-col-header" style={{ color }}>
                             {STRATEGY_NAMES[sId].split(" ")[0].toUpperCase()}
-                            <span className={`sa-stats-meta sa-stats-meta--${rankingMode === "scoreAdjusted" ? "score" : "bayes"}`}>
-                                {rankingMode === "scoreAdjusted" ? (
+                            <span className={`sa-stats-meta sa-stats-meta--${rankingMode === "team" ? "team" : "bayes"}`}>
+                                {rankingMode === "team" ? (
                                     <>
-                                        <span className="sa-meta-adj sa-meta-adj--neutral">Lift vs exp</span>
-                                        <span className="sa-meta-raw">Expected%</span>
-                                        <span className="sa-meta-raw">Raw (samples)</span>
+                                        <span className="sa-meta-adj sa-meta-adj--neutral">Adj. win%</span>
+                                        <span className="sa-meta-raw">Raw win% (samples)</span>
                                     </>
                                 ) : (
                                     <>
@@ -375,7 +395,7 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, sk
                     tip={
                         rankingMode === "bayes"
                             ? "Top 5 performers per style using the current Bayesian-adjusted win rate."
-                            : "Top 5 performers per style ranked by how much they beat or miss the expected win rate implied by score bucket and distance aptitude. Positive values imply the character has some edge over characters in that style with similar rating and distance aptitude."
+                            : "Top 5 performers per style ranked by adjusted win rate across teams featuring that character. Raw team win rate and adjusted team win rate are shown side by side."
                     }
                 />
             </div>

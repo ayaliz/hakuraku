@@ -1,4 +1,4 @@
-import { Veteran, BaseFilter, SortOption, SortDirection } from "./types";
+import { Veteran, BaseFilter, SortOption, SortDirection, getFilterStats, getFilterStarOptions } from "./types";
 import { aggregateFactors, getFactorCategory, calculateAffinity } from "../../data/VeteransHelper";
 import { getCardName } from "./VeteransUIHelper";
 
@@ -6,14 +6,23 @@ import { getCardName } from "./VeteransUIHelper";
 const matchesFilter = (veteran: Veteran, filter: BaseFilter, categoryId: number): boolean => {
     const aggregated = aggregateFactors(veteran);
     const relevantFactors = aggregated.filter(f => getFactorCategory(f.factorId) === categoryId);
-    const matchingFactors = relevantFactors.filter(f => f.name === filter.stat);
+    const selectedStats = getFilterStats(filter);
+    const selectedStars = getFilterStarOptions(filter);
+    const matchingFactors = relevantFactors.filter(f => selectedStats.includes(f.name));
+    const hasComplexSelection = selectedStats.length > 1 || selectedStars.length > 1;
 
     if (filter.type === 'Legacy') {
         const goldStars = matchingFactors.filter(f => f.isGold).reduce((sum, f) => sum + f.level, 0);
-        return goldStars >= filter.stars;
+        if (hasComplexSelection) {
+            return selectedStars.includes(goldStars);
+        }
+        return selectedStars.some(stars => goldStars >= stars);
     } else {
         const totalStars = matchingFactors.reduce((sum, f) => sum + f.level, 0);
-        return totalStars >= filter.stars;
+        if (hasComplexSelection) {
+            return selectedStars.includes(totalStars);
+        }
+        return selectedStars.some(stars => totalStars >= stars);
     }
 };
 

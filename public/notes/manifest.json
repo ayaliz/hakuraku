@@ -33,5 +33,12 @@
     "filename": "spark-generation.md",
     "date": "2026-03-28",
     "description": "Observed spark generation data vs community expected rates."
+  },
+  {
+    "id": "spot-struggle",
+    "title": "Spot struggle duration and exit conditions",
+    "filename": "spot-struggle.md",
+    "date": "2026-05-14",
+    "description": "Replay evidence for aptitude-scaled spot struggle duration and a possible distance-based exit condition."
   }
 ]

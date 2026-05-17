@@ -1,7 +1,7 @@
 import React from "react";
 import { STRATEGY_COLORS } from "./constants";
 import type { StrategyStats, RoomCompositionEntry, SkillStats } from "../../types";
-import type { StyleCompositionSummaryRow } from "../../../UmaLogsPage/panelData";
+import type { CharacterTeamRateRow, StyleCompositionSummaryRow } from "../../../UmaLogsPage/panelData";
 import { StyleBreakdownPanel } from "./StyleBreakdownPanel";
 import { SaturationPanel } from "./SaturationPanel";
 import { CompositionSection } from "./CompositionSection";
@@ -23,6 +23,7 @@ interface StrategyAnalysisProps {
     roomCompositions?: RoomCompositionEntry[];
     styleCompositionRows?: StyleCompositionSummaryRow[];
     styleReps?: Parameters<typeof StyleRepsPanel>[0]["styleReps"];
+    characterTeamRates?: CharacterTeamRateRow[];
     skillStats?: Map<number, SkillStats>;
     strategyColors?: Record<number, string>;
 }
@@ -37,6 +38,7 @@ const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
     roomCompositions,
     styleCompositionRows,
     styleReps,
+    characterTeamRates,
     skillStats,
     strategyColors,
 }) => {
@@ -66,6 +68,7 @@ const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
                                     apiBase={apiBase}
                                     apiMode={apiMode}
                                     styleReps={styleReps}
+                                    characterTeamRates={characterTeamRates}
                                     skillStats={skillStats}
                                     strategyColors={activeStrategyColors}
                                 />

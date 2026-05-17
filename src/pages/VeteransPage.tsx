@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import "./VeteransPage/VeteransPage.css";
 import { Alert, Button, Container, Form, InputGroup } from "react-bootstrap";
-import { Veteran, BaseFilter, BluesFilter, AptitudeFilter, UniquesFilter, RacesFilter, SkillsFilter, SortOption, SortDirection } from "./VeteransPage/types";
+import { useAuth } from "../auth/AuthContext";
+import type { AccountHorseActVerificationStatusResponse, AccountVeteranSnapshotSummary } from "../auth/authShared";
+import { Veteran, BaseFilter, BluesFilter, AptitudeFilter, UniquesFilter, RacesFilter, SkillsFilter, SortOption, SortDirection, getFilterStats, getFilterStarOptions } from "./VeteransPage/types";
 import { SelectorType } from "./VeteransPage/InlineFilterSelector";
 import VeteransSorter from "./VeteransPage/VeteransSorter";
 
@@ -32,6 +34,7 @@ const FILTER_CONFIG = {
 };
 
 export default function VeteransPage() {
+    const { authenticated, user } = useAuth();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const vetListRef = useRef<HTMLDivElement>(null);
 
@@ -45,6 +48,7 @@ export default function VeteransPage() {
         veteranCount: number;
         updatedAt: string;
     } | null>(null);
+    const [accountVeteranSnapshot, setAccountVeteranSnapshot] = useState<AccountVeteranSnapshotSummary | null>(null);
 
     const [affinityParent1, setAffinityParent1] = useState<Veteran | null>(null);
     const [affinityParent2, setAffinityParent2] = useState<Veteran | null>(null);
@@ -136,6 +140,31 @@ export default function VeteransPage() {
         }
     }, []);
 
+    useEffect(() => {
+        if (!authenticated || !user) {
+            setAccountVeteranSnapshot(null);
+            return;
+        }
+
+        let cancelled = false;
+        fetch("/api/account/horseact-verification/status", {
+            credentials: "same-origin",
+        })
+            .then((response) => response.ok ? response.json() as Promise<AccountHorseActVerificationStatusResponse> : null)
+            .then((payload) => {
+                if (!cancelled) {
+                    setAccountVeteranSnapshot(payload?.linkedGameAccount ? payload.veteranSnapshot : null);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) setAccountVeteranSnapshot(null);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [authenticated, user]);
+
     const handleFileChange: React.ChangeEventHandler<HTMLInputElement> = e => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -193,7 +222,14 @@ export default function VeteransPage() {
             skillsFilters: setSkillsFilters as React.Dispatch<React.SetStateAction<BaseFilter[]>>,
         };
         setters[stateKey]?.(prev => {
-            if (prev.some(f => f.stat === filter.stat && f.type === filter.type && f.stars === filter.stars)) {
+            const filterStatsKey = getFilterStats(filter).join("|");
+            const filterStarsKey = getFilterStarOptions(filter).join("|");
+
+            if (prev.some(f =>
+                f.type === filter.type &&
+                getFilterStats(f).join("|") === filterStatsKey &&
+                getFilterStarOptions(f).join("|") === filterStarsKey
+            )) {
                 return prev;
             }
             return [...prev, filter];
@@ -270,6 +306,7 @@ export default function VeteransPage() {
         races: showRacesSelector,
         skills: showSkillsSelector,
     };
+    const showOpenMyVeterans = !!accountVeteranSnapshot?.available && !accountVeteranMeta;
 
     return (
         <Container className="vet-page-container">
@@ -294,6 +331,13 @@ export default function VeteransPage() {
                         <div className="upload-label">No veterans loaded</div>
                         <div className="upload-sublabel">Upload a JSON file or share link to get started</div>
                     </div>
+                    {showOpenMyVeterans ? (
+                        <div className="d-flex justify-content-center mb-3">
+                            <Button variant="outline-info" href="/veterans?mine=1">
+                                Open my veterans
+                            </Button>
+                        </div>
+                    ) : null}
                     <Alert variant="info" className="vet-upload-alert">
                         This page supports both veteran data extracted via the hachimi plugin on the <a href="https://github.com/ayaliz/horseACT#installation" target="_blank" rel="noreferrer">horseACT setup guide</a>, as well as the standalone umaextractor on <a href="https://github.com/xancia/UmaExtractor/releases/latest" target="_blank" rel="noreferrer">https://github.com/xancia/UmaExtractor/releases/latest</a>.
                     </Alert>
@@ -306,6 +350,13 @@ export default function VeteransPage() {
                         <Alert variant="info">
                             Loaded your stored veteran roster for viewer ID {accountVeteranMeta.viewerId}. Snapshot contains {accountVeteranMeta.veteranCount} veterans and was last updated on {new Date(accountVeteranMeta.updatedAt).toLocaleString()}.
                         </Alert>
+                    ) : null}
+                    {showOpenMyVeterans ? (
+                        <div className="d-flex justify-content-end mb-3">
+                            <Button variant="outline-info" href="/veterans?mine=1">
+                                Open my veterans
+                            </Button>
+                        </div>
                     ) : null}
                     <div className="vet-top-layout">
                         <div className="vet-top-left">

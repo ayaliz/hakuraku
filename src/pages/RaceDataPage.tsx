@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./RaceDataPage.css";
 import { Alert, Button } from "react-bootstrap";
 import { useLocation, useParams } from "react-router-dom";
@@ -9,8 +9,9 @@ import { hydrateCompactRaceHorseData } from "../data/TrainedCharaData";
 import ShareLinkBox from "../components/ShareLinkBox";
 import type { ShareCreateResponse } from "../auth/authShared";
 import { normalizeSeasonValue } from "../utils/season";
-import { getCourseAptitudeFilters } from "./MultiRacePage/utils";
 import { buildReplayPresenterInput, type ReplayPayloadResponse } from "./UmaLogsPage/replaysShared";
+import UMDatabaseWrapper from "../data/UMDatabaseWrapper";
+import GameDataLoader from "../data/GameDataLoader";
 
 const RaceDataPresenterAny = RaceDataPresenter as any;
 const HORSEACT_RELEASE_URL = "https://github.com/ayaliz/horseACT/releases/latest";
@@ -19,6 +20,158 @@ const CURRENT_HORSEACT_VERSION = "1.1.2";
 
 type ShareCache = Record<string, string>;
 type TrackDetails = { condition?: string, weather?: string, season?: string };
+type ParsedRaceView = {
+    label: string,
+    raceHorseInfo: any[],
+    raceData: RaceSimulateData,
+    raceScenario: string,
+    detectedCourseId?: number,
+    laneDistanceMax?: number,
+    horseActVersion?: string,
+    raceType?: string,
+    trackDetails?: TrackDetails,
+    round?: number,
+    teamTotalScore?: number,
+    winType?: number,
+};
+type PresenterErrorBoundaryProps = {
+    children: React.ReactNode,
+};
+type PresenterErrorBoundaryState = {
+    error: Error | null,
+};
+
+class PresenterErrorBoundary extends React.Component<PresenterErrorBoundaryProps, PresenterErrorBoundaryState> {
+    state: PresenterErrorBoundaryState = { error: null };
+
+    static getDerivedStateFromError(error: Error): PresenterErrorBoundaryState {
+        return { error };
+    }
+
+    componentDidCatch(error: Error, info: React.ErrorInfo) {
+        console.error("Race presenter crashed:", error, info);
+    }
+
+    render() {
+        if (this.state.error) {
+            return (
+                <Alert variant="danger" className="rdp-presenter-error">
+                    <Alert.Heading>Could not render this race</Alert.Heading>
+                    <p className="mb-0">{this.state.error.message}</p>
+                </Alert>
+            );
+        }
+
+        return this.props.children;
+    }
+}
+
+function normalizeRaceJsonInput(json: any): any {
+    const packetData = json?.data;
+    if (
+        packetData
+        && typeof packetData === "object"
+        && !Array.isArray(packetData)
+        && Array.isArray(packetData["race_horse_data_array"])
+    ) {
+        const roomInfo = packetData["room_info"] ?? {};
+        return {
+            ...packetData,
+            race_scenario: packetData["race_scenario"] ?? roomInfo["race_scenario"],
+            race_type: packetData["race_type"] ?? roomInfo["race_type"],
+            ground_condition: packetData["ground_condition"] ?? roomInfo["ground_condition"],
+            weather: packetData["weather"] ?? roomInfo["weather"],
+            season: packetData["season"] ?? roomInfo["season"],
+            race_instance_id: packetData["race_instance_id"] ?? roomInfo["race_instance_id"],
+        };
+    }
+
+    return json;
+}
+
+function getCourseAptitudeFilters(courseId: number | undefined): { ground: number; distance: number } | null {
+    if (!courseId) return null;
+    const course = (GameDataLoader.courseData as Record<string, any>)[String(courseId)];
+    if (!course) return null;
+    const ground = course.surface as number;
+    const m = course.distance as number;
+    const distance = m <= 1400 ? 1 : m <= 1800 ? 2 : m <= 2400 ? 3 : 4;
+    return { ground, distance };
+}
+
+function normalizeTrainerNameForDisplay(horse: any): any {
+    if (!horse || typeof horse !== "object") return horse;
+    const ownerTrainerName = typeof horse.owner_trainer_name === "string"
+        ? horse.owner_trainer_name.trim()
+        : "";
+    if (!ownerTrainerName) return horse;
+    return {
+        ...horse,
+        trainer_name: ownerTrainerName,
+    };
+}
+
+function normalizeTrainerNamesForDisplay(horses: any[]): any[] {
+    return horses.map(normalizeTrainerNameForDisplay);
+}
+
+function parseParentFactorArray(factorArray: any): { id: number, level: number }[] {
+    if (!Array.isArray(factorArray)) return [];
+    return factorArray
+        .map((factor: any) => {
+            const factorId = typeof factor === "number"
+                ? factor
+                : Number(factor?.factor_id ?? factor?.FactorId ?? factor?.id);
+            if (!Number.isFinite(factorId)) return null;
+            const rawLevel: number | undefined = typeof factor === "number"
+                ? undefined
+                : Number(factor?.level ?? factor?.Level);
+            const level = rawLevel !== undefined && Number.isFinite(rawLevel) && rawLevel > 0
+                ? rawLevel
+                : factorId % 100;
+            return { id: factorId, level };
+        })
+        .filter((factor): factor is { id: number, level: number } => factor !== null);
+}
+
+function parseParentEntries(successionList: any): { positionId: number, cardId: number, rank: number, factors: { id: number, level: number }[] }[] {
+    if (!Array.isArray(successionList)) return [];
+    return successionList
+        .filter((parent: any) => {
+            const positionId = parent?.position_id ?? parent?.PositionId;
+            return [10, 11, 12, 20, 21, 22].includes(positionId);
+        })
+        .map((parent: any) => {
+            const factorArray = parent.factor_info_array
+                ?? parent.factor_data_array
+                ?? parent.FactorDataArray
+                ?? parent.factor_id_array;
+            return {
+                positionId: parent.position_id ?? parent.PositionId,
+                cardId: parent.card_id ?? parent.CardId,
+                rank: parent.rank ?? parent.Rank,
+                factors: parseParentFactorArray(factorArray),
+            };
+        });
+}
+
+function mapTrainedCharasById(trainedCharas: any[]): Map<number, any> {
+    const trainedCharaById = new Map<number, any>();
+    trainedCharas.forEach((trainedChara: any) => {
+        [
+            trainedChara?.trained_chara_id,
+            trainedChara?.trainedCharaId,
+            trainedChara?.owner_trained_chara_id,
+            trainedChara?.ownerTrainedCharaId,
+        ].forEach((id) => {
+            const numericId = Number(id);
+            if (Number.isFinite(numericId) && numericId > 0) {
+                trainedCharaById.set(numericId, trainedChara);
+            }
+        });
+    });
+    return trainedCharaById;
+}
 
 const bufferToHex = (buf: ArrayBuffer): string =>
     Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
@@ -60,6 +213,8 @@ export default function RaceDataPage() {
     const [laneDistanceMax, setLaneDistanceMax] = useState<number | undefined>(undefined);
     const [dragOver, setDragOver] = useState(false);
     const [routeReplayLoading, setRouteReplayLoading] = useState(false);
+    const [teamTrialRaces, setTeamTrialRaces] = useState<ParsedRaceView[]>([]);
+    const [selectedTeamTrialIndex, setSelectedTeamTrialIndex] = useState(0);
     const isArchiveReplayRoute = Boolean(raceUid);
 
     useEffect(() => {
@@ -89,6 +244,8 @@ export default function RaceDataPage() {
         setParsedRaceData(undefined);
         setRawHorseInfo(undefined);
         setRawScenario("");
+        setTeamTrialRaces([]);
+        setSelectedTeamTrialIndex(0);
         fetch(`/api/races/${encodeURIComponent(raceUid)}/replay`, { signal: controller.signal })
             .then(async (response) => {
                 if (!response.ok) throw new Error(await response.text() || `HTTP ${response.status}`);
@@ -115,25 +272,54 @@ export default function RaceDataPage() {
         return () => controller.abort();
     }, [raceUid]);
 
+    function applyParsedRaceView(
+        race: ParsedRaceView,
+        options?: { isShared?: boolean, teamTrialRaces?: ParsedRaceView[], selectedTeamTrialIndex?: number },
+    ) {
+        const raceHorseInfo = normalizeTrainerNamesForDisplay(race.raceHorseInfo);
+        setParsedHorseInfo(raceHorseInfo);
+        setParsedRaceData(race.raceData);
+        setRawHorseInfo(raceHorseInfo);
+        setRawScenario(race.raceScenario);
+        setDetectedCourseId(race.detectedCourseId);
+        setError('');
+        setShareStatus('');
+        setShareError('');
+        setShareUrl('');
+        setHorseActVersion(race.horseActVersion);
+        setIsShared(options?.isShared ?? false);
+        setRaceType(race.raceType);
+        setTrackDetails(race.trackDetails ? {
+            ...race.trackDetails,
+            season: normalizeSeasonValue(race.trackDetails.season)?.toString(),
+        } : undefined);
+        setLaneDistanceMax(race.laneDistanceMax);
+
+        if (options?.teamTrialRaces) {
+            setTeamTrialRaces(options.teamTrialRaces);
+            setSelectedTeamTrialIndex(options.selectedTeamTrialIndex ?? 0);
+        } else {
+            setTeamTrialRaces([]);
+            setSelectedTeamTrialIndex(0);
+        }
+    }
+
     function loadSharedData(data: { raceHorseInfo: string, raceScenario: string, detectedCourseId?: number, laneDistanceMax?: number, raceType?: string, trackDetails?: TrackDetails }) {
         try {
             const horseInfo = typeof data.raceHorseInfo === 'string' ? JSON.parse(data.raceHorseInfo) : data.raceHorseInfo;
             const parsed = deserializeFromBase64(data.raceScenario);
             if (!parsed) { setError('Failed to parse race scenario data from shared link'); return; }
             const horseInfoArray = Array.isArray(horseInfo) ? horseInfo : [horseInfo];
-            setParsedHorseInfo(horseInfoArray);
-            setParsedRaceData(parsed);
-            setRawHorseInfo(horseInfoArray);
-            setRawScenario(data.raceScenario);
-            setDetectedCourseId(data.detectedCourseId);
-            setError('');
-            setIsShared(true);
-            setRaceType(data.raceType);
-            setTrackDetails(data.trackDetails ? {
-                ...data.trackDetails,
-                season: normalizeSeasonValue(data.trackDetails.season)?.toString(),
-            } : undefined);
-            setLaneDistanceMax(data.laneDistanceMax);
+            applyParsedRaceView({
+                label: 'Shared race',
+                raceHorseInfo: horseInfoArray,
+                raceData: parsed,
+                raceScenario: data.raceScenario,
+                detectedCourseId: data.detectedCourseId,
+                laneDistanceMax: data.laneDistanceMax,
+                raceType: data.raceType,
+                trackDetails: data.trackDetails,
+            }, { isShared: true });
         } catch (err: any) {
             setError(`Failed to parse shared data: ${err.message}`);
         }
@@ -142,26 +328,139 @@ export default function RaceDataPage() {
     function finalizeParsing(horseInfo: any[], raceScenario: string, courseId?: number, actVersion?: string, type?: string, tDetails?: TrackDetails, laneDistanceMaxValue?: number) {
         const parsed = deserializeFromBase64(raceScenario);
         if (!parsed) { setError('Failed to parse race scenario data'); return; }
-        setParsedHorseInfo(horseInfo);
-        setParsedRaceData(parsed);
-        setRawHorseInfo(horseInfo);
-        setRawScenario(raceScenario);
-        setDetectedCourseId(courseId);
-        setError('');
-        setShareStatus('');
-        setShareError('');
-        setShareUrl('');
-        setHorseActVersion(actVersion);
-        setIsShared(false);
-        setRaceType(type);
-        setTrackDetails(tDetails ? {
-            ...tDetails,
-            season: normalizeSeasonValue(tDetails.season)?.toString(),
-        } : undefined);
-        setLaneDistanceMax(laneDistanceMaxValue);
+        applyParsedRaceView({
+            label: 'Race',
+            raceHorseInfo: horseInfo,
+            raceData: parsed,
+            raceScenario,
+            detectedCourseId: courseId,
+            horseActVersion: actVersion,
+            raceType: type,
+            trackDetails: tDetails,
+            laneDistanceMax: laneDistanceMaxValue,
+        });
+    }
+
+    function parseTeamTrialRace(json: any, index: number): ParsedRaceView | { error: string } {
+        const start = json.race_start_params_array?.[index];
+        const result = json.race_result_array?.[index];
+        if (!start || !result) return { error: `Team Trial race ${index + 1} is missing start or result data` };
+        if (!Array.isArray(start.race_horse_data_array)) return { error: `Team Trial race ${index + 1} has no race_horse_data_array` };
+        if (typeof result.race_scenario !== 'string' || !result.race_scenario) return { error: `Team Trial race ${index + 1} has no race_scenario` };
+
+        const raceData = deserializeFromBase64(result.race_scenario);
+        if (!raceData) return { error: `Failed to parse Team Trial race ${index + 1} scenario data` };
+
+        const raceInstanceId = Number(start.race_instance_id);
+        const courseId = Number.isFinite(raceInstanceId)
+            ? UMDatabaseWrapper.raceInstanceCourseSetId[raceInstanceId]
+            : undefined;
+        const courseAptitudeFilters = getCourseAptitudeFilters(courseId);
+        const charaResults = Array.isArray(result.chara_result_array) ? result.chara_result_array : [];
+        const resultByTrainedCharaId = new Map<number, any>();
+        const resultByFrameOrder = new Map<number, any>();
+        charaResults.forEach((charaResult: any) => {
+            const trainedCharaId = Number(charaResult?.trained_chara_id);
+            const frameOrder = Number(charaResult?.frame_order);
+            if (Number.isFinite(trainedCharaId)) resultByTrainedCharaId.set(trainedCharaId, charaResult);
+            if (Number.isFinite(frameOrder)) resultByFrameOrder.set(frameOrder, charaResult);
+        });
+        const raceHorseInfo = start.race_horse_data_array
+            .filter((horse: any) => horse !== null)
+            .map((horse: any, horseIndex: number) => {
+                const startFrameOrder = Number(horse?.frame_order);
+                const trainedCharaId = Number(horse?.trained_chara_id);
+                const charaResult = resultByTrainedCharaId.get(trainedCharaId)
+                    ?? resultByFrameOrder.get(startFrameOrder);
+                const resultFrameOrder = Number(charaResult?.frame_order);
+                const frameOrder = Number.isFinite(resultFrameOrder) && resultFrameOrder > 0
+                    ? resultFrameOrder
+                    : Number.isFinite(startFrameOrder) && startFrameOrder > 0
+                        ? startFrameOrder
+                        : horseIndex + 1;
+                return {
+                    ...hydrateCompactRaceHorseData(horse, { courseAptitudeFilters }),
+                    frame_order: frameOrder,
+                    finish_order: charaResult?.finish_order,
+                    finish_time: charaResult?.finish_time,
+                    team_score_array: charaResult?.score_array,
+                };
+            })
+            .filter((horse: any) => {
+                const frameOrder = Number(horse?.frame_order);
+                return Number.isFinite(frameOrder) && frameOrder >= 1 && frameOrder <= raceData.horseResult.length;
+            })
+            .sort((a: any, b: any) => Number(a.frame_order) - Number(b.frame_order));
+
+        if (raceHorseInfo.length === 0) {
+            return { error: `Team Trial race ${index + 1} did not include any runners matching the replay data` };
+        }
+
+        const round = Number(result.round ?? start.round ?? index + 1);
+        const teamTotalScore = Number(result.team_total_score);
+        const scoreLabel = Number.isFinite(teamTotalScore) ? ` - ${teamTotalScore.toLocaleString()} pts` : '';
+        const label = `Race ${Number.isFinite(round) ? round : index + 1}${scoreLabel}`;
+
+        return {
+            label,
+            raceHorseInfo,
+            raceData,
+            raceScenario: result.race_scenario,
+            detectedCourseId: courseId,
+            horseActVersion: json.horseACT_version,
+            raceType: 'Team Trials',
+            trackDetails: {
+                condition: start.ground_condition?.toString(),
+                weather: start.weather?.toString(),
+                season: normalizeSeasonValue(start.season)?.toString(),
+            },
+            round: Number.isFinite(round) ? round : index + 1,
+            teamTotalScore: Number.isFinite(teamTotalScore) ? teamTotalScore : undefined,
+            winType: typeof result.win_type === 'number' ? result.win_type : undefined,
+        };
+    }
+
+    function parseTeamTrialJson(json: any) {
+        const starts = json.race_start_params_array;
+        const results = json.race_result_array;
+        if (!Array.isArray(starts) || !Array.isArray(results)) {
+            setError('Could not find Team Trial race_start_params_array or race_result_array in JSON');
+            return;
+        }
+
+        const count = Math.min(starts.length, results.length);
+        if (count === 0) {
+            setError('Team Trial file did not include any races');
+            return;
+        }
+
+        const races: ParsedRaceView[] = [];
+        for (let index = 0; index < count; index += 1) {
+            const parsed = parseTeamTrialRace(json, index);
+            if ('error' in parsed) {
+                setError(parsed.error);
+                return;
+            }
+            races.push(parsed);
+        }
+
+        applyParsedRaceView(races[0], { teamTrialRaces: races, selectedTeamTrialIndex: 0 });
+    }
+
+    function selectTeamTrialRace(index: number) {
+        const race = teamTrialRaces[index];
+        if (!race) return;
+        applyParsedRaceView(race, { teamTrialRaces, selectedTeamTrialIndex: index });
     }
 
     function parseRaceJson(json: any) {
+        json = normalizeRaceJsonInput(json);
+
+        if (Array.isArray(json['race_start_params_array']) && Array.isArray(json['race_result_array'])) {
+            parseTeamTrialJson(json);
+            return;
+        }
+
         if (json['race_scenario'] && Array.isArray(json['race_horse_data_array'])) {
             parseNewFormat(json);
             return;
@@ -216,19 +515,15 @@ export default function RaceDataPage() {
                 if (trainedChara) {
                     const successionList = trainedChara['<SuccessionCharaList>k__BackingField'];
                     if (successionList && Array.isArray(successionList['_items'])) {
-                        parents = successionList['_items']
-                            .filter((p: any) => p && [10, 11, 12, 20, 21, 22].includes(p['_positionId']))
+                        const legacyParents = successionList['_items']
+                            .filter((p: any) => p !== null)
                             .map((p: any) => ({
-                                positionId: p['_positionId'],
-                                cardId: p['<CardId>k__BackingField'],
+                                position_id: p['_positionId'],
+                                card_id: p['<CardId>k__BackingField'],
                                 rank: p['_rank'],
-                                factors: Array.isArray(p['<FactorDataArray>k__BackingField'])
-                                    ? p['<FactorDataArray>k__BackingField'].map((f: any) => {
-                                        const fId = f['FactorId'] ?? f['<FactorId>k__BackingField'];
-                                        return { id: fId, level: fId % 100 };
-                                    })
-                                    : []
+                                factor_data_array: p['<FactorDataArray>k__BackingField'],
                             }));
+                        parents = parseParentEntries(legacyParents);
                     }
                 }
 
@@ -255,8 +550,8 @@ export default function RaceDataPage() {
             const type = json['race_type'] ?? json['RaceType'];
             const condition = json['ground_condition'] ?? json['GroundCondition'];
             const weather = json['weather'] ?? json['Weather'];
-        const season = normalizeSeasonValue(json['season'] ?? json['Season'])?.toString();
-        const tDetails = { condition, weather, season };
+            const season = normalizeSeasonValue(json['season'] ?? json['Season'])?.toString();
+            const tDetails = { condition, weather, season };
 
             let courseId: number | undefined;
             let laneDistanceMaxValue: number | undefined;
@@ -270,9 +565,11 @@ export default function RaceDataPage() {
             }
 
             const courseAptitudeFilters = getCourseAptitudeFilters(courseId);
+            const trainedCharaById = mapTrainedCharasById(trainedCharas);
             const horseInfo = rawHorses.map((horseData: any, index: number) => {
                 if (!horseData) return null;
-                const trainedChara = trainedCharas[index];
+                const trainedCharaId = Number(horseData.trained_chara_id ?? horseData.trainedCharaId ?? horseData.owner_trained_chara_id);
+                const trainedChara = trainedCharaById.get(trainedCharaId) ?? trainedCharas[index];
 
                 let deck: { position: number, id: number, lb: number, exp: number }[] = [];
                 let parents: { positionId: number, cardId: number, rank: number, factors: { id: number, level: number }[] }[] = [];
@@ -288,28 +585,10 @@ export default function RaceDataPage() {
                         })).sort((a: any, b: any) => a.position - b.position);
                     }
 
-                    const successionList = trainedChara['succession_chara_list'] || trainedChara['SuccessionCharaList'];
-                    if (Array.isArray(successionList)) {
-                        parents = successionList
-                            .filter((p: any) => {
-                                const posId = p['position_id'] ?? p['PositionId'];
-                                return [10, 11, 12, 20, 21, 22].includes(posId);
-                            })
-                            .map((p: any) => {
-                                const factorArray = p['factor_data_array'] || p['FactorDataArray'];
-                                return {
-                                    positionId: p['position_id'] ?? p['PositionId'],
-                                    cardId: p['card_id'] ?? p['CardId'],
-                                    rank: p['rank'] ?? p['Rank'],
-                                    factors: Array.isArray(factorArray)
-                                        ? factorArray.map((f: any) => {
-                                            const fId = f['factor_id'] ?? f['FactorId'];
-                                            return { id: fId, level: fId % 100 };
-                                        })
-                                        : []
-                                };
-                            });
-                    }
+                    const successionList = trainedChara['succession_chara_array']
+                        || trainedChara['succession_chara_list']
+                        || trainedChara['SuccessionCharaList'];
+                    parents = parseParentEntries(successionList);
                 }
 
                 return { ...hydrateCompactRaceHorseData(horseData, { courseAptitudeFilters }), deck, parents };
@@ -383,6 +662,9 @@ export default function RaceDataPage() {
                         if (!nameMap.has(copy.trainer_name)) nameMap.set(copy.trainer_name, `Team ${anonCounter++}`);
                         copy.trainer_name = nameMap.get(copy.trainer_name);
                     }
+                    if (copy.owner_trainer_name) {
+                        copy.owner_trainer_name = copy.trainer_name;
+                    }
                     return copy;
                 });
                 content = JSON.stringify({
@@ -447,6 +729,8 @@ export default function RaceDataPage() {
         return false;
     };
 
+    const selectedTeamTrialRace = teamTrialRaces[selectedTeamTrialIndex];
+
     return <div className="rdp-root">
         <input
             ref={fileInputRef}
@@ -493,18 +777,44 @@ export default function RaceDataPage() {
 
         {error && <div className="text-danger rdp-error">{error}</div>}
 
+        {teamTrialRaces.length > 1 && (
+            <div className="rdp-team-trial-switcher" aria-label="Team Trial race selector">
+                <div className="rdp-team-trial-summary">
+                    <span>Team Trial</span>
+                    {selectedTeamTrialRace?.teamTotalScore !== undefined && (
+                        <span>{selectedTeamTrialRace.teamTotalScore.toLocaleString()} pts</span>
+                    )}
+                </div>
+                <div className="rdp-team-trial-buttons">
+                    {teamTrialRaces.map((race, index) => (
+                        <Button
+                            key={`${race.round ?? index}-${index}`}
+                            variant={index === selectedTeamTrialIndex ? "primary" : "outline-secondary"}
+                            size="sm"
+                            onClick={() => selectTeamTrialRace(index)}
+                        >
+                            {race.label}
+                        </Button>
+                    ))}
+                </div>
+            </div>
+        )}
+
         {parsedRaceData && parsedHorseInfo ? (
             <>
                 {(!isArchiveReplayRoute && !isShared && isHorseActOutdated(horseActVersion)) && <Alert variant="info">
                     The version of horseACT used to generate this file appears to be outdated. The current release is {CURRENT_HORSEACT_VERSION}, available at <a href={HORSEACT_RELEASE_URL} target="_blank" rel="noreferrer">{HORSEACT_RELEASE_URL}</a>. It's recommended to update by replacing your existing horseACT.dll.
                 </Alert>}
-                <RaceDataPresenterAny
-                    raceHorseInfo={parsedHorseInfo}
-                    raceData={parsedRaceData}
-                    laneDistanceMax={laneDistanceMax}
-                    raceType={raceType}
-                    trackDetails={trackDetails}
-                    detectedCourseId={detectedCourseId} />
+                <PresenterErrorBoundary key={teamTrialRaces.length > 0 ? `team-trial-boundary-${selectedTeamTrialIndex}` : `race-boundary-${rawScenario.slice(0, 24)}`}>
+                    <RaceDataPresenterAny
+                        key={teamTrialRaces.length > 0 ? `team-trial-${selectedTeamTrialIndex}` : rawScenario.slice(0, 24)}
+                        raceHorseInfo={parsedHorseInfo}
+                        raceData={parsedRaceData}
+                        laneDistanceMax={laneDistanceMax}
+                        raceType={raceType}
+                        trackDetails={trackDetails}
+                        detectedCourseId={detectedCourseId} />
+                </PresenterErrorBoundary>
             </>
         ) : (
             <Alert variant="info">

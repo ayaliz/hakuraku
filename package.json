@@ -32,7 +32,7 @@
     "webm-muxer": "^5.1.4"
   },
   "scripts": {
-    "start": "vite",
+    "start": "vite --host 127.0.0.1",
     "build": "vite build",
     "build:github-pages-redirect": "node --import tsx tools/build-github-pages-redirect-site.mts",
     "build:cloudflare": "node --import tsx tools/build-cloudflare-site.mts",

@@ -6,6 +6,7 @@ import './dark-mode.css';
 import UMDatabaseWrapper from './data/UMDatabaseWrapper';
 import GameDataLoader from './data/GameDataLoader';
 import { AuthProvider, useAuth } from "./auth/AuthContext";
+import type { Manifest, ManifestEntry } from "./pages/UmaLogsPage/umaLogsTypes";
 
 // Wraps lazy() to auto-reload once on chunk load failure (stale deploy hash mismatch).
 function lazyWithReload<T extends React.ComponentType<any>>(
@@ -35,6 +36,27 @@ const ShopRefreshPage   = lazyWithReload(() => import("./pages/ShopRefreshPage")
 const AuthPage        = lazyWithReload(() => import("./pages/AuthPage"),        "AuthPage");
 const AccountPage     = lazyWithReload(() => import("./pages/AccountPage"),     "AccountPage");
 const PrivacyPolicyPage = lazyWithReload(() => import("./pages/PrivacyPolicyPage"), "PrivacyPolicyPage");
+const rawUmaLogsApiBase = (import.meta.env.VITE_UMALOGS_API_BASE ?? "").trim();
+const UMA_LOGS_API_BASE = rawUmaLogsApiBase === "same-origin"
+    ? ""
+    : rawUmaLogsApiBase.replace(/\/$/, "");
+
+function getLatestCmDatasetLabel(datasets: ManifestEntry[]): string | null {
+    const cmDatasets = datasets
+        .map((dataset, index) => {
+            const label = dataset.cmLabel || dataset.cmId.toUpperCase();
+            const match = label.match(/^CM(\d+)$/i) ?? dataset.cmId.match(/^cm(\d+)$/i);
+            return match ? {
+                index,
+                label: `CM${Number(match[1])}`,
+                number: Number(match[1]),
+            } : null;
+        })
+        .filter((dataset): dataset is { index: number; label: string; number: number } => dataset !== null);
+
+    if (cmDatasets.length === 0) return null;
+    return cmDatasets.sort((a, b) => b.number - a.number || b.index - a.index)[0].label;
+}
 
 function FooterMailIcon() {
     return (
@@ -111,6 +133,32 @@ export default function App() {
 
 function AppShell() {
     const { loading, authenticated, user } = useAuth();
+    const [umaLogsBadgeLabel, setUmaLogsBadgeLabel] = useState("CM12 update!");
+
+    useEffect(() => {
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), 5000);
+        fetch(`${UMA_LOGS_API_BASE}/api/umalogs/manifest`, { signal: controller.signal })
+            .then((r) => {
+                if (!r.ok) throw new Error(`HTTP ${r.status} - manifest not found`);
+                return r.json() as Promise<Manifest>;
+            })
+            .then((manifest) => {
+                const latestLabel = getLatestCmDatasetLabel(manifest.datasets);
+                if (latestLabel) setUmaLogsBadgeLabel(`${latestLabel} update!`);
+            })
+            .catch((error: Error) => {
+                if (error.name !== "AbortError") {
+                    console.warn("Failed to load UmaLogs manifest for navbar badge:", error);
+                }
+            });
+
+        return () => {
+            window.clearTimeout(timeoutId);
+            controller.abort();
+        };
+    }, []);
+
     return <>
         <Navbar className="haku-nav" variant="dark" expand="lg">
             <Container>
@@ -128,7 +176,7 @@ function AppShell() {
                         <Nav.Link as={NavLink} to="/umalogs">
                             <span className="haku-nav-link-with-badge">
                                 <span>UmaLogs</span>
-                                <span className="haku-nav-badge">CM12 update!</span>
+                                <span className="haku-nav-badge">{umaLogsBadgeLabel}</span>
                             </span>
                         </Nav.Link>
                     </Nav>

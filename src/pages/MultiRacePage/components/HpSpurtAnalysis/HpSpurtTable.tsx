@@ -17,6 +17,14 @@ type SortConfig = {
     direction: 'asc' | 'desc';
 };
 
+function avg(values: number[]): number {
+    return values.length > 0 ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+}
+
+function formatAvgTime(values: number[]): string {
+    return values.length > 0 ? `${avg(values).toFixed(1)}s` : '-';
+}
+
 let _statIcons: Record<string, string> | null = null;
 function getStatIcons() {
     if (!_statIcons) {
@@ -128,6 +136,14 @@ const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats }) => {
                 return row.totalRuns > 0 ? (row.hpOutcomesFullSpurt.length / row.totalRuns) * 100 : 0;
             case 'survivalRate':
                 return row.totalRuns > 0 ? (row.survivalCount / row.totalRuns) * 100 : 0;
+            case 'avgDownhillModeTime':
+                return avg(row.downhillModeTimeSamples);
+            case 'duelProcRate':
+                return row.totalRuns > 0 ? (row.duelingTimeSamples.length / row.totalRuns) * 100 : 0;
+            case 'avgDuelTime':
+                return avg(row.duelingTimeSamples);
+            case 'avgPaceUpDownTime':
+                return avg(row.paceUpTimeSamples) + avg(row.paceDownTimeSamples);
             default:
                 return 0;
         }
@@ -177,6 +193,10 @@ const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats }) => {
                         <SortableHeader columnKey="top3Rate" className="hp-col-center">Top 3 %</SortableHeader>
                         <SortableHeader columnKey="fullSpurtRate">Full Spurt Rate</SortableHeader>
                         <SortableHeader columnKey="survivalRate">Survival Rate</SortableHeader>
+                        <SortableHeader columnKey="avgDownhillModeTime" className="hp-col-center">Avg Downhill</SortableHeader>
+                        <SortableHeader columnKey="duelProcRate" className="hp-col-center">Duel Proc %</SortableHeader>
+                        <SortableHeader columnKey="avgDuelTime" className="hp-col-center">Avg Duel</SortableHeader>
+                        <SortableHeader columnKey="avgPaceUpDownTime" className="hp-col-center">Avg Pos Keep Modes</SortableHeader>
                     </tr>
                 </thead>
                 <tbody>
@@ -190,6 +210,7 @@ const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats }) => {
                         const top3Rate = row.totalRuns > 0 ? (row.top3Finishes / row.totalRuns) * 100 : 0;
                         const fullSpurtRate = row.totalRuns > 0 ? (row.hpOutcomesFullSpurt.length / row.totalRuns) * 100 : 0;
                         const survivalRate = row.totalRuns > 0 ? (row.survivalCount / row.totalRuns) * 100 : 0;
+                        const duelProcRate = row.totalRuns > 0 ? (row.duelingTimeSamples.length / row.totalRuns) * 100 : 0;
 
                         const mainRow = (
                             <tr key={`main-${row.uniqueId}`} onClick={() => toggleRow(row.uniqueId)}>
@@ -255,6 +276,35 @@ const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats }) => {
                                         <span className="hp-progress-value">{survivalRate.toFixed(1)}%</span>
                                     </div>
                                 </td>
+                                <td className="hp-col-center" title={`${row.downhillModeTimeSamples.length} active sample(s)`}>
+                                    <div className="hp-mode-time-cell">
+                                        <div className="hp-mode-downhill">{formatAvgTime(row.downhillModeTimeSamples)}</div>
+                                        {row.downhillModeTimePreLateSamples.length > 0 && (
+                                            <div className="hp-mode-time-sub hp-mode-downhill-sub">
+                                                ({formatAvgTime(row.downhillModeTimePreLateSamples)} pre-late)
+                                            </div>
+                                        )}
+                                    </div>
+                                </td>
+                                <td className="hp-col-center">
+                                    <span className="hp-rate-value">
+                                        {duelProcRate.toFixed(1)}% <span className="hp-rate-count text-muted">({row.duelingTimeSamples.length})</span>
+                                    </span>
+                                </td>
+                                <td className="hp-col-center" title={`${row.duelingTimeSamples.length} duel sample(s)`}>
+                                    {formatAvgTime(row.duelingTimeSamples)}
+                                </td>
+                                <td className="hp-col-center" title={`${row.paceUpTimeSamples.length} pace up sample(s), ${row.paceDownTimeSamples.length} pace down sample(s)`}>
+                                    <div className="hp-mode-time-cell">
+                                        {row.paceUpTimeSamples.length > 0 && (
+                                            <div className="col-pace-up">↑{formatAvgTime(row.paceUpTimeSamples)}</div>
+                                        )}
+                                        {row.paceDownTimeSamples.length > 0 && (
+                                            <div className="col-pace-down">↓{formatAvgTime(row.paceDownTimeSamples)}</div>
+                                        )}
+                                        {row.paceUpTimeSamples.length === 0 && row.paceDownTimeSamples.length === 0 ? '-' : null}
+                                    </div>
+                                </td>
                             </tr>
                         );
 
@@ -264,7 +314,7 @@ const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats }) => {
 
                         const expandedRow = (
                             <tr key={`expanded-${row.uniqueId}`}>
-                                <td colSpan={10} className="hp-expanded-td">
+                                <td colSpan={14} className="hp-expanded-td">
                                     <HpSpurtAnalysisDetail stat={row} />
                                 </td>
                             </tr>

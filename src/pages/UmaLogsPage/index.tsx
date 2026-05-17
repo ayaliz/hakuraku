@@ -48,7 +48,7 @@ const UMA_LOGS_API_BASE = rawUmaLogsApiBase === "same-origin"
     ? ""
     : rawUmaLogsApiBase.replace(/\/$/, "");
 
-const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLabel, section, onSectionChange, scoreWinnersOnly, setScoreWinnersOnly, totalRaces, totalUniqueUmas, strategyColors }) => {
+const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLabel, section, onSectionChange, scoreWinnersOnly, setScoreWinnersOnly, totalRaces, strategyColors }) => {
     const [cardUsageOpen, setCardUsageOpen] = useState(false);
     const [styleDecksOpen, setStyleDecksOpen] = useState(false);
     const [skillsOpen, setSkillsOpen] = useState(false);
@@ -358,13 +358,8 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                     <p>
                         Welcome to the public room data page, aka UmaLogs.
                         It currently serves stats for <strong>{totalRaces.toLocaleString()}</strong> total{' '}
-                        {cmLabel} room matches featuring <strong>{(panelData?.uniqueUmaCount ?? totalUniqueUmas)?.toLocaleString() ?? "..."}</strong> unique umas.
+                        {cmLabel} room matches.
                     </p>
-                    {(panelData?.uniqueUmaCount ?? totalUniqueUmas) === null && (
-                        <p className="text-muted mb-0">
-                            Unique-uma counts now come from the server-side panel cache and load when you open Overview, Strategy Analysis, or Character Analysis.
-                        </p>
-                    )}
                     <h5>Adjusted Win Rates</h5>
                     <p>
                         In many places you'll see references to adjusted win rates over raw win rates.
@@ -378,7 +373,6 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                         <li>Per-team data: prior m = 1/3, C = 18</li>
                         <li>Per-skill win rates: prior m = uma's base win rate in the data, C = 54</li>
                     </ul>
-                    <p>CM12 data collection is over.</p>
                 </div>
             )}
 
@@ -710,6 +704,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                         roomCompositions={group.stats.roomCompositions}
                         styleCompositionRows={panelData?.styleCompositionRows ?? []}
                         styleReps={styleReps}
+                        characterTeamRates={panelData?.characterTeamRates ?? []}
                         skillStats={group.stats.skillStats}
                         strategyColors={strategyColors}
                     />
@@ -883,7 +878,6 @@ const UmaLogsPage: React.FC = () => {
     const cmLabel = manifest?.datasets.find((d) => d.cmId === selectedCmId)?.cmLabel
         ?? data?.cmLabel
         ?? (selectedCmId?.toUpperCase() ?? '');
-    const totalUniqueUmas = useMemo<number | null>(() => null, []);
     const strategyColors = colorblindMode ? COLORBLIND_STRATEGY_COLORS : STRATEGY_COLORS;
 
     if (loading) {
@@ -969,7 +963,6 @@ const UmaLogsPage: React.FC = () => {
                     scoreWinnersOnly={scoreWinnersOnly}
                     setScoreWinnersOnly={setScoreWinnersOnly}
                     totalRaces={totalRaces}
-                    totalUniqueUmas={totalUniqueUmas}
                     strategyColors={strategyColors}
                 />
             ))}

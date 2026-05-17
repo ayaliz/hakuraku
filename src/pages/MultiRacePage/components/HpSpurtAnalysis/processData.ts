@@ -10,6 +10,11 @@ import { hasLowHpNegativeSpurtSuspicion } from "../../../../components/RaceDataP
 import { getSkillDef } from "../../../../components/RaceReplay/utils/SkillDataUtils";
 
 const FULL_SPURT_SPEED_TOLERANCE = 0.05;
+
+function getExpectedObservedSpurtSpeed(speed: number): number {
+    return Math.floor(speed * 100) / 100;
+}
+const MODE_TIME_SCALE = 15 / 16;
 const NO_RECOVERY_SCENARIO_ID = "none";
 const NO_RECOVERY_SCENARIO_LABEL = "No recovery activations";
 function createRecoveryScenarioStats(scenarioId: string, label: string): RecoveryScenarioStats {
@@ -227,6 +232,11 @@ export const computeHpSpurtStats = (
                     survivalCount: 0,
                     hpOutcomesFullSpurt: [],
                     hpOutcomesNonFullSpurt: [],
+                    duelingTimeSamples: [],
+                    downhillModeTimeSamples: [],
+                    downhillModeTimePreLateSamples: [],
+                    paceUpTimeSamples: [],
+                    paceDownTimeSamples: [],
                     recoveryStats: {},
                     recoveryStatsWithDebuffs: {},
                     sourceRuns: []
@@ -238,6 +248,24 @@ export const computeHpSpurtStats = (
             if (charaData.finishOrder <= 3) currentStats.top3Finishes++;
 
             currentStats.sourceRuns.push({ race, horseFrameOrder: frameOrder });
+            const duelingTime = charaData.duelingTime ?? 0;
+            const downhillModeTime = charaData.downhillModeTime ?? 0;
+            const downhillModeTimePreLate = charaData.downhillModeTimePreLate ?? 0;
+            const paceUpTime = charaData.paceUpTime ?? 0;
+            const paceDownTime = charaData.paceDownTime ?? 0;
+            if (duelingTime >= 0.01) {
+                currentStats.duelingTimeSamples.push(duelingTime);
+            }
+            if (downhillModeTime >= 0.01) {
+                currentStats.downhillModeTimeSamples.push(downhillModeTime * MODE_TIME_SCALE);
+                currentStats.downhillModeTimePreLateSamples.push(downhillModeTimePreLate * MODE_TIME_SCALE);
+            }
+            if (paceUpTime >= 0.01) {
+                currentStats.paceUpTimeSamples.push(paceUpTime * MODE_TIME_SCALE);
+            }
+            if (paceDownTime >= 0.01) {
+                currentStats.paceDownTimeSamples.push(paceDownTime * MODE_TIME_SCALE);
+            }
 
             // Track Skill Activations
             const frameSkills = skillActivations[frameOrder] || [];
@@ -279,7 +307,7 @@ export const computeHpSpurtStats = (
                 charaData.maxAdjustedSpeed !== undefined &&
                 charaData.lastSpurtTargetSpeed !== undefined
             )
-                ? charaData.maxAdjustedSpeed - charaData.lastSpurtTargetSpeed
+                ? charaData.maxAdjustedSpeed - getExpectedObservedSpurtSpeed(charaData.lastSpurtTargetSpeed)
                 : undefined;
             const normalizedSpeedDiff = speedDiff !== undefined && Math.abs(speedDiff) < FULL_SPURT_SPEED_TOLERANCE
                 ? 0

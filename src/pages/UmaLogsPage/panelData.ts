@@ -1,5 +1,5 @@
 import type { HorseEntry, TeamCompositionStats } from "../MultiRacePage/types";
-import { BAYES_UMA, CHARACTER_COLORS } from "../MultiRacePage/components/WinDistributionCharts/constants";
+import { BAYES_TEAM, BAYES_UMA, CHARACTER_COLORS } from "../MultiRacePage/components/WinDistributionCharts/constants";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 import { getHorseDeckRaceBonus } from "./deckUtils";
 
@@ -68,6 +68,10 @@ export type PanelStyleRepEntry = {
     expectedWinRate: number;
     scoreAdjustedWinRate: number;
     scoreAdjustedLift: number;
+    teamWins: number;
+    teamAppearances: number;
+    teamWinRate: number;
+    teamBayesianWinRate: number;
 };
 
 export type StyleCompositionSummaryRow = {
@@ -347,6 +351,78 @@ export function computeStyleDeckRowsByStyle(horses: HorseEntry[]): Record<number
     return result;
 }
 
+function computeTeamStatsFromHorses(horses: HorseEntry[]): TeamCompositionStats[] {
+    const races = new Map<string, HorseEntry[]>();
+    for (const horse of horses) {
+        if (!races.has(horse.raceId)) races.set(horse.raceId, []);
+        races.get(horse.raceId)!.push(horse);
+    }
+
+    const compMap = new Map<string, Omit<TeamCompositionStats, "winRate" | "impact" | "bayesianWinRate">>();
+    for (const raceHorses of races.values()) {
+        const teamsById = new Map<number, HorseEntry[]>();
+        for (const horse of raceHorses) {
+            if (!teamsById.has(horse.teamId)) teamsById.set(horse.teamId, []);
+            teamsById.get(horse.teamId)!.push(horse);
+        }
+
+        const teams = Array.from(teamsById.values()).filter((team) => team.length > 0);
+        const expected = teams.length > 0 ? 1 / teams.length : 0;
+        for (const team of teams) {
+            const sorted = [...team].sort((a, b) => (a.cardId * 10 + a.strategy) - (b.cardId * 10 + b.strategy));
+            const key = sorted.map((horse) => `${horse.cardId}_${horse.strategy}`).join("__");
+            const entry = compMap.get(key) ?? {
+                members: sorted.map((horse) => ({
+                    charaId: horse.charaId,
+                    cardId: horse.cardId,
+                    strategy: horse.strategy,
+                    charaName: horse.charaName,
+                })),
+                memberWins: new Array(sorted.length).fill(0),
+                appearances: 0,
+                wins: 0,
+                expectedWins: 0,
+            };
+            entry.appearances += 1;
+            entry.expectedWins += expected;
+            if (team.some((horse) => horse.finishOrder === 1)) entry.wins += 1;
+            for (let index = 0; index < sorted.length; index++) {
+                if (sorted[index].finishOrder === 1) entry.memberWins[index] += 1;
+            }
+            compMap.set(key, entry);
+        }
+    }
+
+    return Array.from(compMap.values()).map((entry) => ({
+        ...entry,
+        winRate: entry.appearances > 0 ? entry.wins / entry.appearances : 0,
+        impact: entry.expectedWins > 0 ? entry.wins / entry.expectedWins : 0,
+        bayesianWinRate: (entry.wins + BAYES_TEAM.K * BAYES_TEAM.PRIOR) / (entry.appearances + BAYES_TEAM.K),
+    }));
+}
+
+function computeCharacterTeamRates(teamStats: TeamCompositionStats[]): CharacterTeamRateRow[] {
+    const tallies = new Map<string, CharacterTeamRateRow>();
+    for (const team of teamStats) {
+        for (const member of team.members) {
+            const key = `${member.charaId}_${member.cardId}_${member.strategy}`;
+            const tally = tallies.get(key) ?? {
+                key,
+                charaId: member.charaId,
+                cardId: member.cardId,
+                strategy: member.strategy,
+                wins: 0,
+                appearances: 0,
+            };
+            tally.appearances += team.appearances;
+            tally.wins += team.wins;
+            tallies.set(key, tally);
+        }
+    }
+
+    return Array.from(tallies.values()).sort((a, b) => b.appearances - a.appearances || b.wins - a.wins || a.key.localeCompare(b.key));
+}
+
 export function computeStyleReps(horses: HorseEntry[]): Record<number, PanelStyleRepEntry[]> {
     const DISTANCE_PRIOR_K = 72;
     const SCORE_BUCKET_K = 24;
@@ -365,6 +441,8 @@ export function computeStyleReps(horses: HorseEntry[]): Record<number, PanelStyl
     const strategyStrength = new Map<number, CountStat>();
     const distanceStrength = new Map<string, CountStat>();
     const scoreBucketStrength = new Map<string, CountStat>();
+    const characterTeamRates = computeCharacterTeamRates(computeTeamStatsFromHorses(horses));
+    const teamRateByRepKey = new Map(characterTeamRates.map((row) => [`${row.strategy}_${row.cardId}`, row] as const));
 
     const recordCount = (statsMap: Map<number | string, CountStat>, key: number | string, win: boolean) => {
         const entry = statsMap.get(key) ?? { wins: 0, appearances: 0 };
@@ -429,6 +507,9 @@ export function computeStyleReps(horses: HorseEntry[]): Record<number, PanelStyl
         const totalAppearances = totalsByStrategy.get(strategy) ?? 0;
         const expected = tally.expectedWins / Math.max(tally.appearances, 1);
         const scoreAdjustedWinRate = (tally.wins + BAYES_UMA.K * expected) / (tally.appearances + BAYES_UMA.K);
+        const teamRate = teamRateByRepKey.get(`${strategy}_${tally.cardId}`);
+        const teamAppearances = teamRate?.appearances ?? 0;
+        const teamWins = teamRate?.wins ?? 0;
         const entry: PanelStyleRepEntry = {
             ...tally,
             popPct: totalAppearances > 0 ? (tally.appearances / totalAppearances) * 100 : 0,
@@ -437,6 +518,10 @@ export function computeStyleReps(horses: HorseEntry[]): Record<number, PanelStyl
             expectedWinRate: expected,
             scoreAdjustedWinRate,
             scoreAdjustedLift: scoreAdjustedWinRate - expected,
+            teamWins,
+            teamAppearances,
+            teamWinRate: teamAppearances > 0 ? teamWins / teamAppearances : 0,
+            teamBayesianWinRate: (teamWins + BAYES_TEAM.K * BAYES_TEAM.PRIOR) / (teamAppearances + BAYES_TEAM.K),
         };
         if (!result[strategy]) result[strategy] = [];
         result[strategy].push(entry);
@@ -580,6 +665,7 @@ export function computeCharacterSlices(horses: HorseEntry[]): {
 export function buildGroupPanelData(cmId: string, courseId: number, horses: HorseEntry[]): GroupPanelData {
     const winners = horses.filter((horse) => horse.finishOrder === 1 && horse.finishTime > 0);
     const scoredWinners = winners.filter((horse) => horse.rankScore > 0);
+    const teamStats = computeTeamStatsFromHorses(horses);
     const fastestWin = winners.reduce<HorseEntry | null>((best, horse) => !best || horse.finishTime < best.finishTime ? horse : best, null);
     const slowestWin = winners.reduce<HorseEntry | null>((best, horse) => !best || horse.finishTime > best.finishTime ? horse : best, null);
     const highestWinner = scoredWinners.reduce<HorseEntry | null>((best, horse) => !best || horse.rankScore > best.rankScore ? horse : best, null);
@@ -603,7 +689,7 @@ export function buildGroupPanelData(cmId: string, courseId: number, horses: Hors
         raceBonusRows: computeRaceBonusRows(horses),
         styleReps: computeStyleReps(horses),
         styleCompositionRows: [],
-        characterTeamRates: [],
+        characterTeamRates: computeCharacterTeamRates(teamStats),
         ...computeCharacterSlices(horses),
     };
 }

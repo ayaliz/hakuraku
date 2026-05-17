@@ -36,7 +36,8 @@ umdb/*.pyi
 
 # local tooling and private backend
 /db
-/docs
+/docs/*
+!/docs/privacy-policy.md
 /logs
 /tools
 /worker

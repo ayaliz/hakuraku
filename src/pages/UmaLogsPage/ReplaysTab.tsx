@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Button, Spinner } from "react-bootstrap";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import PaginationControls from "../../components/PaginationControls";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
-import { STRATEGY_COLORS, STRATEGY_NAMES } from "../MultiRacePage/components/WinDistributionCharts/constants";
+import { STRATEGY_NAMES } from "../MultiRacePage/components/WinDistributionCharts/constants";
 import {
     SUPPORT_CARD_LB_ANY,
     defaultStatValueForProperty,
@@ -16,28 +16,23 @@ import {
     type SupportCardVariant,
 } from "./explorerShared";
 import {
-    normalizeReplayCharacterFilter,
     normalizeReplayTeamFilter,
+    buildReplayExactBuildMemberFilter,
     type ReplayBootstrapPayload,
     type ReplayCharacterVariant,
-    type ReplayCountFilter,
+    type ReplayExactBuildFilter,
     type ReplaySearchRequest,
     type ReplaySearchResponse,
+    type ReplayScopedTeamFilter,
     type ReplayTeamFilter,
+    type ReplayTeamFilterScope,
     type ReplayTeamMemberFilter,
 } from "./replaysShared";
 import { ReplayCharaSelect, ReplaySkillSelect, ReplaySupportCardSelect } from "./ReplaySelects";
 import { ReplayResultLineup } from "./ReplayResultDisplay";
 
-type ReplayFilterOp = "" | "=" | ">" | ">=" | "<" | "<=";
-type RoomFilterOp = "" | "=" | ">" | "<";
 type ReplaySortKey = "finishTime" | "date";
 type ReplaySortDir = "asc" | "desc";
-
-type ReplayCountDraft = {
-    op: RoomFilterOp;
-    value: number;
-};
 
 type ReplaysTabProps = {
     cmId?: string | null;
@@ -47,7 +42,12 @@ type ReplaysTabProps = {
 };
 
 type TeamDraft = ReplayTeamMemberFilter[];
-type TeamSectionKey = "composition" | "enemy1" | "enemy2";
+
+type ScopedTeamDraft = {
+    id: string;
+    scope: ReplayTeamFilterScope;
+    members: TeamDraft;
+};
 
 const PROPERTY_LABELS: Record<FilterProperty, string> = {
     none: "—",
@@ -79,19 +79,6 @@ const SUPPORT_CARD_LB_OPTIONS = [
 const STRATEGY_PILL_ORDER = [5, 1, 2, 3, 4] as const;
 const REPLAY_RESULTS_PAGE_SIZE = 20;
 
-const OP_BUTTONS: Array<{ value: ReplayFilterOp; label: string; title: string }> = [
-    { value: "", label: "—", title: "Ignore" },
-    { value: "=", label: "=", title: "Exactly" },
-    { value: ">=", label: "≥", title: "At least" },
-    { value: ">", label: ">", title: "More than" },
-    { value: "<=", label: "≤", title: "At most" },
-    { value: "<", label: "<", title: "Fewer than" },
-];
-
-const ROOM_OP_BUTTONS: Array<{ value: Exclude<RoomFilterOp, "">; label: string; title: string }> = OP_BUTTONS
-    .filter((op): op is { value: Exclude<RoomFilterOp, "">; label: string; title: string } =>
-        op.value === ">" || op.value === "=" || op.value === "<");
-
 function createDefaultRequirement(skillVariants: SkillVariant[], supportCardVariants: SupportCardVariant[]): CharacterRequirement {
     return {
         id: `${Date.now()}-${Math.random()}`,
@@ -111,13 +98,59 @@ function createEmptyMemberDraft(): ReplayTeamMemberFilter {
     return { characterMatchMode: "is", cardId: null, strategy: null, requirements: [] };
 }
 
-function createEmptyTeamDraft(size = 3): TeamDraft {
-    return Array.from({ length: size }, () => createEmptyMemberDraft());
+function createTeamFilterDraft(scope: ReplayTeamFilterScope = "any", member?: ReplayTeamMemberFilter): ScopedTeamDraft {
+    return {
+        id: `${Date.now()}-${Math.random()}`,
+        scope,
+        members: [member ?? createEmptyMemberDraft()],
+    };
 }
 
-function normalizeCountFilter(draft: ReplayCountDraft): ReplayCountFilter | null {
-    if (!draft.op) return null;
-    return { op: draft.op, value: Math.max(0, Math.floor(draft.value)) };
+function parsePositiveIntParam(value: string | null): number | null {
+    if (!value) return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function normalizeReplayExactBuildFilter(parsed: Partial<ReplayExactBuildFilter>): ReplayExactBuildFilter | null {
+    const cardId = Number(parsed.cardId);
+    const strategy = Number(parsed.strategy);
+    if (!Number.isFinite(cardId) || cardId <= 0 || !Number.isFinite(strategy) || strategy <= 0) return null;
+    return {
+        cardId: Math.floor(cardId),
+        strategy: Math.floor(strategy),
+        speed: Number(parsed.speed) || 0,
+        stamina: Number(parsed.stamina) || 0,
+        pow: Number(parsed.pow) || 0,
+        guts: Number(parsed.guts) || 0,
+        wiz: Number(parsed.wiz) || 0,
+        rankScore: Number(parsed.rankScore) || 0,
+        careerWinCount: Number(parsed.careerWinCount) || 0,
+        supportCardIds: Array.isArray(parsed.supportCardIds) ? parsed.supportCardIds.map(Number).filter(Number.isFinite) : [],
+        supportCardLimitBreaks: Array.isArray(parsed.supportCardLimitBreaks) ? parsed.supportCardLimitBreaks.map(Number).filter(Number.isFinite) : [],
+        learnedSkillIds: Array.isArray(parsed.learnedSkillIds) ? parsed.learnedSkillIds.map(Number).filter(Number.isFinite) : [],
+    };
+}
+
+function decodeReplayExactBuildParam(value: string | null): ReplayExactBuildFilter | null {
+    if (!value) return null;
+    try {
+        const padded = value.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
+        return normalizeReplayExactBuildFilter(JSON.parse(atob(padded)) as Partial<ReplayExactBuildFilter>);
+    } catch {
+        return null;
+    }
+}
+
+function readReplayExactBuildFilter(key: string | null): ReplayExactBuildFilter | null {
+    if (!key) return null;
+    try {
+        const raw = sessionStorage.getItem(key);
+        if (!raw) return null;
+        return normalizeReplayExactBuildFilter(JSON.parse(raw) as Partial<ReplayExactBuildFilter>);
+    } catch {
+        return null;
+    }
 }
 
 function buildReplaySearchUrl(cmId: string, courseId: number, apiBase: string) {
@@ -150,80 +183,16 @@ function normalizeTeamDraft(teamDraft: TeamDraft): ReplayTeamFilter | null {
     return normalizeReplayTeamFilter({ members: teamDraft });
 }
 
-function normalizeWinningTeamDraft(
-    winnerDraft: ReplayTeamMemberFilter,
-    teammateDraft: TeamDraft,
-): ReplayTeamFilter | null {
-    return normalizeReplayTeamFilter({ members: [winnerDraft, ...teammateDraft] });
-}
-
-function RoomCountRow({
-    label,
-    color,
-    draft,
-    setter,
-}: {
-    label: string;
-    color: string;
-    draft: ReplayCountDraft;
-    setter: React.Dispatch<React.SetStateAction<ReplayCountDraft>>;
-}) {
-    return (
-        <div className="rpl-room-row">
-            <span className="rpl-room-label">
-                <span className="rpl-room-dot" style={{ background: color }} />
-                {label}
-            </span>
-            <div className="rpl-op-btns">
-                {ROOM_OP_BUTTONS.map((op) => (
-                    <button
-                        key={op.value}
-                        type="button"
-                        title={op.title}
-                        className={`rpl-op-btn${draft.op === op.value ? " active" : ""}`}
-                        onClick={() => setter((prev) => ({
-                            ...prev,
-                            op: prev.op === op.value ? "" : op.value,
-                        }))}
-                    >
-                        {op.label}
-                    </button>
-                ))}
-            </div>
-            <input
-                type="number"
-                className="rpl-room-value"
-                min={0}
-                max={9}
-                value={draft.value}
-                disabled={!draft.op}
-                onChange={(e) => setter((prev) => ({ ...prev, value: Number(e.target.value) || 0 }))}
-            />
-        </div>
-    );
-}
-
 export default function ReplaysTab({ cmId, courseId, apiBase = "", strategyColors }: ReplaysTabProps) {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const resultsContainerRef = useRef<HTMLDivElement | null>(null);
+    const autoRunKeyRef = useRef<string | null>(null);
     const [bootstrap, setBootstrap] = useState<ReplayBootstrapPayload | null>(null);
     const [bootstrapLoading, setBootstrapLoading] = useState(false);
     const [bootstrapError, setBootstrapError] = useState<string | null>(null);
 
-    const [winnerDraft, setWinnerDraft] = useState<ReplayTeamMemberFilter>(createEmptyMemberDraft);
-    const [roomRunaway, setRoomRunaway] = useState<ReplayCountDraft>({ op: "", value: 0 });
-    const [roomFront, setRoomFront] = useState<ReplayCountDraft>({ op: "", value: 0 });
-    const [roomPace, setRoomPace] = useState<ReplayCountDraft>({ op: "", value: 0 });
-    const [roomLate, setRoomLate] = useState<ReplayCountDraft>({ op: "", value: 0 });
-    const [roomEnd, setRoomEnd] = useState<ReplayCountDraft>({ op: "", value: 0 });
-    const [winnerTeamDraft, setWinnerTeamDraft] = useState<TeamDraft>(() => createEmptyTeamDraft(2));
-    const [enemyTeamDraft, setEnemyTeamDraft] = useState<TeamDraft>(createEmptyTeamDraft);
-    const [enemyTeamDraft2, setEnemyTeamDraft2] = useState<TeamDraft>(createEmptyTeamDraft);
-    const [openTeamSections, setOpenTeamSections] = useState<Record<TeamSectionKey, boolean>>({
-        composition: false,
-        enemy1: false,
-        enemy2: false,
-    });
+    const [teamFilterDrafts, setTeamFilterDrafts] = useState<ScopedTeamDraft[]>([]);
 
     const [queryLoading, setQueryLoading] = useState(false);
     const [queryError, setQueryError] = useState<string | null>(null);
@@ -239,34 +208,33 @@ export default function ReplaysTab({ cmId, courseId, apiBase = "", strategyColor
     );
     const skillVariants = bootstrap?.skillVariants ?? [];
     const supportCardVariants = bootstrap?.supportCardVariants ?? [];
-
-    const toggleTeamSection = (key: TeamSectionKey) => {
-        setOpenTeamSections((prev) => {
-            const nextOpen = !prev[key];
-            return { composition: nextOpen, enemy1: nextOpen, enemy2: nextOpen };
-        });
-    };
+    const requestedReplayCardId = parsePositiveIntParam(searchParams.get("replayCardId"));
+    const requestedReplayBuildKey = searchParams.get("replayBuildKey");
+    const requestedReplayBuildParam = searchParams.get("replayBuild");
+    const requestedReplayBuild = useMemo(
+        () => decodeReplayExactBuildParam(requestedReplayBuildParam) ?? readReplayExactBuildFilter(requestedReplayBuildKey),
+        [requestedReplayBuildKey, requestedReplayBuildParam],
+    );
+    const shouldAutoRunReplayFilter = searchParams.get("replayAutoRun") === "1";
+    const isExactBuildShortcut = requestedReplayBuild !== null && shouldAutoRunReplayFilter;
 
     useEffect(() => {
         setBootstrap(null);
         setBootstrapLoading(false);
         setBootstrapError(null);
-        setWinnerDraft(createEmptyMemberDraft());
-        setRoomRunaway({ op: "", value: 0 });
-        setRoomFront({ op: "", value: 0 });
-        setRoomPace({ op: "", value: 0 });
-        setRoomLate({ op: "", value: 0 });
-        setRoomEnd({ op: "", value: 0 });
-        setWinnerTeamDraft(createEmptyTeamDraft(2));
-        setEnemyTeamDraft(createEmptyTeamDraft());
-        setEnemyTeamDraft2(createEmptyTeamDraft());
-        setOpenTeamSections({ composition: false, enemy1: false, enemy2: false });
+        const requestedMember = requestedReplayBuild
+            ? buildReplayExactBuildMemberFilter(requestedReplayBuild)
+            : requestedReplayCardId ? {
+                ...createEmptyMemberDraft(),
+                cardId: requestedReplayCardId,
+            } : null;
+        setTeamFilterDrafts(requestedMember ? [createTeamFilterDraft("any", requestedMember)] : []);
         setResults(null);
         setCurrentPage(1);
         setLastSubmittedRequest(null);
         setSortKey("date");
         setSortDir("desc");
-    }, [cmId, courseId]);
+    }, [cmId, courseId, requestedReplayBuild, requestedReplayCardId]);
 
     useEffect(() => {
         if (!cmId || !courseId) return;
@@ -299,44 +267,6 @@ export default function ReplaysTab({ cmId, courseId, apiBase = "", strategyColor
             });
         return () => controller.abort();
     }, [apiBase, cmId, courseId]);
-
-    const updateWinnerDraft = (patch: Partial<ReplayTeamMemberFilter>) => {
-        setWinnerDraft((previous) => ({ ...previous, ...patch }));
-    };
-
-    const addWinnerRequirement = () => {
-        setWinnerDraft((previous) => ({
-            ...previous,
-            requirements: [...previous.requirements, createDefaultRequirement(skillVariants, supportCardVariants)],
-        }));
-    };
-
-    const updateWinnerRequirement = (requirementId: string, patch: Partial<CharacterRequirement>) => {
-        setWinnerDraft((previous) => ({
-            ...previous,
-            requirements: previous.requirements.map((requirement) => {
-                if (requirement.id !== requirementId) return requirement;
-                const next = { ...requirement, ...patch };
-                if (patch.property !== undefined) {
-                    next.statValue = defaultStatValueForProperty(patch.property);
-                    if (patch.property === "skill" && next.skillId === null)
-                        next.skillId = skillVariants[0]?.skillId ?? null;
-                    if (patch.property === "supportCard" && next.supportCardId === null) {
-                        next.supportCardId = supportCardVariants[0]?.supportCardId ?? null;
-                        next.supportCardLb = SUPPORT_CARD_LB_ANY;
-                    }
-                }
-                return next;
-            }),
-        }));
-    };
-
-    const removeWinnerRequirement = (requirementId: string) => {
-        setWinnerDraft((previous) => ({
-            ...previous,
-            requirements: previous.requirements.filter((requirement) => requirement.id !== requirementId),
-        }));
-    };
 
     const executeQuery = (
         requestBase: Omit<ReplaySearchRequest, "limit" | "offset">,
@@ -381,16 +311,15 @@ export default function ReplaysTab({ cmId, courseId, apiBase = "", strategyColor
     const runQuery = () => {
         if (!cmId || !courseId) return;
 
+        const teamFilters = teamFilterDrafts
+            .map((draft): ReplayScopedTeamFilter | null => {
+                const normalized = normalizeTeamDraft(draft.members);
+                return normalized ? { ...normalized, scope: draft.scope } : null;
+            })
+            .filter((team): team is ReplayScopedTeamFilter => team !== null);
+
         const requestBase: Omit<ReplaySearchRequest, "limit" | "offset"> = {
-            winner: normalizeReplayCharacterFilter(winnerDraft),
-            roomRunaway: normalizeCountFilter(roomRunaway),
-            roomFront: normalizeCountFilter(roomFront),
-            roomPace: normalizeCountFilter(roomPace),
-            roomLate: normalizeCountFilter(roomLate),
-            roomEnd: normalizeCountFilter(roomEnd),
-            winnerTeam: normalizeWinningTeamDraft(winnerDraft, winnerTeamDraft),
-            enemyTeam: normalizeTeamDraft(enemyTeamDraft),
-            enemyTeam2: normalizeTeamDraft(enemyTeamDraft2),
+            teamFilters: teamFilters.length > 0 ? teamFilters : null,
             sortKey,
             sortDir,
         };
@@ -399,72 +328,134 @@ export default function ReplaysTab({ cmId, courseId, apiBase = "", strategyColor
         executeQuery(requestBase, 1, true);
     };
 
+    useEffect(() => {
+        if (!cmId || !courseId || (!requestedReplayCardId && !requestedReplayBuild) || !shouldAutoRunReplayFilter) return;
+        const key = `${cmId}:${courseId}:${requestedReplayBuildKey ?? requestedReplayBuildParam ?? requestedReplayCardId}`;
+        if (autoRunKeyRef.current === key) return;
+
+        const requestedMember = requestedReplayBuild
+            ? buildReplayExactBuildMemberFilter(requestedReplayBuild)
+            : {
+                ...createEmptyMemberDraft(),
+                cardId: requestedReplayCardId,
+            };
+
+        const requestBase: Omit<ReplaySearchRequest, "limit" | "offset"> = {
+            teamFilters: [{ scope: "any", members: [requestedMember] }],
+            sortKey,
+            sortDir,
+        };
+
+        autoRunKeyRef.current = key;
+        setLastSubmittedRequest(requestBase);
+        executeQuery(requestBase, 1, true);
+    }, [cmId, courseId, executeQuery, requestedReplayBuild, requestedReplayBuildKey, requestedReplayBuildParam, requestedReplayCardId, shouldAutoRunReplayFilter, sortDir, sortKey]);
+
     const changePage = (page: number) => {
         if (!lastSubmittedRequest || queryLoading || page === currentPage || page < 1) return;
         executeQuery(lastSubmittedRequest, page, false);
     };
 
-    const updateTeamMember = (
-        setter: React.Dispatch<React.SetStateAction<TeamDraft>>,
-        index: number,
-        patch: Partial<ReplayTeamMemberFilter>,
-    ) => {
-        setter((previous) =>
-            previous.map((member, memberIndex) => (
-                memberIndex === index ? { ...member, ...patch } : member
-            )),
-        );
+    const addTeamFilter = () => {
+        setTeamFilterDrafts((previous) => [...previous, createTeamFilterDraft()]);
     };
 
-    const addTeamMemberRequirement = (
-        setter: React.Dispatch<React.SetStateAction<TeamDraft>>,
-        index: number,
-    ) => {
-        setter((previous) => previous.map((member, memberIndex) => (
-            memberIndex === index
-                ? { ...member, requirements: [...member.requirements, createDefaultRequirement(skillVariants, supportCardVariants)] }
-                : member
+    const removeTeamFilter = (teamId: string) => {
+        setTeamFilterDrafts((previous) => previous.filter((team) => team.id !== teamId));
+    };
+
+    const updateTeamFilterScope = (teamId: string, scope: ReplayTeamFilterScope) => {
+        setTeamFilterDrafts((previous) => previous.map((team) => (
+            team.id === teamId ? { ...team, scope } : team
         )));
     };
 
+    const updateTeamMember = (teamId: string, index: number, patch: Partial<ReplayTeamMemberFilter>) => {
+        setTeamFilterDrafts((previous) => previous.map((team) => {
+            if (team.id !== teamId) return team;
+            return {
+                ...team,
+                members: team.members.map((member, memberIndex) => (
+                    memberIndex === index ? { ...member, ...patch } : member
+                )),
+            };
+        }));
+    };
+
+    const addTeamMember = (teamId: string) => {
+        setTeamFilterDrafts((previous) => previous.map((team) => {
+            if (team.id !== teamId || team.members.length >= 3) return team;
+            return { ...team, members: [...team.members, createEmptyMemberDraft()] };
+        }));
+    };
+
+    const removeTeamMember = (teamId: string, index: number) => {
+        setTeamFilterDrafts((previous) => previous.map((team) => {
+            if (team.id !== teamId || team.members.length <= 1) return team;
+            return { ...team, members: team.members.filter((_, memberIndex) => memberIndex !== index) };
+        }));
+    };
+
+    const addTeamMemberRequirement = (teamId: string, index: number) => {
+        setTeamFilterDrafts((previous) => previous.map((team) => {
+            if (team.id !== teamId) return team;
+            return {
+                ...team,
+                members: team.members.map((member, memberIndex) => (
+                    memberIndex === index
+                        ? { ...member, requirements: [...member.requirements, createDefaultRequirement(skillVariants, supportCardVariants)] }
+                        : member
+                )),
+            };
+        }));
+    };
+
     const updateTeamMemberRequirement = (
-        setter: React.Dispatch<React.SetStateAction<TeamDraft>>,
+        teamId: string,
         index: number,
         requirementId: string,
         patch: Partial<CharacterRequirement>,
     ) => {
-        setter((previous) => previous.map((member, memberIndex) => {
-            if (memberIndex !== index) return member;
+        setTeamFilterDrafts((previous) => previous.map((team) => {
+            if (team.id !== teamId) return team;
             return {
-                ...member,
-                requirements: member.requirements.map((requirement) => {
-                    if (requirement.id !== requirementId) return requirement;
-                    const next = { ...requirement, ...patch };
-                    if (patch.property !== undefined) {
-                        next.statValue = defaultStatValueForProperty(patch.property);
-                        if (patch.property === "skill" && next.skillId === null)
-                            next.skillId = skillVariants[0]?.skillId ?? null;
-                        if (patch.property === "supportCard" && next.supportCardId === null) {
-                            next.supportCardId = supportCardVariants[0]?.supportCardId ?? null;
-                            next.supportCardLb = SUPPORT_CARD_LB_ANY;
-                        }
-                    }
-                    return next;
+                ...team,
+                members: team.members.map((member, memberIndex) => {
+                    if (memberIndex !== index) return member;
+                    return {
+                        ...member,
+                        requirements: member.requirements.map((requirement) => {
+                            if (requirement.id !== requirementId) return requirement;
+                            const next = { ...requirement, ...patch };
+                            if (patch.property !== undefined) {
+                                next.statValue = defaultStatValueForProperty(patch.property);
+                                if (patch.property === "skill" && next.skillId === null)
+                                    next.skillId = skillVariants[0]?.skillId ?? null;
+                                if (patch.property === "supportCard" && next.supportCardId === null) {
+                                    next.supportCardId = supportCardVariants[0]?.supportCardId ?? null;
+                                    next.supportCardLb = SUPPORT_CARD_LB_ANY;
+                                }
+                            }
+                            return next;
+                        }),
+                    };
                 }),
             };
         }));
     };
 
-    const removeTeamMemberRequirement = (
-        setter: React.Dispatch<React.SetStateAction<TeamDraft>>,
-        index: number,
-        requirementId: string,
-    ) => {
-        setter((previous) => previous.map((member, memberIndex) => (
-            memberIndex === index
-                ? { ...member, requirements: member.requirements.filter((requirement) => requirement.id !== requirementId) }
-                : member
-        )));
+    const removeTeamMemberRequirement = (teamId: string, index: number, requirementId: string) => {
+        setTeamFilterDrafts((previous) => previous.map((team) => {
+            if (team.id !== teamId) return team;
+            return {
+                ...team,
+                members: team.members.map((member, memberIndex) => (
+                    memberIndex === index
+                        ? { ...member, requirements: member.requirements.filter((requirement) => requirement.id !== requirementId) }
+                        : member
+                )),
+            };
+        }));
     };
 
     const renderRequirementRow = (
@@ -545,6 +536,78 @@ export default function ReplaysTab({ cmId, courseId, apiBase = "", strategyColor
         </div>
     );
 
+    const renderTeamMember = (team: ScopedTeamDraft, member: ReplayTeamMemberFilter, index: number) => (
+        <div className="rpl-team-member" key={`${team.id}-${index}`}>
+            <div className="exp-feature-header">
+                <span className="exp-feature-label">Character {index + 1}</span>
+                <div className="exp-toggle">
+                    <button type="button" className={`exp-toggle-btn${member.characterMatchMode === "is" ? " active" : ""}`} onClick={() => updateTeamMember(team.id, index, { characterMatchMode: "is" })}>is</button>
+                    <button type="button" className={`exp-toggle-btn${member.characterMatchMode === "isNot" ? " active" : ""}`} onClick={() => updateTeamMember(team.id, index, { characterMatchMode: "isNot" })}>is not</button>
+                </div>
+                <ReplayCharaSelect variants={sortedVariants} value={member.cardId} onChange={(cardId) => updateTeamMember(team.id, index, { cardId })} />
+                <span className="exp-as-label">as</span>
+                <select
+                    className="exp-select"
+                    value={member.strategy ?? ""}
+                    onChange={(event) => updateTeamMember(team.id, index, { strategy: event.target.value === "" ? null : Number(event.target.value) })}
+                >
+                    <option value="">any strategy</option>
+                    {STRATEGY_PILL_ORDER.map((strategy) => (
+                        <option key={strategy} value={strategy}>{STRATEGY_NAMES[strategy]}</option>
+                    ))}
+                </select>
+                {team.members.length > 1 && (
+                    <button type="button" className="exp-remove-btn" onClick={() => removeTeamMember(team.id, index)}>x</button>
+                )}
+            </div>
+            {member.requirements.length > 0 && (
+                <div className="exp-feature-reqs">
+                    {member.requirements.map((requirement) => renderRequirementRow(
+                        requirement,
+                        (patch) => updateTeamMemberRequirement(team.id, index, requirement.id, patch),
+                        () => removeTeamMemberRequirement(team.id, index, requirement.id),
+                    ))}
+                </div>
+            )}
+            <button type="button" className="exp-add-btn" onClick={() => addTeamMemberRequirement(team.id, index)}>
+                + Add requirement
+            </button>
+        </div>
+    );
+
+    const renderTeamFilter = (team: ScopedTeamDraft, index: number) => (
+        <div className="uma-replays-filter-card rpl-team-filter-card" key={team.id}>
+            <div className="rpl-team-filter-head">
+                <h5>Team {index + 1}</h5>
+                <button type="button" className="rpl-team-remove-btn" onClick={() => removeTeamFilter(team.id)}>Remove</button>
+            </div>
+            <div className="rpl-team-scope-toggle" role="group" aria-label={`Team ${index + 1} scope`}>
+                {([
+                    { value: "any", label: "Any team" },
+                    { value: "winner", label: "Winning team" },
+                    { value: "loser", label: "Losing team" },
+                ] as const).map((option) => (
+                    <button
+                        key={option.value}
+                        type="button"
+                        className={`rpl-team-scope-btn${team.scope === option.value ? " active" : ""}`}
+                        onClick={() => updateTeamFilterScope(team.id, option.value)}
+                    >
+                        {option.label}
+                    </button>
+                ))}
+            </div>
+            <div className="rpl-team-members">
+                {team.members.map((member, memberIndex) => renderTeamMember(team, member, memberIndex))}
+            </div>
+            {team.members.length < 3 && (
+                <button type="button" className="exp-add-btn rpl-add-character-btn" onClick={() => addTeamMember(team.id)}>
+                    + Add character
+                </button>
+            )}
+        </div>
+    );
+
     const toggleSortDir = () => setSortDir((prev) => (prev === "desc" ? "asc" : "desc"));
 
     const openReplayRoute = (raceUid: string, inNewTab = false) => {
@@ -559,189 +622,29 @@ export default function ReplaysTab({ cmId, courseId, apiBase = "", strategyColor
     return (
         <div className="uma-replays-tab">
             <div className="uma-replays-filters">
-                <div className="uma-replays-filter-grid rpl-grid-top">
-                    <div className="uma-replays-filter-card rpl-room-composition-card">
-                        <h5>Winner</h5>
-                        <div className="rpl-winner-fields rpl-filter-member">
-                            <div className="exp-feature-header">
-                                <span className="exp-feature-label">Character</span>
-                                <div className="exp-toggle">
-                                    <button type="button" className={`exp-toggle-btn${winnerDraft.characterMatchMode === "is" ? " active" : ""}`} onClick={() => updateWinnerDraft({ characterMatchMode: "is" })}>is</button>
-                                    <button type="button" className={`exp-toggle-btn${winnerDraft.characterMatchMode === "isNot" ? " active" : ""}`} onClick={() => updateWinnerDraft({ characterMatchMode: "isNot" })}>is not</button>
-                                </div>
-                                <ReplayCharaSelect variants={sortedVariants} value={winnerDraft.cardId} onChange={(cardId) => updateWinnerDraft({ cardId })} />
-                                <span className="exp-as-label">as</span>
-                                <select
-                                    className="exp-select"
-                                    value={winnerDraft.strategy ?? ""}
-                                    onChange={(event) => updateWinnerDraft({ strategy: event.target.value === "" ? null : Number(event.target.value) })}
-                                >
-                                    <option value="">any strategy</option>
-                                    {STRATEGY_PILL_ORDER.map((strategy) => (
-                                        <option key={strategy} value={strategy}>{STRATEGY_NAMES[strategy]}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            {winnerDraft.requirements.length > 0 && (
-                                <div className="exp-feature-reqs">
-                                    {winnerDraft.requirements.map((requirement) => renderRequirementRow(
-                                        requirement,
-                                        (patch) => updateWinnerRequirement(requirement.id, patch),
-                                        () => removeWinnerRequirement(requirement.id),
-                                    ))}
-                                </div>
-                            )}
-                            <button type="button" className="exp-add-btn" onClick={addWinnerRequirement}>
-                                + Add requirement
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="uma-replays-filter-card">
-                        <h5>Exact Winning Team</h5>
-                        {winnerTeamDraft.map((member, index) => (
-                            <div className="rpl-team-member" key={`winner-${index}`}>
-                                <div className="exp-feature-header">
-                                    <span className="exp-feature-label">Slot {index + 2}</span>
-                                    <div className="exp-toggle">
-                                        <button
-                                            type="button"
-                                            className={`exp-toggle-btn${member.characterMatchMode === "is" ? " active" : ""}`}
-                                            onClick={() => updateTeamMember(setWinnerTeamDraft, index, { characterMatchMode: "is" })}
-                                        >
-                                            is
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className={`exp-toggle-btn${member.characterMatchMode === "isNot" ? " active" : ""}`}
-                                            onClick={() => updateTeamMember(setWinnerTeamDraft, index, { characterMatchMode: "isNot" })}
-                                        >
-                                            is not
-                                        </button>
-                                    </div>
-                                    <ReplayCharaSelect
-                                        variants={sortedVariants}
-                                        value={member.cardId}
-                                        onChange={(cardId) => updateTeamMember(setWinnerTeamDraft, index, { cardId })}
-                                    />
-                                    <span className="exp-as-label">as</span>
-                                    <select
-                                        className="exp-select"
-                                        value={member.strategy ?? ""}
-                                        onChange={(event) => updateTeamMember(setWinnerTeamDraft, index, { strategy: event.target.value === "" ? null : Number(event.target.value) })}
-                                    >
-                                        <option value="">any strategy</option>
-                                        {STRATEGY_PILL_ORDER.map((strategy) => (
-                                            <option key={strategy} value={strategy}>{STRATEGY_NAMES[strategy]}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                {member.requirements.length > 0 && (
-                                    <div className="exp-feature-reqs">
-                                        {member.requirements.map((requirement) => renderRequirementRow(
-                                            requirement,
-                                            (patch) => updateTeamMemberRequirement(setWinnerTeamDraft, index, requirement.id, patch),
-                                            () => removeTeamMemberRequirement(setWinnerTeamDraft, index, requirement.id),
-                                        ))}
-                                    </div>
-                                )}
-                                <button type="button" className="exp-add-btn" onClick={() => addTeamMemberRequirement(setWinnerTeamDraft, index)}>
-                                    + Add requirement
-                                </button>
-                            </div>
-                        ))}
-                    </div>
+                <div className="rpl-team-filter-toolbar" hidden={isExactBuildShortcut}>
+                    <button type="button" className="rpl-add-team-btn" onClick={addTeamFilter}>
+                        + Add team
+                    </button>
                 </div>
 
-                <div className="uma-replays-filter-grid rpl-grid-teams">
-                    <div className="uma-replays-filter-card">
-                        <button
-                            type="button"
-                            className={`rpl-team-section-toggle${openTeamSections.composition ? " active" : ""}`}
-                            onClick={() => toggleTeamSection("composition")}
-                            aria-expanded={openTeamSections.composition}
-                        >
-                            <h5>Room Composition</h5>
-                            <span className="rpl-team-section-arrow">{openTeamSections.composition ? "−" : "+"}</span>
-                        </button>
-                        {openTeamSections.composition && (
-                            <>
-                                <RoomCountRow label="Runaway" color={STRATEGY_COLORS[5]} draft={roomRunaway} setter={setRoomRunaway} />
-                                <RoomCountRow label="Front" color={STRATEGY_COLORS[1]} draft={roomFront} setter={setRoomFront} />
-                                <RoomCountRow label="Pace" color={STRATEGY_COLORS[2]} draft={roomPace} setter={setRoomPace} />
-                                <RoomCountRow label="Late" color={STRATEGY_COLORS[3]} draft={roomLate} setter={setRoomLate} />
-                                <RoomCountRow label="End" color={STRATEGY_COLORS[4]} draft={roomEnd} setter={setRoomEnd} />
-                            </>
-                        )}
+                {teamFilterDrafts.length === 0 && !isExactBuildShortcut && (
+                    <div className="rpl-empty-team-filters">
+                        Add a team to start filtering replays by lineup.
                     </div>
-                    {([
-                        { title: "Exact Enemy Team 1", draft: enemyTeamDraft, setter: setEnemyTeamDraft, prefix: "enemy1" as const },
-                        { title: "Exact Enemy Team 2", draft: enemyTeamDraft2, setter: setEnemyTeamDraft2, prefix: "enemy2" as const },
-                    ] as const).map(({ title, draft, setter, prefix }) => (
-                        <div className="uma-replays-filter-card" key={prefix}>
-                            <button
-                                type="button"
-                                className={`rpl-team-section-toggle${openTeamSections[prefix] ? " active" : ""}`}
-                                onClick={() => toggleTeamSection(prefix)}
-                                aria-expanded={openTeamSections[prefix]}
-                            >
-                                <h5>{title}</h5>
-                                <span className="rpl-team-section-arrow">{openTeamSections[prefix] ? "−" : "+"}</span>
-                            </button>
-                            {openTeamSections[prefix] && draft.map((member, index) => (
-                                <div className="rpl-team-member" key={`${prefix}-${index}`}>
-                                    <div className="exp-feature-header">
-                                        <span className="exp-feature-label">Slot {index + 1}</span>
-                                        <div className="exp-toggle">
-                                            <button
-                                                type="button"
-                                                className={`exp-toggle-btn${member.characterMatchMode === "is" ? " active" : ""}`}
-                                                onClick={() => updateTeamMember(setter, index, { characterMatchMode: "is" })}
-                                            >
-                                                is
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className={`exp-toggle-btn${member.characterMatchMode === "isNot" ? " active" : ""}`}
-                                                onClick={() => updateTeamMember(setter, index, { characterMatchMode: "isNot" })}
-                                            >
-                                                is not
-                                            </button>
-                                        </div>
-                                        <ReplayCharaSelect
-                                            variants={sortedVariants}
-                                            value={member.cardId}
-                                            onChange={(cardId) => updateTeamMember(setter, index, { cardId })}
-                                        />
-                                        <span className="exp-as-label">as</span>
-                                        <select
-                                            className="exp-select"
-                                            value={member.strategy ?? ""}
-                                            onChange={(event) => updateTeamMember(setter, index, { strategy: event.target.value === "" ? null : Number(event.target.value) })}
-                                        >
-                                            <option value="">any strategy</option>
-                                            {STRATEGY_PILL_ORDER.map((strategy) => (
-                                                <option key={strategy} value={strategy}>{STRATEGY_NAMES[strategy]}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    {member.requirements.length > 0 && (
-                                        <div className="exp-feature-reqs">
-                                            {member.requirements.map((requirement) => renderRequirementRow(
-                                                requirement,
-                                                (patch) => updateTeamMemberRequirement(setter, index, requirement.id, patch),
-                                                () => removeTeamMemberRequirement(setter, index, requirement.id),
-                                            ))}
-                                        </div>
-                                    )}
-                                    <button type="button" className="exp-add-btn" onClick={() => addTeamMemberRequirement(setter, index)}>
-                                        + Add requirement
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    ))}
-                </div>
+                )}
+
+                {teamFilterDrafts.some((team) => team.members.some((member) => member.requirements.length > 0)) && isExactBuildShortcut && (
+                    <div className="rpl-exact-build-note">
+                        Exact build filter active: stats, rank, career wins, deck, and learned skills.
+                    </div>
+                )}
+
+                {teamFilterDrafts.length > 0 && (
+                    <div className="uma-replays-filter-grid rpl-grid-teams">
+                        {teamFilterDrafts.map((team, index) => renderTeamFilter(team, index))}
+                    </div>
+                )}
 
                 <div className="uma-replays-actions">
                     <Button onClick={runQuery} disabled={!cmId || !courseId || bootstrapLoading || queryLoading}>

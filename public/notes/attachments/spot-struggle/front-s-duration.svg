@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="985" height="510" viewBox="0 0 985 510" role="img" aria-labelledby="title desc">
+<title id="title">Front S duration check speed bands</title>
+<desc id="desc">Front Runner S extends the observed spot struggle duration beyond the A-aptitude baseline.</desc>
+<rect width="100%" height="100%" fill="#101418"/>
+<text x="42" y="32" fill="#edf2f7" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">Front S duration check</text>
+<rect x="74" y="322.3" width="836" height="22.3" fill="#6f8796" opacity="0.16"/>
+<rect x="74" y="289.1" width="836" height="22.3" fill="#2f9d63" opacity="0.16"/>
+<rect x="74" y="149.8" width="836" height="57.7" fill="#c8842f" opacity="0.16"/>
+<rect x="74" y="62.0" width="836" height="87.8" fill="#b64d82" opacity="0.16"/>
+<line x1="74" y1="344.6" x2="910" y2="344.6" stroke="#dfe8f0" stroke-width="1.25" stroke-dasharray="4 4" opacity="0.72"/>
+<text x="82" y="339.6" fill="#dfe8f0" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11">18.753</text>
+<line x1="74" y1="322.3" x2="910" y2="322.3" stroke="#dfe8f0" stroke-width="1.25" stroke-dasharray="4 4" opacity="0.72"/>
+<text x="82" y="317.3" fill="#dfe8f0" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11">18.876</text>
+<line x1="74" y1="311.5" x2="910" y2="311.5" stroke="#dfe8f0" stroke-width="1.25" stroke-dasharray="4 4" opacity="0.72"/>
+<text x="82" y="306.5" fill="#dfe8f0" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11">18.935</text>
+<line x1="74" y1="289.1" x2="910" y2="289.1" stroke="#dfe8f0" stroke-width="1.25" stroke-dasharray="4 4" opacity="0.72"/>
+<text x="82" y="284.1" fill="#dfe8f0" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11">19.057</text>
+<line x1="74" y1="207.5" x2="910" y2="207.5" stroke="#dfe8f0" stroke-width="1.25" stroke-dasharray="4 4" opacity="0.72"/>
+<text x="82" y="202.5" fill="#dfe8f0" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11">19.503</text>
+<line x1="74" y1="149.8" x2="910" y2="149.8" stroke="#dfe8f0" stroke-width="1.25" stroke-dasharray="4 4" opacity="0.72"/>
+<text x="82" y="144.8" fill="#dfe8f0" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11">19.819</text>
+<line x1="74" y1="390.9" x2="910" y2="390.9" stroke="#2f3a43" stroke-width="1"/>
+<text x="62" y="394.9" fill="#94a3af" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">18.5</text>
+<line x1="74" y1="299.5" x2="910" y2="299.5" stroke="#2f3a43" stroke-width="1"/>
+<text x="62" y="303.5" fill="#94a3af" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">19.0</text>
+<line x1="74" y1="208.2" x2="910" y2="208.2" stroke="#2f3a43" stroke-width="1"/>
+<text x="62" y="212.2" fill="#94a3af" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">19.5</text>
+<line x1="74" y1="116.8" x2="910" y2="116.8" stroke="#2f3a43" stroke-width="1"/>
+<text x="62" y="120.8" fill="#94a3af" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">20.0</text>
+<line x1="112.7" y1="62" x2="112.7" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="112.7" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">6</text>
+<line x1="217.2" y1="62" x2="217.2" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="217.2" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">8</text>
+<line x1="321.7" y1="62" x2="321.7" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="321.7" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">10</text>
+<line x1="426.2" y1="62" x2="426.2" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="426.2" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">12</text>
+<line x1="530.7" y1="62" x2="530.7" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="530.7" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">14</text>
+<line x1="635.2" y1="62" x2="635.2" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="635.2" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">16</text>
+<line x1="739.7" y1="62" x2="739.7" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="739.7" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">18</text>
+<line x1="844.2" y1="62" x2="844.2" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="844.2" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">20</text>
+<rect x="74" y="62" width="836" height="338" fill="none" stroke="#52606b" stroke-width="1"/>
+<text x="24" y="231" fill="#c9d3dc" transform="rotate(-90 24 231)" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13">Skill-adjusted speed (m/s)</text>
+<text x="492" y="452" fill="#c9d3dc" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13">Frame time (s)</text>
+<text x="492.0" y="338.4" fill="#dbe5ee" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" opacity="0.9" paint-order="stroke" stroke="#101418" stroke-width="4" stroke-linejoin="round">Base</text>
+<text x="492.0" y="305.3" fill="#dbe5ee" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" opacity="0.9" paint-order="stroke" stroke="#101418" stroke-width="4" stroke-linejoin="round">Spot struggle only</text>
+<text x="492.0" y="183.7" fill="#dbe5ee" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" opacity="0.9" paint-order="stroke" stroke="#101418" stroke-width="4" stroke-linejoin="round">Pace up only</text>
+<text x="492.0" y="110.9" fill="#dbe5ee" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" opacity="0.9" paint-order="stroke" stroke="#101418" stroke-width="4" stroke-linejoin="round">Spot struggle + pace up</text>
+<line x1="230.8" y1="62" x2="230.8" y2="400" stroke="#f4f7fb" stroke-width="2"/>
+<text x="236.8" y="80" fill="#f4f7fb" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" paint-order="stroke" stroke="#101418" stroke-width="4" stroke-linejoin="round">observed start 8.258s</text>
+<line x1="646.1" y1="62" x2="646.1" y2="400" stroke="#71b7ff" stroke-width="2" stroke-dasharray="6 5"/>
+<text x="652.1" y="388.0" fill="#71b7ff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" paint-order="stroke" stroke="#101418" stroke-width="4" stroke-linejoin="round">7.9s later</text>
+<line x1="608.3" y1="62" x2="608.3" y2="400" stroke="#d6b4ff" stroke-width="2" stroke-dasharray="6 5"/>
+<text x="614.3" y="370.0" fill="#d6b4ff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" paint-order="stroke" stroke="#101418" stroke-width="4" stroke-linejoin="round">7.2s later</text>
+<circle cx="77.6" cy="146.0" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="133.3" cy="113.2" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="189.0" cy="127.8" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="244.7" cy="231.9" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="300.3" cy="259.3" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="356.0" cy="242.4" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="411.7" cy="162.0" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="467.4" cy="138.3" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="523.1" cy="138.3" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="578.7" cy="127.3" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="634.4" cy="127.3" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="690.1" cy="160.2" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="745.8" cy="331.9" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="801.4" cy="334.2" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="857.1" cy="332.9" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="91" cy="482" r="4.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<text x="118" y="486" fill="#dbe5ee" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14">Mihono Bourbon (Front apt S, guts 518)</text>
+</svg>

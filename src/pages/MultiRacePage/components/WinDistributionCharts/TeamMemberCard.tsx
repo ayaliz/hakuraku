@@ -58,9 +58,10 @@ export interface TeamMemberCardProps {
     strategyColors?: Record<number, string>;
     teamHorses?: HorseEntry[];
     teamOptions?: Array<TeamSampleSelectOption & { teamHorses: HorseEntry[] }>;
+    onViewReplays?: (horse: HorseEntry) => void;
 }
 
-export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStats, strategyColors, teamHorses, teamOptions }) => {
+export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStats, strategyColors, teamHorses, teamOptions, onViewReplays }) => {
     const [open, setOpen] = useState(false);
     const [profileHorse, setProfileHorse] = useState(horse);
     const [selectedTeamOptionValue, setSelectedTeamOptionValue] = useState<string>("");
@@ -278,6 +279,11 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
         else el.style.display = "none";
     };
 
+    const handleViewReplays = () => {
+        onViewReplays?.(profileHorse);
+        setOpen(false);
+    };
+
     const renderTeammateButton = (teammate: HorseEntry) => {
         const teammateRank = getRankIcon(teammate.rankScore);
         const teammateStyleColor = activeStrategyColors[teammate.strategy] ?? "#718096";
@@ -349,6 +355,11 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
                                         <span className="fup-rank-score">{profileHorse.rankScore.toLocaleString()}</span>
                                     </div>
                                     <div className="fup-training-wins">Career mode wins: {profileHorse.careerWinCount.toLocaleString()}</div>
+                                    {onViewReplays && (
+                                        <button type="button" className="fup-replays-btn" onClick={handleViewReplays}>
+                                            Replays
+                                        </button>
+                                    )}
                                 </div>
                                 {(teammates.length > 0 || isLoadingTeamHorses) && (
                                     <div className="fup-teammates-panel">

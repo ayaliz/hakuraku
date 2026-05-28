@@ -40,6 +40,7 @@ export function StyleTeamCompositionPanel({
     styleCompositionRows,
     skillStats,
     strategyColors,
+    onViewReplays,
 }: {
     cmId?: string | null;
     courseId?: number;
@@ -48,6 +49,7 @@ export function StyleTeamCompositionPanel({
     styleCompositionRows: StyleCompositionSummaryRow[];
     skillStats?: Map<number, SkillStats>;
     strategyColors: Record<number, string>;
+    onViewReplays?: (horse: HorseEntry) => void;
 }) {
     const [selectedKey, setSelectedKey] = useState<string | null>(null);
     const [selectedTeamIdx, setSelectedTeamIdx] = useState(0);
@@ -245,7 +247,7 @@ export function StyleTeamCompositionPanel({
                                     </div>
                                 );
                             }
-                            return <TeamMemberCard key={i} horse={rep} skillStats={skillStats!} strategyColors={strategyColors} />;
+                            return <TeamMemberCard key={i} horse={rep} skillStats={skillStats!} strategyColors={strategyColors} onViewReplays={onViewReplays} />;
                         })}
                     </div>
                         </>

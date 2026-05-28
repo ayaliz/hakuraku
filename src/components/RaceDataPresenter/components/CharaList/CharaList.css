@@ -308,6 +308,8 @@
 .dashboard-panel-header--footer {
     margin-top: auto;
     padding-top: 16px;
+    justify-content: space-between;
+    gap: 10px;
 }
 
 /* Skills list styling */

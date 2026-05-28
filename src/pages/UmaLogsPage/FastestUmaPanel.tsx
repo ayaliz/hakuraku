@@ -63,9 +63,10 @@ interface UmaFeatCardProps {
     showRankIcon?: boolean;
     skillStats: Map<number, SkillStats>;
     strategyColors?: Record<number, string>;
+    onViewReplays?: (horse: HorseEntry) => void;
 }
 
-const UmaFeatCard: React.FC<UmaFeatCardProps> = ({ horse, label, displayValue, displayValueColor, showRankIcon, skillStats, strategyColors }) => {
+const UmaFeatCard: React.FC<UmaFeatCardProps> = ({ horse, label, displayValue, displayValueColor, showRankIcon, skillStats, strategyColors, onViewReplays }) => {
     const [showModal, setShowModal] = useState(false);
     const [profileHorse, setProfileHorse] = useState(horse);
     const [fetchedTeamHorses, setFetchedTeamHorses] = useState<HorseEntry[] | null>(null);
@@ -183,6 +184,11 @@ const UmaFeatCard: React.FC<UmaFeatCardProps> = ({ horse, label, displayValue, d
         else el.style.display = "none";
     };
 
+    const handleViewReplays = () => {
+        onViewReplays?.(profileHorse);
+        setShowModal(false);
+    };
+
     const renderTeammateButton = (teammate: HorseEntry) => {
         const teammateRank = getRankIcon(teammate.rankScore);
         const teammateStyleColor = activeStrategyColors[teammate.strategy] ?? "#718096";
@@ -259,6 +265,11 @@ const UmaFeatCard: React.FC<UmaFeatCardProps> = ({ horse, label, displayValue, d
                                 <span className="fup-rank-score">{profileHorse.rankScore.toLocaleString()}</span>
                             </div>
                             <div className="fup-training-wins">Career mode wins: {profileHorse.careerWinCount.toLocaleString()}</div>
+                            {onViewReplays && (
+                                <button type="button" className="fup-replays-btn" onClick={handleViewReplays}>
+                                    Replays
+                                </button>
+                            )}
                         </div>
                         {(teammates.length > 0 || isLoadingTeamHorses) && (
                             <div className="fup-teammates-panel">

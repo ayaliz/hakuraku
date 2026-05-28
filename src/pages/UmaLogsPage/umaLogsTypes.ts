@@ -158,6 +158,7 @@ export interface TrackGroupContentProps {
     cmLabel: string;
     section: Section;
     onSectionChange: (section: Section) => void;
+    onViewReplaysForHorse: (horse: HorseEntry) => void;
     scoreWinnersOnly: boolean;
     setScoreWinnersOnly: (v: boolean) => void;
     totalRaces: number;

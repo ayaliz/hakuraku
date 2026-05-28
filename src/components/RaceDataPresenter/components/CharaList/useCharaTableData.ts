@@ -219,6 +219,7 @@ export const computeCharaTableData = (
         }
 
         const distProficiency = trainedCharaData.properDistances[distanceCategory] ?? 1;
+        const strategyProficiency = trainedCharaData.properRunningStyles[isOonige ? 1 : strategy] ?? 7;
 
         const lsRes = calculateTargetSpeed({
             courseDistance: raceDistance,
@@ -230,6 +231,7 @@ export const computeCharaTableData = (
             staminaStat: trainedCharaData.stamina,
             strategy,
             distanceProficiency: distProficiency,
+            strategyProficiency,
             mood: data['motivation'],
             isOonige,
             inLastSpurt: true, // Force last spurt
@@ -284,10 +286,6 @@ export const computeCharaTableData = (
                 const totalHpDrain = baseHpDrain * groundModifier * gutsModifier;
                 requiredSpurtHp = ((raceDistance / 3 - 62) / lastSpurtTargetSpeed) * totalHpDrain;
             }
-            const expectedObservedSpurtSpeed = Math.floor(lastSpurtTargetSpeed * 100) / 100;
-            const spurtHpSpare = hpAtPhase3Start !== undefined && requiredSpurtHp !== undefined
-                ? hpAtPhase3Start - requiredSpurtHp
-                : undefined;
             const learnedSkillLevelById = new Map(trainedCharaData.skills.map(skill => [skill.skillId, skill.level]));
             const leveledSkillActivations = skillActivations
                 ? {
@@ -314,9 +312,7 @@ export const computeCharaTableData = (
                 trackSlopes,
                 adjustedGuts,
                 adjustedPower,
-                lastSpurtStartDistances[frameOrder] ?? -1,
-                expectedObservedSpurtSpeed,
-                spurtHpSpare
+                lastSpurtStartDistances[frameOrder] ?? -1
             );
             maxAdjSpeed = maxAdj.speed;
             maxAdjSpeedTime = maxAdj.time;

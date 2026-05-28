@@ -2,19 +2,17 @@ import { hydrateCompactRaceHorseData } from "../../data/TrainedCharaData";
 import { normalizeSeasonValue } from "../../utils/season";
 import { getCourseAptitudeFilters } from "../MultiRacePage/utils";
 import {
+    SUPPORT_CARD_LB_ANY,
     sanitizeCharacterRequirement,
     type CharacterMatchMode,
     type CharacterRequirement,
+    type FilterProperty,
+    type RequirementTruthMode,
+    type SkillFilterMode,
     type SkillVariant,
+    type StatOp,
     type SupportCardVariant,
 } from "./explorerShared";
-
-export type ReplayCountOp = "=" | ">" | ">=" | "<" | "<=";
-
-export type ReplayCountFilter = {
-    op: ReplayCountOp;
-    value: number;
-};
 
 export type ReplayTeamMemberFilter = {
     characterMatchMode: CharacterMatchMode;
@@ -27,18 +25,29 @@ export type ReplayTeamFilter = {
     members: ReplayTeamMemberFilter[];
 };
 
+export type ReplayTeamFilterScope = "any" | "winner" | "loser";
+
+export type ReplayScopedTeamFilter = ReplayTeamFilter & {
+    scope: ReplayTeamFilterScope;
+};
+
+export type ReplayExactBuildFilter = {
+    cardId: number;
+    strategy: number;
+    speed: number;
+    stamina: number;
+    pow: number;
+    guts: number;
+    wiz: number;
+    rankScore: number;
+    careerWinCount: number;
+    supportCardIds: number[];
+    supportCardLimitBreaks: number[];
+    learnedSkillIds: number[];
+};
+
 export type ReplaySearchRequest = {
-    winner?: ReplayTeamMemberFilter | null;
-    winnerCardId?: number | null;
-    winnerStrategy?: number | null;
-    roomRunaway?: ReplayCountFilter | null;
-    roomFront?: ReplayCountFilter | null;
-    roomPace?: ReplayCountFilter | null;
-    roomLate?: ReplayCountFilter | null;
-    roomEnd?: ReplayCountFilter | null;
-    winnerTeam?: ReplayTeamFilter | null;
-    enemyTeam?: ReplayTeamFilter | null;
-    enemyTeam2?: ReplayTeamFilter | null;
+    teamFilters?: ReplayScopedTeamFilter[] | null;
     sortKey?: "finishTime" | "date";
     sortDir?: "asc" | "desc";
     limit?: number;
@@ -184,6 +193,63 @@ export function normalizeReplayTeamFilter(filter: ReplayTeamFilter | null | unde
         .map((member) => normalizeReplayCharacterFilter(member))
         .filter((member): member is ReplayTeamMemberFilter => member !== null);
     return members.length > 0 ? { members } : null;
+}
+
+function exactRequirement(
+    id: string,
+    property: FilterProperty,
+    statValue = 0,
+    extras: Partial<CharacterRequirement> = {},
+): CharacterRequirement {
+    return {
+        id,
+        truthMode: "require" as RequirementTruthMode,
+        property,
+        statOp: "=" as StatOp,
+        statValue,
+        skillId: null,
+        skillMode: "learned" as SkillFilterMode,
+        supportCardId: null,
+        supportCardPresent: true,
+        supportCardLb: SUPPORT_CARD_LB_ANY,
+        ...extras,
+    };
+}
+
+export function buildReplayExactBuildMemberFilter(build: ReplayExactBuildFilter): ReplayTeamMemberFilter {
+    const statRequirements: CharacterRequirement[] = [
+        exactRequirement("exact-speed", "speed", build.speed),
+        exactRequirement("exact-stamina", "stamina", build.stamina),
+        exactRequirement("exact-pow", "pow", build.pow),
+        exactRequirement("exact-guts", "guts", build.guts),
+        exactRequirement("exact-wiz", "wiz", build.wiz),
+        exactRequirement("exact-rank", "rankScore", build.rankScore),
+        exactRequirement("exact-career-wins", "careerWinCount", build.careerWinCount),
+    ];
+
+    const supportRequirements = build.supportCardIds
+        .map((supportCardId, index) => supportCardId > 0
+            ? exactRequirement(`exact-support-${index}-${supportCardId}`, "supportCard", 0, {
+                supportCardId,
+                supportCardLb: build.supportCardLimitBreaks[index] ?? SUPPORT_CARD_LB_ANY,
+            })
+            : null)
+        .filter((requirement): requirement is CharacterRequirement => requirement !== null);
+
+    const skillRequirements = [...new Set(build.learnedSkillIds)]
+        .filter((skillId) => skillId > 0)
+        .map((skillId) => exactRequirement(`exact-skill-${skillId}`, "skill", 0, { skillId, skillMode: "learned" }));
+
+    return {
+        characterMatchMode: "is",
+        cardId: build.cardId,
+        strategy: build.strategy,
+        requirements: [
+            ...statRequirements,
+            ...supportRequirements,
+            ...skillRequirements,
+        ],
+    };
 }
 
 export function buildReplayPresenterInput(payload: ReplayPayloadResponse): ReplayPresenterInput {

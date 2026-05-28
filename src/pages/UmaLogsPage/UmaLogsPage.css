@@ -839,6 +839,28 @@
     color: #d6bcfa;
 }
 
+.fup-replays-btn {
+    margin-top: 12px;
+    padding: 5px 12px;
+    border: 1px solid rgba(99, 179, 237, 0.55);
+    border-radius: 6px;
+    background: rgba(66, 153, 225, 0.14);
+    color: #bee3f8;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.fup-replays-btn:hover {
+    background: rgba(66, 153, 225, 0.24);
+    color: #ebf8ff;
+}
+
+.rpl-exact-build-note {
+    font-size: 11px;
+    color: #93c5fd;
+}
+
 /* Stat + style/mood combined panel */
 .fup-stat-row {
     display: flex;
@@ -2830,6 +2852,119 @@
     gap: 10px;
 }
 
+.rpl-team-filter-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.rpl-add-team-btn,
+.rpl-team-remove-btn {
+    border: 1px solid rgba(96, 165, 250, 0.36);
+    background: rgba(37, 99, 235, 0.18);
+    color: #bfdbfe;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.rpl-add-team-btn:hover,
+.rpl-team-remove-btn:hover {
+    border-color: rgba(96, 165, 250, 0.56);
+    background: rgba(37, 99, 235, 0.28);
+    color: #dbeafe;
+}
+
+.rpl-empty-team-filters {
+    margin-bottom: 16px;
+    padding: 16px;
+    border: 1px dashed rgba(148, 163, 184, 0.22);
+    border-radius: 10px;
+    color: #94a3b8;
+    background: rgba(15, 23, 42, 0.34);
+    font-size: 13px;
+}
+
+.rpl-team-filter-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+.rpl-team-filter-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.rpl-team-filter-head h5 {
+    margin-bottom: 0;
+}
+
+.rpl-team-remove-btn {
+    padding: 6px 10px;
+    color: #fecaca;
+    border-color: rgba(248, 113, 113, 0.28);
+    background: rgba(127, 29, 29, 0.18);
+}
+
+.rpl-team-remove-btn:hover {
+    color: #fee2e2;
+    border-color: rgba(248, 113, 113, 0.5);
+    background: rgba(127, 29, 29, 0.28);
+}
+
+.rpl-team-scope-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    width: fit-content;
+    max-width: 100%;
+    padding: 3px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.55);
+    overflow-x: auto;
+}
+
+.rpl-team-scope-btn {
+    flex: 0 0 auto;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #94a3b8;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.rpl-team-scope-btn:hover {
+    color: #e2e8f0;
+    background: rgba(30, 41, 59, 0.8);
+}
+
+.rpl-team-scope-btn.active {
+    color: #dbeafe;
+    background: rgba(37, 99, 235, 0.42);
+}
+
+.rpl-team-members {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.rpl-add-character-btn {
+    align-self: flex-start;
+}
+
 .rpl-filter-member .exp-chara-select {
     flex: 1 1 240px;
     min-width: 220px;
@@ -2986,7 +3121,7 @@
 
 /* Team grid */
 .rpl-grid-teams {
-    grid-template-columns: minmax(250px, 0.72fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: 1fr;
 }
 
 .rpl-room-composition-card {

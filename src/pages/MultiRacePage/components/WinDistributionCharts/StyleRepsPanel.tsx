@@ -60,7 +60,7 @@ type StyleRepDrilldownResponse = {
     }>;
 };
 
-export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, characterTeamRates, skillStats, strategyColors }: {
+export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, characterTeamRates, skillStats, strategyColors, onViewReplays }: {
     cmId?: string | null;
     courseId?: number;
     apiBase?: string;
@@ -69,6 +69,7 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
     characterTeamRates?: CharacterTeamRateRow[];
     skillStats?: Map<number, SkillStats>;
     strategyColors: Record<number, string>;
+    onViewReplays?: (horse: HorseEntry) => void;
 }) {
     const [selected, setSelected] = useState<StyleRepSelection | null>(null);
     const [selectedInModal, setSelectedInModal] = useState<StyleRepSelection | null>(null);
@@ -332,6 +333,7 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
                                 strategyColors={strategyColors}
                                 teamHorses={teamHorses}
                                 teamOptions={teamOptions}
+                                onViewReplays={onViewReplays}
                             />
                         </div>
                     ))}

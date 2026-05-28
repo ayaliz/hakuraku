@@ -17,17 +17,12 @@ import {
 import { TEMPTATION_MODE_RUSH_BOOST } from "../utils/raceConstants";
 import AssetLoader from "../../../data/AssetLoader";
 
-const GRID_TOP = 40;
-const GRID_RIGHT = 16;
-const GRID_BOTTOM = 40;
-const GRID_LEFT = 50;
-
-function xToPixel(x: number, xMin: number, xMax: number, W: number) {
-    return GRID_LEFT + (x - xMin) / (xMax - xMin) * (W - GRID_LEFT - GRID_RIGHT);
-}
-
-function yToPixel(y: number, yMax: number, H: number) {
-    return GRID_TOP + (1 - y / yMax) * (H - GRID_TOP - GRID_BOTTOM);
+function dataToPixel(instance: any, x: number, y: number): [number, number] | null {
+    const pixel = instance.convertToPixel?.({ xAxisId: "distance-axis", yAxisId: "lane-axis" }, [x, y]);
+    if (!Array.isArray(pixel) || pixel.length < 2) return null;
+    const [px, py] = pixel;
+    if (!Number.isFinite(px) || !Number.isFinite(py)) return null;
+    return [px, py];
 }
 
 const imgCache = new Map<string, HTMLImageElement>();
@@ -251,8 +246,6 @@ export function useCanvasOverlay(
         ctx.scale(dpr, dpr);
         ctx.clearRect(0, 0, w, h);
 
-        const yMax = p.yMaxWithHeadroom;
-
         type CharEntry = { idx: number; name: string; vis: 0 | 1 | 2; cx: number; cy: number; hf: any; teamColor: string; iconUrl: string };
         const charDataList: CharEntry[] = [];
         const hoverEntries: HorseHoverEntry[] = [];
@@ -267,8 +260,9 @@ export function useCanvasOverlay(
             const info = p.horseInfoByIdx[idx] ?? {};
             const teamColor = teamColorFor(idx, info, p.trainerColors);
             const iconUrl = getCharaIcon(info?.chara_id) ?? "";
-            const cx = xToPixel(hf.distance ?? 0, xMin, xMax, w);
-            const cy = yToPixel(hf.lanePosition ?? 0, yMax, h);
+            const pixel = dataToPixel(instance, hf.distance ?? 0, hf.lanePosition ?? 0);
+            if (!pixel) return;
+            const [cx, cy] = pixel;
 
             charDataList.push({ idx, name, vis, cx, cy, hf, teamColor, iconUrl });
 
@@ -339,6 +333,7 @@ export function useCanvasOverlay(
                     staminaStat: trainedChara.stamina,
                     strategy,
                     distanceProficiency: trainedChara.properDistances[getDistanceCategory(p.goalInX)] ?? 1,
+                    strategyProficiency: trainedChara.properRunningStyles[isOonige ? 1 : strategy] ?? 7,
                     mood: info.motivation ?? 3,
                     isOonige,
                     inLastSpurt,
@@ -487,8 +482,9 @@ export function useCanvasOverlay(
                 const info = p.horseInfoByIdx[idx] ?? {};
                 const teamColor = teamColorFor(idx, info, p.trainerColors);
                 const bgColor = mixWithWhite(teamColor, 0.9);
-                const cx = xToPixel(hf.distance ?? 0, xMin, xMax, w);
-                const cy = yToPixel(hf.lanePosition ?? 0, yMax, h);
+                const pixel = dataToPixel(instance, hf.distance ?? 0, hf.lanePosition ?? 0);
+                if (!pixel) return;
+                const [cx, cy] = pixel;
 
                 const labels: OverlayPopupLabel[] = [];
                 const mergedSkillLabels = new Map<string, {

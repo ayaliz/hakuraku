@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="985" height="510" viewBox="0 0 985 510" role="img" aria-labelledby="title desc">
+<title id="title">Last struggler cascade 1</title>
+<desc id="desc">Once one struggler exits by distance, the remaining pair can also exit when their gap opens.</desc>
+<rect width="100%" height="100%" fill="#101418"/>
+<text x="42" y="32" fill="#edf2f7" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">Last struggler cascade 1</text>
+<line x1="74" y1="400.0" x2="910" y2="400.0" stroke="#24303a" stroke-width="1"/>
+<text x="62" y="404.0" fill="#94a3af" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">1</text>
+<line x1="74" y1="338.5" x2="910" y2="338.5" stroke="#24303a" stroke-width="1"/>
+<text x="62" y="342.5" fill="#94a3af" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">3</text>
+<line x1="74" y1="277.1" x2="910" y2="277.1" stroke="#24303a" stroke-width="1"/>
+<text x="62" y="281.1" fill="#94a3af" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">5</text>
+<line x1="74" y1="215.6" x2="910" y2="215.6" stroke="#24303a" stroke-width="1"/>
+<text x="62" y="219.6" fill="#94a3af" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">7</text>
+<line x1="74" y1="154.2" x2="910" y2="154.2" stroke="#24303a" stroke-width="1"/>
+<text x="62" y="158.2" fill="#94a3af" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">9</text>
+<line x1="74" y1="92.7" x2="910" y2="92.7" stroke="#24303a" stroke-width="1"/>
+<text x="62" y="96.7" fill="#94a3af" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">11</text>
+<line x1="74" y1="277.1" x2="910" y2="277.1" stroke="#c7a7ff" stroke-width="1.5" stroke-dasharray="7 4" opacity="0.8"/>
+<line x1="74.4" y1="62" x2="74.4" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="74.4" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">5</text>
+<line x1="178.9" y1="62" x2="178.9" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="178.9" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">7</text>
+<line x1="283.4" y1="62" x2="283.4" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="283.4" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">9</text>
+<line x1="387.9" y1="62" x2="387.9" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="387.9" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">11</text>
+<line x1="492.4" y1="62" x2="492.4" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="492.4" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">13</text>
+<line x1="596.9" y1="62" x2="596.9" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="596.9" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">15</text>
+<line x1="701.4" y1="62" x2="701.4" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="701.4" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">17</text>
+<line x1="805.9" y1="62" x2="805.9" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="805.9" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">19</text>
+<rect x="74" y="62" width="836" height="338" fill="none" stroke="#52606b" stroke-width="1"/>
+<text x="24" y="231" fill="#c9d3dc" transform="rotate(-90 24 231)" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13">Gap to partner (m)</text>
+<text x="492" y="452" fill="#c9d3dc" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13">Frame time (s)</text>
+<text x="86" y="271.1" fill="#c7a7ff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" paint-order="stroke" stroke="#101418" stroke-width="4" stroke-linejoin="round">5 m gap</text>
+<line x1="230.8" y1="62" x2="230.8" y2="400" stroke="#f4f7fb" stroke-width="2"/>
+<text x="236.8" y="80" fill="#f4f7fb" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" paint-order="stroke" stroke="#101418" stroke-width="4" stroke-linejoin="round">observed start 7.992s</text>
+<path d="M 91.6 388.9 L 95.8 393.1 L 91.6 397.3 L 87.4 393.1 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 147.2 368.1 L 151.4 372.3 L 147.2 376.5 L 143.0 372.3 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 202.9 361.6 L 207.1 365.8 L 202.9 370.0 L 198.7 365.8 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 258.6 369.5 L 262.8 373.7 L 258.6 377.9 L 254.4 373.7 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 314.3 369.3 L 318.5 373.5 L 314.3 377.7 L 310.1 373.5 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 369.9 358.5 L 374.1 362.7 L 369.9 366.9 L 365.7 362.7 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 425.6 337.3 L 429.8 341.5 L 425.6 345.7 L 421.4 341.5 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 481.3 298.7 L 485.5 302.9 L 481.3 307.1 L 477.1 302.9 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 537.0 263.9 L 541.2 268.1 L 537.0 272.3 L 532.8 268.1 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 592.7 260.2 L 596.9 264.4 L 592.7 268.6 L 588.5 264.4 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 648.3 278.7 L 652.5 282.9 L 648.3 287.1 L 644.1 282.9 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 704.0 317.4 L 708.2 321.6 L 704.0 325.8 L 699.8 321.6 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 759.7 356.6 L 763.9 360.8 L 759.7 365.0 L 755.5 360.8 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 815.4 392.4 L 819.6 396.6 L 815.4 400.8 L 811.2 396.6 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 871.0 400.5 L 875.2 404.7 L 871.0 408.9 L 866.8 404.7 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 91.6 366.5 L 95.8 370.7 L 91.6 374.9 L 87.4 370.7 Z" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 147.2 359.2 L 151.4 363.4 L 147.2 367.6 L 143.0 363.4 Z" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 202.9 333.9 L 207.1 338.1 L 202.9 342.3 L 198.7 338.1 Z" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 258.6 308.3 L 262.8 312.5 L 258.6 316.7 L 254.4 312.5 Z" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 314.3 273.4 L 318.5 277.6 L 314.3 281.8 L 310.1 277.6 Z" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 369.9 228.3 L 374.1 232.5 L 369.9 236.7 L 365.7 232.5 Z" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 425.6 184.2 L 429.8 188.4 L 425.6 192.6 L 421.4 188.4 Z" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 481.3 134.8 L 485.5 139.0 L 481.3 143.2 L 477.1 139.0 Z" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 537.0 89.8 L 541.2 94.0 L 537.0 98.2 L 532.8 94.0 Z" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 592.7 76.0 L 596.9 80.2 L 592.7 84.4 L 588.5 80.2 Z" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 648.3 78.3 L 652.5 82.5 L 648.3 86.7 L 644.1 82.5 Z" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 704.0 105.0 L 708.2 109.2 L 704.0 113.4 L 699.8 109.2 Z" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 759.7 145.4 L 763.9 149.6 L 759.7 153.8 L 755.5 149.6 Z" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 815.4 189.2 L 819.6 193.4 L 815.4 197.6 L 811.2 193.4 Z" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 871.0 227.5 L 875.2 231.7 L 871.0 235.9 L 866.8 231.7 Z" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 91.6 404.2 L 95.8 408.4 L 91.6 412.6 L 87.4 408.4 Z" fill="#ffbf66" stroke="#101418" stroke-width="1"/>
+<path d="M 147.2 417.6 L 151.4 421.8 L 147.2 426.0 L 143.0 421.8 Z" fill="#ffbf66" stroke="#101418" stroke-width="1"/>
+<path d="M 202.9 398.9 L 207.1 403.1 L 202.9 407.3 L 198.7 403.1 Z" fill="#ffbf66" stroke="#101418" stroke-width="1"/>
+<path d="M 258.6 365.4 L 262.8 369.6 L 258.6 373.8 L 254.4 369.6 Z" fill="#ffbf66" stroke="#101418" stroke-width="1"/>
+<path d="M 314.3 330.5 L 318.5 334.7 L 314.3 338.9 L 310.1 334.7 Z" fill="#ffbf66" stroke="#101418" stroke-width="1"/>
+<path d="M 369.9 296.4 L 374.1 300.6 L 369.9 304.8 L 365.7 300.6 Z" fill="#ffbf66" stroke="#101418" stroke-width="1"/>
+<path d="M 425.6 273.4 L 429.8 277.6 L 425.6 281.8 L 421.4 277.6 Z" fill="#ffbf66" stroke="#101418" stroke-width="1"/>
+<path d="M 481.3 262.6 L 485.5 266.8 L 481.3 271.0 L 477.1 266.8 Z" fill="#ffbf66" stroke="#101418" stroke-width="1"/>
+<path d="M 537.0 252.4 L 541.2 256.6 L 537.0 260.8 L 532.8 256.6 Z" fill="#ffbf66" stroke="#101418" stroke-width="1"/>
+<path d="M 592.7 242.3 L 596.9 246.5 L 592.7 250.7 L 588.5 246.5 Z" fill="#ffbf66" stroke="#101418" stroke-width="1"/>
+<path d="M 648.3 226.1 L 652.5 230.3 L 648.3 234.5 L 644.1 230.3 Z" fill="#ffbf66" stroke="#101418" stroke-width="1"/>
+<path d="M 704.0 214.2 L 708.2 218.4 L 704.0 222.6 L 699.8 218.4 Z" fill="#ffbf66" stroke="#101418" stroke-width="1"/>
+<path d="M 759.7 215.3 L 763.9 219.5 L 759.7 223.7 L 755.5 219.5 Z" fill="#ffbf66" stroke="#101418" stroke-width="1"/>
+<path d="M 815.4 223.4 L 819.6 227.6 L 815.4 231.8 L 811.2 227.6 Z" fill="#ffbf66" stroke="#101418" stroke-width="1"/>
+<path d="M 871.0 253.5 L 875.2 257.7 L 871.0 261.9 L 866.8 257.7 Z" fill="#ffbf66" stroke="#101418" stroke-width="1"/>
+<path d="M 91.0 477.2 L 95.8 482.0 L 91.0 486.8 L 86.2 482.0 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<text x="118" y="486" fill="#dbe5ee" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13">Bourbon T1 to Seiun</text>
+<path d="M 376.0 477.2 L 380.8 482.0 L 376.0 486.8 L 371.2 482.0 Z" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<text x="403" y="486" fill="#dbe5ee" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13">Bourbon T1 to Bourbon T3</text>
+<path d="M 661.0 477.2 L 665.8 482.0 L 661.0 486.8 L 656.2 482.0 Z" fill="#ffbf66" stroke="#101418" stroke-width="1"/>
+<text x="688" y="486" fill="#dbe5ee" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13">Seiun to Bourbon T3</text>
+</svg>

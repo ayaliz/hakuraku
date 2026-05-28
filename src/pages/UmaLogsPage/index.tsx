@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import type {
     GateStatsMode,
     GateWinRateFlavor,
+    HorseEntry,
     SkillStats,
 } from "../MultiRacePage/types";
 import StrategyAnalysis from "../MultiRacePage/components/WinDistributionCharts/StrategyAnalysis";
@@ -36,6 +37,7 @@ import {
     UMA_LOGS_SECTIONS,
 } from "./umaLogsTypes";
 import { deserializeHorseEntry, deserializeSkillOverviewStats, deserializeStats } from "./deserialize";
+import type { ReplayExactBuildFilter } from "./replaysShared";
 import CardUsageModal from "./CardUsageModal";
 import SkillsByStrategyModal from "./SkillsByStrategyModal";
 import StyleDecksModal from "./StyleDecksModal";
@@ -48,7 +50,12 @@ const UMA_LOGS_API_BASE = rawUmaLogsApiBase === "same-origin"
     ? ""
     : rawUmaLogsApiBase.replace(/\/$/, "");
 
-const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLabel, section, onSectionChange, scoreWinnersOnly, setScoreWinnersOnly, totalRaces, strategyColors }) => {
+function encodeReplayExactBuildParam(build: ReplayExactBuildFilter): string {
+    const json = JSON.stringify(build);
+    return btoa(json).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/u, "");
+}
+
+const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLabel, section, onSectionChange, onViewReplaysForHorse, scoreWinnersOnly, setScoreWinnersOnly, totalRaces, strategyColors }) => {
     const [cardUsageOpen, setCardUsageOpen] = useState(false);
     const [styleDecksOpen, setStyleDecksOpen] = useState(false);
     const [skillsOpen, setSkillsOpen] = useState(false);
@@ -459,6 +466,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                                                 displayValue={formatTime(fastestWin.finishTime)}
                                                 skillStats={group.stats.skillStats}
                                                 strategyColors={strategyColors}
+                                                onViewReplays={onViewReplaysForHorse}
                                             />
                                         )}
                                         {slowestWin && (
@@ -468,6 +476,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                                                 displayValue={formatTime(slowestWin.finishTime)}
                                                 skillStats={group.stats.skillStats}
                                                 strategyColors={strategyColors}
+                                                onViewReplays={onViewReplaysForHorse}
                                             />
                                         )}
                                         {highestWinner && (
@@ -479,6 +488,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                                                 showRankIcon
                                                 skillStats={group.stats.skillStats}
                                                 strategyColors={strategyColors}
+                                                onViewReplays={onViewReplaysForHorse}
                                             />
                                         )}
                                         {lowestWinner && (
@@ -490,6 +500,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                                                 showRankIcon
                                                 skillStats={group.stats.skillStats}
                                                 strategyColors={strategyColors}
+                                                onViewReplays={onViewReplaysForHorse}
                                             />
                                         )}
                                     </div>
@@ -707,6 +718,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                         characterTeamRates={panelData?.characterTeamRates ?? []}
                         skillStats={group.stats.skillStats}
                         strategyColors={strategyColors}
+                        onViewReplays={onViewReplaysForHorse}
                     />
                 </div>
             )}
@@ -753,6 +765,7 @@ const TrackGroupContent: React.FC<TrackGroupContentProps> = ({ group, cmId, cmLa
                     apiMode
                     skillStats={group.stats.skillStats}
                     strategyColors={strategyColors}
+                    onViewReplays={onViewReplaysForHorse}
                 />
             )}
 
@@ -787,11 +800,44 @@ const UmaLogsPage: React.FC = () => {
     const handleSectionChange = (nextSection: Section) => {
         if (nextSection === section) return;
         const nextParams = new URLSearchParams(searchParams);
+        if (nextSection !== "replays") {
+            nextParams.delete("replayCardId");
+            nextParams.delete("replayBuildKey");
+            nextParams.delete("replayBuild");
+            nextParams.delete("replayAutoRun");
+        }
         if (nextSection === "introduction") {
             nextParams.delete("tab");
         } else {
             nextParams.set("tab", nextSection);
         }
+        setSearchParams(nextParams, { replace: false });
+    };
+
+    const handleViewReplaysForHorse = (horse: HorseEntry) => {
+        const build: ReplayExactBuildFilter = {
+            cardId: horse.cardId,
+            strategy: horse.strategy,
+            speed: horse.speed,
+            stamina: horse.stamina,
+            pow: horse.pow,
+            guts: horse.guts,
+            wiz: horse.wiz,
+            rankScore: horse.rankScore,
+            careerWinCount: horse.careerWinCount,
+            supportCardIds: horse.supportCardIds ?? [],
+            supportCardLimitBreaks: horse.supportCardLimitBreaks ?? [],
+            learnedSkillIds: Array.from(horse.learnedSkillIds ?? []),
+        };
+        const buildKey = `umalogs-replay-build-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        sessionStorage.setItem(buildKey, JSON.stringify(build));
+
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.set("tab", "replays");
+        nextParams.set("replayCardId", String(horse.cardId));
+        nextParams.set("replayBuildKey", buildKey);
+        nextParams.set("replayBuild", encodeReplayExactBuildParam(build));
+        nextParams.set("replayAutoRun", "1");
         setSearchParams(nextParams, { replace: false });
     };
 
@@ -960,6 +1006,7 @@ const UmaLogsPage: React.FC = () => {
                     cmLabel={cmLabel}
                     section={section}
                     onSectionChange={handleSectionChange}
+                    onViewReplaysForHorse={handleViewReplaysForHorse}
                     scoreWinnersOnly={scoreWinnersOnly}
                     setScoreWinnersOnly={setScoreWinnersOnly}
                     totalRaces={totalRaces}

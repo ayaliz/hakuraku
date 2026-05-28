@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
+import type { ReactElement } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -26,6 +27,84 @@ function NoteCard({ entry, onClick }: { entry: NoteEntry; onClick: () => void })
             <p className="np-card-desc">{entry.description}</p>
         </div>
     );
+}
+
+const markdownComponents = {
+    a: ({ href, children }: any) => {
+        const resolved = href?.startsWith('attachments/')
+            ? `${import.meta.env.BASE_URL}notes/${href}`
+            : href;
+        return <a href={resolved} target="_blank" rel="noreferrer">{children}</a>;
+    },
+    img: ({ src, alt }: any) => {
+        const resolved = src?.startsWith('attachments/')
+            ? `${import.meta.env.BASE_URL}notes/${src}`
+            : src;
+        return <img src={resolved} alt={alt ?? ''} />;
+    },
+    table: ({ children }: any) => <div className="table-wrapper"><table>{children}</table></div>,
+    code: ({ children, className }: any) => {
+        const isBlock = className?.startsWith('language-');
+        return isBlock ? (
+            <code className="language-code">{children}</code>
+        ) : (
+            <code className="inline-code">{children}</code>
+        );
+    },
+};
+
+function MarkdownBlock({ children }: { children: string }) {
+    return (
+        <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeKatex as any]}
+            components={markdownComponents}
+        >
+            {children}
+        </ReactMarkdown>
+    );
+}
+
+function renderMarkdownWithDetails(markdown: string) {
+    const lines = markdown.split(/\r?\n/);
+    const rendered: ReactElement[] = [];
+    let buffer: string[] = [];
+    let key = 0;
+
+    const flushBuffer = () => {
+        if (buffer.length === 0) return;
+        rendered.push(<MarkdownBlock key={`md-${key++}`}>{buffer.join('\n')}</MarkdownBlock>);
+        buffer = [];
+    };
+
+    for (let i = 0; i < lines.length; i++) {
+        const detailsMatch = lines[i].match(/^:::details\s+(.+)$/);
+        if (!detailsMatch) {
+            buffer.push(lines[i]);
+            continue;
+        }
+
+        flushBuffer();
+        const summary = detailsMatch[1].trim();
+        const detailLines: string[] = [];
+        i++;
+        while (i < lines.length && lines[i].trim() !== ':::') {
+            detailLines.push(lines[i]);
+            i++;
+        }
+
+        rendered.push(
+            <details className="np-md-details" key={`details-${key++}`}>
+                <summary>{summary}</summary>
+                <div className="np-md-details-body">
+                    <MarkdownBlock>{detailLines.join('\n')}</MarkdownBlock>
+                </div>
+            </details>
+        );
+    }
+
+    flushBuffer();
+    return rendered.map((node, index) => <Fragment key={`frag-${index}`}>{node}</Fragment>);
 }
 
 export default function NotesPage() {
@@ -106,35 +185,7 @@ export default function NotesPage() {
                     <div className="np-md-loading">Loading…</div>
                 ) : (
                     <div className="np-md-container">
-                        <ReactMarkdown
-                            remarkPlugins={[remarkGfm, remarkMath]}
-                            rehypePlugins={[rehypeKatex as any]}
-                            components={{
-                                a: ({ href, children }) => {
-                                    const resolved = href?.startsWith('attachments/')
-                                        ? `${import.meta.env.BASE_URL}notes/${href}`
-                                        : href;
-                                    return <a href={resolved} target="_blank" rel="noreferrer">{children}</a>;
-                                },
-                                img: ({ src, alt }) => {
-                                    const resolved = src?.startsWith('attachments/')
-                                        ? `${import.meta.env.BASE_URL}notes/${src}`
-                                        : src;
-                                    return <img src={resolved} alt={alt ?? ''} />;
-                                },
-                                table: ({ children }) => <div className="table-wrapper"><table>{children}</table></div>,
-                                code: ({ children, className }) => {
-                                    const isBlock = className?.startsWith('language-');
-                                    return isBlock ? (
-                                        <code className="language-code">{children}</code>
-                                    ) : (
-                                        <code className="inline-code">{children}</code>
-                                    );
-                                },
-                            }}
-                        >
-                            {markdown}
-                        </ReactMarkdown>
+                        {renderMarkdownWithDetails(markdown)}
                     </div>
                 )}
             </div>

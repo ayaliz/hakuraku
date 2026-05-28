@@ -79,7 +79,11 @@ const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData, detected
 
     return (
         <div className="chara-list-section">
-            <CharaTable data={sortedData} courseId={effectiveCourseId} showPredictionColumn={showPredictionColumn} />
+            <CharaTable
+                data={sortedData}
+                courseId={effectiveCourseId}
+                showPredictionColumn={showPredictionColumn}
+            />
         </div>
     );
 };

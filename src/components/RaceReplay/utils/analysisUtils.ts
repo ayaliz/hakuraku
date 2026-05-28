@@ -1,6 +1,6 @@
 import { RaceSimulateData, RaceSimulateEventData_SimulateEventType } from "../../../data/race_data_pb";
 import { fromRaceHorseData, TrainedCharaData } from "../../../data/TrainedCharaData";
-import { getDistanceCategory, calculateTargetSpeed, adjustStat, calculateReferenceHpConsumption, computeGroundPowerBonus } from "./speedCalculations";
+import { getDistanceCategory, calculateTargetSpeed, adjustStat, calculateReferenceHpConsumption, computeGroundPowerBonus, STRATEGY_PROFICIENCY_MODIFIER } from "./speedCalculations";
 import { getPassiveStatModifiers, getSkillDurationSecs, getActiveSpeedModifier, getActiveSpeedDebuff, hasSkillEffect } from "./SkillDataUtils";
 import { filterCharaSkills } from "../../../data/RaceDataUtils";
 import GameDataLoader from "../../../data/GameDataLoader";
@@ -33,9 +33,6 @@ const DUELING_END_TIME_LOOKAHEAD = 1.5;    // Seconds to skip after dueling expi
 const SPEED_BUFF_DROP_FRAME_LOOKAHEAD = 0; // Skip the drop frame; dense snapshots are covered by the time lookahead
 const SPEED_BUFF_DROP_TIME_LOOKAHEAD = 0.5; // Seconds to skip after a speed skill falls off when snapshots are dense
 const TYPE_28_POWER_SPEED_SCALE = 0.0002;
-const DUEL_HP_SPARE_END_THRESHOLD = 50;
-const DUEL_EXPECTED_MATCH_SLACK = 0.02;
-const DUEL_DISPLAY_PENALTY_THRESHOLD = 0.05;
 
 function computeGroundHpModifier(surface: number, condition: number): number {
     if (surface === 1) {
@@ -101,6 +98,7 @@ export function computeOtherEvents(
             let passiveStats = { speed: 0, stamina: 0, power: 0, guts: 0, wisdom: 0 };
             let isOonige = false;
             let strategy = 1;
+            let strategyProficiency = 7;
             let learnedSkillLevelById = new Map<number, number>();
             let hasFullSpurtHp = true;
 
@@ -122,6 +120,7 @@ export function computeOtherEvents(
 
                 const runningStyleStr = rawData.running_style ?? 0;
                 strategy = +runningStyleStr > 0 ? +runningStyleStr : (trainedChara.rawData?.param?.runningStyle ?? 1);
+                strategyProficiency = trainedChara.properRunningStyles[isOonige ? 1 : strategy] ?? 7;
 
                 let hpAtPhase3Start: number | undefined;
                 const phase3StartDist = goalInX * 2 / 3;
@@ -145,6 +144,7 @@ export function computeOtherEvents(
                         staminaStat: trainedChara.stamina,
                         strategy,
                         distanceProficiency: trainedChara.properDistances[distanceCategory] ?? 1,
+                        strategyProficiency,
                         mood: rawData['motivation'],
                         isOonige,
                         inLastSpurt: true,
@@ -221,9 +221,11 @@ export function computeOtherEvents(
                         staminaStat: trainedChara.stamina,
                         strategy,
                         distanceProficiency: trainedChara.properDistances[distanceCategory] ?? 1,
+                        strategyProficiency,
                         mood: rawData['motivation'],
                         isOonige,
-                        inLastSpurt: (h.distance ?? 0) > (raceData.horseResult[frameOrder]?.lastSpurtStartDistance ?? 999999),
+                        inLastSpurt: (raceData.horseResult[frameOrder]?.lastSpurtStartDistance ?? -1) > 0
+                            && (h.distance ?? 0) >= (raceData.horseResult[frameOrder]?.lastSpurtStartDistance ?? -1),
                         slope: 0,
                         greenSkillBonuses: passiveStats,
                         activeSpeedBuff: activeSpeedBuff,
@@ -293,9 +295,11 @@ export function computeOtherEvents(
                                 staminaStat: trainedChara.stamina,
                                 strategy,
                                 distanceProficiency: trainedChara.properDistances[distanceCategory] ?? 1,
+                                strategyProficiency,
                                 mood: rawData['motivation'],
                                 isOonige,
-                                inLastSpurt: futureDist > (raceData.horseResult[frameOrder]?.lastSpurtStartDistance ?? 999999),
+                                inLastSpurt: (raceData.horseResult[frameOrder]?.lastSpurtStartDistance ?? -1) > 0
+                                    && futureDist >= (raceData.horseResult[frameOrder]?.lastSpurtStartDistance ?? -1),
                                 slope: 0,
                                 greenSkillBonuses: passiveStats,
                                 activeSpeedBuff: futureActiveSpeedBuff,
@@ -344,8 +348,11 @@ export function computeOtherEvents(
         }
 
         if (e.type === RaceSimulateEventData_SimulateEventType.COMPETE_TOP) {
-            const guts = charaData.get(frameOrder)?.guts ?? 0;
-            const gutsDuration = Math.pow(SPOT_STRUGGLE_GUTS_DURATION_BASE * guts, SPOT_STRUGGLE_GUTS_DURATION_EXPONENT) * SPOT_STRUGGLE_GUTS_DURATION_SCALE;
+            const trainedChara = charaData.get(frameOrder);
+            const guts = trainedChara?.guts ?? 0;
+            const frontRunnerAptitude = trainedChara?.properRunningStyles[1] ?? 7;
+            const strategyProficiencyModifier = STRATEGY_PROFICIENCY_MODIFIER[frontRunnerAptitude] ?? 1.0;
+            const gutsDuration = Math.pow(SPOT_STRUGGLE_GUTS_DURATION_BASE * guts, SPOT_STRUGGLE_GUTS_DURATION_EXPONENT) * SPOT_STRUGGLE_GUTS_DURATION_SCALE * strategyProficiencyModifier;
             const distanceThreshold = SPOT_STRUGGLE_DIST_RATIO * goalInX;
 
             let distanceThresholdTime = -1;
@@ -389,9 +396,7 @@ export function calculateMaxAdjustedSpeed(
     trackSlopes: any[],
     adjustedGuts: number,
     adjustedPower: number,
-    lastSpurtStartDistance: number = -1,
-    expectedObservedSpurtSpeed?: number,
-    spurtHpSpare?: number
+    lastSpurtStartDistance: number = -1
 ): { speed: number; time: number; debug: MaxAdjustedSpeedDebug } {
     let maxAdjSpeed = 0;
     let maxAdjSpeedTime = 0;
@@ -402,7 +407,6 @@ export function calculateMaxAdjustedSpeed(
     let previousFrameSkillBuff = 0;
     let previousFrameSpeedBuffKeys = new Set<string>();
     let lastSpeedBuffDropFrameIndex = -100;
-    let duelingSuppressedFromTime = Infinity;
 
     for (let fIdx = 0; fIdx < frames.length; fIdx++) {
         const frame = frames[fIdx];
@@ -484,8 +488,7 @@ export function calculateMaxAdjustedSpeed(
                         frameSpotStruggleBuff += b;
                     }
                     if (
-                        time < duelingSuppressedFromTime
-                        && (name.includes("Dueling") || name.includes("Competes (Speed)"))
+                        name.includes("Dueling") || name.includes("Competes (Speed)")
                     ) {
                         const b = Math.pow(DUELING_GUTS_BASE * adjustedGuts, DUELING_GUTS_EXPONENT) * DUELING_GUTS_SCALE;
                         buff += b;
@@ -555,25 +558,6 @@ export function calculateMaxAdjustedSpeed(
                         }
                     }
                 }
-            }
-        }
-
-        if (
-            isDuelingActive
-            && frameDuelingBuff > 0
-            && expectedObservedSpurtSpeed !== undefined
-            && (spurtHpSpare ?? -Infinity) > DUEL_HP_SPARE_END_THRESHOLD
-        ) {
-            const adjustedWithDuel = speed - buff;
-            const adjustedWithoutDuel = speed - (buff - frameDuelingBuff);
-            if (
-                adjustedWithDuel < expectedObservedSpurtSpeed - DUEL_DISPLAY_PENALTY_THRESHOLD
-                && Math.abs(adjustedWithoutDuel - expectedObservedSpurtSpeed) <= DUEL_EXPECTED_MATCH_SLACK
-            ) {
-                duelingSuppressedFromTime = time;
-                buff -= frameDuelingBuff;
-                frameDuelingBuff = 0;
-                isDuelingActive = false;
             }
         }
 

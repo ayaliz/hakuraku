@@ -1,6 +1,6 @@
 import React from "react";
 import { STRATEGY_COLORS } from "./constants";
-import type { StrategyStats, RoomCompositionEntry, SkillStats } from "../../types";
+import type { HorseEntry, StrategyStats, RoomCompositionEntry, SkillStats } from "../../types";
 import type { CharacterTeamRateRow, StyleCompositionSummaryRow } from "../../../UmaLogsPage/panelData";
 import { StyleBreakdownPanel } from "./StyleBreakdownPanel";
 import { SaturationPanel } from "./SaturationPanel";
@@ -26,6 +26,7 @@ interface StrategyAnalysisProps {
     characterTeamRates?: CharacterTeamRateRow[];
     skillStats?: Map<number, SkillStats>;
     strategyColors?: Record<number, string>;
+    onViewReplays?: (horse: HorseEntry) => void;
 }
 
 const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
@@ -41,6 +42,7 @@ const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
     characterTeamRates,
     skillStats,
     strategyColors,
+    onViewReplays,
 }) => {
     const hasData = strategyStats && strategyStats.length > 0 && totalRaces != null && totalRaces > 0;
     const activeStrategyColors = strategyColors ?? STRATEGY_COLORS;
@@ -71,6 +73,7 @@ const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
                                     characterTeamRates={characterTeamRates}
                                     skillStats={skillStats}
                                     strategyColors={activeStrategyColors}
+                                    onViewReplays={onViewReplays}
                                 />
                             )}
                         </div>
@@ -84,6 +87,7 @@ const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
                             styleCompositionRows={styleCompositionRows}
                             skillStats={skillStats}
                             strategyColors={activeStrategyColors}
+                            onViewReplays={onViewReplays}
                         />
                     )}
                 </>

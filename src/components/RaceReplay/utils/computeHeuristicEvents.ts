@@ -187,6 +187,7 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
             const runningStyleStr = info.running_style ?? 0;
             const strategy = +runningStyleStr > 0 ? +runningStyleStr : (trainedChara.rawData?.param?.runningStyle ?? 1);
             const isOonige = oonigeByIdx[i] ?? false;
+            const strategyProficiency = trainedChara.properRunningStyles[isOonige ? 1 : strategy] ?? 7;
 
             const currentDistance = h.distance ?? 0;
             const currentSpeed = (h.speed ?? 0) / 100; // m/s
@@ -251,6 +252,7 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
                 staminaStat: trainedChara.stamina,
                 strategy,
                 distanceProficiency: trainedChara.properDistances[distanceCategory] ?? 1,
+                strategyProficiency,
                 mood: info.motivation ?? 3,
                 isOonige,
                 inLastSpurt,

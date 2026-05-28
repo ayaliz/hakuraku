@@ -2,10 +2,10 @@ import type { RaceRoomModelSpec } from "./types";
 
 const ROOM_MODEL_REGISTRY: RaceRoomModelSpec[] = [
     {
-        id: "cm13",
-        label: "CM13 model",
-        courseId: 10606,
-        artifactPath: "data/cm13-room-model.json.gz?rev=surrogate-context-target-mix-skill210061-full-2026-05-14",
+        id: "cm14",
+        label: "CM14 model",
+        courseId: 10602,
+        artifactPath: "data/cm14-room-model.json.gz?rev=surrogate-context-target-mix-skill210061-2026-05-27",
         teamCount: 3,
         horsesPerTeam: 3,
     },

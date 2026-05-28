@@ -21,6 +21,7 @@ type SpeedCalculationParams = {
     staminaStat?: number;
     strategy: number;
     distanceProficiency: number;
+    strategyProficiency?: number;
     mood: number;
     isOonige: boolean;
     inLastSpurt: boolean;
@@ -60,6 +61,17 @@ const DISTANCE_PROFICIENCY_MODIFIER: Record<number, number> = {
     7: 1.0,  // A
     6: 0.9,  // B
     5: 0.8,  // C
+    4: 0.6,  // D
+    3: 0.4,  // E
+    2: 0.2,  // F
+    1: 0.1,  // G
+};
+
+export const STRATEGY_PROFICIENCY_MODIFIER: Record<number, number> = {
+    8: 1.1,  // S
+    7: 1.0,  // A
+    6: 0.85, // B
+    5: 0.75, // C
     4: 0.6,  // D
     3: 0.4,  // E
     2: 0.2,  // F
@@ -169,6 +181,7 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
         staminaStat = 0,
         strategy,
         distanceProficiency,
+        strategyProficiency,
         mood,
         isOonige,
         inLastSpurt,
@@ -190,7 +203,8 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
     const trackSpeedMultiplier = getTrackStatThresholdModifier(courseId || 0, { speed: speedStat, stamina: staminaStat, power: powerStat, guts: gutsStat, wisdom: wisdomStat }, mood);
 
     const adjustedSpeed = adjustStat(speedStat, mood, greenSkillBonuses?.speed) * trackSpeedMultiplier;
-    const adjustedWisdom = adjustStat(wisdomStat, mood, greenSkillBonuses?.wisdom);
+    const strategyProficiencyModifier = STRATEGY_PROFICIENCY_MODIFIER[strategyProficiency ?? 7] ?? 1.0;
+    const adjustedWisdom = adjustStat(wisdomStat, mood) * strategyProficiencyModifier + (greenSkillBonuses?.wisdom ?? 0);
     const adjustedPower = adjustStat(powerStat, mood, greenSkillBonuses?.power);
     const adjustedGuts = adjustStat(gutsStat, mood, greenSkillBonuses?.guts);
 

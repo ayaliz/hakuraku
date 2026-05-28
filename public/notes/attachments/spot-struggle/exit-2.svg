@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="985" height="510" viewBox="0 0 985 510" role="img" aria-labelledby="title desc">
+<title id="title">Exit race 2 speed bands</title>
+<desc id="desc">The early drop happens well before Seiun Sky's theoretical duration end.</desc>
+<rect width="100%" height="100%" fill="#101418"/>
+<text x="42" y="32" fill="#edf2f7" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">Exit race 2</text>
+<rect x="74" y="327.6" width="836" height="24.7" fill="#6f8796" opacity="0.16"/>
+<rect x="74" y="269.4" width="836" height="24.7" fill="#2f9d63" opacity="0.16"/>
+<rect x="74" y="140.6" width="836" height="63.0" fill="#c8842f" opacity="0.16"/>
+<rect x="74" y="62.0" width="836" height="78.6" fill="#b64d82" opacity="0.16"/>
+<line x1="74" y1="352.3" x2="910" y2="352.3" stroke="#dfe8f0" stroke-width="1.25" stroke-dasharray="4 4" opacity="0.72"/>
+<text x="82" y="347.3" fill="#dfe8f0" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11">18.690</text>
+<line x1="74" y1="327.6" x2="910" y2="327.6" stroke="#dfe8f0" stroke-width="1.25" stroke-dasharray="4 4" opacity="0.72"/>
+<text x="82" y="322.6" fill="#dfe8f0" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11">18.814</text>
+<line x1="74" y1="294.0" x2="910" y2="294.0" stroke="#dfe8f0" stroke-width="1.25" stroke-dasharray="4 4" opacity="0.72"/>
+<text x="82" y="289.0" fill="#dfe8f0" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11">18.983</text>
+<line x1="74" y1="269.4" x2="910" y2="269.4" stroke="#dfe8f0" stroke-width="1.25" stroke-dasharray="4 4" opacity="0.72"/>
+<text x="82" y="264.4" fill="#dfe8f0" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11">19.107</text>
+<line x1="74" y1="203.6" x2="910" y2="203.6" stroke="#dfe8f0" stroke-width="1.25" stroke-dasharray="4 4" opacity="0.72"/>
+<text x="82" y="198.6" fill="#dfe8f0" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11">19.438</text>
+<line x1="74" y1="140.6" x2="910" y2="140.6" stroke="#dfe8f0" stroke-width="1.25" stroke-dasharray="4 4" opacity="0.72"/>
+<text x="82" y="135.6" fill="#dfe8f0" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11">19.755</text>
+<line x1="74" y1="390.1" x2="910" y2="390.1" stroke="#2f3a43" stroke-width="1"/>
+<text x="62" y="394.1" fill="#94a3af" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">18.5</text>
+<line x1="74" y1="290.6" x2="910" y2="290.6" stroke="#2f3a43" stroke-width="1"/>
+<text x="62" y="294.6" fill="#94a3af" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">19.0</text>
+<line x1="74" y1="191.2" x2="910" y2="191.2" stroke="#2f3a43" stroke-width="1"/>
+<text x="62" y="195.2" fill="#94a3af" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">19.5</text>
+<line x1="74" y1="91.8" x2="910" y2="91.8" stroke="#2f3a43" stroke-width="1"/>
+<text x="62" y="95.8" fill="#94a3af" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">20.0</text>
+<text x="930" y="404.0" fill="#c7a7ff" text-anchor="start" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">1m</text>
+<text x="930" y="268.8" fill="#c7a7ff" text-anchor="start" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">3m</text>
+<text x="930" y="133.6" fill="#c7a7ff" text-anchor="start" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">5m</text>
+<line x1="74" y1="129.6" x2="910" y2="129.6" stroke="#c7a7ff" stroke-width="1.5" stroke-dasharray="7 4" opacity="0.8"/>
+<text x="966" y="231" fill="#c7a7ff" transform="rotate(90 966 231)" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13">Gap to partner (m)</text>
+<line x1="81.6" y1="62" x2="81.6" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="81.6" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">10</text>
+<line x1="186.1" y1="62" x2="186.1" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="186.1" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">12</text>
+<line x1="290.6" y1="62" x2="290.6" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="290.6" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">14</text>
+<line x1="395.1" y1="62" x2="395.1" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="395.1" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">16</text>
+<line x1="499.6" y1="62" x2="499.6" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="499.6" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">18</text>
+<line x1="604.1" y1="62" x2="604.1" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="604.1" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">20</text>
+<line x1="708.6" y1="62" x2="708.6" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="708.6" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">22</text>
+<line x1="813.1" y1="62" x2="813.1" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="813.1" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">24</text>
+<rect x="74" y="62" width="836" height="338" fill="none" stroke="#52606b" stroke-width="1"/>
+<text x="24" y="231" fill="#c9d3dc" transform="rotate(-90 24 231)" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13">Skill-adjusted speed (m/s)</text>
+<text x="492" y="452" fill="#c9d3dc" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13">Frame time (s)</text>
+<text x="492.0" y="345.0" fill="#dbe5ee" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" opacity="0.9" paint-order="stroke" stroke="#101418" stroke-width="4" stroke-linejoin="round">Base</text>
+<text x="492.0" y="286.7" fill="#dbe5ee" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" opacity="0.9" paint-order="stroke" stroke="#101418" stroke-width="4" stroke-linejoin="round">Spot struggle only</text>
+<text x="492.0" y="177.1" fill="#dbe5ee" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" opacity="0.9" paint-order="stroke" stroke="#101418" stroke-width="4" stroke-linejoin="round">Pace up only</text>
+<text x="492.0" y="106.3" fill="#dbe5ee" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" opacity="0.9" paint-order="stroke" stroke="#101418" stroke-width="4" stroke-linejoin="round">Spot struggle + pace up</text>
+<text x="86" y="123.6" fill="#c7a7ff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" paint-order="stroke" stroke="#101418" stroke-width="4" stroke-linejoin="round">5 m gap</text>
+<line x1="230.8" y1="62" x2="230.8" y2="400" stroke="#f4f7fb" stroke-width="2"/>
+<text x="236.8" y="80" fill="#f4f7fb" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" paint-order="stroke" stroke="#101418" stroke-width="4" stroke-linejoin="round">observed start 12.854s</text>
+<line x1="805.4" y1="62" x2="805.4" y2="400" stroke="#71b7ff" stroke-width="2" stroke-dasharray="6 5"/>
+<text x="811.4" y="388.0" fill="#71b7ff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" paint-order="stroke" stroke="#101418" stroke-width="4" stroke-linejoin="round">11s later</text>
+<circle cx="115.9" cy="348.3" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="171.6" cy="348.3" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="227.3" cy="348.3" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="282.9" cy="290.6" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="338.6" cy="284.7" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="394.3" cy="282.7" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="450.0" cy="207.1" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="505.7" cy="169.4" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="561.3" cy="330.4" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="617.0" cy="340.4" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="672.7" cy="340.4" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="728.4" cy="346.3" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="784.1" cy="346.3" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="839.7" cy="346.3" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="895.4" cy="346.3" r="3.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 115.9 104.8 L 120.1 109.0 L 115.9 113.2 L 111.7 109.0 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 171.6 144.3 L 175.8 148.5 L 171.6 152.7 L 167.4 148.5 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 227.3 205.9 L 231.5 210.1 L 227.3 214.3 L 223.1 210.1 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 282.9 255.9 L 287.1 260.1 L 282.9 264.3 L 278.7 260.1 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 338.6 247.4 L 342.8 251.6 L 338.6 255.8 L 334.4 251.6 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 394.3 233.0 L 398.5 237.2 L 394.3 241.4 L 390.1 237.2 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 450.0 204.8 L 454.2 209.0 L 450.0 213.2 L 445.8 209.0 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 505.7 149.4 L 509.9 153.6 L 505.7 157.8 L 501.5 153.6 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 561.3 122.8 L 565.5 127.0 L 561.3 131.2 L 557.1 127.0 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 617.0 120.5 L 621.2 124.7 L 617.0 128.9 L 612.8 124.7 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 672.7 118.2 L 676.9 122.4 L 672.7 126.6 L 668.5 122.4 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 728.4 118.2 L 732.6 122.4 L 728.4 126.6 L 724.2 122.4 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 784.1 132.2 L 788.3 136.4 L 784.1 140.6 L 779.9 136.4 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 839.7 168.2 L 843.9 172.4 L 839.7 176.6 L 835.5 172.4 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 895.4 226.4 L 899.6 230.6 L 895.4 234.8 L 891.2 230.6 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<circle cx="91" cy="482" r="4.2" fill="#71b7ff" stroke="#101418" stroke-width="1"/>
+<text x="118" y="486" fill="#dbe5ee" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14">Seiun Sky (Front apt A, guts 1200)</text>
+<path d="M 441.0 477.2 L 445.8 482.0 L 441.0 486.8 L 436.2 482.0 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<text x="468" y="486" fill="#dbe5ee" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13">Distance to partner</text>
+</svg>

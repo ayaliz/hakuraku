@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import type { SkillStats } from "../MultiRacePage/types";
+import type { HorseEntry, SkillStats } from "../MultiRacePage/types";
 import { STRATEGY_NAMES, STRATEGY_COLORS } from "../MultiRacePage/components/WinDistributionCharts/constants";
 import InfoTooltip from "../MultiRacePage/components/WinDistributionCharts/InfoTooltip";
 import { getCharaIcon } from "../MultiRacePage/components/WinDistributionCharts/utils";
@@ -22,6 +22,7 @@ interface ExplorerTabProps {
     apiMode?: boolean;
     skillStats?: Map<number, SkillStats>;
     strategyColors?: Record<number, string>;
+    onViewReplays?: (horse: HorseEntry) => void;
 }
 
 function formatPercent(value: number): string {
@@ -135,7 +136,7 @@ function normalizeAggRow(row: AggRow): AggRow {
     };
 }
 
-const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiMode, skillStats, strategyColors }) => {
+const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiMode, skillStats, strategyColors, onViewReplays }) => {
     const [characterFeatures, setCharacterFeatures] = useState<CharacterFeature[]>([]);
     const [appliedCharacterFeatures, setAppliedCharacterFeatures] = useState<CharacterFeature[]>([]);
     const [queryVersion, setQueryVersion] = useState(0);
@@ -429,7 +430,12 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                                                 <span className="sa-pipe"> | </span>
                                                 <span className="sa-raw-pct">{(winRate * 100).toFixed(0)}% ({appearances})</span>
                                             </div>
-                                            <TeamMemberCard horse={horse} skillStats={skillStats!} strategyColors={activeStrategyColors} />
+                                            <TeamMemberCard
+                                                horse={horse}
+                                                skillStats={skillStats!}
+                                                strategyColors={activeStrategyColors}
+                                                onViewReplays={onViewReplays}
+                                            />
                                         </div>
                                     ))}
                                 </div>

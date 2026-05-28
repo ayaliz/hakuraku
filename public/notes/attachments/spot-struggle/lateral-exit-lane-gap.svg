@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="985" height="510" viewBox="0 0 985 510" role="img" aria-labelledby="title desc">
+<title id="title">Lateral exit LaneDistance gap</title>
+<desc id="desc">Seiun and Daiwa cross the lateral exit threshold during spot struggle.</desc>
+<rect width="100%" height="100%" fill="#101418"/>
+<text x="42" y="32" fill="#edf2f7" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">Lateral exit LaneDistance gap</text>
+<line x1="74" y1="400.0" x2="910" y2="400.0" stroke="#24303a" stroke-width="1"/>
+<text x="62" y="404.0" fill="#94a3af" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">0</text>
+<line x1="74" y1="332.4" x2="910" y2="332.4" stroke="#24303a" stroke-width="1"/>
+<text x="62" y="336.4" fill="#94a3af" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">1000</text>
+<line x1="74" y1="264.8" x2="910" y2="264.8" stroke="#24303a" stroke-width="1"/>
+<text x="62" y="268.8" fill="#94a3af" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">2000</text>
+<line x1="74" y1="197.2" x2="910" y2="197.2" stroke="#24303a" stroke-width="1"/>
+<text x="62" y="201.2" fill="#94a3af" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">3000</text>
+<line x1="74" y1="129.6" x2="910" y2="129.6" stroke="#24303a" stroke-width="1"/>
+<text x="62" y="133.6" fill="#94a3af" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">4000</text>
+<line x1="74" y1="62.0" x2="910" y2="62.0" stroke="#24303a" stroke-width="1"/>
+<text x="62" y="66.0" fill="#94a3af" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">5000</text>
+<line x1="74" y1="118.8" x2="910" y2="118.8" stroke="#c7a7ff" stroke-width="1.5" stroke-dasharray="7 4" opacity="0.8"/>
+<line x1="74.4" y1="62" x2="74.4" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="74.4" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">5</text>
+<line x1="178.9" y1="62" x2="178.9" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="178.9" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">7</text>
+<line x1="283.4" y1="62" x2="283.4" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="283.4" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">9</text>
+<line x1="387.9" y1="62" x2="387.9" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="387.9" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">11</text>
+<line x1="492.4" y1="62" x2="492.4" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="492.4" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">13</text>
+<line x1="596.9" y1="62" x2="596.9" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="596.9" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">15</text>
+<line x1="701.4" y1="62" x2="701.4" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="701.4" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">17</text>
+<line x1="805.9" y1="62" x2="805.9" y2="400" stroke="#24303a" stroke-width="1"/>
+<text x="805.9" y="424" fill="#94a3af" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">19</text>
+<rect x="74" y="62" width="836" height="338" fill="none" stroke="#52606b" stroke-width="1"/>
+<text x="24" y="231" fill="#c9d3dc" transform="rotate(-90 24 231)" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13">LaneDistance gap</text>
+<text x="492" y="452" fill="#c9d3dc" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13">Frame time (s)</text>
+<text x="86" y="112.8" fill="#c7a7ff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" paint-order="stroke" stroke="#101418" stroke-width="4" stroke-linejoin="round">4160 LaneDistance</text>
+<line x1="230.8" y1="62" x2="230.8" y2="400" stroke="#f4f7fb" stroke-width="2"/>
+<text x="236.8" y="80" fill="#f4f7fb" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" paint-order="stroke" stroke="#101418" stroke-width="4" stroke-linejoin="round">observed start 7.992s</text>
+<line x1="420.3" y1="62" x2="420.3" y2="400" stroke="#ffbf66" stroke-width="2" stroke-dasharray="4 5"/>
+<text x="426.3" y="388.0" fill="#ffbf66" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" paint-order="stroke" stroke="#101418" stroke-width="4" stroke-linejoin="round">&gt;4160 LaneDistance</text>
+<path d="M 91.6 251.5 L 95.8 255.7 L 91.6 259.9 L 87.4 255.7 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 147.2 278.4 L 151.4 282.6 L 147.2 286.8 L 143.0 282.6 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 202.9 318.1 L 207.1 322.3 L 202.9 326.5 L 198.7 322.3 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 258.6 321.8 L 262.8 326.0 L 258.6 330.2 L 254.4 326.0 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 314.3 253.6 L 318.5 257.8 L 314.3 262.0 L 310.1 257.8 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 369.9 180.6 L 374.1 184.8 L 369.9 189.0 L 365.7 184.8 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 425.6 107.6 L 429.8 111.8 L 425.6 116.0 L 421.4 111.8 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 481.3 57.8 L 485.5 62.0 L 481.3 66.2 L 477.1 62.0 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 537.0 57.8 L 541.2 62.0 L 537.0 66.2 L 532.8 62.0 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 592.7 57.8 L 596.9 62.0 L 592.7 66.2 L 588.5 62.0 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 648.3 58.2 L 652.5 62.4 L 648.3 66.6 L 644.1 62.4 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 704.0 80.1 L 708.2 84.3 L 704.0 88.5 L 699.8 84.3 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 759.7 112.4 L 763.9 116.6 L 759.7 120.8 L 755.5 116.6 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 815.4 143.6 L 819.6 147.8 L 815.4 152.0 L 811.2 147.8 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 871.0 173.8 L 875.2 178.0 L 871.0 182.2 L 866.8 178.0 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<path d="M 91.0 477.2 L 95.8 482.0 L 91.0 486.8 L 86.2 482.0 Z" fill="#c7a7ff" stroke="#101418" stroke-width="1"/>
+<text x="118" y="486" fill="#dbe5ee" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13">Seiun to Daiwa</text>
+</svg>

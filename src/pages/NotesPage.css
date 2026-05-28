@@ -140,9 +140,11 @@
 
 .np-md-container img {
     display: block;
-    max-width: 100%;
+    width: calc(100% + 2 * clamp(16px, 5vw, 32px));
+    max-width: none;
     height: auto;
-    margin: 16px auto;
+    margin: 16px calc(-1 * clamp(16px, 5vw, 32px));
+    box-sizing: border-box;
     border-radius: 6px;
     border: 1px solid var(--haku-border);
 }
@@ -171,6 +173,28 @@
     padding: 5px 12px;
     color: var(--haku-text-secondary);
     text-align: center;
+}
+
+.np-md-container .np-md-details {
+    margin: 14px 0 18px;
+    border: 1px solid var(--haku-border);
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.np-md-container .np-md-details summary {
+    cursor: pointer;
+    padding: 9px 12px;
+    color: var(--haku-text-primary);
+    font-weight: 600;
+}
+
+.np-md-container .np-md-details-body {
+    padding: 0 12px 12px;
+}
+
+.np-md-container .np-md-details-body > :first-child {
+    margin-top: 0;
 }
 
 .np-md-container .language-code {

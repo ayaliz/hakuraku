@@ -13,6 +13,7 @@ const WinDistributionCharts: React.FC<WinDistributionChartsProps> = ({
     allHorses,
     skillStats,
     spectatorMode,
+    hideSaturation,
 }) => {
     const {
         rawUnifiedCharacterWinsAll,
@@ -36,6 +37,7 @@ const WinDistributionCharts: React.FC<WinDistributionChartsProps> = ({
                 totalRaces={totalRaces}
                 roomCompositions={roomCompositions}
                 skillStats={skillStats}
+                hideSaturation={hideSaturation}
             />
             <CharacterAnalysis
                 rawWinsAll={rawUnifiedCharacterWinsAll}

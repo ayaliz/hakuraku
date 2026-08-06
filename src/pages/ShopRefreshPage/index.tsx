@@ -1,383 +1,260 @@
-import { useEffect, useState } from 'react';
-import GameDataLoader from '../../data/GameDataLoader';
-import './ShopRefreshPage.css';
+import { useEffect, useMemo, useState } from "react";
+import GameDataLoader from "../../data/GameDataLoader";
+import "./ShopRefreshPage.css";
+import "./ShopRefreshResearch.css";
 
-interface ShopItem {
-    id: number;
-    name: string;
-    icon: string;
+type ItemStat = {
+    itemId: number;
+    batches: number;
     appearanceRate: number;
     avgCopies: number;
-    batches: number;
+    avgPrice: number;
+    maxCopies: number;
+};
+
+type ShopGroup = {
+    kind: string;
+    groupId: number | string;
+    event: string | null;
+    raceGrade: number | null;
+    samples: number;
+    avgItems: number;
+    itemCountDistribution: Array<{ itemCount: number; samples: number }>;
+    items: ItemStat[];
+};
+
+type ShopSummary = {
+    totals: { scheduledSamples: number; raceSamples: number };
+    scheduledShops: ShopGroup[];
+    raceGrades: ShopGroup[];
+};
+
+type ItemMeta = { name: string; icon: string };
+type CombinedGroup = { samples: number; avgItems: number; itemCountDistribution: Array<{ itemCount: number; samples: number }>; items: ItemStat[] };
+
+const GRADE_LABELS: Record<string, string> = {
+    "100": "G1",
+    "200": "G2",
+    "300": "G3",
+    "400": "OP",
+    "700": "Pre-OP",
+    "900": "Maiden Race",
+};
+
+const ETSUKO_ELATED = "Etsuko's Elated Coverage";
+const ETSUKO_EXHAUSTIVE = "Etsuko's Exhaustive Coverage";
+const RESULT_ORDER = ["Victory", "Solid Showing", "Defeat", ETSUKO_ELATED, ETSUKO_EXHAUSTIVE];
+const HEATMAP_RESULT_ORDER = ["Victory", ETSUKO_ELATED, "Solid Showing", "Defeat", ETSUKO_EXHAUSTIVE];
+const GRADE_ORDER = ["G1", "G2", "G3", "OP", "Pre-OP", "Maiden Race"];
+
+function resultCategory(event: string | null) {
+    if (event === "Victory!") return "Victory";
+    return event ?? "Unknown";
 }
 
-interface RefreshSectionData {
-    id: string;
-    kind: 'scheduled' | 'race';
-    label: string;
-    n: number;
-    itemCount: number;
-    avgNewItems: number;
-    items: ShopItem[];
-    turns: number[];
-    turn?: number;
+function resultLabel(result: string) {
+    if (result === ETSUKO_ELATED) return "Etsuko Elated";
+    if (result === ETSUKO_EXHAUSTIVE) return "Etsuko Exhaustive";
+    return result;
 }
 
-interface ShopRefreshSummary {
-    generatedAt: string;
-    sourceFile: string;
-    scheduledTurns: RefreshSectionData[];
-    gradedRacePool: RefreshSectionData | null;
+function gradeCategory(groupId: number | string) {
+    return GRADE_LABELS[String(groupId)] ?? `Grade ${groupId}`;
+}
+
+function scheduledTurn(shopId: string) {
+    const numericId = Number(shopId);
+    return Number.isFinite(numericId) ? numericId * 6 + 6 : shopId;
+}
+
+function combineGroups(groups: ShopGroup[]): CombinedGroup {
+    const samples = groups.reduce((sum, group) => sum + group.samples, 0);
+    const totals = new Map<number, { batches: number; copies: number; priceTotal: number; maxCopies: number }>();
+    const itemCounts = new Map<number, number>();
+    for (const group of groups) {
+        for (const entry of group.itemCountDistribution ?? []) {
+            itemCounts.set(entry.itemCount, (itemCounts.get(entry.itemCount) ?? 0) + entry.samples);
+        }
+        for (const item of group.items) {
+            const current = totals.get(item.itemId) ?? { batches: 0, copies: 0, priceTotal: 0, maxCopies: 0 };
+            const copies = item.avgCopies * item.batches;
+            current.batches += item.batches;
+            current.copies += copies;
+            current.priceTotal += item.avgPrice * copies;
+            current.maxCopies = Math.max(current.maxCopies, item.maxCopies ?? 0);
+            totals.set(item.itemId, current);
+        }
+    }
+    return {
+        samples,
+        avgItems: samples ? groups.reduce((sum, group) => sum + group.avgItems * group.samples, 0) / samples : 0,
+        itemCountDistribution: [...itemCounts.entries()].map(([itemCount, countSamples]) => ({ itemCount, samples: countSamples })).sort((a, b) => a.itemCount - b.itemCount),
+        items: [...totals.entries()].map(([itemId, item]) => ({
+            itemId,
+            batches: item.batches,
+            appearanceRate: samples ? item.batches / samples * 100 : 0,
+            avgCopies: item.batches ? item.copies / item.batches : 0,
+            avgPrice: item.copies ? item.priceTotal / item.copies : 0,
+            maxCopies: item.maxCopies,
+        })),
+    };
 }
 
 function iconSrc(icon: string) {
     return `${import.meta.env.BASE_URL}assets/mant/${icon}`;
 }
 
-function fallbackText(name: string) {
-    return name.slice(0, 2).toUpperCase();
-}
-
-function formatAvgNewItems(value: number) {
-    return `${value.toFixed(1)} avg new items`;
-}
-
-function xTickColor(pct: number) {
-    if (pct === 0) {
-        return '#9aa4b2';
-    }
-    if (pct === 25) {
-        return '#65d283';
-    }
-    if (pct === 50) {
-        return '#f3c969';
-    }
-    if (pct === 75) {
-        return '#ff9f5a';
-    }
-    return '#ff6b6b';
-}
-
-function sectionTitle(section: RefreshSectionData) {
-    return section.kind === 'scheduled'
-        ? `Turn ${section.turn}`
-        : section.label;
-}
-
-function sectionSubtitle(section: RefreshSectionData) {
-    if (section.kind === 'scheduled') {
-        return `${section.n} scheduled refresh samples`;
-    }
-
-    return `${section.n} graded race refresh samples`;
-}
-
-function ItemIcon({ icon, name, className }: { icon: string; name: string; className?: string }) {
+function ItemIcon({ item, meta, scatter = false }: { item: ItemStat; meta?: ItemMeta; scatter?: boolean }) {
     const [failed, setFailed] = useState(false);
+    const name = meta?.name ?? `Item ${item.itemId}`;
     return (
-        <div
-            className={`${className ?? ''} ${failed ? 'srp-icon-fallback' : ''}`}
-            data-fallback={fallbackText(name)}
-        >
-            {!failed && (
-                <img
-                    src={iconSrc(icon)}
-                    alt={name}
-                    loading="lazy"
-                    onError={() => setFailed(true)}
-                />
-            )}
+        <div className={`${scatter ? "srp-scatter-point-icon" : "srp-chart-icon"} ${failed || !meta?.icon ? "srp-icon-fallback" : ""}`} data-fallback={name.slice(0, 2).toUpperCase()}>
+            {!failed && meta?.icon && <img src={iconSrc(meta.icon)} alt={name} loading="lazy" onError={() => setFailed(true)} />}
         </div>
     );
 }
 
-function ItemIconScatter({ icon, name }: { icon: string; name: string }) {
-    const [failed, setFailed] = useState(false);
-    if (failed) {
-        return null;
-    }
-
+function ExpectedValueChart({ data, itemMeta }: { data: CombinedGroup; itemMeta: Map<number, ItemMeta> }) {
+    const items = [...data.items].sort((a, b) => b.appearanceRate * b.avgCopies - a.appearanceRate * a.avgCopies);
+    const maxExpected = Math.max(...items.map((item) => item.appearanceRate / 100 * item.avgCopies), 0.01);
     return (
-        <img
-            src={iconSrc(icon)}
-            alt={name}
-            loading="lazy"
-            onError={() => setFailed(true)}
-        />
-    );
-}
-
-function ScatterPlot({ items, n }: { items: ShopItem[]; n: number }) {
-    const yMin = 0.95;
-    const yMax = 1.55;
-    const yRange = yMax - yMin;
-    const maxAppearanceRate = Math.max(...items.map(item => item.appearanceRate), 0);
-    const xAxisMax = Math.max(25, Math.min(100, Math.ceil(maxAppearanceRate / 25) * 25));
-    const yTicks = [0.95, 1.05, 1.15, 1.25, 1.35, 1.45, 1.55].map(value => ({
-        pct: ((value - yMin) / yRange) * 100,
-        val: value,
-    }));
-    const xTicks = Array.from(
-        { length: Math.floor(xAxisMax / 25) + 1 },
-        (_, index) => index * 25,
-    ).map(pct => ({
-        pct,
-        left: (pct / xAxisMax) * 100,
-        label: `${pct}%`,
-        color: xTickColor(pct),
-    }));
-
-    return (
-        <div className="srp-scatter-panel">
-            <div className="srp-scatter-head">
-                <div className="srp-scatter-title">Spawn rate vs avg amount if spawned</div>
-            </div>
-            <div className="srp-scatter-shell">
-                <div className="srp-scatter-y-label">Avg copies</div>
-                <div className="srp-scatter-plot-wrap">
-                    <div className="srp-scatter-plot">
-                        <div className="srp-scatter-grid" />
-                        {yTicks.map(tick => (
-                            <div
-                                key={tick.pct}
-                                className="srp-scatter-y-tick"
-                                style={{ bottom: `${tick.pct}%` }}
-                            >
-                                <span>{tick.val.toFixed(2)}</span>
-                            </div>
-                        ))}
-                        <div className="srp-scatter-points">
-                            {items.map(item => {
-                                const left = Math.min(
-                                    Math.max((item.appearanceRate / xAxisMax) * 100, 0),
-                                    100,
-                                );
-                                const bottom = Math.min(
-                                    Math.max(((item.avgCopies - yMin) / yRange) * 100, 0),
-                                    100,
-                                );
-                                const tip = `${item.name} (item ${item.id})\nAppearance rate: ${item.appearanceRate}%\nAvg copies when present: ${item.avgCopies}\n${item.batches}/${n} batches`;
-                                return (
-                                    <div
-                                        key={item.id}
-                                        className="srp-scatter-point"
-                                        style={{ left: `${left}%`, bottom: `${bottom}%` }}
-                                        title={tip}
-                                    >
-                                        <ItemIconScatter icon={item.icon} name={item.name} />
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                    <div className="srp-scatter-x-ticks">
-                        {xTicks.map(tick => (
-                            <div
-                                key={tick.label}
-                                className="srp-scatter-x-tick"
-                                style={{ left: `${tick.left}%` }}
-                            >
-                                <span
-                                    className="srp-scatter-x-tick-label"
-                                    style={{
-                                        color: tick.color,
-                                        backgroundColor: `${tick.color}1a`,
-                                        borderColor: `${tick.color}55`,
-                                    }}
-                                >
-                                    {tick.label}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="srp-scatter-x-label">Appearance rate</div>
-                </div>
+        <div className="csr-value-panel">
+            <div className="csr-panel-title"><strong>Expected copies per refresh</strong><span>Appearance rate x average copies when spawned</span></div>
+            <div className="csr-value-list">
+                {items.map((item) => {
+                    const expected = item.appearanceRate / 100 * item.avgCopies;
+                    const meta = itemMeta.get(item.itemId);
+                    return <div key={item.itemId} className="csr-value-row"><div className="csr-value-label"><ItemIcon item={item} meta={meta} /><span>{meta?.name ?? `Item ${item.itemId}`}</span></div><div className="csr-value-track"><i style={{ width: `${expected / maxExpected * 100}%` }} /></div><strong>{expected.toFixed(3)}</strong><em>Max {item.maxCopies}</em></div>;
+                })}
             </div>
         </div>
     );
 }
 
-function ExactPanel({ items, n }: { items: ShopItem[]; n: number }) {
-    const maxRate = Math.max(...items.map(item => item.appearanceRate), 1);
+function CountDistribution({ data }: { data: CombinedGroup }) {
+    const max = Math.max(...data.itemCountDistribution.map((entry) => entry.samples), 1);
     return (
-        <details className="srp-exact-panel">
-            <summary className="srp-exact-summary">
-                <span>Show exact values</span>
-                <span className="srp-exact-meta">{items.length} items</span>
-                <span className="srp-exact-toggle">open &gt;</span>
-            </summary>
-            <div className="srp-exact-body">
-                <div className="srp-chart-grid">
-                    {[...items].sort((a, b) => a.id - b.id).map(item => (
-                        <div key={item.id} className="srp-chart-row">
-                            <div className="srp-chart-row-label">
-                                <ItemIcon
-                                    icon={item.icon}
-                                    name={item.name}
-                                    className="srp-chart-icon"
-                                />
-                                <div className="srp-chart-copy">
-                                    <div className="srp-chart-name">{item.name}</div>
-                                    <div className="srp-chart-id">item {item.id}</div>
-                                </div>
-                            </div>
-                            <div className="srp-chart-bar-wrap">
-                                <div className="srp-chart-bar">
-                                    <span style={{ width: `${(item.appearanceRate / maxRate) * 100}%` }} />
-                                </div>
-                            </div>
-                            <div className="srp-chart-value">{item.appearanceRate}%</div>
-                            <div className="srp-chart-meta">{item.batches}/{n} batches</div>
-                            <div className="srp-chart-meta">avg {item.avgCopies.toFixed(2)} copies</div>
-                        </div>
-                    ))}
-                </div>
+        <div className="csr-count-panel">
+            <div className="csr-panel-title"><strong>Number of items per refresh</strong></div>
+            <div className="csr-count-chart" style={{ gridTemplateColumns: `repeat(${data.itemCountDistribution.length}, minmax(0, 1fr))` }}>
+                {data.itemCountDistribution.map((entry) => {
+                    const percentage = data.samples ? entry.samples / data.samples * 100 : 0;
+                    const tooltip = `${entry.itemCount} items appeared in ${entry.samples} of ${data.samples} refreshes (${percentage.toFixed(1)}%)`;
+                    return <div key={entry.itemCount} className="csr-count-column" title={tooltip}><div className="csr-count-bar"><i style={{ height: `${entry.samples / max * 100}%` }} /></div><strong>{entry.itemCount}</strong></div>;
+                })}
             </div>
-        </details>
+        </div>
     );
 }
 
-function RefreshSection({ section }: { section: RefreshSectionData }) {
+function ExpectedValueHeatmap({ groups, labels, title, subtitle, itemMeta }: { groups: ShopGroup[]; labels: string[]; title: string; subtitle: string; itemMeta: Map<number, ItemMeta> }) {
+    const itemIds = [...new Set(groups.flatMap((group) => group.items.map((item) => item.itemId)))];
+    const values = itemIds.flatMap((itemId) => groups.map((group) => {
+        const item = group.items.find((entry) => entry.itemId === itemId);
+        return item ? item.appearanceRate / 100 * item.avgCopies : 0;
+    }));
+    const max = Math.max(...values, .01);
     return (
-        <section id={section.id} className="srp-turn-section">
+        <div className="csr-heatmap-panel">
+            <div className="csr-panel-title"><strong>{title}</strong><span>{subtitle}</span></div>
+            <div className="csr-heatmap-scroll"><div className="csr-heatmap" style={{ gridTemplateColumns: `minmax(210px, 1fr) repeat(${groups.length}, 52px)` }}>
+                <div /><>{labels.map((label) => <strong key={label}>{label}</strong>)}</>
+                {itemIds.map((itemId) => <div className="csr-heatmap-row" key={itemId} style={{ display: "contents" }}><span className="csr-heatmap-item"><ItemIcon item={{ itemId, batches: 0, appearanceRate: 0, avgCopies: 0, avgPrice: 0, maxCopies: 0 }} meta={itemMeta.get(itemId)} /><b>{itemMeta.get(itemId)?.name ?? `Item ${itemId}`}</b></span>{groups.map((group, index) => {
+                    const item = group.items.find((entry) => entry.itemId === itemId);
+                    const value = item ? item.appearanceRate / 100 * item.avgCopies : 0;
+                    const batches = item?.batches ?? 0;
+                    const appearanceRate = group.samples ? batches / group.samples * 100 : 0;
+                    const tooltip = [
+                        `${batches} of ${group.samples} refreshes contained this item (${appearanceRate.toFixed(1)}%)`,
+                        `${value.toFixed(3)} expected copies per refresh`,
+                        item ? `${item.avgCopies.toFixed(2)} average copies when spawned` : null,
+                        item ? `Max ${item.maxCopies} copies in one refresh` : null,
+                    ].filter(Boolean).join("\n");
+                    return <i key={`${labels[index]}:${group.groupId}`} title={tooltip} style={{ background: `rgba(101,210,131,${.06 + value / max * .84})` }}>{value ? value.toFixed(2) : "—"}</i>;
+                })}</div>)}
+            </div></div>
+        </div>
+    );
+}
+
+function ResearchGraph({ title, subtitle, data, itemMeta, controls, heatmap }: { title: string; subtitle: string; data: CombinedGroup; itemMeta: Map<number, ItemMeta>; controls: React.ReactNode; heatmap?: React.ReactNode }) {
+    return (
+        <section className="srp-turn-section csr-research-section">
             <div className="srp-turn-header">
-                <div className="srp-turn-title-row">
-                    <div>
-                        <h2 className="srp-turn-title">{sectionTitle(section)}</h2>
-                        <div className="srp-section-subtitle">{sectionSubtitle(section)}</div>
-                    </div>
-                    <div className="srp-section-meta">
-                        {formatAvgNewItems(section.avgNewItems)} - {section.itemCount} items tracked
-                    </div>
-                </div>
+                <div className="srp-turn-title-row"><div><h2 className="srp-turn-title">{title}</h2><div className="srp-section-subtitle">{subtitle}</div></div><div className="srp-section-meta">{data.avgItems.toFixed(1)} avg new items - {data.items.length} items tracked</div></div>
+                {controls}
             </div>
-
-            <ScatterPlot items={section.items} n={section.n} />
-            <ExactPanel items={section.items} n={section.n} />
+            {data.samples ? <><div className="csr-dashboard"><ExpectedValueChart data={data} itemMeta={itemMeta} /><CountDistribution data={data} /></div>{heatmap}</> : <div className="csr-empty">No observations match the selected filters.</div>}
         </section>
     );
 }
 
+function ToggleButtons({ values, selected, onToggle, exclusive = false }: { values: string[]; selected: Set<string>; onToggle: (value: string) => void; exclusive?: boolean }) {
+    return <div className="csr-filter-row">{values.map((value) => <button key={value} className={selected.has(value) ? "active" : ""} aria-pressed={selected.has(value)} onClick={() => onToggle(value)}>{exclusive ? `Turn ${scheduledTurn(value)}` : value}</button>)}</div>;
+}
+
 export default function ShopRefreshPage() {
-    const [summary, setSummary] = useState<ShopRefreshSummary | null>(null);
-    const [loadError, setLoadError] = useState<string | null>(null);
+    const [summary, setSummary] = useState<ShopSummary | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [itemMeta, setItemMeta] = useState(new Map<number, ItemMeta>());
+    const [scheduled, setScheduled] = useState<string | null>(null);
+    const [results, setResults] = useState(new Set(RESULT_ORDER));
+    const [grades, setGrades] = useState(new Set(GRADE_ORDER));
 
     useEffect(() => {
-        let cancelled = false;
-
-        async function loadSummary() {
-            try {
-                await GameDataLoader.initialize();
-                const data = GameDataLoader.shopRefreshData as ShopRefreshSummary;
-                if (!cancelled) {
-                    setSummary(data);
+        Promise.all([
+            fetch("/api/shop-refresh").then(async (response) => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json() as Promise<ShopSummary>;
+            }),
+            GameDataLoader.initialize().then(() => {
+                const map = new Map<number, ItemMeta>();
+                const staticData = GameDataLoader.shopRefreshData as { scheduledTurns?: Array<{ items?: Array<{ id: number; name: string; icon: string }> }>; gradedRacePool?: { items?: Array<{ id: number; name: string; icon: string }> } };
+                for (const section of [...(staticData.scheduledTurns ?? []), ...(staticData.gradedRacePool ? [staticData.gradedRacePool] : [])]) {
+                    for (const item of section.items ?? []) map.set(item.id, { name: item.name, icon: item.icon });
                 }
-            } catch (error) {
-                if (!cancelled) {
-                    setLoadError(error instanceof Error ? error.message : 'Failed to load shop data');
-                }
-            }
-        }
-
-        void loadSummary();
-        return () => {
-            cancelled = true;
-        };
+                return map;
+            }),
+        ]).then(([data, meta]) => {
+            setSummary(data);
+            setItemMeta(meta);
+            setScheduled(data.scheduledShops[0] ? String(data.scheduledShops[0].groupId) : null);
+        }).catch((reason) => setError(reason instanceof Error ? reason.message : String(reason)));
     }, []);
 
-    if (loadError) {
-        return (
-            <div className="srp-page">
-                <div className="srp-turn-section">Unable to load shop refresh data: {loadError}</div>
-            </div>
-        );
-    }
+    const scheduledOptions = useMemo(
+        () => summary?.scheduledShops
+            .map((group) => String(group.groupId))
+            .sort((a, b) => Number(a) - Number(b)) ?? [],
+        [summary],
+    );
+    const scheduledData = useMemo(() => combineGroups(summary?.scheduledShops.filter((group) => String(group.groupId) === scheduled) ?? []), [summary, scheduled]);
+    const raceData = useMemo(() => combineGroups(summary?.raceGrades.filter((group) => results.has(resultCategory(group.event)) && grades.has(gradeCategory(group.groupId))) ?? []), [summary, results, grades]);
+    const scheduledHeatmapGroups = useMemo(() => [...(summary?.scheduledShops ?? [])].sort((a, b) => Number(a.groupId) - Number(b.groupId)), [summary]);
+    const buildRaceHeatmap = (heatmapGrades: string[]) => {
+        const columns = HEATMAP_RESULT_ORDER.flatMap((result) => heatmapGrades.map((grade) => ({ grade, result })));
+        return {
+            labels: columns.map(({ grade, result }) => `${grade} ${resultLabel(result)}`),
+            groups: columns.map(({ grade, result }) => combineGroups(summary?.raceGrades.filter((group) => gradeCategory(group.groupId) === grade && resultCategory(group.event) === result) ?? []) as ShopGroup),
+        };
+    };
+    const gradedRaceHeatmap = useMemo(() => buildRaceHeatmap(["G1", "G2", "G3"]), [summary]);
+    const otherRaceHeatmap = useMemo(() => buildRaceHeatmap(["OP", "Pre-OP", "Maiden Race"]), [summary]);
+    const toggle = (setter: React.Dispatch<React.SetStateAction<Set<string>>>) => (value: string) => setter((current) => {
+        const next = new Set(current);
+        if (next.has(value)) next.delete(value); else next.add(value);
+        return next;
+    });
 
-    if (!summary) {
-        return (
-            <div className="srp-page">
-                <div className="srp-turn-section">Loading shop refresh data...</div>
-            </div>
-        );
-    }
+    if (error) return <div className="csr-page"><div className="srp-turn-section">Unable to load shop refresh data: {error}</div></div>;
+    if (!summary) return <div className="csr-page"><div className="srp-turn-section">Loading shop refresh data...</div></div>;
 
-    const scheduledTurns = summary.scheduledTurns;
-    const gradedRacePool = summary.gradedRacePool;
-    const maxN = Math.max(...scheduledTurns.map(section => section.n), 1);
     return (
-        <div className="srp-page">
-            <div className="srp-turn-nav">
-                <div className="srp-turn-nav-panel">
-                    <div className="srp-turn-nav-head">
-                        <span>Jump to a section</span>
-                    </div>
-                    <div className="srp-turn-chip-grid">
-                        {scheduledTurns.map(section => (
-                            <div
-                                key={section.id}
-                                className="srp-turn-chip"
-                                onClick={() => {
-                                    const el = document.getElementById(section.id);
-                                    if (!el) {
-                                        return;
-                                    }
-
-                                    const nav = document.querySelector('.srp-turn-nav') as HTMLElement | null;
-                                    const offset = nav ? nav.offsetHeight : 0;
-                                    const top = el.getBoundingClientRect().top + window.scrollY - offset - 8;
-                                    window.scrollTo({ top, behavior: 'smooth' });
-                                }}
-                            >
-                                <span className="srp-turn-chip-label">T{section.turn}</span>
-                                <span className="srp-turn-chip-count">n={section.n}</span>
-                                <span className="srp-turn-chip-bar">
-                                    <span style={{ width: `${(section.n / maxN) * 100}%` }} />
-                                </span>
-                            </div>
-                        ))}
-                        {gradedRacePool && (
-                            <div
-                                key={gradedRacePool.id}
-                                className="srp-turn-chip"
-                                onClick={() => {
-                                    const el = document.getElementById(gradedRacePool.id);
-                                    if (!el) {
-                                        return;
-                                    }
-
-                                    const nav = document.querySelector('.srp-turn-nav') as HTMLElement | null;
-                                    const offset = nav ? nav.offsetHeight : 0;
-                                    const top = el.getBoundingClientRect().top + window.scrollY - offset - 8;
-                                    window.scrollTo({ top, behavior: 'smooth' });
-                                }}
-                            >
-                                <span className="srp-turn-chip-label">Race</span>
-                                <span className="srp-turn-chip-count">n={gradedRacePool.n}</span>
-                                <span className="srp-turn-chip-bar">
-                                    <span />
-                                </span>
-                            </div>
-                        )}
-                    </div>
-                </div>
+        <div className="csr-page">
+            <div className="csr-graphs">
+                <ResearchGraph title="Scheduled Refreshes" subtitle={`${scheduledData.samples} samples for turn ${scheduled ? scheduledTurn(scheduled) : "-"}`} data={scheduledData} itemMeta={itemMeta} controls={<ToggleButtons values={scheduledOptions} selected={new Set(scheduled ? [scheduled] : [])} onToggle={setScheduled} exclusive />} heatmap={<ExpectedValueHeatmap groups={scheduledHeatmapGroups} labels={scheduledHeatmapGroups.map((group) => `T${scheduledTurn(String(group.groupId))}`)} title="Expected copies by scheduled turn" subtitle="Use this to spot changes in the shop pool over time" itemMeta={itemMeta} />} />
+                <ResearchGraph title="Race Refreshes" subtitle={`${raceData.samples} samples across the selected results and grades`} data={raceData} itemMeta={itemMeta} controls={<div className="csr-filter-groups"><div><span>Results</span><ToggleButtons values={RESULT_ORDER} selected={results} onToggle={toggle(setResults)} /></div><div><span>Race grades</span><ToggleButtons values={GRADE_ORDER} selected={grades} onToggle={toggle(setGrades)} /></div></div>} heatmap={<><ExpectedValueHeatmap groups={gradedRaceHeatmap.groups} labels={gradedRaceHeatmap.labels} title="Expected copies (graded)" subtitle="G1, G2, and G3 pools split by result event" itemMeta={itemMeta} /><ExpectedValueHeatmap groups={otherRaceHeatmap.groups} labels={otherRaceHeatmap.labels} title="Expected copies (other)" subtitle="OP, Pre-OP, and Maiden Race pools split by result event" itemMeta={itemMeta} /></>} />
             </div>
-
-            <div className="srp-turn-sections">
-                {scheduledTurns.map(section => (
-                    <RefreshSection key={section.id} section={section} />
-                ))}
-            </div>
-
-            {gradedRacePool && (
-                <section className="srp-race-catalog">
-                    <div className="srp-race-catalog-head">
-                        <p className="srp-page-subtitle">
-                            All graded race reward refreshes are aggregated into this shared pool.
-                        </p>
-                    </div>
-                    <RefreshSection section={gradedRacePool} />
-                </section>
-            )}
         </div>
     );
 }

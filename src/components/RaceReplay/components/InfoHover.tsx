@@ -5,10 +5,18 @@ import "../RaceReplay.css";
 const InfoHover: React.FC<{ title?: string; content?: React.ReactNode }> = ({
     title = "Replay info",
     content = (
-        <ul className="mb-0 ps-3">
-            <li><kbd className="kbd-key">←</kbd> / <kbd className="kbd-key">→</kbd> - Half-speed playback</li>
-            <li><kbd className="kbd-key">↑</kbd> / <kbd className="kbd-key">↓</kbd> - Jump between race frames</li>
-        </ul>
+        <>
+            <ul className="mb-2 ps-3">
+                <li><kbd className="kbd-key">←</kbd> / <kbd className="kbd-key">→</kbd> - Half-speed playback</li>
+                <li><kbd className="kbd-key">↑</kbd> / <kbd className="kbd-key">↓</kbd> - Jump between race frames</li>
+            </ul>
+            <div className="fw-semibold mb-1">Racer visibility</div>
+            <ul className="mb-0 ps-3">
+                <li>Click a racer in the replay to cycle all others through dimmed, hidden, and visible.</li>
+                <li>Click a racer in the list to cycle only that racer; Shift-click to use the focus cycle.</li>
+                <li>Toggle All advances every racer one state; Shift-click resets all racers to visible.</li>
+            </ul>
+        </>
     ),
 }) => {
     const overlay = (

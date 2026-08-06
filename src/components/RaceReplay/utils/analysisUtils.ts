@@ -1,7 +1,7 @@
 import { RaceSimulateData, RaceSimulateEventData_SimulateEventType } from "../../../data/race_data_pb";
 import { fromRaceHorseData, TrainedCharaData } from "../../../data/TrainedCharaData";
 import { getDistanceCategory, calculateTargetSpeed, adjustStat, calculateReferenceHpConsumption, computeGroundPowerBonus, STRATEGY_PROFICIENCY_MODIFIER } from "./speedCalculations";
-import { getPassiveStatModifiers, getSkillDurationSecs, getActiveSpeedModifier, getActiveSpeedDebuff, hasSkillEffect } from "./SkillDataUtils";
+import { getPassiveStatModifiers, getSkillDurationSecs, getActiveSpeedModifier, getActiveSpeedDebuff, hasSkillEffect, countGreenSkills, SkillScalingStats } from "./SkillDataUtils";
 import { filterCharaSkills } from "../../../data/RaceDataUtils";
 import GameDataLoader from "../../../data/GameDataLoader";
 import {
@@ -19,6 +19,7 @@ const DUEL_UPHILL_SPEED_SLACK = 0.2;       // Min gap between target and current
 const DUEL_ENTRY_ACCEL_MAX = 0.1;          // Max acceleration at duel start to consider early exit
 const DUEL_RESUME_SPEED_SLACK = 0.02;      // Speed must exceed target + downhill bonus + this to count as resumed
 const DUEL_RECENT_UPHILL_EXIT_GRACE = 4.0; // Avoid ending duel while speed is still recovering from an uphill penalty
+const DUEL_MAX_OPPONENT_GAP = 5.0;         // Dueling ends once every current/former dueler is at least this far away
 
 // Spot Struggle (COMPETE_TOP)
 const SPOT_STRUGGLE_DIST_RATIO = 9 / 24;           // Only active before this fraction of course distance
@@ -80,6 +81,15 @@ export function computeOtherEvents(
     const trackSlopes = detectedCourseId ? (GameDataLoader.courseData as any)[detectedCourseId]?.slopes ?? [] : [];
     const surface: number = detectedCourseId ? (GameDataLoader.courseData as any)[detectedCourseId]?.surface ?? 0 : 0;
     const groundPowerBonus = computeGroundPowerBonus(surface, groundCondition ?? 0);
+    const duelStartTimeByFrameOrder = new Map<number, number>();
+    for (const event of raceData.event) {
+        const e = event.event;
+        if (e?.type !== RaceSimulateEventData_SimulateEventType.COMPETE_FIGHT) continue;
+        duelStartTimeByFrameOrder.set(
+            e.param[0],
+            Math.min(duelStartTimeByFrameOrder.get(e.param[0]) ?? Infinity, e.frameTime ?? 0)
+        );
+    }
 
     for (const event of raceData.event) {
         const e = event.event!;
@@ -89,7 +99,12 @@ export function computeOtherEvents(
         if (e.type === RaceSimulateEventData_SimulateEventType.COMPETE_FIGHT) {
             const startHp = raceData.frame[0].horseFrame[frameOrder].hp!;
             const hpThreshold = startHp * DUELING_HP_THRESHOLD_RATIO;
-            let endTime = raceData.frame[raceData.frame.length - 1].time!;
+            const lastFrameTime = raceData.frame[raceData.frame.length - 1].time!;
+            const rawFinishTime = raceData.horseResult[frameOrder]?.finishTimeRaw;
+            const finishTime = typeof rawFinishTime === "number" && rawFinishTime > 0
+                ? rawFinishTime
+                : lastFrameTime;
+            let endTime = Math.min(lastFrameTime, finishTime);
 
             // Prepare data for speed check
             const trainedChara = charaData.get(frameOrder);
@@ -101,15 +116,19 @@ export function computeOtherEvents(
             let strategyProficiency = 7;
             let learnedSkillLevelById = new Map<number, number>();
             let hasFullSpurtHp = true;
+            const scalingStats: SkillScalingStats | undefined = trainedChara
+                ? { ...trainedChara, greenSkillCount: countGreenSkills(skillActivations?.[frameOrder]) }
+                : undefined;
 
             if (trainedChara && rawData) {
                 checkSpeedCriteria = true;
                 learnedSkillLevelById = new Map(trainedChara.skills.map(skill => [skill.skillId, skill.level]));
                 // Passives
                 const skillEvents = filterCharaSkills(raceData, frameOrder);
-                const activatedSkillIds = new Set(skillEvents.map(ev => ev.param[1]));
-                activatedSkillIds.forEach(id => {
-                    const mods = getPassiveStatModifiers(id);
+                const activatedSkillGroups = new Map(skillEvents.map(ev => [ev.param[1], ev.param?.[3]]));
+                const activatedSkillIds = new Set(activatedSkillGroups.keys());
+                activatedSkillGroups.forEach((conditionGroupIndex, id) => {
+                    const mods = getPassiveStatModifiers(id, conditionGroupIndex);
                     passiveStats.speed += (mods.speed || 0);
                     passiveStats.stamina += (mods.stamina || 0);
                     passiveStats.power += (mods.power || 0);
@@ -174,12 +193,35 @@ export function computeOtherEvents(
                     break;
                 }
             }
-
             let lastUphillAffectedTime = -Infinity;
             for (let i = startIndex; i < raceData.frame.length; i++) {
                 const frame = raceData.frame[i];
+                const frameTime = frame.time ?? 0;
+                if (frameTime >= finishTime) {
+                    endTime = Math.min(endTime, finishTime);
+                    break;
+                }
+
                 if (frame.horseFrame[frameOrder].hp! < hpThreshold) {
-                    endTime = frame.time!;
+                    endTime = Math.min(frameTime, finishTime);
+                    break;
+                }
+
+                const currentDistance = frame.horseFrame[frameOrder].distance ?? 0;
+                const relevantDuelerDistances = Array.from(duelStartTimeByFrameOrder.entries())
+                    .filter(([otherFrameOrder, otherStartTime]) =>
+                        otherFrameOrder !== frameOrder
+                        && otherStartTime <= frameTime
+                        && frame.horseFrame[otherFrameOrder] !== undefined
+                    )
+                    .map(([otherFrameOrder]) => frame.horseFrame[otherFrameOrder].distance ?? 0);
+                if (
+                    relevantDuelerDistances.length > 0
+                    && relevantDuelerDistances.every(distance =>
+                        Math.abs(distance - currentDistance) >= DUEL_MAX_OPPONENT_GAP
+                    )
+                ) {
+                    endTime = Math.min(frameTime, finishTime);
                     break;
                 }
 
@@ -187,7 +229,6 @@ export function computeOtherEvents(
                 if (checkSpeedCriteria && trainedChara) {
                     const h = frame.horseFrame[frameOrder];
                     const currentSpeed = (h.speed ?? 0) / 100;
-                    const frameTime = frame.time ?? 0;
 
                     let accel = 0;
                     if (i < raceData.frame.length - 1) {
@@ -205,7 +246,12 @@ export function computeOtherEvents(
                         skillActivations[frameOrder].forEach(s => {
                             const duration = getSkillDurationSecs(s.param[1], goalInX, s.time, s.param?.[2], s.param?.[3]);
                             if (frameTime >= s.time && frameTime < s.time + duration) {
-                                activeSpeedBuff += getActiveSpeedModifier(s.param[1], s.param?.[3], (s as any).skillLevel ?? learnedSkillLevelById.get(s.param[1]));
+                                activeSpeedBuff += getActiveSpeedModifier(
+                                    s.param[1],
+                                    s.param?.[3],
+                                    (s as any).skillLevel ?? learnedSkillLevelById.get(s.param[1]),
+                                    scalingStats
+                                );
                             }
                         });
                     }
@@ -272,14 +318,43 @@ export function computeOtherEvents(
                             const futureH = futureFrame.horseFrame[frameOrder];
                             const futureSpeed = (futureH.speed ?? 0) / 100;
                             const futureTime = futureFrame.time ?? 0;
+                            if (futureTime >= finishTime) break;
                             const futureDist = futureH.distance ?? 0;
+                            if (futureDist > goalInX) break;
+
+                            let futureIsDecelerating = false;
+                            const previousFutureFrame = raceData.frame[j - 1];
+                            const previousFutureH = previousFutureFrame?.horseFrame?.[frameOrder];
+                            if (previousFutureH) {
+                                const dt = futureTime - (previousFutureFrame.time ?? futureTime);
+                                if (dt > 0) {
+                                    const previousFutureSpeed = (previousFutureH.speed ?? 0) / 100;
+                                    futureIsDecelerating = (futureSpeed - previousFutureSpeed) / dt < DECELERATION_THRESHOLD;
+                                }
+                            }
+                            if (!futureIsDecelerating && j < raceData.frame.length - 1) {
+                                const nextFutureFrame = raceData.frame[j + 1];
+                                const nextFutureH = nextFutureFrame?.horseFrame?.[frameOrder];
+                                if (nextFutureH) {
+                                    const dt = (nextFutureFrame.time ?? futureTime) - futureTime;
+                                    if (dt > 0) {
+                                        const nextFutureSpeed = (nextFutureH.speed ?? 0) / 100;
+                                        futureIsDecelerating = (nextFutureSpeed - futureSpeed) / dt < DECELERATION_THRESHOLD;
+                                    }
+                                }
+                            }
 
                             let futureActiveSpeedBuff = 0;
                             if (skillActivations && skillActivations[frameOrder]) {
                                 skillActivations[frameOrder].forEach(s => {
                                     const dur = getSkillDurationSecs(s.param[1], goalInX, s.time, s.param?.[2], s.param?.[3]);
                                     if (futureTime >= s.time && futureTime < s.time + dur) {
-                                        futureActiveSpeedBuff += getActiveSpeedModifier(s.param[1], s.param?.[3], (s as any).skillLevel ?? learnedSkillLevelById.get(s.param[1]));
+                                        futureActiveSpeedBuff += getActiveSpeedModifier(
+                                            s.param[1],
+                                            s.param?.[3],
+                                            (s as any).skillLevel ?? learnedSkillLevelById.get(s.param[1]),
+                                            scalingStats
+                                        );
                                     }
                                 });
                             }
@@ -328,14 +403,17 @@ export function computeOtherEvents(
                                 }
                             }
 
-                            if (futureSpeed > futureTargetRes.base + futureDownhillBuff + DUEL_RESUME_SPEED_SLACK) {
+                            if (
+                                !futureIsDecelerating
+                                && futureSpeed > futureTargetRes.base + futureDownhillBuff + DUEL_RESUME_SPEED_SLACK
+                            ) {
                                 duelResumed = true;
                                 break;
                             }
                         }
 
                         if (!duelResumed) {
-                            endTime = frameTime;
+                            endTime = Math.min(frameTime, finishTime);
                             break;
                         }
                     }
@@ -344,7 +422,10 @@ export function computeOtherEvents(
             if (!allOtherEvents[frameOrder]) {
                 allOtherEvents[frameOrder] = [];
             }
-            allOtherEvents[frameOrder].push({ time: startTime, duration: endTime - startTime, name: "Dueling" });
+            const duration = Math.max(0, endTime - startTime);
+            if (duration > 0) {
+                allOtherEvents[frameOrder].push({ time: startTime, duration, name: "Dueling" });
+            }
         }
 
         if (e.type === RaceSimulateEventData_SimulateEventType.COMPETE_TOP) {
@@ -396,7 +477,8 @@ export function calculateMaxAdjustedSpeed(
     trackSlopes: any[],
     adjustedGuts: number,
     adjustedPower: number,
-    lastSpurtStartDistance: number = -1
+    lastSpurtStartDistance: number = -1,
+    scalingStats?: SkillScalingStats
 ): { speed: number; time: number; debug: MaxAdjustedSpeedDebug } {
     let maxAdjSpeed = 0;
     let maxAdjSpeedTime = 0;
@@ -417,6 +499,10 @@ export function calculateMaxAdjustedSpeed(
         if (speed <= 0) continue;
 
         const time = frame.time ?? 0;
+        const prevHorseFrame = frames[fIdx - 1]?.horseFrame?.[frameOrder];
+        const prevTime = frames[fIdx - 1]?.time ?? time;
+        const lanePositionChanged = prevHorseFrame !== undefined
+            && (h.lanePosition ?? 0) !== (prevHorseFrame.lanePosition ?? 0);
         let buff = 0;
         let isType28Active = false;
         const type28SkillNames: string[] = [];
@@ -430,22 +516,29 @@ export function calculateMaxAdjustedSpeed(
             skillActivations[frameOrder].forEach(s => {
                 const duration = getSkillDurationSecs(s.param[1], raceDistance, s.time, s.param?.[2], s.param?.[3]);
                 if (time >= s.time && time < s.time + duration) {
-                    const mod = getActiveSpeedModifier(s.param[1], s.param?.[3], (s as any).skillLevel);
+                    const mod = getActiveSpeedModifier(s.param[1], s.param?.[3], (s as any).skillLevel, scalingStats);
                     if (mod !== 0) {
                         buff += mod;
                         frameSkillBuffs.push({ name: s.name || String(s.param[1]), value: mod });
                         frameSpeedBuffKeys.add(`${s.param[1]}@${s.time}`);
                         frameTrackedSpeedBuff += mod;
                     }
-                    if (hasSkillEffect(s.param[1], 28, s.param?.[3])) {
-                        isType28Active = true;
-                        type28SkillNames.push(s.name || String(s.param[1]));
-                    }
+                }
+                // Lane movement is observed across the interval (prevTime, time], so the lane-move
+                // skill has to be tested against that whole interval too. A point test at `time`
+                // misses a skill that expired part way through it, leaving the movement's speed
+                // boost baked into the frame with nothing subtracting it back out.
+                if (
+                    hasSkillEffect(s.param[1], 28, s.param?.[3])
+                    && s.time <= time && s.time + duration > prevTime
+                ) {
+                    isType28Active = true;
+                    type28SkillNames.push(s.name || String(s.param[1]));
                 }
             });
         }
 
-        if (isType28Active) {
+        if (isType28Active && lanePositionChanged) {
             const type28Buff = Math.sqrt(TYPE_28_POWER_SPEED_SCALE * adjustedPower);
             buff += type28Buff;
             frameSkillBuffs.push({
@@ -529,6 +622,17 @@ export function calculateMaxAdjustedSpeed(
         const dist = h.distance ?? 0;
         const currentSlopeObj = trackSlopes.find((s: any) => dist >= s.start && dist < s.start + s.length);
         const currentSlope = currentSlopeObj?.slope ?? 0;
+        if (currentSlope > 0) {
+            const prevFrame = frames[fIdx - 1];
+            const prevDist = prevFrame?.horseFrame?.[frameOrder]?.distance;
+            const wasAlreadyUphill = prevDist !== undefined
+                && trackSlopes.some((s: any) => s.slope > 0 && prevDist >= s.start && prevDist < s.start + s.length);
+            if (!wasAlreadyUphill) {
+                previousFrameSkillBuff = frameTrackedSpeedBuff;
+                previousFrameSpeedBuffKeys = frameSpeedBuffKeys;
+                continue;
+            }
+        }
 
         let frameUphillPenalty = 0;
         if (currentSlope > 0 && adjustedPower > 0) {

@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect, type MutableRefObject, type RefObject } from "react";
 import { bisectFrameIndex, clamp01, lerp, getCharaIcon, formatSigned, mixWithWhite } from "../RaceReplay.utils";
 import { buildPositionKeepSeries, teamColorFor } from "../utils/chartBuilders";
-import { getSkillDurationSecs, getActiveSpeedDebuff, hasSkillEffect, getActiveSpeedModifier } from "../utils/SkillDataUtils";
+import { getSkillDurationSecs, getActiveSpeedDebuff, hasTargetDebuffEffect, getActiveSpeedModifier, countGreenSkills } from "../utils/SkillDataUtils";
 import { calculateTargetSpeed, getDistanceCategory, computeGroundPowerBonus } from "../utils/speedCalculations";
 import GameDataLoader from "../../../data/GameDataLoader";
 import { InterpolatedFrame } from "../RaceReplay.types";
@@ -11,11 +11,12 @@ import {
     BLOCKED_ICON_SIZE,
     SPEED_BOX_WIDTH, SPEED_BOX_HEIGHT, SPEED_BOX_BG, SPEED_BOX_BORDER, SPEED_BOX_TEXT, SPEED_BOX_FONT_SIZE,
     OVERLAY_INSET, ACCEL_BOX_GAP_Y,
-    HP_BAR_WIDTH, HP_BAR_HEIGHT, HP_BAR_GAP_Y, HP_BAR_BG_COLOR, HP_BAR_FILL_COLOR,
     EXCLUDE_SKILL_RE, TEMPTATION_TEXT, STACK_BASE_PX, STACK_GAP_PX,
 } from "../RaceReplay.constants";
 import { TEMPTATION_MODE_RUSH_BOOST } from "../utils/raceConstants";
 import AssetLoader from "../../../data/AssetLoader";
+import { isSkillEventTargetingFrame } from "../../../data/RaceDataUtils";
+import { RaceSimulateData, RaceSimulateEventData_SimulateEventType } from "../../../data/race_data_pb";
 
 function dataToPixel(instance: any, x: number, y: number): [number, number] | null {
     const pixel = instance.convertToPixel?.({ xAxisId: "distance-axis", yAxisId: "lane-axis" }, [x, y]);
@@ -80,6 +81,8 @@ function isHeuristicLabel(name: string): boolean {
 }
 
 interface CanvasOverlayParams {
+    raceData: RaceSimulateData;
+    raceHorseInfo: any[];
     frames: any[];
     displayNames: Record<number, string>;
     horseInfoByIdx: Record<number, any>;
@@ -90,7 +93,6 @@ interface CanvasOverlayParams {
         speed: boolean;
         accel: boolean;
         blocked: boolean;
-        hp: boolean;
         skills: boolean;
         heuristics: boolean;
         skillDuration: boolean;
@@ -110,6 +112,15 @@ interface CanvasOverlayParams {
     cameraWindow: number;
     yMaxWithHeadroom: number;
     groundCondition?: number;
+}
+
+function activationTargetsFrame(p: CanvasOverlayParams, activation: { time: number; param: number[] }, frameOrder: number): boolean {
+    return isSkillEventTargetingFrame(p.raceData, {
+        type: RaceSimulateEventData_SimulateEventType.SKILL,
+        frameTime: activation.time,
+        param: activation.param,
+        paramCount: activation.param.length,
+    } as any, frameOrder, p.raceHorseInfo);
 }
 
 type OverlayPopupLabel = {
@@ -187,18 +198,6 @@ export function useCanvasOverlay(
             }
         } else {
             (f0a?.horseFrame ?? []).forEach((_: any, idx: number) => { accByIdx[idx] = 0; });
-        }
-
-        const consumptionRateByIdx: Record<number, number> = {};
-        if (f0a && f1a) {
-            const dt = (f1a.time ?? 0) - (f0a.time ?? 0);
-            if (dt > 1e-9) {
-                (f0a.horseFrame ?? []).forEach((h0: any, idx: number) => {
-                    const h1 = f1a.horseFrame?.[idx];
-                    if (!h0 || !h1) return;
-                    consumptionRateByIdx[idx] = ((h0.hp ?? 0) - (h1.hp ?? 0)) / dt;
-                });
-            }
         }
 
         const frontRunnerDistance = horseFrame.reduce((m: number, h: any) => Math.max(m, h?.distance ?? 0), 0);
@@ -283,20 +282,25 @@ export function useCanvasOverlay(
                 const trackSurface: number = p.selectedTrackId ? (GameDataLoader.courseData as any)[+p.selectedTrackId]?.surface ?? 0 : 0;
                 const groundPowerBonus = computeGroundPowerBonus(trackSurface, p.groundCondition ?? 0);
                 const learnedSkillLevelById = new Map(trainedChara.skills.map(skill => [skill.skillId, skill.level]));
+                const scalingStats = { ...trainedChara, greenSkillCount: countGreenSkills(p.skillActivations?.[idx]) };
 
                 let activeSpeedBuff = 0;
                 (p.skillActivations?.[idx] ?? []).forEach((s: any) => {
                     const skillId = s.param[1];
                     const duration = getSkillDurationSecs(skillId, p.goalInX, s.time, s.param?.[2], s.param?.[3]);
                     if (time >= s.time && time < s.time + duration) {
-                        activeSpeedBuff += getActiveSpeedModifier(skillId, s.param?.[3], s.skillLevel ?? learnedSkillLevelById.get(skillId));
+                        activeSpeedBuff += getActiveSpeedModifier(
+                            skillId,
+                            s.param?.[3],
+                            s.skillLevel ?? learnedSkillLevelById.get(skillId),
+                            scalingStats
+                        );
                     }
                 });
 
                 let activeSpeedDebuff = 0;
                 Object.values(p.skillActivations ?? {}).flat().forEach((s: any) => {
-                    const targetMask = s.param?.[4] ?? 0;
-                    if ((targetMask & (1 << idx)) === 0) return;
+                    if (!activationTargetsFrame(p, s, idx)) return;
                     if ((p.skillActivations?.[idx] ?? []).some((self: any) => self === s)) return;
                     const skillId = s.param[1];
                     const debuff = getActiveSpeedDebuff(skillId, s.param?.[3]);
@@ -422,40 +426,6 @@ export function useCanvasOverlay(
                     drawOverlayBox(ctx, accelRectX, accelRectY, formatSigned(accByIdx[idx] ?? 0));
                 }
 
-                if (p.toggles.hp) {
-                    const maxHp = p.maxHpByIdx[idx] ?? 1;
-                    const hp = hf.hp ?? 0;
-                    const rate = consumptionRateByIdx[idx] ?? 0;
-                    const hpPct = Math.max(0, Math.min(1, hp / maxHp));
-                    const hpBarX = cx - HP_BAR_WIDTH / 2;
-                    const hpBarY = cy + baseSize / 2 + HP_BAR_GAP_Y;
-
-                    ctx.fillStyle = HP_BAR_BG_COLOR;
-                    ctx.fillRect(hpBarX, hpBarY, HP_BAR_WIDTH, HP_BAR_HEIGHT);
-                    ctx.fillStyle = HP_BAR_FILL_COLOR;
-                    ctx.fillRect(hpBarX, hpBarY, HP_BAR_WIDTH * hpPct, HP_BAR_HEIGHT);
-
-                    if ((hf.distance ?? 0) > (5 / 6) * p.goalInX) {
-                        const timeToEmpty = rate > 0 ? hp / rate : Number.POSITIVE_INFINITY;
-                        const estText = Number.isFinite(timeToEmpty) ? `${timeToEmpty.toFixed(1)}s` : "∞";
-
-                        ctx.font = "bold 9px sans-serif";
-                        ctx.textBaseline = "bottom";
-                        ctx.strokeStyle = "#000";
-                        ctx.lineWidth = 2;
-
-                        ctx.textAlign = "left";
-                        ctx.strokeText(`${Math.round(hp)}`, hpBarX + 1, hpBarY - 2);
-                        ctx.fillStyle = "#fff";
-                        ctx.fillText(`${Math.round(hp)}`, hpBarX + 1, hpBarY - 2);
-
-                        ctx.textAlign = "right";
-                        ctx.strokeText(estText, hpBarX + HP_BAR_WIDTH - 1, hpBarY - 2);
-                        ctx.fillStyle = "#fff";
-                        ctx.fillText(estText, hpBarX + HP_BAR_WIDTH - 1, hpBarY - 2);
-                    }
-                }
-
                 if (p.hoveredLegendName === name) {
                     ctx.globalAlpha = 1.0;
                     ctx.beginPath();
@@ -533,10 +503,9 @@ export function useCanvasOverlay(
 
                     Object.values(p.skillActivations ?? {}).flat()
                         .filter(s => {
-                            const targetMask = s.param?.[4] ?? 0;
-                            if ((targetMask & (1 << idx)) === 0) return false;
+                            if (!activationTargetsFrame(p, s, idx)) return false;
                             if ((p.skillActivations?.[idx] ?? []).some((self: any) => self === s)) return false;
-                            if (getActiveSpeedDebuff(s.param[1], s.param?.[3]) <= 0 && !hasSkillEffect(s.param[1], 9, s.param?.[3])) return false;
+                            if (!hasTargetDebuffEffect(s.param[1], s.param?.[3])) return false;
                             const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2], s.param?.[3]);
                             return time >= s.time && time < s.time + dur && !EXCLUDE_SKILL_RE.test(s.name);
                         })

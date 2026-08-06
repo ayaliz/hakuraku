@@ -1,16 +1,18 @@
 import React, { useMemo, useState } from "react";
-import { STRATEGY_NAMES, POP_FILTER_OPTIONS, BAYES_TEAM } from "./constants";
+import { STRATEGY_NAMES, POP_FILTER_OPTIONS, BAYES_TEAM, BAYES_UMA } from "./constants";
 import type { HorseEntry, SkillStats } from "../../types";
 import type { CharacterTeamRateRow } from "../../../UmaLogsPage/panelData";
 import AssetLoader from "../../../../data/AssetLoader";
+import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import InfoTooltip from "./InfoTooltip";
-import { type TeamSampleSelectOption } from "./TeamSampleSelect";
-import { TeamMemberCard } from "./TeamMemberCard";
+import { REPRESENTATIVE_STRATEGY_IDS } from "./shared";
 import {
-    type SerializedHorseEntry,
-    deserializeHorseEntry,
-    REPRESENTATIVE_STRATEGY_IDS,
-} from "./shared";
+    RepresentativeDrilldown,
+    buildStyleRepresentativeUrl,
+    deserializeRepresentativeEntries,
+    type RepresentativeDrilldownEntry,
+    type StyleRepresentativeResponse,
+} from "./RepresentativeDrilldown";
 
 export type StyleRepEntry = {
     cardId: number;
@@ -36,29 +38,7 @@ type StyleRepSelection = {
     charaName: string;
 };
 
-type StyleRepDrilldownEntry = {
-    horse: HorseEntry;
-    teamHorses?: HorseEntry[];
-    teamOptions?: Array<TeamSampleSelectOption & { teamHorses: HorseEntry[] }>;
-    bayesianWinRate: number;
-    winRate: number;
-    appearances: number;
-};
-
-type StyleRepDrilldownResponse = {
-    cmId: string;
-    courseId: number;
-    strategy: number;
-    cardId: number;
-    samples: Array<{
-        horse: SerializedHorseEntry;
-        teamHorses: SerializedHorseEntry[];
-        teamOptions: Array<TeamSampleSelectOption & { teamHorses: SerializedHorseEntry[] }>;
-        bayesianWinRate: number;
-        winRate: number;
-        appearances: number;
-    }>;
-};
+type StyleRepMetricMode = "team" | "personal";
 
 export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, characterTeamRates, skillStats, strategyColors, onViewReplays }: {
     cmId?: string | null;
@@ -75,16 +55,13 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
     const [selectedInModal, setSelectedInModal] = useState<StyleRepSelection | null>(null);
     const [fullDataOpen, setFullDataOpen] = useState(false);
     const [minPopPct, setMinPopPct] = useState<0 | 0.5 | 1 | 2>(1);
-    const [rankingMode, setRankingMode] = useState<"bayes" | "team">("bayes");
-    const [drilldownCache, setDrilldownCache] = useState<Record<string, StyleRepDrilldownEntry[]>>({});
+    const [metricMode, setMetricMode] = useState<StyleRepMetricMode>("team");
+    const [drilldownCache, setDrilldownCache] = useState<Record<string, RepresentativeDrilldownEntry[]>>({});
+    const [teamDrilldownCache, setTeamDrilldownCache] = useState<Record<string, RepresentativeDrilldownEntry[]>>({});
     const [drilldownLoadingKeys, setDrilldownLoadingKeys] = useState<string[]>([]);
     const [drilldownError, setDrilldownError] = useState<string | null>(null);
     const canUseApiDrilldown = !!(apiMode && cmId && courseId && skillStats);
     const canDrilldown = !!skillStats && canUseApiDrilldown;
-    const rankingOptions = [
-        { value: "bayes" as const, label: "By individual win rate" },
-        { value: "team" as const, label: "By team win rate" },
-    ];
 
     const makeSelectionKey = (selection: StyleRepSelection | null) =>
         selection ? `${selection.strategy}_${selection.cardId}` : null;
@@ -97,26 +74,24 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
         setDrilldownLoadingKeys((prev) => [...prev, selectionKey]);
         setDrilldownError(null);
         try {
-            const response = await fetch(
-                `${apiBase ?? ""}/api/umalogs/${encodeURIComponent(cmId!)}/groups/${courseId}/style-reps/${selection.strategy}/${selection.cardId}`,
-            );
+            const response = await fetch(buildStyleRepresentativeUrl(
+                cmId!,
+                courseId!,
+                selection.strategy,
+                selection.cardId,
+                apiBase ?? "",
+            ));
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status} - representative samples not found`);
             }
-            const payload = await response.json() as StyleRepDrilldownResponse;
+            const payload = await response.json() as StyleRepresentativeResponse;
             setDrilldownCache((prev) => ({
                 ...prev,
-                [selectionKey]: payload.samples.map((sample) => ({
-                    horse: deserializeHorseEntry(sample.horse),
-                    teamHorses: sample.teamHorses.map(deserializeHorseEntry),
-                    teamOptions: sample.teamOptions.map((option) => ({
-                        ...option,
-                        teamHorses: option.teamHorses.map(deserializeHorseEntry),
-                    })),
-                    bayesianWinRate: sample.bayesianWinRate,
-                    winRate: sample.winRate,
-                    appearances: sample.appearances,
-                })),
+                [selectionKey]: deserializeRepresentativeEntries(payload.samples),
+            }));
+            setTeamDrilldownCache((prev) => ({
+                ...prev,
+                [selectionKey]: deserializeRepresentativeEntries(payload.teamSamples),
             }));
         } catch (err) {
             setDrilldownError(err instanceof Error ? err.message : "Failed to load representative samples");
@@ -129,10 +104,18 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
         const selectionKey = makeSelectionKey(selected);
         return selectionKey ? (drilldownCache[selectionKey] ?? []) : [];
     }, [selected, drilldownCache]);
+    const teamDrilldownHorses = useMemo(() => {
+        const selectionKey = makeSelectionKey(selected);
+        return selectionKey ? (teamDrilldownCache[selectionKey] ?? []) : [];
+    }, [selected, teamDrilldownCache]);
     const drilldownHorsesInModal = useMemo(() => {
         const selectionKey = makeSelectionKey(selectedInModal);
         return selectionKey ? (drilldownCache[selectionKey] ?? []) : [];
     }, [selectedInModal, drilldownCache]);
+    const teamDrilldownHorsesInModal = useMemo(() => {
+        const selectionKey = makeSelectionKey(selectedInModal);
+        return selectionKey ? (teamDrilldownCache[selectionKey] ?? []) : [];
+    }, [selectedInModal, teamDrilldownCache]);
 
     const teamRateByRepKey = useMemo(() => {
         const map = new Map<string, CharacterTeamRateRow>();
@@ -144,36 +127,68 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
 
     const entriesByStrategy = useMemo(() => (
         Object.fromEntries(
-            REPRESENTATIVE_STRATEGY_IDS.map((sId) => [
-                sId,
-                [...(styleReps[sId] ?? [])]
-                    .map((entry) => {
-                        const teamRate = teamRateByRepKey.get(`${sId}_${entry.cardId}`);
-                        const teamAppearances = entry.teamAppearances ?? teamRate?.appearances ?? 0;
-                        const teamWins = entry.teamWins ?? teamRate?.wins ?? 0;
-                        return {
-                            ...entry,
-                            teamWins,
-                            teamAppearances,
-                            teamWinRate: entry.teamWinRate ?? (teamAppearances > 0 ? teamWins / teamAppearances : 0),
-                            teamBayesianWinRate: entry.teamBayesianWinRate
-                                ?? ((teamWins + BAYES_TEAM.K * BAYES_TEAM.PRIOR) / (teamAppearances + BAYES_TEAM.K)),
-                        };
+            REPRESENTATIVE_STRATEGY_IDS.map((sId) => {
+                const entries: StyleRepEntry[] = [...(styleReps[sId] ?? [])].map((entry) => {
+                    const teamRate = teamRateByRepKey.get(`${sId}_${entry.cardId}`);
+                    const teamAppearances = entry.teamAppearances ?? teamRate?.appearances ?? 0;
+                    const teamWins = entry.teamWins ?? teamRate?.wins ?? 0;
+                    return {
+                        ...entry,
+                        teamWins,
+                        teamAppearances,
+                        teamWinRate: entry.teamWinRate ?? (teamAppearances > 0 ? teamWins / teamAppearances : 0),
+                        teamBayesianWinRate: entry.teamBayesianWinRate
+                            ?? ((teamWins + BAYES_TEAM.K * BAYES_TEAM.PRIOR) / (teamAppearances + BAYES_TEAM.K)),
+                    };
+                });
+
+                if (metricMode === "team") {
+                    const presentCards = new Set(entries.map((entry) => entry.cardId));
+                    for (const teamRate of characterTeamRates ?? []) {
+                        if (teamRate.strategy !== sId || presentCards.has(teamRate.cardId)) continue;
+                        const winRate = teamRate.appearances > 0 ? teamRate.wins / teamRate.appearances : 0;
+                        entries.push({
+                            cardId: teamRate.cardId,
+                            charaId: teamRate.charaId,
+                            charaName: UMDatabaseWrapper.charas[teamRate.charaId]?.name ?? `Unknown (${teamRate.charaId})`,
+                            wins: 0,
+                            appearances: teamRate.appearances,
+                            popPct: 0,
+                            winRate: 0,
+                            bayesianWinRate: (BAYES_UMA.K * BAYES_UMA.PRIOR) / (teamRate.appearances + BAYES_UMA.K),
+                            expectedWinRate: BAYES_UMA.PRIOR,
+                            scoreAdjustedWinRate: (BAYES_UMA.K * BAYES_UMA.PRIOR) / (teamRate.appearances + BAYES_UMA.K),
+                            scoreAdjustedLift: 0,
+                            teamWins: teamRate.wins,
+                            teamAppearances: teamRate.appearances,
+                            teamWinRate: winRate,
+                            teamBayesianWinRate: (teamRate.wins + BAYES_TEAM.K * BAYES_TEAM.PRIOR) / (teamRate.appearances + BAYES_TEAM.K),
+                        });
+                        presentCards.add(teamRate.cardId);
+                    }
+                }
+
+                const teamTotal = entries.reduce((sum, entry) => sum + (entry.teamAppearances ?? 0), 0);
+                const filteredEntries = entries
+                    .filter(entry => {
+                        if (metricMode === "personal") return entry.popPct >= minPopPct;
+                        const teamPopPct = teamTotal > 0 ? ((entry.teamAppearances ?? 0) / teamTotal) * 100 : entry.popPct;
+                        return teamPopPct >= minPopPct;
                     })
-                    .filter(entry => entry.popPct >= minPopPct)
                     .sort((a, b) => {
-                        if (rankingMode === "team") {
-                            return ((b.teamBayesianWinRate ?? 0) - (a.teamBayesianWinRate ?? 0))
-                                || ((b.teamWinRate ?? 0) - (a.teamWinRate ?? 0))
-                                || ((b.teamAppearances ?? 0) - (a.teamAppearances ?? 0));
+                        if (metricMode === "personal") {
+                            return (b.bayesianWinRate - a.bayesianWinRate)
+                                || (b.winRate - a.winRate)
+                                || (b.appearances - a.appearances);
                         }
-                        return (b.bayesianWinRate - a.bayesianWinRate)
-                            || (b.winRate - a.winRate)
-                            || (b.appearances - a.appearances);
-                    }),
-            ])
+                        return ((b.teamBayesianWinRate ?? 0) - (a.teamBayesianWinRate ?? 0))
+                            || ((b.teamWinRate ?? 0) - (a.teamWinRate ?? 0))
+                            || ((b.teamAppearances ?? 0) - (a.teamAppearances ?? 0));
+                    });
+                return [sId, filteredEntries];
+            })
         ) as Record<number, StyleRepEntry[]>
-    ), [styleReps, teamRateByRepKey, minPopPct, rankingMode]);
+    ), [styleReps, teamRateByRepKey, characterTeamRates, minPopPct, metricMode]);
 
     const totalVisibleEntries = REPRESENTATIVE_STRATEGY_IDS.reduce(
         (sum, sId) => sum + (entriesByStrategy[sId]?.length ?? 0),
@@ -211,29 +226,49 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
                     )}
                 </div>
                 <span className="sa-reps-name" title={entry.charaName}>{entry.charaName}</span>
-                <div className={`sa-reps-stats sa-reps-stats--${rankingMode === "team" ? "team" : "bayes"}`}>
-                    {rankingMode === "team" ? (
-                        <>
-                            <span
-                                className="sa-adj-pct sa-reps-stat"
-                                title={`Adjusted win rate for teams featuring this character: ${((entry.teamBayesianWinRate ?? 0) * 100).toFixed(1)}%, raw ${((entry.teamWinRate ?? 0) * 100).toFixed(1)}%, wins ${entry.teamWins ?? 0}, appearances ${entry.teamAppearances ?? 0}`}
-                            >
-                                {((entry.teamBayesianWinRate ?? 0) * 100).toFixed(1)}%
-                            </span>
-                            <span
-                                className="sa-raw-pct sa-reps-stat"
-                                title={`Raw win rate for teams featuring this character: ${((entry.teamWinRate ?? 0) * 100).toFixed(1)}% across ${entry.teamAppearances ?? 0} samples`}
-                            >
-                                {((entry.teamWinRate ?? 0) * 100).toFixed(1)}% ({entry.teamAppearances ?? 0})
-                            </span>
-                        </>
-                    ) : (
-                        <>
-                            <span className="sa-adj-pct sa-reps-stat">{(entry.bayesianWinRate * 100).toFixed(1)}%</span>
-                            <span className="sa-raw-pct sa-reps-stat">{(entry.winRate * 100).toFixed(1)}% ({entry.appearances})</span>
-                        </>
-                    )}
-                </div>
+                {metricMode === "team" ? (
+                    <div className="sa-reps-stats sa-reps-stats--team-summary">
+                        <span
+                            className="sa-adj-pct sa-reps-stat sa-reps-sort-stat"
+                            title={`Adjusted team win rate for teams featuring this character: ${((entry.teamBayesianWinRate ?? 0) * 100).toFixed(1)}%, raw ${((entry.teamWinRate ?? 0) * 100).toFixed(1)}%, team wins ${entry.teamWins ?? 0}, team appearances ${entry.teamAppearances ?? 0}`}
+                        >
+                            {((entry.teamBayesianWinRate ?? 0) * 100).toFixed(1)}%
+                        </span>
+                        <span
+                            className="sa-adj-pct sa-reps-stat"
+                            title={`Personal win rate: ${(entry.winRate * 100).toFixed(1)}%, wins ${entry.wins}, appearances ${entry.appearances}`}
+                        >
+                            {(entry.winRate * 100).toFixed(1)}%
+                        </span>
+                        <span
+                            className="sa-raw-pct sa-reps-stat"
+                            title={`Raw team win rate for teams featuring this character: ${((entry.teamWinRate ?? 0) * 100).toFixed(1)}% across ${entry.teamAppearances ?? 0} samples`}
+                        >
+                            {((entry.teamWinRate ?? 0) * 100).toFixed(1)}% ({entry.teamAppearances ?? 0})
+                        </span>
+                    </div>
+                ) : (
+                    <div className="sa-reps-stats sa-reps-stats--team-summary">
+                        <span
+                            className="sa-adj-pct sa-reps-stat sa-reps-sort-stat"
+                            title={`Adjusted personal win rate: ${(entry.bayesianWinRate * 100).toFixed(1)}%, raw ${(entry.winRate * 100).toFixed(1)}%, wins ${entry.wins}, appearances ${entry.appearances}`}
+                        >
+                            {(entry.bayesianWinRate * 100).toFixed(1)}%
+                        </span>
+                        <span
+                            className="sa-adj-pct sa-reps-stat"
+                            title={`Team win rate for teams featuring this character: ${((entry.teamWinRate ?? 0) * 100).toFixed(1)}%, team wins ${entry.teamWins ?? 0}, team appearances ${entry.teamAppearances ?? 0}`}
+                        >
+                            {((entry.teamWinRate ?? 0) * 100).toFixed(1)}%
+                        </span>
+                        <span
+                            className="sa-raw-pct sa-reps-stat"
+                            title={`Raw personal win rate: ${(entry.winRate * 100).toFixed(1)}% across ${entry.appearances} samples`}
+                        >
+                            {(entry.winRate * 100).toFixed(1)}% ({entry.appearances})
+                        </span>
+                    </div>
+                )}
             </div>
         );
     };
@@ -253,16 +288,18 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
                     <div key={sId} className="sa-reps-col">
                         <div className="sa-reps-col-header" style={{ color }}>
                             {STRATEGY_NAMES[sId].split(" ")[0].toUpperCase()}
-                            <span className={`sa-stats-meta sa-stats-meta--${rankingMode === "team" ? "team" : "bayes"}`}>
-                                {rankingMode === "team" ? (
+                            <span className="sa-stats-meta sa-stats-meta--team-summary">
+                                {metricMode === "team" ? (
                                     <>
-                                        <span className="sa-meta-adj sa-meta-adj--neutral">Adj. win%</span>
-                                        <span className="sa-meta-raw">Raw win% (samples)</span>
+                                        <span className="sa-meta-adj sa-meta-adj--neutral" title="Bayesian-adjusted team win rate">Adj Team win%</span>
+                                        <span className="sa-meta-adj sa-meta-adj--neutral" title="Own raw win rate">Own win%</span>
+                                        <span className="sa-meta-raw" title="Raw team win rate and samples">Raw Team win%</span>
                                     </>
                                 ) : (
                                     <>
-                                        <span className="sa-meta-adj sa-meta-adj--neutral">Adj. win%</span>
-                                        <span className="sa-meta-raw">Raw win% (samples)</span>
+                                        <span className="sa-meta-adj sa-meta-adj--neutral" title="Bayesian-adjusted own win rate">Adj Own win%</span>
+                                        <span className="sa-meta-adj sa-meta-adj--neutral" title="Raw team win rate">Team win%</span>
+                                        <span className="sa-meta-raw" title="Raw own win rate and samples">Raw Own win%</span>
                                     </>
                                 )}
                             </span>
@@ -278,83 +315,24 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
 
     const renderDrilldown = (
         selection: StyleRepSelection | null,
-        drilldownEntries: StyleRepDrilldownEntry[],
+        drilldownEntries: RepresentativeDrilldownEntry[],
+        teamDrilldownEntries: RepresentativeDrilldownEntry[],
     ) => {
         if (!selection || !skillStats) return null;
         const selectionKey = makeSelectionKey(selection);
-        const isLoading = !!selectionKey && drilldownLoadingKeys.includes(selectionKey);
-        if (isLoading) {
-            return (
-                <div className="stcp-drilldown">
-                    <div className="stcp-drilldown-header">
-                        <div className="stcp-drilldown-title">
-                            Top performers for {selection.charaName} ({STRATEGY_NAMES[selection.strategy]})
-                        </div>
-                    </div>
-                    <div className="sa-no-data">Loading representative samples...</div>
-                </div>
-            );
-        }
-        if (drilldownEntries.length === 0) {
-            return (
-                <div className="stcp-drilldown">
-                    <div className="stcp-drilldown-header">
-                        <div className="stcp-drilldown-title">
-                            Top performers for {selection.charaName} ({STRATEGY_NAMES[selection.strategy]})
-                        </div>
-                    </div>
-                    <div className="sa-no-data">
-                        {drilldownError ?? "No representative samples available."}
-                    </div>
-                </div>
-            );
-        }
         return (
-            <div className="stcp-drilldown">
-                <div className="stcp-drilldown-header">
-                    <div className="stcp-drilldown-title">
-                        Top performers for {selection.charaName} ({STRATEGY_NAMES[selection.strategy]})
-                    </div>
-                    <div className="stcp-drilldown-subtitle">
-                        Unique umas ranked by Bayesian-adjusted win rate across all appearances.
-                    </div>
-                </div>
-                <div className="stcp-team-members-row">
-                    {drilldownEntries.map(({ horse, teamHorses, teamOptions, bayesianWinRate, winRate, appearances }, i) => (
-                        <div key={i} className="sa-reps-drilldown-card">
-                            <div className="sa-reps-drilldown-winrate">
-                                <span className="sa-adj-pct">{(bayesianWinRate * 100).toFixed(0)}%</span>
-                                <span className="sa-pipe"> | </span>
-                                <span className="sa-raw-pct">{(winRate * 100).toFixed(0)}% ({appearances})</span>
-                            </div>
-                            <TeamMemberCard
-                                horse={horse}
-                                skillStats={skillStats}
-                                strategyColors={strategyColors}
-                                teamHorses={teamHorses}
-                                teamOptions={teamOptions}
-                                onViewReplays={onViewReplays}
-                            />
-                        </div>
-                    ))}
-                </div>
-            </div>
+            <RepresentativeDrilldown
+                title={`Top performers for ${selection.charaName} (${STRATEGY_NAMES[selection.strategy]})`}
+                individualEntries={drilldownEntries}
+                teamEntries={teamDrilldownEntries}
+                loading={!!selectionKey && drilldownLoadingKeys.includes(selectionKey)}
+                error={drilldownError}
+                skillStats={skillStats}
+                strategyColors={strategyColors}
+                onViewReplays={onViewReplays}
+            />
         );
     };
-
-    const renderRankingModeToggle = () => (
-        <div className="histogram-toggle uma-gate-toggle sa-toggle-row">
-            {rankingOptions.map((opt) => (
-                <button
-                    key={opt.value}
-                    className={`histogram-toggle-btn uma-gate-toggle-btn${rankingMode === opt.value ? " active" : ""}`}
-                    onClick={() => setRankingMode(opt.value)}
-                >
-                    {opt.label}
-                </button>
-            ))}
-        </div>
-    );
 
     const renderPopToggle = () => (
         <div className="histogram-toggle uma-gate-toggle sa-toggle-row">
@@ -374,17 +352,17 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
         mode: "top" | "full",
         selection: StyleRepSelection | null,
         setSelection: React.Dispatch<React.SetStateAction<StyleRepSelection | null>>,
-        drilldownEntries: StyleRepDrilldownEntry[],
+        drilldownEntries: RepresentativeDrilldownEntry[],
+        teamDrilldownEntries: RepresentativeDrilldownEntry[],
     ) => (
         <>
             {mode === "full" && (
                 <>
-                    {renderRankingModeToggle()}
                     {renderPopToggle()}
                 </>
             )}
             {renderColumns(mode, selection, setSelection)}
-            {renderDrilldown(selection, drilldownEntries)}
+            {renderDrilldown(selection, drilldownEntries, teamDrilldownEntries)}
         </>
     );
 
@@ -394,16 +372,29 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
                 Style Representatives
                 <InfoTooltip
                     id="style-representatives-info"
-                    tip={
-                        rankingMode === "bayes"
-                            ? "Top 5 performers per style using the current Bayesian-adjusted win rate."
-                            : "Top 5 performers per style ranked by adjusted win rate across teams featuring that character. Raw team win rate and adjusted team win rate are shown side by side."
-                    }
+                    tip={metricMode === "team"
+                        ? "Top performers per style ranked by adjusted team win rate."
+                        : "Top performers per style ranked by adjusted personal win rate."}
                 />
+                <div className="sa-reps-mode-toggle" aria-label="Style representative metric mode">
+                    <button
+                        type="button"
+                        className={`sa-reps-mode-btn${metricMode === "team" ? " active" : ""}`}
+                        onClick={() => setMetricMode("team")}
+                    >
+                        Team
+                    </button>
+                    <button
+                        type="button"
+                        className={`sa-reps-mode-btn${metricMode === "personal" ? " active" : ""}`}
+                        onClick={() => setMetricMode("personal")}
+                    >
+                        Personal
+                    </button>
+                </div>
             </div>
-            {renderRankingModeToggle()}
             {renderPopToggle()}
-            {renderPanelBody("top", selected, setSelected, drilldownHorses)}
+                    {renderPanelBody("top", selected, setSelected, drilldownHorses, teamDrilldownHorses)}
             {totalVisibleEntries > 0 && (
                 <div className="sa-reps-actions">
                     <button className="sa-reps-view-all-btn" onClick={() => setFullDataOpen(true)}>
@@ -419,7 +410,7 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
                             <button className="cdt-close-btn" onClick={() => setFullDataOpen(false)}>&times;</button>
                         </div>
                         <div className="cdt-content">
-                            {renderPanelBody("full", selectedInModal, setSelectedInModal, drilldownHorsesInModal)}
+                            {renderPanelBody("full", selectedInModal, setSelectedInModal, drilldownHorsesInModal, teamDrilldownHorsesInModal)}
                         </div>
                     </div>
                 </div>

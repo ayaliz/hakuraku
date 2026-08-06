@@ -6,6 +6,7 @@ import './dark-mode.css';
 import UMDatabaseWrapper from './data/UMDatabaseWrapper';
 import GameDataLoader from './data/GameDataLoader';
 import { AuthProvider, useAuth } from "./auth/AuthContext";
+import PageMeta from "./components/PageMeta";
 import type { Manifest, ManifestEntry } from "./pages/UmaLogsPage/umaLogsTypes";
 
 // Wraps lazy() to auto-reload once on chunk load failure (stale deploy hash mismatch).
@@ -33,6 +34,7 @@ const NotesPage       = lazyWithReload(() => import("./pages/NotesPage"),       
 const SetupGuidePage  = lazyWithReload(() => import("./pages/SetupGuidePage"),  "SetupGuidePage");
 const VeteransPage      = lazyWithReload(() => import("./pages/VeteransPage"),      "VeteransPage");
 const ShopRefreshPage   = lazyWithReload(() => import("./pages/ShopRefreshPage"),  "ShopRefreshPage");
+const InheritanceFactorsPage = lazyWithReload(() => import("./pages/InheritanceFactorsPage"), "InheritanceFactorsPage");
 const AuthPage        = lazyWithReload(() => import("./pages/AuthPage"),        "AuthPage");
 const AccountPage     = lazyWithReload(() => import("./pages/AccountPage"),     "AccountPage");
 const PrivacyPolicyPage = lazyWithReload(() => import("./pages/PrivacyPolicyPage"), "PrivacyPolicyPage");
@@ -56,6 +58,54 @@ function getLatestCmDatasetLabel(datasets: ManifestEntry[]): string | null {
 
     if (cmDatasets.length === 0) return null;
     return cmDatasets.sort((a, b) => b.number - a.number || b.index - a.index)[0].label;
+}
+
+// Search-result copy for each route. Kept together so the titles and descriptions can be read
+// side by side; they compete with each other in results, so they need to stay distinct.
+const PAGE_META: Record<string, { title: string; description?: string; noIndex?: boolean }> = {
+    veterans: {
+        title: "Veterans",
+        description: "Browse veteran Umamusume race entries and their training, stats, skills and results.",
+    },
+    racedata: {
+        title: "Race Analysis",
+        description: "Replay an Umamusume race frame by frame: last spurt speeds, skill activations and durations, HP drain, position keep and blocking.",
+    },
+    multirace: {
+        title: "Multi-Race Analysis",
+        description: "Analyse many Umamusume races at once to find patterns in spurt success, skill activation rates and running style matchups.",
+    },
+    umalogs: {
+        title: "UmaLogs",
+        description: "Champions Meeting race archives and aggregate statistics from collected Umamusume race data.",
+    },
+    setup: {
+        title: "Setup Guide",
+        description: "How to capture your own Umamusume race data and load it into Hakuraku for analysis.",
+    },
+    masterdata: {
+        title: "Master Data",
+        description: "Search the Umamusume master database: skills, characters, support cards, races and their raw effect values.",
+    },
+    notes: {
+        title: "Research Notes",
+        description: "Write-ups on Umamusume race mechanics: speed formulas, skill scaling, stamina and last spurt behaviour.",
+    },
+    shopRefresh: {
+        title: "Shop Refresh",
+        description: "Crowdsourced Umamusume shop refresh data.",
+    },
+    inheritanceFactors: {
+        title: "Inheritance Factors",
+        description: "Umamusume inheritance factor data and spark analysis.",
+    },
+    auth: { title: "Log In", noIndex: true },
+    account: { title: "Account", noIndex: true },
+    privacy: { title: "Privacy Policy", description: "How Hakuraku handles your data." },
+};
+
+function withMeta(meta: { title: string; description?: string; noIndex?: boolean }, element: React.ReactNode) {
+    return <><PageMeta {...meta} />{element}</>;
 }
 
 function FooterMailIcon() {
@@ -199,20 +249,21 @@ function AppShell() {
         <Container>
             <Suspense fallback={<div className="p-4 text-center"><Spinner animation="border" /></div>}>
                 <Routes>
-                    <Route path="/veterans" element={<VeteransPage />} />
-                    <Route path="/racedata/:raceUid" element={<RaceDataPage />} />
-                    <Route path="/racedata" element={<RaceDataPage />} />
-                    <Route path="/multirace" element={<MultiRacePage />} />
-                    <Route path="/umalogs" element={<UmaLogsPage />} />
-                    <Route path="/setup" element={<SetupGuidePage />} />
-                    <Route path="/masterdata" element={<MasterDataPage />} />
-                    <Route path="/notes/:noteId" element={<NotesPage />} />
-                    <Route path="/notes" element={<NotesPage />} />
-                    <Route path="/shop-refresh" element={<ShopRefreshPage />} />
-                    <Route path="/auth" element={<AuthPage />} />
-                    <Route path="/account" element={<AccountPage />} />
-                    <Route path="/accounts" element={<AccountPage />} />
-                    <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                    <Route path="/veterans" element={withMeta(PAGE_META.veterans, <VeteransPage />)} />
+                    <Route path="/racedata/:raceUid" element={withMeta(PAGE_META.racedata, <RaceDataPage />)} />
+                    <Route path="/racedata" element={withMeta(PAGE_META.racedata, <RaceDataPage />)} />
+                    <Route path="/multirace" element={withMeta(PAGE_META.multirace, <MultiRacePage />)} />
+                    <Route path="/umalogs" element={withMeta(PAGE_META.umalogs, <UmaLogsPage />)} />
+                    <Route path="/setup" element={withMeta(PAGE_META.setup, <SetupGuidePage />)} />
+                    <Route path="/masterdata" element={withMeta(PAGE_META.masterdata, <MasterDataPage />)} />
+                    <Route path="/notes/:noteId" element={withMeta(PAGE_META.notes, <NotesPage />)} />
+                    <Route path="/notes" element={withMeta(PAGE_META.notes, <NotesPage />)} />
+                    <Route path="/shop-refresh" element={withMeta(PAGE_META.shopRefresh, <ShopRefreshPage />)} />
+                    <Route path="/inheritance-factors" element={withMeta(PAGE_META.inheritanceFactors, <InheritanceFactorsPage />)} />
+                    <Route path="/auth" element={withMeta(PAGE_META.auth, <AuthPage />)} />
+                    <Route path="/account" element={withMeta(PAGE_META.account, <AccountPage />)} />
+                    <Route path="/accounts" element={withMeta(PAGE_META.account, <AccountPage />)} />
+                    <Route path="/privacy" element={withMeta(PAGE_META.privacy, <PrivacyPolicyPage />)} />
                     <Route path="/" element={<Home />} />
                 </Routes>
             </Suspense>
@@ -280,6 +331,11 @@ function AppShell() {
 function Home() {
     return (
         <div className="home-promo">
+            <PageMeta
+                title="Hakuraku"
+                appendSiteName={false}
+                description="Umamusume race analysis and room match data"
+            />
             <div className="home-promo-card">
                 <img src={import.meta.env.BASE_URL + 'assets/sky.webp'} alt="Sky" className="home-promo-img" />
             </div>

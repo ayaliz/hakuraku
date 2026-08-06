@@ -17,6 +17,7 @@ export function deserializeHorseEntries(horses: SerializedHorseEntry[] | undefin
         raceDistance: 0,
         isPlayer: false,
         activatedSkillIds: new Set(h.activatedSkillIds),
+        forcedActivatedSkillIds: new Set(h.forcedActivatedSkillIds ?? []),
         learnedSkillIds: new Set(h.learnedSkillIds),
         careerWinCount: h.careerWinCount ?? 0,
         supportCardIds: h.supportCardIds ?? [],

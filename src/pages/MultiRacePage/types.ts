@@ -27,8 +27,12 @@ export type HorseEntry = {
     charaName: string;
     cardId: number;
     strategy: number;
+    rawStrategy?: number;
+    isDebuffer?: boolean;
     trainerName: string;
     activatedSkillIds: Set<number>;
+    /** Skills whose recorded activation was caused by 110071/910071 rather than their own trigger. */
+    forcedActivatedSkillIds?: Set<number>;
     learnedSkillIds: Set<number>; // All skills the horse has in their skillset
     finishTime: number;
     raceDistance: number;
@@ -39,6 +43,7 @@ export type HorseEntry = {
     guts: number;
     wiz: number; // Wit stat
     rankScore: number;
+    scenarioId?: number;
     motivation: number; // 1=Awful, 2=Bad, 3=Normal, 4=Good, 5=Great
     activationChance: number; // Calculated skill activation chance based on wiz and mood
     isPlayer: boolean;
@@ -83,6 +88,10 @@ export type SkillStats = {
     uniqueRaces: number;
     uniqueHorses: number;
     learnedByHorses: number; // How many horses had this skill in their skillset
+    /** Learned observations where a natural proc remained observable (forced-only observations are censored). */
+    activationOpportunities?: number;
+    /** Learned horses whose only observed activation was caused by 110071/910071. */
+    forcedActivationHorses?: number;
     winRate: number; // % of times the horse with this skill won
     avgFinishPosition: number;
     activationDistances: number[]; // For heatmap
@@ -90,6 +99,8 @@ export type SkillStats = {
     learnedByStrategies: Set<number>; // Strategies of horses who learned/used this skill
     learnedByHorsesByStrategy?: Record<string, number>;
     uniqueHorsesByStrategy?: Record<string, number>;
+    activationOpportunitiesByStrategy?: Record<string, number>;
+    forcedActivationHorsesByStrategy?: Record<string, number>;
     meanDistance: number;
     medianDistance: number;
     timesActivatedByStrategy?: Record<string, number>;
@@ -140,6 +151,7 @@ export type RoomCompositionEntry = {
 };
 
 export type TeamCompositionStats = {
+    buildKey?: string;
     members: { charaId: number; cardId: number; strategy: number; charaName: string }[];
     memberWins: number[];    // parallel to members: how many times each member had finishOrder === 1
     appearances: number;

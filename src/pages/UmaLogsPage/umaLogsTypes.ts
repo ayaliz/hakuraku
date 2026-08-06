@@ -12,9 +12,10 @@ import type {
     StrategyStats,
     TrueSkillTeamEntry,
 } from "../MultiRacePage/types";
+import type { UmaLogsQuerySpec } from "./umaLogsQueryShared";
 import type { PieSlice } from "../MultiRacePage/components/WinDistributionCharts/types";
 import type { StyleRepEntry } from "../MultiRacePage/components/WinDistributionCharts/StyleRepsPanel";
-import type { HistogramData, StyleCompositionSummaryRow, CharacterTeamRateRow } from "./panelData";
+import type { HistogramData, StyleCompositionSummaryRow, CharacterTeamRateRow, ScenarioWinBreakdownRow } from "./panelData";
 import type { GroupSkillDetailPayload, SerializedSkillOverviewStats } from "./skillCache";
 import type { SkillActivationPoint } from "../MultiRacePage/types";
 
@@ -24,8 +25,9 @@ export type SerializedSkillStats = Omit<SkillStats, 'learnedByCharaIds' | 'learn
     activationDistances?: number[];
 };
 
-export type SerializedHorseEntry = Omit<HorseEntry, 'activatedSkillIds' | 'learnedSkillIds' | 'trainerName' | 'raceDistance' | 'isPlayer' | 'charaName'> & {
+export type SerializedHorseEntry = Omit<HorseEntry, 'activatedSkillIds' | 'forcedActivatedSkillIds' | 'learnedSkillIds' | 'trainerName' | 'raceDistance' | 'isPlayer' | 'charaName'> & {
     activatedSkillIds: number[];
+    forcedActivatedSkillIds?: number[];
     learnedSkillIds: number[];
     supportCardIds: number[];
     supportCardLimitBreaks: number[];
@@ -128,6 +130,7 @@ export type GroupPanelData = {
     skillsByStrategy: Record<number, OverviewSkillRow[]>;
     supportCardRows: SupportCardSummaryRow[];
     raceBonusRows: RaceBonusOverviewRow[];
+    scenarioWinBreakdownRows?: ScenarioWinBreakdownRow[];
     styleReps: Record<number, StyleRepEntry[]>;
     styleCompositionRows: StyleCompositionSummaryRow[];
     characterTeamRates: CharacterTeamRateRow[];
@@ -149,8 +152,9 @@ export interface TrackGroup {
     stats: UmaLogsStats;
 }
 
-export type Section = 'introduction' | 'overview' | 'strategy' | 'character' | 'skill' | 'explorer' | 'replays';
+export type Section = 'introduction' | 'overview' | 'strategy' | 'character' | 'skill' | 'queries' | 'explorer' | 'replays';
 export const UMA_LOGS_SECTIONS: readonly Section[] = ['introduction', 'overview', 'strategy', 'character', 'skill', 'explorer', 'replays'];
+export const UMA_LOGS_ROUTE_SECTIONS: readonly Section[] = [...UMA_LOGS_SECTIONS, 'queries'];
 
 export interface TrackGroupContentProps {
     group: TrackGroup;
@@ -159,6 +163,9 @@ export interface TrackGroupContentProps {
     section: Section;
     onSectionChange: (section: Section) => void;
     onViewReplaysForHorse: (horse: HorseEntry) => void;
+    onFindReplaysForQuery: (querySpec: UmaLogsQuerySpec) => void;
+    onEditAsQuery: (query: string) => void;
+    initialQuery?: string;
     scoreWinnersOnly: boolean;
     setScoreWinnersOnly: (v: boolean) => void;
     totalRaces: number;

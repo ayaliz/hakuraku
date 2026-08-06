@@ -1,7 +1,6 @@
-import { STRATEGY_NAMES } from "./constants";
+import { STRATEGY_NAMES, STYLE_BREAKDOWN_STRATEGY_ORDER } from "./constants";
 import type { StrategyStats } from "../../types";
 import InfoTooltip from "./InfoTooltip";
-import { ANALYSIS_STRATEGY_IDS } from "./shared";
 
 export function StyleBreakdownPanel({ strategyStats, totalRaces, strategyColors }: {
     strategyStats: StrategyStats[];
@@ -9,7 +8,7 @@ export function StyleBreakdownPanel({ strategyStats, totalRaces, strategyColors 
     strategyColors: Record<number, string>;
 }) {
     const sumEntries = strategyStats.reduce((s, st) => s + st.totalRaces, 0);
-    const rows = ANALYSIS_STRATEGY_IDS.map(sId => {
+    const rows = STYLE_BREAKDOWN_STRATEGY_ORDER.map(sId => {
         const stat = strategyStats.find(s => s.strategy === sId);
         const winShare = stat && totalRaces > 0 ? (stat.wins / totalRaces) * 100 : 0;
         const pickRate = stat && sumEntries > 0 ? (stat.totalRaces / sumEntries) * 100 : 0;

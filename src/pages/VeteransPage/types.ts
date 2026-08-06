@@ -104,6 +104,8 @@ export type OptimizerConfig = {
     scenarioWeight: number;
     highValueSkills: number[];
     highValueSkillBonus: number;
+    highValueSkillSparks: number[];
+    highValueSkillSparkWeight: number;
 };
 
 export const getFilterStats = (filter: BaseFilter): string[] => {

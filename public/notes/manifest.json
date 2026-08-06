@@ -40,5 +40,19 @@
     "filename": "spot-struggle.md",
     "date": "2026-05-14",
     "description": "Replay evidence for aptitude-scaled spot struggle duration and a possible distance-based exit condition."
+  },
+  {
+    "id": "dueling",
+    "title": "Dueling mechanics",
+    "filename": "dueling.md",
+    "date": "2026-06-18",
+    "description": "Replay evidence for dueling entry and exit conditions."
+  },
+  {
+    "id": "plus-sparks",
+    "title": "Spirit + spark generation",
+    "filename": "plus-sparks.md",
+    "date": "2026-07-08",
+    "description": "Post-patch selected-result evidence for Racing Spirit and Ignited Spirit + sparks."
   }
 ]

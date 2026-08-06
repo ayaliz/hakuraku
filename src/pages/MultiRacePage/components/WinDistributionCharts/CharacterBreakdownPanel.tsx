@@ -1,56 +1,19 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { STRATEGY_NAMES, BAYES_UMA } from "./constants";
-import type { HorseEntry, SkillStats } from "../../types";
+import type { SkillStats } from "../../types";
 import InfoTooltip from "./InfoTooltip";
-import { TeamMemberCard } from "./TeamMemberCard";
 import { getCharaIcon } from "./utils";
 import { PieSlice } from "./types";
 import {
-    type SerializedHorseEntry,
-    deserializeHorseEntry,
-    deserializeHorseEntries,
-} from "./shared";
+    RepresentativeDrilldown,
+    buildStyleRepresentativeUrl,
+    deserializeRepresentativeEntries,
+    type RepresentativeDrilldownEntry,
+    type StyleRepresentativeResponse,
+} from "./RepresentativeDrilldown";
 
 const CHAR_BAYES_K = BAYES_UMA.K;
 const CHAR_BAYES_PRIOR = BAYES_UMA.PRIOR;
-
-type CharacterRepDrilldownEntry = {
-    horse: HorseEntry;
-    teamHorses?: HorseEntry[];
-    teamOptions?: Array<{
-        value: string;
-        members: Array<{ cardId: number; strategy: number; winRatePct: number }>;
-        samples: number;
-        teamHorses: HorseEntry[];
-    }>;
-    bayesianWinRate: number;
-    winRate: number;
-    appearances: number;
-};
-
-type CharacterRepDrilldownResponse = {
-    cmId: string;
-    courseId: number;
-    strategy: number;
-    cardId: number;
-    samples: Array<{
-        horse: SerializedHorseEntry;
-        teamHorses: SerializedHorseEntry[];
-        teamOptions: Array<{
-            value: string;
-            members: Array<{ cardId: number; strategy: number; winRatePct: number }>;
-            samples: number;
-            teamHorses: SerializedHorseEntry[];
-        }>;
-        bayesianWinRate: number;
-        winRate: number;
-        appearances: number;
-    }>;
-};
-
-function buildStyleRepUrl(cmId: string, courseId: number, strategy: number, cardId: number, apiBase = ""): string {
-    return `${apiBase}/api/umalogs/${encodeURIComponent(cmId)}/groups/${courseId}/style-reps/${strategy}/${cardId}`;
-}
 
 export interface CharacterBreakdownPanelProps {
     title: string;
@@ -87,7 +50,8 @@ export function CharacterBreakdownPanel({
     const [fullDataSort, setFullDataSort] = useState<"pop" | "winRate">("pop");
     const [selectedCharKey, setSelectedCharKey] = useState<string | null>(null);
     const [selectedInModal, setSelectedInModal] = useState<string | null>(null);
-    const [drilldownCache, setDrilldownCache] = useState<Record<string, CharacterRepDrilldownEntry[]>>({});
+    const [drilldownCache, setDrilldownCache] = useState<Record<string, RepresentativeDrilldownEntry[]>>({});
+    const [teamDrilldownCache, setTeamDrilldownCache] = useState<Record<string, RepresentativeDrilldownEntry[]>>({});
     const [drilldownLoadingKeys, setDrilldownLoadingKeys] = useState<string[]>([]);
     const [drilldownError, setDrilldownError] = useState<string | null>(null);
 
@@ -146,25 +110,22 @@ export function CharacterBreakdownPanel({
         setDrilldownLoadingKeys((keys) => [...keys, charKey]);
         setDrilldownError(null);
         try {
-            const response = await fetch(buildStyleRepUrl(cmId, courseId, strategy, cardId, apiBase ?? ""));
+            const response = await fetch(buildStyleRepresentativeUrl(cmId, courseId, strategy, cardId, apiBase ?? ""));
             if (!response.ok) throw new Error(`Failed to load representative samples (${response.status})`);
-            const payload = await response.json() as CharacterRepDrilldownResponse;
-            const entries = payload.samples.map((sample) => ({
-                horse: deserializeHorseEntry(sample.horse),
-                teamHorses: deserializeHorseEntries(sample.teamHorses),
-                teamOptions: sample.teamOptions.map((option) => ({
-                    ...option,
-                    teamHorses: deserializeHorseEntries(option.teamHorses),
-                })),
-                bayesianWinRate: sample.bayesianWinRate,
-                winRate: sample.winRate,
-                appearances: sample.appearances,
+            const payload = await response.json() as StyleRepresentativeResponse;
+            setDrilldownCache((cache) => ({
+                ...cache,
+                [charKey]: deserializeRepresentativeEntries(payload.samples),
             }));
-            setDrilldownCache((cache) => ({ ...cache, [charKey]: entries }));
+            setTeamDrilldownCache((cache) => ({
+                ...cache,
+                [charKey]: deserializeRepresentativeEntries(payload.teamSamples),
+            }));
         } catch (error) {
             console.error("Failed to load character representative samples", { charKey, error });
             setDrilldownError(error instanceof Error ? error.message : "Failed to load representative samples.");
             setDrilldownCache((cache) => ({ ...cache, [charKey]: [] }));
+            setTeamDrilldownCache((cache) => ({ ...cache, [charKey]: [] }));
         } finally {
             setDrilldownLoadingKeys((keys) => keys.filter((key) => key !== charKey));
         }
@@ -189,6 +150,14 @@ export function CharacterBreakdownPanel({
     const drilldownInModal = useMemo(
         () => (selectedInModal ? (drilldownCache[selectedInModal] ?? []) : []),
         [drilldownCache, selectedInModal],
+    );
+    const teamDrilldownHorses = useMemo(
+        () => (selectedCharKey ? (teamDrilldownCache[selectedCharKey] ?? []) : []),
+        [teamDrilldownCache, selectedCharKey],
+    );
+    const teamDrilldownInModal = useMemo(
+        () => (selectedInModal ? (teamDrilldownCache[selectedInModal] ?? []) : []),
+        [teamDrilldownCache, selectedInModal],
     );
 
     const allPopKeys = rawPopSlices
@@ -263,65 +232,25 @@ export function CharacterBreakdownPanel({
         );
     };
 
-    const renderDrilldown = (horses: CharacterRepDrilldownEntry[], charKey: string | null) => {
+    const renderDrilldown = (
+        individualEntries: RepresentativeDrilldownEntry[],
+        teamEntries: RepresentativeDrilldownEntry[],
+        charKey: string | null,
+    ) => {
         if (!charKey || !skillStats) return null;
         const parts = charKey.split('_');
         const strategy = Number(parts[2]);
         const charaName = buildCharRow(charKey).fullLabel ?? buildCharRow(charKey).label;
-        const isLoading = drilldownLoadingKeys.includes(charKey);
-        if (isLoading) {
-            return (
-                <div className="stcp-drilldown">
-                    <div className="stcp-drilldown-header">
-                        <div className="stcp-drilldown-title">
-                            Top performers for {charaName} ({STRATEGY_NAMES[strategy]})
-                        </div>
-                    </div>
-                    <div className="sa-no-data">Loading representative samples...</div>
-                </div>
-            );
-        }
-        if (horses.length === 0) {
-            return (
-                <div className="stcp-drilldown">
-                    <div className="stcp-drilldown-header">
-                        <div className="stcp-drilldown-title">
-                            Top performers for {charaName} ({STRATEGY_NAMES[strategy]})
-                        </div>
-                    </div>
-                    <div className="sa-no-data">{drilldownError ?? "No representative samples available."}</div>
-                </div>
-            );
-        }
         return (
-            <div className="stcp-drilldown">
-                <div className="stcp-drilldown-header">
-                    <div className="stcp-drilldown-title">
-                        Top performers for {charaName} ({STRATEGY_NAMES[strategy]})
-                    </div>
-                    <div className="stcp-drilldown-subtitle">
-                        Unique umas ranked by Bayesian-adjusted win rate across all appearances.
-                    </div>
-                </div>
-                <div className="stcp-team-members-row">
-                    {horses.map(({ horse, teamHorses, teamOptions, bayesianWinRate, winRate, appearances }, i) => (
-                        <div key={i} className="sa-reps-drilldown-card">
-                            <div className="sa-reps-drilldown-winrate">
-                                <span className="sa-adj-pct">{(bayesianWinRate * 100).toFixed(0)}%</span>
-                                <span className="sa-pipe"> | </span>
-                                <span className="sa-raw-pct">{(winRate * 100).toFixed(0)}% ({appearances})</span>
-                            </div>
-                            <TeamMemberCard
-                                horse={horse}
-                                skillStats={skillStats}
-                                strategyColors={strategyColors}
-                                teamHorses={teamHorses}
-                                teamOptions={teamOptions}
-                            />
-                        </div>
-                    ))}
-                </div>
-            </div>
+            <RepresentativeDrilldown
+                title={`Top performers for ${charaName} (${STRATEGY_NAMES[strategy]})`}
+                individualEntries={individualEntries}
+                teamEntries={teamEntries}
+                loading={drilldownLoadingKeys.includes(charKey)}
+                error={drilldownError}
+                skillStats={skillStats}
+                strategyColors={strategyColors}
+            />
         );
     };
 
@@ -354,7 +283,7 @@ export function CharacterBreakdownPanel({
             ) : (
                 <>
                     {chars.map(c => renderBarRow(c, maxPct, false))}
-                    {renderDrilldown(drilldownHorses, selectedCharKey)}
+                    {renderDrilldown(drilldownHorses, teamDrilldownHorses, selectedCharKey)}
                     <button className="ca-view-all-btn" onClick={() => setFullDataOpen(true)}>
                         View full data
                     </button>
@@ -384,7 +313,11 @@ export function CharacterBreakdownPanel({
                             {fullDataChars.map(c => (
                                 <React.Fragment key={c.key}>
                                     {renderBarRow(c, fullDataMaxPct, true)}
-                                    {selectedInModal === c.key && renderDrilldown(drilldownInModal, selectedInModal)}
+                                    {selectedInModal === c.key && renderDrilldown(
+                                        drilldownInModal,
+                                        teamDrilldownInModal,
+                                        selectedInModal,
+                                    )}
                                 </React.Fragment>
                             ))}
                         </div>

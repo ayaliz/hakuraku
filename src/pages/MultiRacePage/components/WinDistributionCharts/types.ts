@@ -43,4 +43,5 @@ export interface WinDistributionChartsProps {
     /** When true, hides the opponent-specific views and removes "opponent" wording.
      *  Use for data sources where there is no player/opponent distinction (e.g. spectated room matches). */
     spectatorMode?: boolean;
+    hideSaturation?: boolean;
 }

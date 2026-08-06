@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="560" viewBox="0 0 920 560" role="img" aria-label="What changes with more + sparks in the legacy?">
+<style>
+        .grid { stroke: #d1d5db; stroke-width: 1; }
+        .axis { stroke: #111827; stroke-width: 1.5; }
+        .tick { fill: #475569; font: 12px system-ui, sans-serif; }
+        .label { fill: #111827; font: 14px system-ui, sans-serif; font-weight: 700; }
+        .value { fill: #111827; font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 800; }
+        .title { fill: #111827; font: 20px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 800; }
+        .subtitle { fill: #64748b; font: 13px system-ui, sans-serif; }
+        .legend { fill: #334155; font: 13px system-ui, sans-serif; }
+        </style>
+<rect width="920" height="560" rx="6" fill="#ffffff"/>
+<text x="54" y="34" class="title">What changes with more + sparks in the legacy?</text>
+<text x="54" y="58" class="subtitle">Regression-adjusted selected-result probabilities in matching scenarios</text>
+<line x1="105" y1="445.0" x2="835" y2="445.0" class="grid"/>
+<text x="93" y="449.0" class="tick" text-anchor="end">15%</text>
+<line x1="105" y1="377.0" x2="835" y2="377.0" class="grid"/>
+<text x="93" y="381.0" class="tick" text-anchor="end">25%</text>
+<line x1="105" y1="309.0" x2="835" y2="309.0" class="grid"/>
+<text x="93" y="313.0" class="tick" text-anchor="end">35%</text>
+<line x1="105" y1="241.0" x2="835" y2="241.0" class="grid"/>
+<text x="93" y="245.0" class="tick" text-anchor="end">45%</text>
+<line x1="105" y1="173.0" x2="835" y2="173.0" class="grid"/>
+<text x="93" y="177.0" class="tick" text-anchor="end">55%</text>
+<line x1="105" y1="105.0" x2="835" y2="105.0" class="grid"/>
+<text x="93" y="109.0" class="tick" text-anchor="end">65%</text>
+<line x1="105" y1="445" x2="835" y2="445" class="axis"/>
+<text x="105.0" y="473" class="tick" text-anchor="middle">0</text>
+<text x="348.3" y="473" class="tick" text-anchor="middle">1</text>
+<text x="591.7" y="473" class="tick" text-anchor="middle">2</text>
+<text x="835.0" y="473" class="tick" text-anchor="middle">3</text>
+<text x="470.0" y="505" class="label" text-anchor="middle">+ copies among parents and grandparents</text>
+<path d="M 105.0 212.4 L 348.3 197.8 L 591.7 183.2 L 835.0 168.7" fill="none" stroke="#2563eb" stroke-width="3"/>
+<circle cx="105.0" cy="212.4" r="5" fill="#ffffff" stroke="#2563eb" stroke-width="3"/>
+<circle cx="348.3" cy="197.8" r="5" fill="#ffffff" stroke="#2563eb" stroke-width="3"/>
+<circle cx="591.7" cy="183.2" r="5" fill="#ffffff" stroke="#2563eb" stroke-width="3"/>
+<circle cx="835.0" cy="168.7" r="5" fill="#ffffff" stroke="#2563eb" stroke-width="3"/>
+<text x="825.0" y="156.7" text-anchor="end" class="value" fill="#2563eb">55.6%</text>
+<text x="115.0" y="200.4" class="value" fill="#2563eb">49.2%</text>
+<path d="M 105.0 349.4 L 348.3 328.4 L 591.7 306.4 L 835.0 283.4" fill="none" stroke="#e45b43" stroke-width="3"/>
+<circle cx="105.0" cy="349.4" r="5" fill="#ffffff" stroke="#e45b43" stroke-width="3"/>
+<circle cx="348.3" cy="328.4" r="5" fill="#ffffff" stroke="#e45b43" stroke-width="3"/>
+<circle cx="591.7" cy="306.4" r="5" fill="#ffffff" stroke="#e45b43" stroke-width="3"/>
+<circle cx="835.0" cy="283.4" r="5" fill="#ffffff" stroke="#e45b43" stroke-width="3"/>
+<text x="825.0" y="271.4" text-anchor="end" class="value" fill="#e45b43">38.8%</text>
+<text x="115.0" y="337.4" class="value" fill="#e45b43">29.1%</text>
+<path d="M 105.0 410.0 L 348.3 416.9 L 591.7 423.5 L 835.0 429.8" fill="none" stroke="#0f766e" stroke-width="3"/>
+<circle cx="105.0" cy="410.0" r="5" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+<circle cx="348.3" cy="416.9" r="5" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+<circle cx="591.7" cy="423.5" r="5" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+<circle cx="835.0" cy="429.8" r="5" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+<text x="825.0" y="417.8" text-anchor="end" class="value" fill="#0f766e">17.2%</text>
+<text x="115.0" y="398.0" class="value" fill="#0f766e">20.1%</text>
+<line x1="585" y1="78" x2="613" y2="78" stroke="#2563eb" stroke-width="3"/>
+<text x="623" y="82" class="legend">Either version</text>
+<line x1="585" y1="100" x2="613" y2="100" stroke="#e45b43" stroke-width="3"/>
+<text x="623" y="104" class="legend">+ version</text>
+<line x1="585" y1="122" x2="613" y2="122" stroke="#0f766e" stroke-width="3"/>
+<text x="623" y="126" class="legend">Normal version</text>
+<text x="470" y="535" class="subtitle" text-anchor="middle">Other modeled characteristics are standardized to the matching-scenario trial population.</text>
+</svg>

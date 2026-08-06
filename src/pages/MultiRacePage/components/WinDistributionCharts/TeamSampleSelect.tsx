@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import AssetLoader from "../../../../data/AssetLoader";
 import { STRATEGY_NAMES } from "./constants";
 
-const STRATEGY_SHORT: Record<number, string> = { 1: "FR", 2: "PC", 3: "LS", 4: "EC", 5: "RU" };
+const STRATEGY_SHORT: Record<number, string> = { 1: "FR", 2: "PC", 3: "LS", 4: "EC", 5: "RU", 6: "DB" };
 
 export interface TeamSampleSelectMember {
     cardId: number;
@@ -22,9 +22,10 @@ interface TeamSampleSelectProps {
     onChange: (value: string) => void;
     strategyColors: Record<number, string>;
     placeholderLabel?: string;
+    showPlaceholderOption?: boolean;
 }
 
-const TeamSampleSelect: React.FC<TeamSampleSelectProps> = ({ value, options, onChange, strategyColors, placeholderLabel = "Current team" }) => {
+const TeamSampleSelect: React.FC<TeamSampleSelectProps> = ({ value, options, onChange, strategyColors, placeholderLabel = "Current team", showPlaceholderOption = true }) => {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
@@ -73,13 +74,15 @@ const TeamSampleSelect: React.FC<TeamSampleSelectProps> = ({ value, options, onC
             </button>
             {open && (
                 <div className="team-sample-select-menu">
-                    <button
-                        type="button"
-                        className={`team-sample-select-option${!selected ? " is-selected" : ""}`}
-                        onClick={() => { onChange(""); setOpen(false); }}
-                    >
-                        <span className="team-sample-select-placeholder">{placeholderLabel}</span>
-                    </button>
+                    {showPlaceholderOption && (
+                        <button
+                            type="button"
+                            className={`team-sample-select-option${!selected ? " is-selected" : ""}`}
+                            onClick={() => { onChange(""); setOpen(false); }}
+                        >
+                            <span className="team-sample-select-placeholder">{placeholderLabel}</span>
+                        </button>
+                    )}
                     {options.map(opt => (
                         <button
                             key={opt.value}

@@ -106,9 +106,15 @@
 /* Character visibility list above the replay */
 .char-vis-list {
     display: flex;
+    align-items: center;
     flex-wrap: wrap;
     gap: 4px;
     padding: 4px 0 6px;
+}
+
+.char-vis-toggle-all {
+    margin-right: 2px;
+    white-space: nowrap;
 }
 
 .char-vis-btn {
@@ -346,6 +352,12 @@
     gap: 8px 12px;
 }
 
+.rr-toggle-all-btn {
+    flex: 0 0 auto;
+    margin-right: auto;
+    white-space: nowrap;
+}
+
 .rr-toggle-label {
     font-size: 0.85em;
     white-space: nowrap;
@@ -353,8 +365,13 @@
 
 /* Legend row */
 .rr-legend-row {
+    width: 100%;
     gap: 10px;
     font-size: 0.85em;
+}
+
+.rr-legend-items {
+    gap: 10px;
 }
 
 /* Frame display */
@@ -413,11 +430,50 @@
     margin-top: 0 !important;
 }
 
+.rr-playback-btn {
+    width: 72px;
+    flex: 0 0 72px;
+}
+
 .rr-fullscreen-exit {
     position: absolute;
     top: 8px;
     right: 8px;
     z-index: 20;
+}
+
+.rr-timeline-wrap {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 160px;
+}
+
+.rr-phase-track {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 32px;
+    transform: translateY(-50%);
+    pointer-events: none;
+    z-index: 4;
+}
+
+.rr-phase-marker {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    width: 3px;
+    transform: translateX(-1px);
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.75), 0 0 6px rgba(255, 255, 255, 0.45);
+}
+
+.rr-timeline-range {
+    width: 100%;
+    position: relative;
+    z-index: 2;
 }
 
 /* ClipMaker flex groups */

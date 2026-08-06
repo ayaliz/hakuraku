@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from "react";
 import type { HorseEntry, SkillStats } from "../MultiRacePage/types";
-import { STRATEGY_NAMES, STRATEGY_COLORS } from "../MultiRacePage/components/WinDistributionCharts/constants";
+import { STRATEGY_NAMES, STRATEGY_COLORS, STYLE_BREAKDOWN_STRATEGY_ORDER } from "../MultiRacePage/components/WinDistributionCharts/constants";
 import InfoTooltip from "../MultiRacePage/components/WinDistributionCharts/InfoTooltip";
 import { getCharaIcon } from "../MultiRacePage/components/WinDistributionCharts/utils";
-import { TeamMemberCard } from "../MultiRacePage/components/WinDistributionCharts/TeamMemberCard";
+import { RepresentativeDrilldown } from "../MultiRacePage/components/WinDistributionCharts/RepresentativeDrilldown";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
+import { formatTime } from "../../data/UMDatabaseUtils";
 import {
     defaultStatValueForProperty, sanitizeCharacterFeatures, SUPPORT_CARD_LB_ANY,
     type AggRow, type CharaVariant, type SkillVariant, type SupportCardVariant,
@@ -13,6 +14,7 @@ import {
 } from "./explorerShared";
 import { SerializedHorseEntry, UMA_LOGS_API_BASE, deserializeHorseEntry } from "./umaLogsApi";
 import { CharaSelect, SkillSelect, SupportCardSelect } from "./ExplorerSelects";
+import { buildExplorerQueryRequest, buildExplorerQuerySpec, serializeUmaLogsQuerySpec } from "./umaLogsQueryShared";
 import "./UmaLogsPage.css";
 
 interface ExplorerTabProps {
@@ -23,6 +25,41 @@ interface ExplorerTabProps {
     skillStats?: Map<number, SkillStats>;
     strategyColors?: Record<number, string>;
     onViewReplays?: (horse: HorseEntry) => void;
+    onEditAsQuery?: (query: string) => void;
+}
+
+type SavedExplorerState = {
+    characterFeatures: CharacterFeature[];
+    appliedCharacterFeatures: CharacterFeature[];
+    hasRunQuery: boolean;
+    sortKey: SortKey;
+    sortDesc: boolean;
+    hideLowQuantity: boolean;
+    minimumEntries: number;
+};
+
+function explorerStateKey(cmId?: string | null, courseId?: number): string | null {
+    return cmId && courseId ? `umalogs-explorer-${cmId}-${courseId}` : null;
+}
+
+function readSavedExplorerState(cmId?: string | null, courseId?: number): SavedExplorerState | null {
+    const key = explorerStateKey(cmId, courseId);
+    if (!key) return null;
+    try {
+        const parsed = JSON.parse(sessionStorage.getItem(key) ?? "null") as Partial<SavedExplorerState> | null;
+        if (!parsed || !Array.isArray(parsed.characterFeatures) || !Array.isArray(parsed.appliedCharacterFeatures)) return null;
+        return {
+            characterFeatures: sanitizeCharacterFeatures(parsed.characterFeatures),
+            appliedCharacterFeatures: sanitizeCharacterFeatures(parsed.appliedCharacterFeatures),
+            hasRunQuery: parsed.hasRunQuery === true,
+            sortKey: parsed.sortKey ?? "entries",
+            sortDesc: parsed.sortDesc !== false,
+            hideLowQuantity: parsed.hideLowQuantity === true,
+            minimumEntries: Math.max(0, Number(parsed.minimumEntries) || 200),
+        };
+    } catch {
+        return null;
+    }
 }
 
 function formatPercent(value: number): string {
@@ -38,7 +75,9 @@ const SUPPORT_CARD_LB_OPTIONS = [
     { value: 4, label: "MLB" },
 ] as const;
 
-const PROPERTY_LABELS: Record<FilterProperty, string> = {
+type ExplorerFilterProperty = Exclude<FilterProperty, "deckRaceBonus">;
+
+const PROPERTY_LABELS: Record<ExplorerFilterProperty, string> = {
     none: "—",
     speed: "Speed",
     stamina: "Stamina",
@@ -51,12 +90,13 @@ const PROPERTY_LABELS: Record<FilterProperty, string> = {
     totalSkillPoints: "Skill pts",
     rankScore: "Score",
     careerWinCount: "Career wins",
-    deckRaceBonus: "Deck race bonus",
+    isDebuffer: "Is Debuffer",
     skill: "Skill",
     supportCard: "Support card",
 };
+const PROPERTY_OPTIONS = Object.keys(PROPERTY_LABELS) as ExplorerFilterProperty[];
 
-const STRATEGIES = [5, 1, 2, 3, 4] as const;
+const STRATEGIES = STYLE_BREAKDOWN_STRATEGY_ORDER;
 const APTITUDE_GRADE_OPTIONS = [
     { value: 8, label: "S" },
     { value: 7, label: "A" },
@@ -91,7 +131,12 @@ type ExplorerQueryResponse = {
         bayesianWinRate: number;
         winRate: number;
         appearances: number;
+        teamBayesianWinRate?: number;
+        teamWinRate?: number;
+        teamWins?: number;
+        teamAppearances?: number;
     }>;
+    teamDrilldown?: ExplorerQueryResponse["drilldown"];
 };
 
 function buildExplorerBootstrapUrl(cmId: string, courseId: number, apiBase = UMA_LOGS_API_BASE): string {
@@ -136,12 +181,13 @@ function normalizeAggRow(row: AggRow): AggRow {
     };
 }
 
-const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiMode, skillStats, strategyColors, onViewReplays }) => {
-    const [characterFeatures, setCharacterFeatures] = useState<CharacterFeature[]>([]);
-    const [appliedCharacterFeatures, setAppliedCharacterFeatures] = useState<CharacterFeature[]>([]);
-    const [queryVersion, setQueryVersion] = useState(0);
-    const [sortKey, setSortKey] = useState<SortKey>("entries");
-    const [sortDesc, setSortDesc] = useState(true);
+const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiMode, skillStats, strategyColors, onViewReplays, onEditAsQuery }) => {
+    const initialSavedState = useMemo(() => readSavedExplorerState(cmId, courseId), [cmId, courseId]);
+    const [characterFeatures, setCharacterFeatures] = useState<CharacterFeature[]>(initialSavedState?.characterFeatures ?? []);
+    const [appliedCharacterFeatures, setAppliedCharacterFeatures] = useState<CharacterFeature[]>(initialSavedState?.appliedCharacterFeatures ?? []);
+    const [queryVersion, setQueryVersion] = useState(initialSavedState?.hasRunQuery ? 1 : 0);
+    const [sortKey, setSortKey] = useState<SortKey>(initialSavedState?.sortKey ?? "entries");
+    const [sortDesc, setSortDesc] = useState(initialSavedState?.sortDesc ?? true);
     const [selectedRowKey, setSelectedRowKey] = useState<string | null>(null);
     const [bootstrap, setBootstrap] = useState<ExplorerBootstrapPayload | null>(null);
     const [bootstrapLoading, setBootstrapLoading] = useState(false);
@@ -149,6 +195,9 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
     const [queryResult, setQueryResult] = useState<ExplorerQueryResponse | null>(null);
     const [queryLoading, setQueryLoading] = useState(false);
     const [queryError, setQueryError] = useState<string | null>(null);
+    const [hideLowQuantity, setHideLowQuantity] = useState(initialSavedState?.hideLowQuantity ?? false);
+    const [minimumEntries, setMinimumEntries] = useState(initialSavedState?.minimumEntries ?? 200);
+    const [loadedStateKey, setLoadedStateKey] = useState(explorerStateKey(cmId, courseId));
 
     const cardVariants = useMemo(
         () => bootstrap?.cardVariants ?? [],
@@ -174,19 +223,39 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
         () => sanitizeCharacterFeatures(characterFeatures),
         [characterFeatures],
     );
-
     useEffect(() => {
+        const saved = readSavedExplorerState(cmId, courseId);
         setBootstrap(null);
         setBootstrapLoading(false);
         setBootstrapError(null);
         setQueryResult(null);
         setQueryLoading(false);
         setQueryError(null);
-        setCharacterFeatures([]);
-        setAppliedCharacterFeatures([]);
-        setQueryVersion(0);
+        setCharacterFeatures(saved?.characterFeatures ?? []);
+        setAppliedCharacterFeatures(saved?.appliedCharacterFeatures ?? []);
+        setQueryVersion(saved?.hasRunQuery ? 1 : 0);
+        setSortKey(saved?.sortKey ?? "entries");
+        setSortDesc(saved?.sortDesc ?? true);
         setSelectedRowKey(null);
+        setHideLowQuantity(saved?.hideLowQuantity ?? false);
+        setMinimumEntries(saved?.minimumEntries ?? 200);
+        setLoadedStateKey(explorerStateKey(cmId, courseId));
     }, [cmId, courseId]);
+
+    useEffect(() => {
+        const key = explorerStateKey(cmId, courseId);
+        if (!key || key !== loadedStateKey) return;
+        const saved: SavedExplorerState = {
+            characterFeatures,
+            appliedCharacterFeatures,
+            hasRunQuery: queryVersion > 0,
+            sortKey,
+            sortDesc,
+            hideLowQuantity,
+            minimumEntries,
+        };
+        sessionStorage.setItem(key, JSON.stringify(saved));
+    }, [appliedCharacterFeatures, characterFeatures, cmId, courseId, hideLowQuantity, loadedStateKey, minimumEntries, queryVersion, sortDesc, sortKey]);
 
     useEffect(() => {
         if (!apiMode || !cmId || !courseId || bootstrap !== null) return;
@@ -227,12 +296,12 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
             fetch(buildExplorerQueryUrl(cmId, courseId, apiBase ?? UMA_LOGS_API_BASE), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    characterFeatures: appliedCharacterFeatures,
+                body: JSON.stringify(buildExplorerQueryRequest(
+                    appliedCharacterFeatures,
                     sortKey,
                     sortDesc,
                     selectedRowKey,
-                }),
+                )),
                 signal: controller.signal,
             })
                 .then(async (response) => {
@@ -325,11 +394,15 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
 
     const hasCharacterFilter = queryResult?.hasCharacterFilter ?? characterFeatures.length > 0;
     const rows = queryResult?.rows ?? [];
+    const displayedRows = useMemo(
+        () => hideLowQuantity ? rows.filter((row) => row.entries >= minimumEntries) : rows,
+        [hideLowQuantity, minimumEntries, rows],
+    );
     const showTeamsColumn = !hasCharacterFilter;
-    const drilldownColSpan = 4 + (showTeamsColumn ? 1 : 0);
+    const drilldownColSpan = 4 + (showTeamsColumn ? 1 : 0) + (hasCharacterFilter ? 2 : 0);
     const selectedRow = useMemo(
-        () => rows.find(row => row.key === selectedRowKey && row.cardId !== undefined && row.strategy !== undefined) ?? null,
-        [rows, selectedRowKey]
+        () => displayedRows.find(row => row.key === selectedRowKey && row.cardId !== undefined && row.strategy !== undefined) ?? null,
+        [displayedRows, selectedRowKey]
     );
     const drilldownHorses = useMemo(
         () => (queryResult?.drilldown ?? []).map((entry) => ({
@@ -337,6 +410,23 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
             bayesianWinRate: entry.bayesianWinRate,
             winRate: entry.winRate,
             appearances: entry.appearances,
+            teamBayesianWinRate: entry.teamBayesianWinRate,
+            teamWinRate: entry.teamWinRate,
+            teamWins: entry.teamWins,
+            teamAppearances: entry.teamAppearances,
+        })),
+        [queryResult],
+    );
+    const teamDrilldownHorses = useMemo(
+        () => (queryResult?.teamDrilldown ?? []).map((entry) => ({
+            horse: deserializeHorseEntry(entry.horse),
+            bayesianWinRate: entry.bayesianWinRate,
+            winRate: entry.winRate,
+            appearances: entry.appearances,
+            teamBayesianWinRate: entry.teamBayesianWinRate,
+            teamWinRate: entry.teamWinRate,
+            teamWins: entry.teamWins,
+            teamAppearances: entry.teamAppearances,
         })),
         [queryResult],
     );
@@ -356,12 +446,26 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
         setQueryVersion((current) => current + 1);
         setSelectedRowKey(null);
     };
+    const resetQuery = () => {
+        const key = explorerStateKey(cmId, courseId);
+        if (key) sessionStorage.removeItem(key);
+        setCharacterFeatures([]);
+        setAppliedCharacterFeatures([]);
+        setQueryVersion(0);
+        setSortKey("entries");
+        setSortDesc(true);
+        setSelectedRowKey(null);
+        setQueryResult(null);
+        setQueryError(null);
+        setHideLowQuantity(false);
+        setMinimumEntries(200);
+    };
 
     useEffect(() => {
-        if (selectedRowKey && !rows.some(row => row.key === selectedRowKey && row.cardId !== undefined && row.strategy !== undefined)) {
+        if (selectedRowKey && !displayedRows.some(row => row.key === selectedRowKey && row.cardId !== undefined && row.strategy !== undefined)) {
             setSelectedRowKey(null);
         }
-    }, [rows, selectedRowKey]);
+    }, [displayedRows, selectedRowKey]);
 
     useEffect(() => {
         if (filtersDirty && selectedRowKey !== null) setSelectedRowKey(null);
@@ -396,7 +500,12 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                         {stratColor && <span className="exp-dot" style={{ background: stratColor }} />}
                         <span className="exp-name-block">
                             <span>{row.label}</span>
-                            {row.sublabel && <span className="exp-sublabel">{row.sublabel}</span>}
+                            {(row.sublabel || row.isDebuffer) && (
+                                <span className="exp-sublabel">
+                                    {row.sublabel}
+                                    {row.isDebuffer && <span className="exp-debuffer-badge">Debuffer</span>}
+                                </span>
+                            )}
                         </span>
                     </td>
                     <td className="exp-td exp-td--r">{row.entries}</td>
@@ -409,37 +518,20 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                         {row.teamWins}
                         {row.teams > 0 && <span className="exp-wins-pct"> ({formatPercent(row.teamWinPct)}%)</span>}
                     </td>
+                    {hasCharacterFilter && <td className="exp-td exp-td--r">{row.meanFinishTime ? formatTime(row.meanFinishTime) : "-"}</td>}
+                    {hasCharacterFilter && <td className="exp-td exp-td--r">{row.medianFinishTime ? formatTime(row.medianFinishTime) : "-"}</td>}
                 </tr>
-                {isSelected && selectedRow && drilldownHorses.length > 0 && (
+                {isSelected && selectedRow && (drilldownHorses.length > 0 || teamDrilldownHorses.length > 0) && (
                     <tr className="exp-drilldown-row">
                         <td className="exp-drilldown-cell" colSpan={drilldownColSpan}>
-                            <div className="stcp-drilldown">
-                                <div className="stcp-drilldown-header">
-                                    <div className="stcp-drilldown-title">
-                                        Top performers for {selectedRow.label} ({STRATEGY_NAMES[selectedRow.strategy!]})
-                                    </div>
-                                    <div className="stcp-drilldown-subtitle">
-                                        Unique umas ranked by Bayesian-adjusted win rate across all appearances.
-                                    </div>
-                                </div>
-                                <div className="stcp-team-members-row">
-                                    {drilldownHorses.map(({ horse, bayesianWinRate, winRate, appearances }, i) => (
-                                        <div key={i} className="sa-reps-drilldown-card">
-                                            <div className="sa-reps-drilldown-winrate">
-                                                <span className="sa-adj-pct">{(bayesianWinRate * 100).toFixed(0)}%</span>
-                                                <span className="sa-pipe"> | </span>
-                                                <span className="sa-raw-pct">{(winRate * 100).toFixed(0)}% ({appearances})</span>
-                                            </div>
-                                            <TeamMemberCard
-                                                horse={horse}
-                                                skillStats={skillStats!}
-                                                strategyColors={activeStrategyColors}
-                                                onViewReplays={onViewReplays}
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                            <RepresentativeDrilldown
+                                title={`Top performers for ${selectedRow.label} (${STRATEGY_NAMES[selectedRow.strategy!]}${selectedRow.isDebuffer ? ", Debuffer" : ""})`}
+                                individualEntries={drilldownHorses}
+                                teamEntries={teamDrilldownHorses}
+                                skillStats={skillStats!}
+                                strategyColors={activeStrategyColors}
+                                onViewReplays={onViewReplays}
+                            />
                         </td>
                     </tr>
                 )}
@@ -490,6 +582,23 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                         </span>
                         <div className="exp-subsection-actions">
                             {filtersDirty && <span className="exp-dirty-note">Unsaved filter changes</span>}
+                            {onEditAsQuery && (
+                                <button
+                                    className="query-help-btn"
+                                    type="button"
+                                    onClick={() => onEditAsQuery(serializeUmaLogsQuerySpec(buildExplorerQuerySpec(effectiveCharacterFeatures, sortKey, sortDesc)))}
+                                >
+                                    Edit as query
+                                </button>
+                            )}
+                            <button
+                                className="query-help-btn"
+                                type="button"
+                                onClick={resetQuery}
+                                disabled={queryLoading || (!characterFeatures.length && !hasRunQuery && sortKey === "entries" && sortDesc && !hideLowQuantity && minimumEntries === 200)}
+                            >
+                                Reset
+                            </button>
                             <button
                                 className="exp-run-btn"
                                 onClick={runQuery}
@@ -525,7 +634,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                                         value={feature.cardStrategy ?? ""}
                                         onChange={e => updateCharacterFeature(feature.id, { cardStrategy: e.target.value === "" ? null : Number(e.target.value) })}
                                     >
-                                        <option value="">any strategy</option>
+                                        <option value="">any style</option>
                                         {STRATEGIES.map(s => (
                                             <option key={s} value={s}>{STRATEGY_NAMES[s] ?? `Strategy ${s}`}</option>
                                         ))}
@@ -565,12 +674,12 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                                                 value={req.property}
                                                 onChange={e => updateCharacterRequirement(feature.id, req.id, { property: e.target.value as FilterProperty })}
                                             >
-                                                {(Object.keys(PROPERTY_LABELS) as FilterProperty[]).map(k => (
+                                                {PROPERTY_OPTIONS.map(k => (
                                                     <option key={k} value={k}>{PROPERTY_LABELS[k]}</option>
                                                 ))}
                                             </select>
 
-                                            {req.property !== "none" && req.property !== "skill" && req.property !== "supportCard" && !isAptitudeProperty(req.property) && (
+                                            {req.property !== "none" && req.property !== "skill" && req.property !== "supportCard" && req.property !== "isDebuffer" && !isAptitudeProperty(req.property) && (
                                                 <>
                                                     <div className="exp-toggle">
                                                         <button
@@ -690,7 +799,24 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                             </div>
                         ))}
                     </div>
-                    <button className="exp-add-btn" onClick={addCharacterFeature}>+ Add character filter</button>
+                    <div className="exp-filter-footer">
+                        <button className="exp-add-btn" onClick={addCharacterFeature}>+ Add character filter</button>
+                        <label className="exp-quantity-filter">
+                            <input
+                                type="checkbox"
+                                checked={hideLowQuantity}
+                                onChange={(event) => setHideLowQuantity(event.target.checked)}
+                            />
+                            <span>Hide entries with quantity less than</span>
+                            <input
+                                type="number"
+                                className="exp-stat-input exp-quantity-input"
+                                min={0}
+                                value={minimumEntries}
+                                onChange={(event) => setMinimumEntries(Math.max(0, Number(event.target.value) || 0))}
+                            />
+                        </label>
+                    </div>
                 </div>
             </div>
 
@@ -701,6 +827,8 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                     <div className="exp-empty">Set your filters, then click Run Query.</div>
                 ) : rows.length === 0 ? (
                     <div className="exp-empty">No teams match the current filter.</div>
+                ) : displayedRows.length === 0 ? (
+                    <div className="exp-empty">No results meet the minimum entry quantity.</div>
                 ) : (
                     <table className="exp-table">
                         <thead>
@@ -722,10 +850,12 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                                 <th className="exp-th exp-th--r" onClick={() => handleSort("teamWins")} title="Distinct teams containing this row that won the race">
                                     Team Wins <SortArrow col="teamWins" />
                                 </th>
+                                {hasCharacterFilter && <th className="exp-th exp-th--r">Mean Time</th>}
+                                {hasCharacterFilter && <th className="exp-th exp-th--r">Median Time</th>}
                             </tr>
                         </thead>
                         <tbody>
-                            {rows.map(renderRow)}
+                            {displayedRows.map(renderRow)}
                         </tbody>
                     </table>
                 )}

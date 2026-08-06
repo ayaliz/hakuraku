@@ -376,15 +376,17 @@ function VersionHistoryTab() {
         setDiffData(null);
         setDiffError(null);
         setDiffLoading(true);
-        setCollapsedTables(new Set());
         try {
             const resp = await fetch(import.meta.env.BASE_URL + `data/masterdata/diffs/${short_hash}.json.gz`);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const compressed = new Uint8Array(await resp.arrayBuffer());
             const text = pako.inflate(compressed, { to: 'string' });
-            setDiffData(JSON.parse(text));
+            const parsed = JSON.parse(text) as DiffData;
+            setDiffData(parsed);
+            setCollapsedTables(new Set(Object.keys(parsed.tables)));
         } catch (e: any) {
             setDiffError(String(e));
+            setCollapsedTables(new Set());
         } finally {
             setDiffLoading(false);
         }
@@ -472,6 +474,7 @@ function VersionHistoryTab() {
                                     diff={diffData}
                                     collapsedTables={collapsedTables}
                                     onToggleTable={toggleTable}
+                                    onSetCollapsedTables={setCollapsedTables}
                                     scrollToTable={scrollToTable}
                                     onLinkTable={linkTable}
                                 />
@@ -488,14 +491,16 @@ interface DiffViewerProps {
     diff: DiffData;
     collapsedTables: Set<string>;
     onToggleTable: (name: string) => void;
+    onSetCollapsedTables: (tables: Set<string>) => void;
     scrollToTable?: string | null;
     onLinkTable: (tableName: string) => void;
 }
 
-function DiffViewer({ diff, collapsedTables, onToggleTable, scrollToTable, onLinkTable }: DiffViewerProps) {
+function DiffViewer({ diff, collapsedTables, onToggleTable, onSetCollapsedTables, scrollToTable, onLinkTable }: DiffViewerProps) {
     const tableNames = Object.keys(diff.tables).sort();
     const tableRefs = useRef<Map<string, HTMLDivElement>>(new Map());
     const [copiedTable, setCopiedTable] = useState<string | null>(null);
+    const allCollapsed = tableNames.length > 0 && collapsedTables.size >= tableNames.length;
 
     useEffect(() => {
         if (!scrollToTable) return;
@@ -512,6 +517,15 @@ function DiffViewer({ diff, collapsedTables, onToggleTable, scrollToTable, onLin
 
     return (
         <div>
+            <div className="mdb-diff-toolbar">
+                <Button
+                    variant="outline-light"
+                    size="sm"
+                    onClick={() => onSetCollapsedTables(allCollapsed ? new Set() : new Set(tableNames))}
+                >
+                    {allCollapsed ? 'Expand all' : 'Collapse all'}
+                </Button>
+            </div>
             {tableNames.map((tableName) => {
                 const td = diff.tables[tableName];
                 const collapsed = collapsedTables.has(tableName);

@@ -1,10 +1,11 @@
-import { RaceSimulateEventData_SimulateEventType } from "../../data/race_data_pb";
+import { type RaceSimulateEventData, RaceSimulateEventData_SimulateEventType } from "../../data/race_data_pb";
 import { deserializeFromBase64 } from "../../data/RaceDataParser";
-import { fromRaceHorseData, hydrateCompactRaceHorseData } from "../../data/TrainedCharaData";
+import { fromRaceHorseData } from "../../data/TrainedCharaData";
 import GameDataLoader from "../../data/GameDataLoader";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 import { parseGroundCondition, calculateRaceDistance } from "../../components/RaceDataPresenter/utils/RacePresenterUtils";
 import { normalizeSeasonValue } from "../../utils/season";
+import { parseStandardRaceJson } from "../../data/RaceJsonParser";
 import {
     AggregatedStats,
     CharacterStats,
@@ -18,7 +19,8 @@ import {
     StrategyStats,
     TeamCompositionStats,
 } from "./types";
-import { BAYES_TEAM, STRATEGY_DISPLAY_ORDER } from "./components/WinDistributionCharts/constants";
+import { BAYES_TEAM, STRATEGY_DISPLAY_ORDER, STYLE_BREAKDOWN_STRATEGY_ORDER } from "./components/WinDistributionCharts/constants";
+import { effectiveStrategyForHorse, isDebufferHorse } from "./styleClassifier";
 
 const STRATEGY_NAMES: Record<number, string> = {
     1: "Front Runner",
@@ -26,9 +28,14 @@ const STRATEGY_NAMES: Record<number, string> = {
     3: "Late Surger",
     4: "End Closer",
     5: "Runaway",
+    6: "Debuffer",
 };
 const RUNAWAY_TRIGGER_SKILL_ID = 202051;
-const ALL_STRATEGY_IDS: number[] = [...STRATEGY_DISPLAY_ORDER];
+const FORCED_GOLD_TRIGGER_SKILL_IDS = new Set([110071, 910071]);
+const FORCED_GOLD_ACTIVATION_WINDOW_SECONDS = 1.5 / 15;
+const GOLD_SKILL_RARITY_REFERENCE_ID = 200331;
+const ALL_STRATEGY_IDS: number[] = [...STYLE_BREAKDOWN_STRATEGY_ORDER];
+const ROOM_COMPOSITION_STRATEGY_IDS: number[] = [...STRATEGY_DISPLAY_ORDER];
 const GATE_FLAVOR_TO_STRATEGIES = {
     total: null,
     front: new Set([1, 5]),
@@ -134,167 +141,32 @@ export function getCourseAptitudeFilters(courseId: number | undefined): { ground
 export function parseRaceJson(json: any, fileName: string): ParsedRace | { error: string } {
     const id = `race_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // CHECK FOR NEW FORMAT
-    if (json['race_scenario'] && Array.isArray(json['race_horse_data_array'])) {
-        return parseNewFormat(json, fileName, id);
-    }
+    const parsedJson = parseStandardRaceJson(json, { fileName });
+    if ("error" in parsedJson) return parsedJson;
 
-    // --- OLD FORMAT LOGIC BELOW ---
-    const raceHorseArray = json['<RaceHorse>k__BackingField'];
-    const raceType = json['<RaceType>k__BackingField'];
-    const groundCondition = parseGroundCondition(json['<GroundCondition>k__BackingField']);
-    const weather = json['<Weather>k__BackingField'];
-    const season = normalizeSeasonValue(json['<Season>k__BackingField']);
-    if (!Array.isArray(raceHorseArray)) {
-        return { error: 'Could not find <RaceHorse>k__BackingField or race_horse_data_array in JSON' };
-    }
-
-    let detectedCourseId: number | undefined = undefined;
-    try {
-        const courseSet = json['<RaceCourseSet>k__BackingField'];
-        if (courseSet) {
-            detectedCourseId = courseSet['<Id>k__BackingField'] ?? courseSet.Id;
-        }
-    } catch { }
-
-    const horseInfo = raceHorseArray
-        .map((member: any) => {
-            const horseData = member['_responseHorseData'];
-            if (horseData === undefined || horseData === null) return null;
-            return horseData;
-        })
-        .filter((data: any) => data !== null);
-
-    if (horseInfo.length === 0) {
-        return { error: 'No horse data found in _responseHorseData fields' };
-    }
-
-    const raceScenario = json['<SimDataBase64>k__BackingField'];
-    if (typeof raceScenario !== 'string' || !raceScenario) {
-        return { error: 'Could not find <SimDataBase64>k__BackingField in JSON' };
-    }
-
-    const parsedRaceData = deserializeFromBase64(raceScenario);
+    const parsedRaceData = deserializeFromBase64(parsedJson.raceScenario);
     if (!parsedRaceData) {
         return { error: 'Failed to parse race scenario data' };
     }
 
     const raceDistance = calculateRaceDistance(parsedRaceData);
 
-    const playerIndices = new Set<number>();
-    const playerMembers = json['<PlayerTeamMemberArray>k__BackingField'];
-    if (Array.isArray(playerMembers)) {
-        playerMembers.forEach((m: any) => {
-            if (typeof m.horseIndex === 'number') {
-                playerIndices.add(m.horseIndex);
-            }
-        });
-    }
-
     return {
         id,
         fileName,
         raceData: parsedRaceData,
-        horseInfo,
-        detectedCourseId,
-        groundCondition,
-        weather,
-        season,
+        horseInfo: parsedJson.horseInfo,
+        detectedCourseId: parsedJson.detectedCourseId,
+        groundCondition: parseGroundCondition(parsedJson.trackDetails.condition),
+        weather: parsedJson.trackDetails.weather,
+        season: normalizeSeasonValue(parsedJson.trackDetails.season),
         raceDistance,
         uploadedAt: new Date(),
-        playerIndices,
-        raceType,
-        deckByTrainedCharaId: new Map<number, { id: number; lb: number }[]>(),
-        deckByViewerAndCard: new Map<string, { id: number; lb: number }[]>(),
+        playerIndices: parsedJson.playerIndices,
+        raceType: parsedJson.raceType,
+        deckByTrainedCharaId: parsedJson.deckByTrainedCharaId,
+        deckByViewerAndCard: parsedJson.deckByViewerAndCard,
     };
-}
-
-function parseNewFormat(json: any, fileName: string, id: string): ParsedRace | { error: string } {
-    try {
-        const rawHorses = json['race_horse_data_array'];
-        let detectedCourseId: number | undefined = undefined;
-        const courseSet = json['race_course_set'] || json['RaceCourseSet'];
-        if (courseSet) {
-            detectedCourseId = courseSet['id'] ?? courseSet.Id;
-        }
-
-        // Fallback: derive course ID from race instance ID embedded in filename (e.g. "800001_xxx_xxx.json")
-        if (!detectedCourseId) {
-            const match = fileName.match(/^(\d+)_/);
-            if (match) {
-                const raceInstanceId = parseInt(match[1], 10);
-                const courseSetId = UMDatabaseWrapper.raceInstanceCourseSetId[raceInstanceId];
-                if (courseSetId) detectedCourseId = courseSetId;
-            }
-        }
-
-        const raceType = json['race_type'] || json['RaceType'];
-        const groundCondition = parseGroundCondition(json['ground_condition'] ?? json['GroundCondition']);
-        const weather = json['weather'] ?? json['Weather'];
-        const season = normalizeSeasonValue(json['season'] ?? json['Season']);
-
-        const courseAptitudeFilters = getCourseAptitudeFilters(detectedCourseId);
-        const horseInfo = rawHorses
-            .filter((h: any) => h !== null)
-            .map((horse: any) => hydrateCompactRaceHorseData(horse, { courseAptitudeFilters }));
-
-        const deckByTrainedCharaId = new Map<number, { id: number; lb: number }[]>();
-        const deckByViewerAndCard = new Map<string, { id: number; lb: number }[]>();
-        const trainedCharaArray: any[] = json['trained_chara_array'] ?? [];
-        for (const tc of trainedCharaArray) {
-            if (!tc) continue;
-            const cards = (tc['support_card_list'] ?? tc['support_card_array'] ?? [])
-                .slice()
-                .sort((a: any, b: any) => ((a.position ?? a.Position ?? 0) - (b.position ?? b.Position ?? 0)))
-                .map((c: any) => ({ id: c['support_card_id'] as number, lb: (c['limit_break_count'] ?? 0) as number }));
-            const viewerId = tc['viewer_id'];
-            const cardId = tc['card_id'];
-            if (viewerId !== undefined && cardId !== undefined) {
-                deckByViewerAndCard.set(`${viewerId}:${cardId}`, cards);
-            }
-            const tcId = tc['trained_chara_id'];
-            if (tcId) {
-                deckByTrainedCharaId.set(tcId, cards);
-            }
-        }
-
-        const parsedRaceData = deserializeFromBase64(json['race_scenario']);
-        if (!parsedRaceData) {
-            return { error: 'Failed to parse race scenario data' };
-        }
-
-        const raceDistance = calculateRaceDistance(parsedRaceData);
-
-        const playerIndices = new Set<number>();
-        const playerMembers = json['player_team_member_array'] || json['PlayerTeamMemberArray'];
-        if (Array.isArray(playerMembers)) {
-            playerMembers.forEach((m: any) => {
-                const idx = m.horseIndex ?? m.horse_index;
-                if (typeof idx === 'number') {
-                    playerIndices.add(idx);
-                }
-            });
-        }
-
-        return {
-            id,
-            fileName,
-            raceData: parsedRaceData,
-            horseInfo,
-            detectedCourseId,
-            groundCondition,
-            weather,
-            season,
-            raceDistance,
-            uploadedAt: new Date(),
-            playerIndices,
-            raceType,
-            deckByTrainedCharaId,
-            deckByViewerAndCard,
-        };
-    } catch (err: any) {
-        return { error: `Failed to parse new JSON format: ${err.message}` };
-    }
 }
 
 export function extractHorseEntries(race: ParsedRace): HorseEntry[] {
@@ -302,6 +174,7 @@ export function extractHorseEntries(race: ParsedRace): HorseEntry[] {
     const courseAptitudeFilters = getCourseAptitudeFilters(race.detectedCourseId);
     const aptGroundField = courseAptitudeFilters ? GROUND_APTITUDE_FIELD[courseAptitudeFilters.ground] : null;
     const aptDistanceField = courseAptitudeFilters ? DISTANCE_APTITUDE_FIELD[courseAptitudeFilters.distance] : null;
+    const { naturalEvents: analyticsSkillEvents, forcedEvents: forcedAnalyticsSkillEvents } = classifyAnalyticsSkillEvents(race);
 
     race.horseInfo.forEach((data, index) => {
         const frameOrder = (data['frame_order'] ?? (index + 1)) - 1;
@@ -312,13 +185,13 @@ export function extractHorseEntries(race: ParsedRace): HorseEntry[] {
         const charaData = UMDatabaseWrapper.charas[trainedChara.charaId];
 
         // Get activated skills
-        const skillEvents = race.raceData.event
-            .map(e => e.event!)
-            .filter(event =>
-                event.type === RaceSimulateEventData_SimulateEventType.SKILL &&
-                event.param[0] === frameOrder
-            );
+        const skillEvents = analyticsSkillEvents.filter(event => event.param[0] === frameOrder);
         const activatedSkillIds = new Set(skillEvents.map(e => e.param[1]));
+        const forcedActivatedSkillIds = new Set(
+            forcedAnalyticsSkillEvents
+                .filter(event => event.param[0] === frameOrder)
+                .map(event => event.param[1]),
+        );
 
         // Get all learned skills from the horse's skillset
         const learnedSkillIds = new Set(
@@ -360,8 +233,10 @@ export function extractHorseEntries(race: ParsedRace): HorseEntry[] {
             charaName: charaData?.name ?? `Unknown (${trainedChara.charaId})`,
             cardId: trainedChara.cardId,
             strategy: +strategy,
+            rawStrategy: +rawStrategy,
             trainerName: data.trainer_name ?? data['trainer_name'] ?? 'Unknown',
             activatedSkillIds,
+            forcedActivatedSkillIds,
             learnedSkillIds,
             finishTime: horseResult.finishTimeRaw ?? 0,
             raceDistance: race.raceDistance,
@@ -372,6 +247,9 @@ export function extractHorseEntries(race: ParsedRace): HorseEntry[] {
             guts,
             wiz,
             rankScore: trainedChara.rankScore,
+            scenarioId: Number.isFinite(Number(data.scenario_id ?? data.scenarioId))
+                ? Number(data.scenario_id ?? data.scenarioId)
+                : undefined,
             motivation,
             activationChance,
             isPlayer: race.playerIndices.has(frameOrder),
@@ -387,12 +265,90 @@ export function extractHorseEntries(race: ParsedRace): HorseEntry[] {
     return entries;
 }
 
-export function extractSkillActivations(race: ParsedRace): Map<number, SkillActivationPoint[]> {
+function classifyAnalyticsSkillEvents(race: ParsedRace) {
+    const skillEvents = race.raceData.event
+        .map(eventWrapper => eventWrapper.event)
+        .filter((event): event is RaceSimulateEventData =>
+            event?.type === RaceSimulateEventData_SimulateEventType.SKILL
+        );
+    const goldRarity = UMDatabaseWrapper.skills[GOLD_SKILL_RARITY_REFERENCE_ID]?.rarity;
+    if (goldRarity === undefined) {
+        return { naturalEvents: skillEvents, forcedEvents: [] as RaceSimulateEventData[] };
+    }
+
+    const triggerTimesByHorse = new Map<number, number[]>();
+    for (const event of skillEvents) {
+        if (!FORCED_GOLD_TRIGGER_SKILL_IDS.has(event.param[1])) continue;
+        const horseFrameOrder = event.param[0];
+        const triggerTimes = triggerTimesByHorse.get(horseFrameOrder) ?? [];
+        triggerTimes.push(event.frameTime ?? 0);
+        triggerTimesByHorse.set(horseFrameOrder, triggerTimes);
+    }
+
+    if (triggerTimesByHorse.size === 0) {
+        return { naturalEvents: skillEvents, forcedEvents: [] as RaceSimulateEventData[] };
+    }
+
+    const naturalEvents: RaceSimulateEventData[] = [];
+    const forcedEvents: RaceSimulateEventData[] = [];
+    skillEvents.forEach(event => {
+        const skillId = event.param[1];
+        if (FORCED_GOLD_TRIGGER_SKILL_IDS.has(skillId) || UMDatabaseWrapper.skills[skillId]?.rarity !== goldRarity) {
+            naturalEvents.push(event);
+            return;
+        }
+
+        const activationTime = event.frameTime ?? 0;
+        const wasForced = (triggerTimesByHorse.get(event.param[0]) ?? []).some(triggerTime => {
+            const delta = activationTime - triggerTime;
+            return delta > 0 && delta < FORCED_GOLD_ACTIVATION_WINDOW_SECONDS;
+        });
+        (wasForced ? forcedEvents : naturalEvents).push(event);
+    });
+
+    return { naturalEvents, forcedEvents };
+}
+
+function extractSkillActivationPoints(
+    race: ParsedRace,
+    skillEvents: RaceSimulateEventData[],
+): Map<number, SkillActivationPoint[]> {
     const activations = new Map<number, SkillActivationPoint[]>();
 
     // Pre-build a lookup for frame times to distances per horse
     // This lets us quickly find the distance at any given time for any horse
     const frameData = race.raceData.frame ?? [];
+
+    const distanceAtTime = (frameOrder: number, activationTime: number): number => {
+        if (frameData.length === 0) return 0;
+
+        let previous = frameData[0];
+        if ((previous.time ?? 0) >= activationTime) {
+            return previous.horseFrame?.[frameOrder]?.distance ?? 0;
+        }
+
+        for (let i = 1; i < frameData.length; i++) {
+            const next = frameData[i];
+            const nextTime = next.time ?? 0;
+            if (nextTime < activationTime) {
+                previous = next;
+                continue;
+            }
+
+            const previousHorse = previous.horseFrame?.[frameOrder];
+            const nextHorse = next.horseFrame?.[frameOrder];
+            if (!previousHorse || !nextHorse) return previousHorse?.distance ?? nextHorse?.distance ?? 0;
+
+            const previousTime = previous.time ?? nextTime;
+            const span = nextTime - previousTime;
+            const ratio = span > 0
+                ? Math.max(0, Math.min(1, (activationTime - previousTime) / span))
+                : 0;
+            return (previousHorse.distance ?? 0) + ((nextHorse.distance ?? 0) - (previousHorse.distance ?? 0)) * ratio;
+        }
+
+        return frameData[frameData.length - 1].horseFrame?.[frameOrder]?.distance ?? 0;
+    };
 
     // Pre-compute activation chances for each horse in this race
     const horseActivationChances = new Map<number, number>();
@@ -407,10 +363,7 @@ export function extractSkillActivations(race: ParsedRace): Map<number, SkillActi
         horseActivationChances.set(frameOrder, activationChance);
     });
 
-    race.raceData.event.forEach(eventWrapper => {
-        const event = eventWrapper.event;
-        if (!event || event.type !== RaceSimulateEventData_SimulateEventType.SKILL) return;
-
+    skillEvents.forEach(event => {
         const frameOrder = event.param[0];
         const skillId = event.param[1];
         const activationTime = event.frameTime ?? 0;
@@ -418,34 +371,10 @@ export function extractSkillActivations(race: ParsedRace): Map<number, SkillActi
         const horseResult = race.raceData.horseResult[frameOrder];
         const finishOrder = horseResult ? (horseResult.finishOrder ?? 99) + 1 : 99;
 
-        // Find the distance at the activation time by searching frames
-        let distance = 0;
-
-        // Binary search or linear search for the frame closest to activationTime
-        for (let i = 0; i < frameData.length; i++) {
-            const frame = frameData[i];
-            const frameTime = frame.time ?? 0;
-
-            if (frameTime >= activationTime) {
-                // Found the frame at or after activation time
-                const hf = frame.horseFrame?.[frameOrder];
-                if (hf && hf.distance !== undefined) {
-                    distance = hf.distance;
-                }
-                break;
-            }
-
-            // Store the last valid distance in case we're between frames
-            const hf = frame.horseFrame?.[frameOrder];
-            if (hf && hf.distance !== undefined) {
-                distance = hf.distance;
-            }
-        }
-
         const point: SkillActivationPoint = {
             raceId: race.id,
             horseFrameOrder: frameOrder,
-            distance,
+            distance: distanceAtTime(frameOrder, activationTime),
             time: activationTime,
             finishOrder,
             activationChance: horseActivationChances.get(frameOrder) ?? 0.2,
@@ -460,6 +389,55 @@ export function extractSkillActivations(race: ParsedRace): Map<number, SkillActi
     return activations;
 }
 
+export function extractSkillActivationData(race: ParsedRace): {
+    natural: Map<number, SkillActivationPoint[]>;
+    forced: Map<number, SkillActivationPoint[]>;
+} {
+    const { naturalEvents, forcedEvents } = classifyAnalyticsSkillEvents(race);
+    return {
+        natural: extractSkillActivationPoints(race, naturalEvents),
+        forced: extractSkillActivationPoints(race, forcedEvents),
+    };
+}
+
+export function extractSkillActivations(race: ParsedRace): Map<number, SkillActivationPoint[]> {
+    return extractSkillActivationData(race).natural;
+}
+
+export function makeHorseBuildKey(horse: Pick<HorseEntry,
+    "cardId" | "strategy" | "speed" | "stamina" | "pow" | "guts" | "wiz" | "rankScore" |
+    "learnedSkillIds" | "supportCardIds" | "supportCardLimitBreaks"
+>): string {
+    const learnedSkillIds = Array.from(horse.learnedSkillIds).sort((a, b) => a - b).join(",");
+    const supportCards = horse.supportCardIds
+        .map((id, index) => `${id}:${horse.supportCardLimitBreaks[index] ?? 0}`)
+        .sort()
+        .join(",");
+    const strategy = effectiveStrategyForHorse(horse);
+    return [
+        horse.cardId,
+        strategy,
+        horse.speed,
+        horse.stamina,
+        horse.pow,
+        horse.guts,
+        horse.wiz,
+        horse.rankScore,
+        learnedSkillIds,
+        supportCards,
+    ].join("|");
+}
+
+export function makeBuiltTeamKey(horses: Pick<HorseEntry,
+    "cardId" | "strategy" | "speed" | "stamina" | "pow" | "guts" | "wiz" | "rankScore" |
+    "learnedSkillIds" | "supportCardIds" | "supportCardLimitBreaks"
+>[]): string {
+    return horses
+        .map(makeHorseBuildKey)
+        .sort()
+        .join("__");
+}
+
 
 function computeTeamStats(allHorses: HorseEntry[]): TeamCompositionStats[] {
     // Group horses by race
@@ -470,6 +448,7 @@ function computeTeamStats(allHorses: HorseEntry[]): TeamCompositionStats[] {
     }
 
     const compMap = new Map<string, {
+        buildKey: string;
         members: { charaId: number; cardId: number; strategy: number; charaName: string }[];
         memberWins: number[];
         appearances: number;
@@ -498,11 +477,14 @@ function computeTeamStats(allHorses: HorseEntry[]): TeamCompositionStats[] {
 
         for (const team of teams) {
             // Sort by (cardId * 10 + strategy) — same canonical ordering as pairSynergy
-            const sorted = [...team].sort((a, b) => (a.cardId * 10 + a.strategy) - (b.cardId * 10 + b.strategy));
-            const key = sorted.map(h => `${h.cardId}_${h.strategy}`).join('__');
+            const sorted = [...team]
+                .map((horse) => ({ ...horse, strategy: effectiveStrategyForHorse(horse) }))
+                .sort((a, b) => (a.cardId * 10 + a.strategy) - (b.cardId * 10 + b.strategy));
+            const key = makeBuiltTeamKey(sorted);
 
             if (!compMap.has(key)) {
                 compMap.set(key, {
+                    buildKey: key,
                     members: sorted.map(h => ({ charaId: h.charaId, cardId: h.cardId, strategy: h.strategy, charaName: h.charaName })),
                     memberWins: new Array(sorted.length).fill(0),
                     appearances: 0,
@@ -517,8 +499,7 @@ function computeTeamStats(allHorses: HorseEntry[]): TeamCompositionStats[] {
                 entry.wins++;
                 // Credit the member that actually finished 1st
                 for (let si = 0; si < sorted.length; si++) {
-                    const horse = team.find(h => h.cardId === sorted[si].cardId && h.strategy === sorted[si].strategy);
-                    if (horse && horse.finishOrder === 1) {
+                    if (sorted[si].finishOrder === 1) {
                         entry.memberWins[si]++;
                         break;
                     }
@@ -736,7 +717,7 @@ export function aggregateStats(races: ParsedRace[], options?: { releaseProcessed
         const horses = extractHorseEntries(race);
         horses.forEach((horse) => {
             allHorses.push(horse);
-            horseStrategyByKey.set(`${horse.raceId}_${horse.frameOrder}`, horse.strategy);
+            horseStrategyByKey.set(`${horse.raceId}_${horse.frameOrder}`, effectiveStrategyForHorse(horse));
         });
 
         const skillActs = extractSkillActivations(race);
@@ -804,10 +785,12 @@ export function aggregateStats(races: ParsedRace[], options?: { releaseProcessed
 
     const rawStrategyTotals: Record<number, number> = {};
     allHorses.forEach(horse => {
+        if (isDebufferHorse(horse)) return;
         rawStrategyTotals[horse.strategy] = (rawStrategyTotals[horse.strategy] ?? 0) + 1;
     });
 
     allHorses.forEach(horse => {
+        if (isDebufferHorse(horse)) return;
         if (!stratMap.has(horse.strategy)) {
             stratMap.set(horse.strategy, {
                 races: 0,
@@ -842,6 +825,7 @@ export function aggregateStats(races: ParsedRace[], options?: { releaseProcessed
     for (const horses of raceHorsesByRace.values()) {
         const stratInRace = new Map<number, { count: number; hasWinner: boolean }>();
         for (const h of horses) {
+            if (isDebufferHorse(h)) continue;
             if (!stratInRace.has(h.strategy)) stratInRace.set(h.strategy, { count: 0, hasWinner: false });
             const e = stratInRace.get(h.strategy)!;
             e.count++;
@@ -997,14 +981,32 @@ export function aggregateStats(races: ParsedRace[], options?: { releaseProcessed
             groupSkillIds.some(id => h.learnedSkillIds.has(id))
         );
         const learnedByHorses = horsesWhoLearned.length;
+        const forcedOnlyHorses = horsesWhoLearned.filter(h => {
+            const naturallyActivated = groupSkillIds.some(id => h.activatedSkillIds.has(id));
+            const forceActivated = groupSkillIds.some(id => h.forcedActivatedSkillIds?.has(id));
+            return forceActivated && !naturallyActivated;
+        });
+        const forcedActivationHorses = forcedOnlyHorses.length;
+        const activationOpportunities = Math.max(0, learnedByHorses - forcedActivationHorses);
 
         const learnedByCharaIds = new Set(horsesWhoLearned.map(h => h.charaId));
-        const learnedByStrategies = new Set(horsesWhoLearned.map(h => h.strategy));
+        const learnedByStrategies = new Set(horsesWhoLearned.map(h => effectiveStrategyForHorse(h)));
         const learnedByHorsesByStrategy = horsesWhoLearned.reduce<Record<string, number>>((acc, horse) => {
-            const key = String(horse.strategy);
+            const key = String(effectiveStrategyForHorse(horse));
             acc[key] = (acc[key] ?? 0) + 1;
             return acc;
         }, {});
+        const forcedActivationHorsesByStrategy = forcedOnlyHorses.reduce<Record<string, number>>((acc, horse) => {
+            const key = String(effectiveStrategyForHorse(horse));
+            acc[key] = (acc[key] ?? 0) + 1;
+            return acc;
+        }, {});
+        const activationOpportunitiesByStrategy = Object.fromEntries(
+            Object.entries(learnedByHorsesByStrategy).map(([strategyKey, learned]) => [
+                strategyKey,
+                Math.max(0, learned - (forcedActivationHorsesByStrategy[strategyKey] ?? 0)),
+            ]),
+        );
 
         // Check metadata on representative ID
         const isUnique = representativeId >= 100000 && representativeId < 200000;
@@ -1058,6 +1060,8 @@ export function aggregateStats(races: ParsedRace[], options?: { releaseProcessed
             uniqueRaces,
             uniqueHorses,
             learnedByHorses,
+            activationOpportunities,
+            forcedActivationHorses,
             winRate,
             avgFinishPosition: avgPosition,
             activationDistances: distances, // Already sorted
@@ -1067,6 +1071,8 @@ export function aggregateStats(races: ParsedRace[], options?: { releaseProcessed
             uniqueHorsesByStrategy: Object.fromEntries(
                 Object.entries(uniqueHorsesByStrategy).map(([strategyKey, horseKeys]) => [strategyKey, horseKeys.size])
             ),
+            activationOpportunitiesByStrategy,
+            forcedActivationHorsesByStrategy,
             meanDistance,
             medianDistance,
             meanDistanceByStrategy,
@@ -1083,9 +1089,9 @@ export function aggregateStats(races: ParsedRace[], options?: { releaseProcessed
     // Room composition frequencies
     const raceStratCounts = new Map<string, number[]>();
     for (const h of allHorses) {
-        if (!raceStratCounts.has(h.raceId)) raceStratCounts.set(h.raceId, new Array(ALL_STRATEGY_IDS.length).fill(0));
+        if (!raceStratCounts.has(h.raceId)) raceStratCounts.set(h.raceId, new Array(ROOM_COMPOSITION_STRATEGY_IDS.length).fill(0));
         const c = raceStratCounts.get(h.raceId)!;
-        const strategyIdx = ALL_STRATEGY_IDS.indexOf(h.strategy);
+        const strategyIdx = ROOM_COMPOSITION_STRATEGY_IDS.indexOf(effectiveStrategyForHorse(h));
         if (strategyIdx >= 0) c[strategyIdx]++;
     }
     const compFreqMap = new Map<string, { counts: number[]; occurrences: number }>();
@@ -1096,7 +1102,6 @@ export function aggregateStats(races: ParsedRace[], options?: { releaseProcessed
     }
     const roomCompositions = Array.from(compFreqMap.values())
         .sort((a, b) => b.occurrences - a.occurrences)
-        .slice(0, 50)
         .map(e => ({ counts: e.counts, occurrences: e.occurrences, rate: e.occurrences / (totalRaces || 1) }));
 
     // Use official track distance if available, otherwise fall back to calculated distance

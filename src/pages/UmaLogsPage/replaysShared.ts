@@ -13,6 +13,24 @@ import {
     type StatOp,
     type SupportCardVariant,
 } from "./explorerShared";
+import type { UmaLogsQuerySpec } from "./umaLogsQueryShared";
+
+export type ReplaySortKey = "finishTime" | "date";
+export type ReplaySortDir = "asc" | "desc";
+export type ReplayRaceFilterField =
+    | "room_runaway_count"
+    | "room_front_count"
+    | "room_pace_count"
+    | "room_late_count"
+    | "room_end_count"
+    | "horse_count"
+    | "team_count";
+export type ReplayRaceFilter = {
+    id: string;
+    field: ReplayRaceFilterField;
+    operator: "=" | "<=" | ">=";
+    value: number;
+};
 
 export type ReplayTeamMemberFilter = {
     characterMatchMode: CharacterMatchMode;
@@ -33,7 +51,8 @@ export type ReplayScopedTeamFilter = ReplayTeamFilter & {
 
 export type ReplayExactBuildFilter = {
     cardId: number;
-    strategy: number;
+    strategy: number | null;
+    isDebuffer: boolean;
     speed: number;
     stamina: number;
     pow: number;
@@ -48,8 +67,11 @@ export type ReplayExactBuildFilter = {
 
 export type ReplaySearchRequest = {
     teamFilters?: ReplayScopedTeamFilter[] | null;
-    sortKey?: "finishTime" | "date";
-    sortDir?: "asc" | "desc";
+    querySpec?: UmaLogsQuerySpec | null;
+    entryQuerySpec?: UmaLogsQuerySpec | null;
+    uqlWhere?: string | null;
+    sortKey?: ReplaySortKey;
+    sortDir?: ReplaySortDir;
     limit?: number;
     offset?: number;
 };
@@ -75,6 +97,7 @@ export type ReplayMemberSummary = {
     charaId: number;
     cardId: number;
     strategy: number;
+    isDebuffer: boolean;
     rankScore?: number;
 };
 
@@ -245,6 +268,7 @@ export function buildReplayExactBuildMemberFilter(build: ReplayExactBuildFilter)
         cardId: build.cardId,
         strategy: build.strategy,
         requirements: [
+            ...(build.isDebuffer ? [exactRequirement("exact-debuffer", "isDebuffer")] : []),
             ...statRequirements,
             ...supportRequirements,
             ...skillRequirements,

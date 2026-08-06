@@ -24,7 +24,25 @@ function hasHpRecoveryEffect(skillId: number): boolean {
 }
 
 function getExpectedObservedSpurtSpeed(speed: number): number {
-    return Math.floor(speed * 100) / 100;
+    return Math.floor((speed + 1e-9) * 100) / 100;
+}
+
+function HpDebuffSummary({ row }: { row: CharaTableData }) {
+    const hits = row.hpDebuffHits ?? [];
+    if (hits.length === 0) return null;
+    const total = hits.reduce((sum, hit) => sum + hit.estimatedHpDrain, 0);
+
+    return (
+        <div className="hp-debuff-summary">
+            <strong>Estimated HP drained by debuffs: {total.toFixed(1)}</strong>
+            {hits.map((hit, index) => (
+                <div key={`${hit.skillId}-${hit.time}-${index}`} className="hp-debuff-hit">
+                    {hit.skillName} by {hit.casterName}: {hit.estimatedHpDrain.toFixed(1)} HP
+                    {' '}({(hit.drainRatio * 100).toFixed(1)}%)
+                </div>
+            ))}
+        </div>
+    );
 }
 
 let _statIcons: Record<string, string> | null = null;
@@ -322,7 +340,22 @@ const baseCharaTableColumns: CharaColumnDef[] = [
         renderCell: (row) => {
             const spurtDist = row.horseResultData.lastSpurtStartDistance;
             if (spurtDist === -1) {
-                return <span className="status-bad">No spurt</span>;
+                const noSpurtContent = <span className="status-bad">No spurt</span>;
+                if (!row.hpDebuffHits?.length) return noSpurtContent;
+                return (
+                    <OverlayTrigger
+                        placement="auto"
+                        overlay={
+                            <Tooltip id={`spurt-hp-${row.frameOrder}`}>
+                                <div className="col-hp-tooltip">
+                                    <HpDebuffSummary row={row} />
+                                </div>
+                            </Tooltip>
+                        }
+                    >
+                        <span className="col-spurt-help">{noSpurtContent}</span>
+                    </OverlayTrigger>
+                );
             }
             const phase3Start = row.raceDistance * 2 / 3;
             const spurtDelay = spurtDist ? spurtDist - phase3Start : null;
@@ -342,6 +375,8 @@ const baseCharaTableColumns: CharaColumnDef[] = [
             );
 
             const hasHpInfo = row.hpAtPhase3Start !== undefined || row.requiredSpurtHp !== undefined;
+            const hasHpDebuffs = (row.hpDebuffHits?.length ?? 0) > 0;
+            const hasSpurtSpeedInfo = row.maxAdjustedSpeed !== undefined || expectedObservedSpurtSpeed !== undefined;
             const startHp = row.hpOutcome?.startHp;
 
             // Detect late-race HP recovery: HP was insufficient at 2/3 AND a healing skill fired in the last 1/3
@@ -360,7 +395,7 @@ const baseCharaTableColumns: CharaColumnDef[] = [
             const blockedIconUrl = hasPotentialSpurtIssue ? AssetLoader.getBlockedIcon() : null;
 
             const cellContent = (
-                <div className={`col-spurt-cell${hasHpInfo || hasPotentialSpurtIssue ? ' col-spurt-help' : ''}`}>
+                <div className={`col-spurt-cell${hasHpInfo || hasPotentialSpurtIssue || hasHpDebuffs || hasSpurtSpeedInfo ? ' col-spurt-help' : ''}`}>
                     <span>Delay: <span className="col-spurt-delay-val" style={{ color: spurtColor }}>{spurtDelay.toFixed(1)}m</span></span>
                     {row.maxAdjustedSpeed && row.lastSpurtTargetSpeed && (
                         <>
@@ -368,7 +403,7 @@ const baseCharaTableColumns: CharaColumnDef[] = [
                             <span className="col-spurt-speed">
                                 <span className="col-spurt-speed-label">Speed: </span>
                                 <span className={speedReached ? 'col-speed-ok' : 'col-speed-bad'}>
-                                    {row.maxAdjustedSpeed.toFixed(2)}{Math.abs(speedDiff) >= 0.05 && ` (${speedDiff > 0 ? '+' : ''}${speedDiff.toFixed(2)})`}
+                                    {getExpectedObservedSpurtSpeed(row.maxAdjustedSpeed).toFixed(2)}{Math.abs(speedDiff) >= 0.05 && ` (${speedDiff > 0 ? '+' : ''}${speedDiff.toFixed(2)})`}
                                 </span>
                                 {blockedIconUrl && (
                                     <img src={blockedIconUrl} alt="Potential spurt issue" className="late-heal-icon" />
@@ -379,7 +414,7 @@ const baseCharaTableColumns: CharaColumnDef[] = [
                 </div>
             );
 
-            if (!hasHpInfo && !hasPotentialSpurtIssue) return cellContent;
+            if (!hasHpInfo && !hasPotentialSpurtIssue && !hasHpDebuffs && !hasSpurtSpeedInfo) return cellContent;
 
             const hpPct = (row.hpAtPhase3Start !== undefined && startHp)
                 ? ` (${((row.hpAtPhase3Start / startHp) * 100).toFixed(1)}%)`
@@ -394,31 +429,15 @@ const baseCharaTableColumns: CharaColumnDef[] = [
             const hpTooltip = (
                 <Tooltip id={`spurt-hp-${row.frameOrder}`}>
                     <div className="col-hp-tooltip">
-                        {row.maxAdjustedSpeedTime !== undefined && row.maxAdjustedSpeedDebug && (() => {
-                            const d = row.maxAdjustedSpeedDebug!;
-                            const totalBuff = d.skillBuffs.reduce((s, b) => s + b.value, 0)
-                                + d.spotStruggleBuff
-                                + d.duelingBuff
-                                + d.downhillBuff
-                                - d.uphillPenalty
-                                - d.skillDebuffs.reduce((s, b) => s + b.value, 0);
-                            return (
-                                <>
-                                    <div>Speed sample: <strong>t={row.maxAdjustedSpeedTime!.toFixed(2)}s</strong>, raw={d.rawSpeed.toFixed(3)}</div>
-                                    {d.skillBuffs.map((b, i) => (
-                                        <div key={i}>- Skill ({b.name}): <strong>-{b.value.toFixed(3)}</strong></div>
-                                    ))}
-                                    {d.skillDebuffs.map((b, i) => (
-                                        <div key={i}>- Speed debuff ({b.name}): <strong>+{b.value.toFixed(3)}</strong></div>
-                                    ))}
-                                    {d.spotStruggleBuff > 0 && <div>- Spot Struggle: <strong>-{d.spotStruggleBuff.toFixed(3)}</strong></div>}
-                                    {d.duelingBuff > 0 && <div>- Dueling: <strong>-{d.duelingBuff.toFixed(3)}</strong></div>}
-                                    {d.uphillPenalty > 0 && <div>- Uphill penalty: <strong>+{d.uphillPenalty.toFixed(3)}</strong></div>}
-                                    {d.downhillBuff > 0 && <div>- Downhill: <strong>-{d.downhillBuff.toFixed(3)}</strong></div>}
-                                    {Math.abs(totalBuff) > 1e-6 && <div>= Adjusted: <strong>{(d.rawSpeed - totalBuff).toFixed(3)}</strong></div>}
-                                </>
-                            );
-                        })()}
+                        {row.maxAdjustedSpeed !== undefined && (
+                            <div>
+                                Observed spurt speed: <strong>{getExpectedObservedSpurtSpeed(row.maxAdjustedSpeed).toFixed(2)} m/s</strong>
+                                {row.maxAdjustedSpeedTime !== undefined && ` [${row.maxAdjustedSpeedTime.toFixed(2)}s]`}
+                            </div>
+                        )}
+                        {expectedObservedSpurtSpeed !== undefined && (
+                            <div>Calculated spurt speed: <strong>{expectedObservedSpurtSpeed.toFixed(2)} m/s</strong></div>
+                        )}
                         {row.hpAtPhase3Start !== undefined && (
                             <div>HP at 2/3: <strong>{Math.round(row.hpAtPhase3Start)}</strong>{hpPct}</div>
                         )}
@@ -432,6 +451,7 @@ const baseCharaTableColumns: CharaColumnDef[] = [
                                 )}
                             </div>
                         )}
+                        <HpDebuffSummary row={row} />
                         {hasLateHeal && (
                             <div className="late-heal-warning">
                                 <strong>Potential spurt issue</strong>
@@ -453,7 +473,7 @@ const baseCharaTableColumns: CharaColumnDef[] = [
             );
 
             return (
-                <OverlayTrigger placement="top" overlay={hpTooltip}>
+                <OverlayTrigger placement="auto" overlay={hpTooltip}>
                     {cellContent}
                 </OverlayTrigger>
             );

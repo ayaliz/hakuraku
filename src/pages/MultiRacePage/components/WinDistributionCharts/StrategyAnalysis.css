@@ -381,6 +381,8 @@
 .sa-sat-svg {
     width: 100%;
     height: 280px;
+    flex: 1 1 280px;
+    min-height: 280px;
     overflow: visible;
     display: block;
 }
@@ -466,6 +468,8 @@
     background: rgba(0, 0, 0, 0.2);
     border-radius: 8px;
     border: 1px solid #4a5568;
+    display: flex;
+    flex-direction: column;
 }
 
 .sa-comp-header {
@@ -496,6 +500,8 @@
     margin: 0 auto;
     border-collapse: separate;
     border-spacing: 3px 3px;
+    flex: 1 1 auto;
+    height: 100%;
 }
 
 .sa-comp-th {
@@ -528,6 +534,7 @@
     border-radius: 4px;
     font-weight: bold;
     line-height: 1;
+    vertical-align: middle;
     /* background + color set inline — computed heatmap + conditional */
 }
 
@@ -673,6 +680,44 @@
     border: 1px solid #4a5568;
 }
 
+.sa-reps-panel .sa-panel-header {
+    min-height: 26px;
+}
+
+.sa-reps-mode-toggle {
+    display: inline-flex;
+    margin-left: auto;
+    border: 1px solid #4a5568;
+    border-radius: 4px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.sa-reps-mode-btn {
+    border: 0;
+    border-right: 1px solid #4a5568;
+    background: rgba(255, 255, 255, 0.03);
+    color: #8ba3c7;
+    padding: 3px 10px;
+    font-size: 10px;
+    line-height: 1.2;
+    cursor: pointer;
+}
+
+.sa-reps-mode-btn:last-child {
+    border-right: 0;
+}
+
+.sa-reps-mode-btn:hover {
+    background: rgba(96, 165, 250, 0.12);
+    color: #cfe4ff;
+}
+
+.sa-reps-mode-btn.active {
+    background: rgba(47, 118, 190, 0.45);
+    color: #e8f4ff;
+}
+
 .sa-reps-columns {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -784,6 +829,18 @@
     grid-template-columns: 92px 64px;
 }
 
+.sa-stats-meta--with-team,
+.sa-reps-stats--with-team {
+    grid-template-columns: 48px 76px 56px 76px;
+    column-gap: 6px;
+}
+
+.sa-stats-meta--team-summary,
+.sa-reps-stats--team-summary {
+    grid-template-columns: 82px 62px 86px;
+    column-gap: 6px;
+}
+
 .sa-stats-meta--score,
 .sa-reps-stats--score {
     grid-template-columns: 72px 62px 96px;
@@ -840,6 +897,16 @@
     text-align: right;
 }
 
+.sa-stats-meta > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sa-reps-sort-stat {
+    color: #93c5fd;
+}
+
 .sa-reps-actions {
     margin-top: 12px;
 }
@@ -891,6 +958,16 @@
     grid-template-columns: 88px 60px;
 }
 
+.sa-reps-full-data-modal .sa-stats-meta--with-team,
+.sa-reps-full-data-modal .sa-reps-stats--with-team {
+    grid-template-columns: 48px 76px 56px 76px;
+}
+
+.sa-reps-full-data-modal .sa-stats-meta--team-summary,
+.sa-reps-full-data-modal .sa-reps-stats--team-summary {
+    grid-template-columns: 82px 62px 86px;
+}
+
 .sa-reps-full-data-modal .sa-stats-meta--score,
 .sa-reps-full-data-modal .sa-reps-stats--score {
     grid-template-columns: 68px 56px 92px;
@@ -903,12 +980,15 @@
 .sa-panel--saturation {
     flex: 1.2 1 540px;
     min-width: 460px;
+    display: flex;
+    flex-direction: column;
 }
 
 .sa-sat-svg--expanded {
     width: 760px;
     max-width: none;
     height: 320px;
+    flex: none;
 }
 
 .sa-cross-grid--expanded {
@@ -1003,6 +1083,123 @@
 }
 
 @media (max-width: 768px) {
+    .sa-main {
+        padding-top: 4px;
+    }
+
+    .sa-panel,
+    .sa-reps-panel {
+        min-width: 0;
+        padding: 10px 12px;
+    }
+
+    .sa-top-panels-row,
+    .sa-comp-row {
+        gap: 12px;
+    }
+
+    .sa-panel-header,
+    .sa-reps-panel .sa-panel-header {
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+
+    .sa-reps-mode-toggle,
+    .sa-sb-view-toggle {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .sa-reps-mode-btn,
+    .sa-sb-view-btn {
+        flex: 1 1 0;
+        min-height: 34px;
+    }
+
+    .sa-reps-col-header,
+    .sa-reps-entry {
+        flex-wrap: wrap;
+    }
+
+    .sa-stats-meta,
+    .sa-reps-stats {
+        width: 100%;
+        margin-left: 0;
+        column-gap: 4px;
+    }
+
+    .sa-stats-meta {
+        margin-top: 3px;
+        padding-left: 26px;
+        box-sizing: border-box;
+        white-space: normal;
+    }
+
+    .sa-stats-meta > span {
+        line-height: 1.15;
+    }
+
+    .sa-reps-stats {
+        padding-left: 26px;
+        box-sizing: border-box;
+    }
+
+    .sa-stats-meta--bayes,
+    .sa-reps-stats--bayes,
+    .sa-stats-meta--team,
+    .sa-reps-stats--team {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sa-stats-meta--with-team,
+    .sa-reps-stats--with-team {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .sa-stats-meta--team-summary,
+    .sa-reps-stats--team-summary,
+    .sa-stats-meta--score,
+    .sa-reps-stats--score {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .sa-reps-stats .sa-raw-pct {
+        white-space: normal;
+    }
+
+    .sa-stcp-section {
+        min-width: 0;
+        padding: 10px 12px;
+    }
+
+    .sa-stcp-columns {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 14px;
+    }
+
+    .sa-stcp-col {
+        min-width: 0;
+    }
+
+    .sa-stcp-col-label,
+    .sa-stcp-item {
+        flex-wrap: wrap;
+    }
+
+    .sa-stcp-col-label .sa-stats-meta,
+    .sa-stcp-stats {
+        width: 100%;
+        padding-left: 31px;
+        box-sizing: border-box;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 4px;
+    }
+
+    .sa-stcp-name {
+        min-width: 0;
+    }
+
     .sa-mobile-expand-btn {
         display: inline-flex;
         align-items: center;
@@ -1031,7 +1228,19 @@
         min-width: 0;
     }
 
+    .sa-sat-svg:not(.sa-sat-svg--expanded) {
+        aspect-ratio: 320 / 210;
+        height: auto;
+        min-height: 0;
+        flex: 0 0 auto;
+    }
+
     .sa-comp-section {
+        flex: 1 1 100%;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
         padding: 10px 10px 12px;
         overflow-x: auto;
     }
@@ -1108,5 +1317,22 @@
 
     .sa-cross-grid--expanded {
         min-width: 920px;
+    }
+
+    .sa-reps-full-data-modal {
+        width: 100vw;
+        max-width: none;
+        height: 100dvh;
+        max-height: none;
+        border: 0;
+        border-radius: 0;
+    }
+
+    .sa-reps-full-data-modal .cdt-header {
+        padding: 12px 14px;
+    }
+
+    .sa-reps-full-data-modal .cdt-content {
+        padding: 10px 12px 14px;
     }
 }

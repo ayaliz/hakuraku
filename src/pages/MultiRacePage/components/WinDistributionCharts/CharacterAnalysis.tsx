@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "./CharacterAnalysis.css";
-import { STRATEGY_COLORS, BAYES_TEAM } from "./constants";
+import { STRATEGY_COLORS, BAYES_TEAM, STRATEGY_NAMES } from "./constants";
 import type { CharacterStats, HorseEntry, SkillStats, TeamCompositionStats } from "../../types";
 import { PieSlice } from "./types";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
@@ -260,14 +260,18 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
         if (!selectedTeamEntry) return null;
         return makeCompositionKey(selectedTeamEntry.team.members);
     }, [selectedTeamEntry]);
+    const selectedTeamBuildKey = selectedTeamEntry?.team.buildKey;
+    const selectedTeamRepCacheKey = selectedTeamCompositionKey
+        ? `${selectedTeamCompositionKey}|${selectedTeamBuildKey ?? ""}`
+        : null;
 
     useEffect(() => {
-        if (!canUseApiDrilldown || !selectedTeamCompositionKey || !cmId || !courseId) return;
-        if (compositionRepCache[selectedTeamCompositionKey]) return;
+        if (!canUseApiDrilldown || !selectedTeamCompositionKey || !selectedTeamRepCacheKey || !cmId || !courseId) return;
+        if (compositionRepCache[selectedTeamRepCacheKey]) return;
         const controller = new AbortController();
-        setCompositionRepLoadingKeys((keys) => [...keys, selectedTeamCompositionKey]);
+        setCompositionRepLoadingKeys((keys) => [...keys, selectedTeamRepCacheKey]);
         setCompositionRepError(null);
-        fetch(buildCompositionRepsUrl(cmId, courseId, selectedTeamCompositionKey, apiBase ?? ""), { signal: controller.signal })
+        fetch(buildCompositionRepsUrl(cmId, courseId, selectedTeamCompositionKey, apiBase ?? "", selectedTeamBuildKey), { signal: controller.signal })
             .then(async (response) => {
                 if (!response.ok) throw new Error(`Failed to load representative team samples (${response.status})`);
                 return await response.json() as CompositionRepResponse;
@@ -275,21 +279,21 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
             .then((payload) => {
                 setCompositionRepCache((cache) => ({
                     ...cache,
-                    [payload.compositionKey]: deserializeHorseEntries(payload.horses),
+                    [selectedTeamRepCacheKey]: deserializeHorseEntries(payload.horses),
                 }));
             })
             .catch((error) => {
                 if (controller.signal.aborted) return;
                 console.error("Failed to load composition representatives", { selectedTeamCompositionKey, error });
                 setCompositionRepError(error instanceof Error ? error.message : "Failed to load representative team samples.");
-                setCompositionRepCache((cache) => ({ ...cache, [selectedTeamCompositionKey]: [] }));
+                setCompositionRepCache((cache) => ({ ...cache, [selectedTeamRepCacheKey]: [] }));
             })
             .finally(() => {
                 if (controller.signal.aborted) return;
-                setCompositionRepLoadingKeys((keys) => keys.filter((key) => key !== selectedTeamCompositionKey));
+                setCompositionRepLoadingKeys((keys) => keys.filter((key) => key !== selectedTeamRepCacheKey));
             });
         return () => controller.abort();
-    }, [apiBase, canUseApiDrilldown, cmId, compositionRepCache, courseId, selectedTeamCompositionKey]);
+    }, [apiBase, canUseApiDrilldown, cmId, compositionRepCache, courseId, selectedTeamBuildKey, selectedTeamCompositionKey, selectedTeamRepCacheKey]);
 
     const renderScoreSummaryCard = (label: string, summary: AverageScoreSummary | null) => {
         if (!summary) return null;
@@ -312,6 +316,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
     const renderCompItem = (e: StyleCompEntry, positive: boolean) => {
         const valueColor = positive ? "#68d391" : "#fc8181";
         const isSelected = selectedCompKey === e.key;
+        const label = e.strategies.map((strategy) => (STRATEGY_NAMES[strategy] ?? String(strategy)).split(" ")[0]).join(" / ");
         return (
             <div
                 key={e.key}
@@ -323,7 +328,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                         <span key={i} className="syn-comp-dot" style={{ background: activeStrategyColors[s] ?? "#718096" }} />
                     ))}
                 </div>
-                <div className="syn-comp-name">{e.label}</div>
+                <div className="syn-comp-name">{label}</div>
                 <div className="syn-comp-stats">
                     <span className="sa-adj-pct syn-comp-stat" style={{ color: valueColor }}>{(e.bayesianWinRate * 100).toFixed(1)}%</span>
                     <span className="sa-raw-pct syn-comp-stat">{(e.winRate * 100).toFixed(1)}% ({e.appearances})</span>
@@ -434,7 +439,8 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                         const idx = Math.min(selectedDrilldownIdx, drilldownTeams.length - 1);
                         const selectedTeam = selectedTeamEntry;
                         const compKey = selectedTeamCompositionKey ?? makeCompositionKey(selectedTeam.team.members);
-                        const memberMap = new Map<string, HorseEntry>((compositionRepCache[compKey] ?? []).map((horse) => [`${horse.cardId}_${horse.strategy}`, horse]));
+                        const repCacheKey = selectedTeamRepCacheKey ?? compKey;
+                        const memberMap = new Map<string, HorseEntry>((compositionRepCache[repCacheKey] ?? []).map((horse) => [`${horse.cardId}_${horse.strategy}`, horse]));
                         const teamSelectOptions = drilldownTeams.map((item, i) => {
                             const n = item.team.appearances;
                             return {
@@ -459,10 +465,10 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                                         />
                                     </div>
                                 )}
-                                {canUseApiDrilldown && compositionRepLoadingKeys.includes(compKey) && (
+                                {canUseApiDrilldown && compositionRepLoadingKeys.includes(repCacheKey) && (
                                     <div className="sa-no-data">Loading representative team samples...</div>
                                 )}
-                                {canUseApiDrilldown && !compositionRepLoadingKeys.includes(compKey) && (compositionRepCache[compKey]?.length ?? 0) === 0 && compositionRepError && (
+                                {canUseApiDrilldown && !compositionRepLoadingKeys.includes(repCacheKey) && (compositionRepCache[repCacheKey]?.length ?? 0) === 0 && compositionRepError && (
                                     <div className="sa-no-data">{compositionRepError}</div>
                                 )}
                                 <div className="stcp-team-members-row">

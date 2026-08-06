@@ -17,6 +17,7 @@ import {
     DEFAULT_TEAM_PALETTE,
 } from "../RaceReplay.constants";
 import { labelStyle } from "../RaceReplay.utils";
+import { getPositionKeepRange } from "./positionKeepUtils";
 
 export type ECOption = ComposeOption<
     | ScatterSeriesOption
@@ -51,18 +52,16 @@ export function buildCourseLabelItems(markers: MarkLine1DDataItemOption[], yTop:
 }
 
 export function buildPositionKeepSeries(frontRunnerDistance: number, courseLength: number, yMax: number) {
-    const courseFactor = 0.0008 * (courseLength - 1000) + 1.0;
-
     // Zones relative to front runner (distance behind)
     const zones = [
-        { name: "Pace", min: 3.0, max: 5.0 * courseFactor, color: "rgba(128, 0, 128, 0.2)" },
-        { name: "Late", min: 6.5 * courseFactor, max: 7.0 * courseFactor, color: "rgba(0, 0, 255, 0.2)" },
-        { name: "End", min: 7.5 * courseFactor, max: 8.0 * courseFactor, color: "rgba(0, 128, 0, 0.2)" },
+        { name: "Pace", range: getPositionKeepRange(2, courseLength), color: "rgba(128, 0, 128, 0.2)" },
+        { name: "Late", range: getPositionKeepRange(3, courseLength), color: "rgba(0, 0, 255, 0.2)" },
+        { name: "End", range: getPositionKeepRange(4, courseLength), color: "rgba(0, 128, 0, 0.2)" },
     ];
 
     const data = zones.map(z => [
-        { xAxis: frontRunnerDistance - z.max, yAxis: 0, itemStyle: { color: z.color }, label: { show: true, position: "insideTop", formatter: z.name, color: "#fff" } },
-        { xAxis: frontRunnerDistance - z.min, yAxis: yMax }
+        { xAxis: frontRunnerDistance - z.range!.max, yAxis: 0, itemStyle: { color: z.color }, label: { show: true, position: "insideTop", formatter: z.name, color: "#fff" } },
+        { xAxis: frontRunnerDistance - z.range!.min, yAxis: yMax }
     ]);
 
     return {

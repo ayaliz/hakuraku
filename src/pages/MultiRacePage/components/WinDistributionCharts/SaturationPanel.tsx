@@ -123,9 +123,8 @@ export function SaturationPanel({ strategyStats, totalRaces, strategyColors }: {
     const [view, setView] = useState<'self' | 'field'>('self');
     const [expanded, setExpanded] = useState(false);
     const [isMobileViewport, setIsMobileViewport] = useState(() => typeof window !== "undefined" && window.innerWidth <= 768);
-    const W = 560, H = 210;
+    const H = 210;
     const ML = 38, MB = 28, MT = 10, MR = 28;
-    const plotW = W - ML - MR;
     const plotH = H - MT - MB;
 
     useEffect(() => {
@@ -166,27 +165,29 @@ export function SaturationPanel({ strategyStats, totalRaces, strategyColors }: {
 
     const minCount = counts[0], maxCount = counts[counts.length - 1];
     const xRange = maxCount - minCount || 1;
-    const toX = (c: number) => ML + ((c - minCount) / xRange) * plotW;
     const toY = (wr: number) => MT + plotH - (wr / axisMax) * plotH;
 
     const renderSelfView = (isExpanded = false) => {
+        const chartW = isExpanded || !isMobileViewport ? 560 : 320;
+        const chartPlotW = chartW - ML - MR;
+        const chartToX = (c: number) => ML + ((c - minCount) / xRange) * chartPlotW;
         const svg = (
             <svg
-                viewBox={`0 0 ${W} ${H}`}
-                preserveAspectRatio="none"
+                viewBox={`0 0 ${chartW} ${H}`}
+                preserveAspectRatio={isMobileViewport || isExpanded ? "xMidYMid meet" : "none"}
                 className={`sa-sat-svg${isExpanded ? " sa-sat-svg--expanded" : ""}`}
             >
                 {yTicks.map(wr => (
-                    <line key={wr} x1={ML} x2={ML + plotW} y1={toY(wr)} y2={toY(wr)} stroke="#2d3748" strokeWidth={1} />
+                    <line key={wr} x1={ML} x2={ML + chartPlotW} y1={toY(wr)} y2={toY(wr)} stroke="#2d3748" strokeWidth={1} />
                 ))}
-                <line x1={ML} x2={ML + plotW} y1={toY(BASELINE)} y2={toY(BASELINE)}
+                <line x1={ML} x2={ML + chartPlotW} y1={toY(BASELINE)} y2={toY(BASELINE)}
                     stroke="#718096" strokeWidth={1} strokeDasharray="4 3" />
-                <text x={ML + plotW + 4} y={toY(BASELINE) + 3} textAnchor="start" fill="#718096" fontSize={8}>1/9</text>
+                <text x={ML + chartPlotW + 4} y={toY(BASELINE) + 3} textAnchor="start" fill="#718096" fontSize={8}>1/9</text>
                 {yTicks.map(wr => (
                     <text key={wr} x={ML - 5} y={toY(wr) + 4} textAnchor="end" fill="#718096" fontSize={9}>{Math.round(wr * 100)}%</text>
                 ))}
                 {counts.map(c => (
-                    <text key={c} x={toX(c)} y={MT + plotH + 16} textAnchor="middle" fill="#718096" fontSize={9}>{c}</text>
+                    <text key={c} x={chartToX(c)} y={MT + plotH + 16} textAnchor="middle" fill="#718096" fontSize={9}>{c}</text>
                 ))}
                 {orderedStrategyStats.map(st => {
                     const points = (st.saturation ?? [])
@@ -194,7 +195,7 @@ export function SaturationPanel({ strategyStats, totalRaces, strategyColors }: {
                         .sort((a, b) => a.count - b.count);
                     if (points.length < 1) return null;
                     const color = strategyColors[st.strategy];
-                    const ptsStr = points.map(b => `${toX(b.count)},${toY((b.wins / b.raceCount) / b.count)}`).join(" ");
+                    const ptsStr = points.map(b => `${chartToX(b.count)},${toY((b.wins / b.raceCount) / b.count)}`).join(" ");
                     return (
                         <g key={st.strategy}>
                             {points.length > 1 && (
@@ -203,7 +204,7 @@ export function SaturationPanel({ strategyStats, totalRaces, strategyColors }: {
                             {points.map(b => {
                                 const wr = (b.wins / b.raceCount) / b.count;
                                 return (
-                                    <circle key={b.count} cx={toX(b.count)} cy={toY(wr)}
+                                    <circle key={b.count} cx={chartToX(b.count)} cy={toY(wr)}
                                         r={3.5} fill={color} stroke="#1a202c" strokeWidth={1.5}>
                                         <title>{STRATEGY_NAMES[st.strategy]}: {b.count} in room, {(wr * 100).toFixed(1)}% per horse ({b.raceCount} races)</title>
                                     </circle>
@@ -213,7 +214,7 @@ export function SaturationPanel({ strategyStats, totalRaces, strategyColors }: {
                     );
                 })}
                 <line x1={ML} x2={ML} y1={MT} y2={MT + plotH} stroke="#4a5568" strokeWidth={1} />
-                <line x1={ML} x2={ML + plotW} y1={MT + plotH} y2={MT + plotH} stroke="#4a5568" strokeWidth={1} />
+                <line x1={ML} x2={ML + chartPlotW} y1={MT + plotH} y2={MT + plotH} stroke="#4a5568" strokeWidth={1} />
             </svg>
         );
 

@@ -17,6 +17,7 @@ type CharaListProps = {
     otherEvents?: Record<number, { time: number; duration: number; name: string }[]>;
     raceType?: string;
     groundCondition?: number;
+    randomSeed?: number;
 };
 
 function getWorldTransformLossAtTime(
@@ -44,8 +45,8 @@ function getWorldTransformLossAtTime(
     return loss0 + (loss1 - loss0) * alpha;
 }
 
-const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData, detectedCourseId, laneDistanceMax, skillActivations, otherEvents, raceType, groundCondition }) => {
-    const { tableData, effectiveCourseId } = useCharaTableData(raceHorseInfo, raceData, detectedCourseId, skillActivations, otherEvents, raceType, groundCondition);
+const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData, detectedCourseId, laneDistanceMax, skillActivations, otherEvents, raceType, groundCondition, randomSeed }) => {
+    const { tableData, effectiveCourseId } = useCharaTableData(raceHorseInfo, raceData, detectedCourseId, skillActivations, otherEvents, raceType, groundCondition, randomSeed);
     const predictionState = useRacePredictions(raceHorseInfo, effectiveCourseId);
     const worldTransformEstimate = useWorldTransformEstimate(
         raceData.frame ?? [],

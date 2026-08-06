@@ -78,14 +78,18 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
 
     const activeStrategyColors = strategyColors ?? STRATEGY_COLORS;
     const strategyColor = activeStrategyColors[profileHorse.strategy] ?? "#718096";
-    const strategyName = STRATEGY_NAMES[profileHorse.strategy] ?? `Strategy ${profileHorse.strategy}`;
+    const aptitudeStrategy = profileHorse.rawStrategy ?? (profileHorse.strategy === 6 ? undefined : profileHorse.strategy);
+    const aptitudeStrategyName = aptitudeStrategy !== undefined
+        ? STRATEGY_NAMES[aptitudeStrategy] ?? `Strategy ${aptitudeStrategy}`
+        : "Style";
     const rankInfo = getRankIcon(profileHorse.rankScore);
 
     const portraitUrl = AssetLoader.getCharaThumb(profileHorse.cardId);
     const iconUrlFallback = AssetLoader.getCharaIcon(profileHorse.charaId);
 
     const styleIconName: Record<number, string> = { 1: "front", 2: "pace", 3: "late", 4: "end" };
-    const styleIcon = AssetLoader.getStatIcon(styleIconName[profileHorse.strategy] ?? "front");
+    const styleIconStrategy = aptitudeStrategy ?? profileHorse.strategy;
+    const styleIcon = AssetLoader.getStatIcon(styleIconName[styleIconStrategy] ?? "front");
 
     const totalSkillPoints = useMemo(() => {
         let total = 0;
@@ -324,6 +328,7 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
                 <div className="fastest-card-label">{horse.charaName}</div>
                 <div className="fastest-card-portrait" style={{ border: `2px solid ${activeStrategyColors[horse.strategy] ?? "#718096"}` }}>
                     <img src={AssetLoader.getCharaThumb(horse.cardId)} alt={horse.charaName} onError={handleImgError} />
+                    {horse.isDebuffer && <span className="fup-debuffer-badge">D</span>}
                 </div>
                 <div className="fastest-card-value-row">
                     <img src={getRankIcon(horse.rankScore).icon} alt={getRankIcon(horse.rankScore).name} className="fup-rank-icon--sm" />
@@ -355,6 +360,7 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
                                         <span className="fup-rank-score">{profileHorse.rankScore.toLocaleString()}</span>
                                     </div>
                                     <div className="fup-training-wins">Career mode wins: {profileHorse.careerWinCount.toLocaleString()}</div>
+                                    {profileHorse.isDebuffer && <div className="fup-debuffer-label">Debuffer</div>}
                                     {onViewReplays && (
                                         <button type="button" className="fup-replays-btn" onClick={handleViewReplays}>
                                             Replays
@@ -421,7 +427,7 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
                                 </div>
                                 <div className="fup-divider" />
                                 <div className="fup-style-mood">
-                                    <img src={styleIcon} alt={strategyName} title={strategyName} className="fup-style-icon" />
+                                    <img src={styleIcon} alt={aptitudeStrategyName} title={aptitudeStrategyName} className="fup-style-icon" />
                                 </div>
                                 {(profileHorse.aptGround !== undefined || profileHorse.aptDistance !== undefined || profileHorse.aptStyle !== undefined) && (
                                     <>
@@ -451,7 +457,7 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
                                             )}
                                             {profileHorse.aptStyle !== undefined && (
                                                 <div className="fup-apt-item">
-                                                    <span className="fup-apt-cat">{strategyName}</span>
+                                                    <span className="fup-apt-cat">{aptitudeStrategyName}</span>
                                                     <img
                                                         src={AssetLoader.getGradeIcon(GRADE_LETTERS[profileHorse.aptStyle]) ?? ""}
                                                         alt={GRADE_LETTERS[profileHorse.aptStyle] ?? "-"}

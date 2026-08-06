@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BAYES_TEAM } from "./constants";
+import { BAYES_TEAM, STRATEGY_NAMES } from "./constants";
 import type { HorseEntry, SkillStats, TeamCompositionStats } from "../../types";
 import InfoTooltip from "./InfoTooltip";
 import TeamSampleSelect from "./TeamSampleSelect";
@@ -116,6 +116,7 @@ export function StyleTeamCompositionPanel({
     const renderItem = (e: StyleCompositionSummaryRow, positive: boolean) => {
         const valueColor = positive ? "#68d391" : "#fc8181";
         const isSelected = selectedKey === e.key;
+        const label = e.strategies.map((strategy) => (STRATEGY_NAMES[strategy] ?? String(strategy)).split(" ")[0]).join(" / ");
         return (
             <div
                 key={e.key}
@@ -130,7 +131,7 @@ export function StyleTeamCompositionPanel({
                         <span key={i} className="sa-stcp-dot" style={{ background: strategyColors[s] ?? "#718096" }} />
                     ))}
                 </div>
-                <div className="sa-stcp-name">{e.label}</div>
+                <div className="sa-stcp-name">{label}</div>
                 <div className="sa-stcp-stats">
                     <span className="sa-adj-pct sa-stcp-stat" style={{ color: valueColor }}>{(e.bayesianWinRate * 100).toFixed(1)}%</span>
                     <span className="sa-raw-pct sa-stcp-stat">{(e.winRate * 100).toFixed(1)}% ({e.appearances})</span>
@@ -154,13 +155,17 @@ export function StyleTeamCompositionPanel({
         };
     });
     const selectedCompositionKey = selectedTeam ? makeCompositionKey(selectedTeam.team.members) : null;
+    const selectedBuildKey = selectedTeam?.team.buildKey;
+    const selectedRepCacheKey = selectedCompositionKey
+        ? `${selectedCompositionKey}|${selectedBuildKey ?? ""}`
+        : null;
     useEffect(() => {
-        if (!canUseApiDrilldown || !selectedCompositionKey || !cmId || !courseId) return;
-        if (compositionRepCache[selectedCompositionKey]) return;
+        if (!canUseApiDrilldown || !selectedCompositionKey || !selectedRepCacheKey || !cmId || !courseId) return;
+        if (compositionRepCache[selectedRepCacheKey]) return;
         const controller = new AbortController();
-        setCompositionRepLoadingKeys((keys) => [...keys, selectedCompositionKey]);
+        setCompositionRepLoadingKeys((keys) => [...keys, selectedRepCacheKey]);
         setCompositionRepError(null);
-        fetch(buildCompositionRepsUrl(cmId, courseId, selectedCompositionKey, apiBase ?? UMA_LOGS_API_BASE), { signal: controller.signal })
+        fetch(buildCompositionRepsUrl(cmId, courseId, selectedCompositionKey, apiBase ?? UMA_LOGS_API_BASE, selectedBuildKey), { signal: controller.signal })
             .then(async (response) => {
                 if (!response.ok) throw new Error(`Failed to load representative team (${response.status})`);
                 return await response.json() as CompositionRepResponse;
@@ -168,23 +173,23 @@ export function StyleTeamCompositionPanel({
             .then((payload) => {
                 setCompositionRepCache((cache) => ({
                     ...cache,
-                    [payload.compositionKey]: deserializeHorseEntries(payload.horses),
+                    [selectedRepCacheKey]: deserializeHorseEntries(payload.horses),
                 }));
             })
             .catch((error) => {
                 if (controller.signal.aborted) return;
                 console.error("Failed to load style composition representatives", { selectedCompositionKey, error });
                 setCompositionRepError(error instanceof Error ? error.message : "Failed to load representative team.");
-                setCompositionRepCache((cache) => ({ ...cache, [selectedCompositionKey]: [] }));
+                setCompositionRepCache((cache) => ({ ...cache, [selectedRepCacheKey]: [] }));
             })
             .finally(() => {
                 if (controller.signal.aborted) return;
-                setCompositionRepLoadingKeys((keys) => keys.filter((key) => key !== selectedCompositionKey));
+                setCompositionRepLoadingKeys((keys) => keys.filter((key) => key !== selectedRepCacheKey));
             });
         return () => controller.abort();
-    }, [apiBase, canUseApiDrilldown, cmId, compositionRepCache, courseId, selectedCompositionKey]);
-    const representativeByMemberKey = selectedCompositionKey
-        ? new Map<string, HorseEntry>((compositionRepCache[selectedCompositionKey] ?? []).map((horse) => [makeMemberKey(horse), horse]))
+    }, [apiBase, canUseApiDrilldown, cmId, compositionRepCache, courseId, selectedBuildKey, selectedCompositionKey, selectedRepCacheKey]);
+    const representativeByMemberKey = selectedRepCacheKey
+        ? new Map<string, HorseEntry>((compositionRepCache[selectedRepCacheKey] ?? []).map((horse) => [makeMemberKey(horse), horse]))
         : new Map<string, HorseEntry>();
 
     return (
@@ -227,13 +232,14 @@ export function StyleTeamCompositionPanel({
                                 options={teamSelectOptions}
                                 onChange={(v) => setSelectedTeamIdx(Number(v))}
                                 strategyColors={strategyColors}
+                                showPlaceholderOption={false}
                             />
                         </div>
                     )}
-                    {canUseApiDrilldown && selectedCompositionKey && compositionRepLoadingKeys.includes(selectedCompositionKey) && (
+                    {canUseApiDrilldown && selectedRepCacheKey && compositionRepLoadingKeys.includes(selectedRepCacheKey) && (
                         <div className="sa-no-data">Loading representative team samples...</div>
                     )}
-                    {canUseApiDrilldown && selectedCompositionKey && !compositionRepLoadingKeys.includes(selectedCompositionKey) && (compositionRepCache[selectedCompositionKey]?.length ?? 0) === 0 && compositionRepError && (
+                    {canUseApiDrilldown && selectedRepCacheKey && !compositionRepLoadingKeys.includes(selectedRepCacheKey) && (compositionRepCache[selectedRepCacheKey]?.length ?? 0) === 0 && compositionRepError && (
                         <div className="sa-no-data">{compositionRepError}</div>
                     )}
                     <div className="stcp-team-members-row">

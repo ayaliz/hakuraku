@@ -12,21 +12,30 @@ import { normalizeSeasonValue } from "../utils/season";
 import { buildReplayPresenterInput, type ReplayPayloadResponse } from "./UmaLogsPage/replaysShared";
 import UMDatabaseWrapper from "../data/UMDatabaseWrapper";
 import GameDataLoader from "../data/GameDataLoader";
+import {
+    hasHorseActVersionKey,
+    isTeamTrialRaceJson,
+    normalizeRaceJsonInput,
+    parseStandardRaceJson,
+    type TrackDetails,
+} from "../data/RaceJsonParser";
 
 const RaceDataPresenterAny = RaceDataPresenter as any;
 const HORSEACT_RELEASE_URL = "https://github.com/ayaliz/horseACT/releases/latest";
 const HORSEACT_SETUP_URL = "https://github.com/ayaliz/horseACT#installation";
-const CURRENT_HORSEACT_VERSION = "1.1.2";
+const CURRENT_HORSEACT_VERSION = "1.1.7";
 
 type ShareCache = Record<string, string>;
-type TrackDetails = { condition?: string, weather?: string, season?: string };
 type ParsedRaceView = {
     label: string,
     raceHorseInfo: any[],
     raceData: RaceSimulateData,
     raceScenario: string,
+    playerFrameOrder?: number,
     detectedCourseId?: number,
     laneDistanceMax?: number,
+    randomSeed?: number,
+    hasHorseActVersion?: boolean,
     horseActVersion?: string,
     raceType?: string,
     trackDetails?: TrackDetails,
@@ -66,29 +75,6 @@ class PresenterErrorBoundary extends React.Component<PresenterErrorBoundaryProps
     }
 }
 
-function normalizeRaceJsonInput(json: any): any {
-    const packetData = json?.data;
-    if (
-        packetData
-        && typeof packetData === "object"
-        && !Array.isArray(packetData)
-        && Array.isArray(packetData["race_horse_data_array"])
-    ) {
-        const roomInfo = packetData["room_info"] ?? {};
-        return {
-            ...packetData,
-            race_scenario: packetData["race_scenario"] ?? roomInfo["race_scenario"],
-            race_type: packetData["race_type"] ?? roomInfo["race_type"],
-            ground_condition: packetData["ground_condition"] ?? roomInfo["ground_condition"],
-            weather: packetData["weather"] ?? roomInfo["weather"],
-            season: packetData["season"] ?? roomInfo["season"],
-            race_instance_id: packetData["race_instance_id"] ?? roomInfo["race_instance_id"],
-        };
-    }
-
-    return json;
-}
-
 function getCourseAptitudeFilters(courseId: number | undefined): { ground: number; distance: number } | null {
     if (!courseId) return null;
     const course = (GameDataLoader.courseData as Record<string, any>)[String(courseId)];
@@ -113,64 +99,6 @@ function normalizeTrainerNameForDisplay(horse: any): any {
 
 function normalizeTrainerNamesForDisplay(horses: any[]): any[] {
     return horses.map(normalizeTrainerNameForDisplay);
-}
-
-function parseParentFactorArray(factorArray: any): { id: number, level: number }[] {
-    if (!Array.isArray(factorArray)) return [];
-    return factorArray
-        .map((factor: any) => {
-            const factorId = typeof factor === "number"
-                ? factor
-                : Number(factor?.factor_id ?? factor?.FactorId ?? factor?.id);
-            if (!Number.isFinite(factorId)) return null;
-            const rawLevel: number | undefined = typeof factor === "number"
-                ? undefined
-                : Number(factor?.level ?? factor?.Level);
-            const level = rawLevel !== undefined && Number.isFinite(rawLevel) && rawLevel > 0
-                ? rawLevel
-                : factorId % 100;
-            return { id: factorId, level };
-        })
-        .filter((factor): factor is { id: number, level: number } => factor !== null);
-}
-
-function parseParentEntries(successionList: any): { positionId: number, cardId: number, rank: number, factors: { id: number, level: number }[] }[] {
-    if (!Array.isArray(successionList)) return [];
-    return successionList
-        .filter((parent: any) => {
-            const positionId = parent?.position_id ?? parent?.PositionId;
-            return [10, 11, 12, 20, 21, 22].includes(positionId);
-        })
-        .map((parent: any) => {
-            const factorArray = parent.factor_info_array
-                ?? parent.factor_data_array
-                ?? parent.FactorDataArray
-                ?? parent.factor_id_array;
-            return {
-                positionId: parent.position_id ?? parent.PositionId,
-                cardId: parent.card_id ?? parent.CardId,
-                rank: parent.rank ?? parent.Rank,
-                factors: parseParentFactorArray(factorArray),
-            };
-        });
-}
-
-function mapTrainedCharasById(trainedCharas: any[]): Map<number, any> {
-    const trainedCharaById = new Map<number, any>();
-    trainedCharas.forEach((trainedChara: any) => {
-        [
-            trainedChara?.trained_chara_id,
-            trainedChara?.trainedCharaId,
-            trainedChara?.owner_trained_chara_id,
-            trainedChara?.ownerTrainedCharaId,
-        ].forEach((id) => {
-            const numericId = Number(id);
-            if (Number.isFinite(numericId) && numericId > 0) {
-                trainedCharaById.set(numericId, trainedChara);
-            }
-        });
-    });
-    return trainedCharaById;
 }
 
 const bufferToHex = (buf: ArrayBuffer): string =>
@@ -206,11 +134,14 @@ export default function RaceDataPage() {
     const [shareError, setShareError] = useState('');
     const [shareUrl, setShareUrl] = useState('');
     const [shareCache, setShareCache] = useState<ShareCache>({});
+    const [hasHorseActVersion, setHasHorseActVersion] = useState(false);
     const [horseActVersion, setHorseActVersion] = useState<string | undefined>(undefined);
     const [isShared, setIsShared] = useState(false);
     const [raceType, setRaceType] = useState<string | undefined>(undefined);
+    const [playerFrameOrder, setPlayerFrameOrder] = useState<number | undefined>(undefined);
     const [trackDetails, setTrackDetails] = useState<TrackDetails | undefined>(undefined);
     const [laneDistanceMax, setLaneDistanceMax] = useState<number | undefined>(undefined);
+    const [randomSeed, setRandomSeed] = useState<number | undefined>(undefined);
     const [dragOver, setDragOver] = useState(false);
     const [routeReplayLoading, setRouteReplayLoading] = useState(false);
     const [teamTrialRaces, setTeamTrialRaces] = useState<ParsedRaceView[]>([]);
@@ -244,6 +175,7 @@ export default function RaceDataPage() {
         setParsedRaceData(undefined);
         setRawHorseInfo(undefined);
         setRawScenario("");
+        setRandomSeed(undefined);
         setTeamTrialRaces([]);
         setSelectedTeamTrialIndex(0);
         fetch(`/api/races/${encodeURIComponent(raceUid)}/replay`, { signal: controller.signal })
@@ -261,6 +193,7 @@ export default function RaceDataPage() {
                     presenterInput.raceType,
                     presenterInput.trackDetails,
                     presenterInput.laneDistanceMax,
+                    undefined,
                 );
                 setRouteReplayLoading(false);
             })
@@ -286,14 +219,17 @@ export default function RaceDataPage() {
         setShareStatus('');
         setShareError('');
         setShareUrl('');
+        setHasHorseActVersion(Boolean(race.hasHorseActVersion));
         setHorseActVersion(race.horseActVersion);
         setIsShared(options?.isShared ?? false);
         setRaceType(race.raceType);
+        setPlayerFrameOrder(race.playerFrameOrder);
         setTrackDetails(race.trackDetails ? {
             ...race.trackDetails,
             season: normalizeSeasonValue(race.trackDetails.season)?.toString(),
         } : undefined);
         setLaneDistanceMax(race.laneDistanceMax);
+        setRandomSeed(race.randomSeed);
 
         if (options?.teamTrialRaces) {
             setTeamTrialRaces(options.teamTrialRaces);
@@ -304,7 +240,7 @@ export default function RaceDataPage() {
         }
     }
 
-    function loadSharedData(data: { raceHorseInfo: string, raceScenario: string, detectedCourseId?: number, laneDistanceMax?: number, raceType?: string, trackDetails?: TrackDetails }) {
+    function loadSharedData(data: { raceHorseInfo: string, raceScenario: string, detectedCourseId?: number, laneDistanceMax?: number, randomSeed?: number, raceType?: string, trackDetails?: TrackDetails }) {
         try {
             const horseInfo = typeof data.raceHorseInfo === 'string' ? JSON.parse(data.raceHorseInfo) : data.raceHorseInfo;
             const parsed = deserializeFromBase64(data.raceScenario);
@@ -317,6 +253,7 @@ export default function RaceDataPage() {
                 raceScenario: data.raceScenario,
                 detectedCourseId: data.detectedCourseId,
                 laneDistanceMax: data.laneDistanceMax,
+                randomSeed: data.randomSeed,
                 raceType: data.raceType,
                 trackDetails: data.trackDetails,
             }, { isShared: true });
@@ -325,7 +262,7 @@ export default function RaceDataPage() {
         }
     }
 
-    function finalizeParsing(horseInfo: any[], raceScenario: string, courseId?: number, actVersion?: string, type?: string, tDetails?: TrackDetails, laneDistanceMaxValue?: number) {
+    function finalizeParsing(horseInfo: any[], raceScenario: string, courseId?: number, actVersion?: string, type?: string, tDetails?: TrackDetails, laneDistanceMaxValue?: number, randomSeedValue?: number, playerFrameOrderValue?: number, hasActVersion?: boolean) {
         const parsed = deserializeFromBase64(raceScenario);
         if (!parsed) { setError('Failed to parse race scenario data'); return; }
         applyParsedRaceView({
@@ -333,11 +270,14 @@ export default function RaceDataPage() {
             raceHorseInfo: horseInfo,
             raceData: parsed,
             raceScenario,
+            playerFrameOrder: playerFrameOrderValue,
             detectedCourseId: courseId,
+            hasHorseActVersion: hasActVersion,
             horseActVersion: actVersion,
             raceType: type,
             trackDetails: tDetails,
             laneDistanceMax: laneDistanceMaxValue,
+            randomSeed: randomSeedValue,
         });
     }
 
@@ -400,6 +340,7 @@ export default function RaceDataPage() {
         const teamTotalScore = Number(result.team_total_score);
         const scoreLabel = Number.isFinite(teamTotalScore) ? ` - ${teamTotalScore.toLocaleString()} pts` : '';
         const label = `Race ${Number.isFinite(round) ? round : index + 1}${scoreLabel}`;
+        const parsedRandomSeed = Number(start.random_seed ?? start.randomSeed ?? result.random_seed ?? result.randomSeed);
 
         return {
             label,
@@ -407,7 +348,9 @@ export default function RaceDataPage() {
             raceData,
             raceScenario: result.race_scenario,
             detectedCourseId: courseId,
+            hasHorseActVersion: hasHorseActVersionKey(json),
             horseActVersion: json.horseACT_version,
+            randomSeed: Number.isFinite(parsedRandomSeed) ? parsedRandomSeed : undefined,
             raceType: 'Team Trials',
             trackDetails: {
                 condition: start.ground_condition?.toString(),
@@ -456,148 +399,29 @@ export default function RaceDataPage() {
     function parseRaceJson(json: any) {
         json = normalizeRaceJsonInput(json);
 
-        if (Array.isArray(json['race_start_params_array']) && Array.isArray(json['race_result_array'])) {
+        if (isTeamTrialRaceJson(json)) {
             parseTeamTrialJson(json);
             return;
         }
 
-        if (json['race_scenario'] && Array.isArray(json['race_horse_data_array'])) {
-            parseNewFormat(json);
+        const parsed = parseStandardRaceJson(json);
+        if ("error" in parsed) {
+            setError(parsed.error);
             return;
         }
 
-        const horseActVer = json['horseACT_version'];
-        const raceHorseArray = json['<RaceHorse>k__BackingField'];
-        if (!Array.isArray(raceHorseArray)) {
-            setError('Could not find <RaceHorse>k__BackingField or race_horse_data_array in JSON');
-            return;
-        }
-
-        let courseId: number | undefined;
-        let laneDistanceMaxValue: number | undefined;
-        try {
-            const courseSet = json['<RaceCourseSet>k__BackingField'];
-            if (courseSet) {
-                courseId = courseSet['<Id>k__BackingField'] ?? courseSet.Id;
-                laneDistanceMaxValue = courseSet['<LaneDistanceMax>k__BackingField'] ?? courseSet.LaneDistanceMax;
-            }
-        } catch { }
-        if (laneDistanceMaxValue === undefined) {
-            laneDistanceMaxValue = json['<LaneDistanceMax>k__BackingField'] ?? json.LaneDistanceMax;
-        }
-
-        const type = json['<RaceType>k__BackingField'];
-        const condition = json['<GroundCondition>k__BackingField'];
-        const weather = json['<Weather>k__BackingField'];
-        const season = normalizeSeasonValue(json['<Season>k__BackingField'])?.toString();
-        const tDetails = { condition, weather, season };
-
-        const horseInfo = raceHorseArray
-            .map((member: any) => {
-                const horseData = member['_responseHorseData'];
-                if (horseData === undefined || horseData === null) return null;
-                const trainedChara = member['<TrainedCharaData>k__BackingField'];
-
-                let deck: { position: number, id: number, lb: number, exp: number }[] = [];
-                if (trainedChara) {
-                    const supportCards = trainedChara['<SupportCardArray>k__BackingField'];
-                    if (Array.isArray(supportCards)) {
-                        deck = supportCards.map((card: any) => ({
-                            position: card['<Position>k__BackingField'],
-                            id: card['<SupportCardId>k__BackingField'],
-                            lb: card['<LimitBreakCount>k__BackingField'],
-                            exp: card['<Exp>k__BackingField']
-                        })).sort((a, b) => a.position - b.position);
-                    }
-                }
-
-                let parents: { positionId: number, cardId: number, rank: number, factors: { id: number, level: number }[] }[] = [];
-                if (trainedChara) {
-                    const successionList = trainedChara['<SuccessionCharaList>k__BackingField'];
-                    if (successionList && Array.isArray(successionList['_items'])) {
-                        const legacyParents = successionList['_items']
-                            .filter((p: any) => p !== null)
-                            .map((p: any) => ({
-                                position_id: p['_positionId'],
-                                card_id: p['<CardId>k__BackingField'],
-                                rank: p['_rank'],
-                                factor_data_array: p['<FactorDataArray>k__BackingField'],
-                            }));
-                        parents = parseParentEntries(legacyParents);
-                    }
-                }
-
-                return { ...horseData, deck, parents };
-            })
-            .filter((data: any) => data !== null);
-
-        if (horseInfo.length === 0) { setError('No horse data found in _responseHorseData fields'); return; }
-
-        const raceScenario = json['<SimDataBase64>k__BackingField'];
-        if (typeof raceScenario !== 'string' || !raceScenario) {
-            setError('Could not find <SimDataBase64>k__BackingField in JSON');
-            return;
-        }
-
-        finalizeParsing(horseInfo, raceScenario, courseId, horseActVer, type, tDetails, laneDistanceMaxValue);
-    }
-
-    function parseNewFormat(json: any) {
-        try {
-            const rawHorses = json['race_horse_data_array'];
-            const trainedCharas = json['trained_chara_array'] || [];
-            const actVersion = json['horseACT_version'];
-            const type = json['race_type'] ?? json['RaceType'];
-            const condition = json['ground_condition'] ?? json['GroundCondition'];
-            const weather = json['weather'] ?? json['Weather'];
-            const season = normalizeSeasonValue(json['season'] ?? json['Season'])?.toString();
-            const tDetails = { condition, weather, season };
-
-            let courseId: number | undefined;
-            let laneDistanceMaxValue: number | undefined;
-            const courseSet = json['race_course_set'] || json['RaceCourseSet'];
-            if (courseSet) {
-                courseId = courseSet['id'] ?? courseSet.Id;
-                laneDistanceMaxValue = courseSet['lane_distance_max'] ?? courseSet.LaneDistanceMax;
-            }
-            if (laneDistanceMaxValue === undefined) {
-                laneDistanceMaxValue = json['lane_distance_max'] ?? json.LaneDistanceMax;
-            }
-
-            const courseAptitudeFilters = getCourseAptitudeFilters(courseId);
-            const trainedCharaById = mapTrainedCharasById(trainedCharas);
-            const horseInfo = rawHorses.map((horseData: any, index: number) => {
-                if (!horseData) return null;
-                const trainedCharaId = Number(horseData.trained_chara_id ?? horseData.trainedCharaId ?? horseData.owner_trained_chara_id);
-                const trainedChara = trainedCharaById.get(trainedCharaId) ?? trainedCharas[index];
-
-                let deck: { position: number, id: number, lb: number, exp: number }[] = [];
-                let parents: { positionId: number, cardId: number, rank: number, factors: { id: number, level: number }[] }[] = [];
-
-                if (trainedChara) {
-                    const supportCards = trainedChara['support_card_array'] || trainedChara['support_card_list'] || trainedChara['SupportCardArray'];
-                    if (Array.isArray(supportCards)) {
-                        deck = supportCards.map((card: any, cardIndex: number) => ({
-                            position: card['position'] ?? card['Position'] ?? (cardIndex + 1),
-                            id: card['support_card_id'] ?? card['SupportCardId'],
-                            lb: card['limit_break_count'] ?? card['LimitBreakCount'],
-                            exp: card['exp'] ?? card['Exp']
-                        })).sort((a: any, b: any) => a.position - b.position);
-                    }
-
-                    const successionList = trainedChara['succession_chara_array']
-                        || trainedChara['succession_chara_list']
-                        || trainedChara['SuccessionCharaList'];
-                    parents = parseParentEntries(successionList);
-                }
-
-                return { ...hydrateCompactRaceHorseData(horseData, { courseAptitudeFilters }), deck, parents };
-            }).filter((h: any) => h !== null);
-
-            finalizeParsing(horseInfo, json['race_scenario'], courseId, actVersion, type, tDetails, laneDistanceMaxValue);
-        } catch (err: any) {
-            setError(`Failed to parse new JSON format: ${err.message}`);
-        }
+        finalizeParsing(
+            parsed.horseInfo,
+            parsed.raceScenario,
+            parsed.detectedCourseId,
+            parsed.horseActVersion,
+            parsed.raceType,
+            parsed.trackDetails,
+            parsed.laneDistanceMax,
+            parsed.randomSeed,
+            parsed.playerFrameOrder,
+            parsed.hasHorseActVersion,
+        );
     }
 
     const handleFileChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
@@ -638,6 +462,33 @@ export default function RaceDataPage() {
         reader.readAsText(file);
     };
 
+    const resetToUpload = () => {
+        setParsedHorseInfo(undefined);
+        setParsedRaceData(undefined);
+        setError('');
+        setRawHorseInfo(undefined);
+        setRawScenario('');
+        setDetectedCourseId(undefined);
+        setShareStatus('');
+        setShareError('');
+        setShareUrl('');
+        setShareCache({});
+        setHasHorseActVersion(false);
+        setHorseActVersion(undefined);
+        setIsShared(false);
+        setRaceType(undefined);
+        setPlayerFrameOrder(undefined);
+        setTrackDetails(undefined);
+        setLaneDistanceMax(undefined);
+        setRandomSeed(undefined);
+        setDragOver(false);
+        setTeamTrialRaces([]);
+        setSelectedTeamTrialIndex(0);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
     const share = async (anonymous: boolean) => {
         if (!rawScenario) { alert('No race data loaded.'); return; }
 
@@ -672,6 +523,7 @@ export default function RaceDataPage() {
                     raceScenario: rawScenario,
                     detectedCourseId,
                     laneDistanceMax,
+                    randomSeed,
                     raceType,
                     trackDetails,
                     salt: Date.now()
@@ -681,7 +533,7 @@ export default function RaceDataPage() {
                 return;
             }
         } else {
-            content = JSON.stringify({ raceHorseInfo: JSON.stringify(rawHorseInfo), raceScenario: rawScenario, detectedCourseId, laneDistanceMax, raceType, trackDetails });
+            content = JSON.stringify({ raceHorseInfo: JSON.stringify(rawHorseInfo), raceScenario: rawScenario, detectedCourseId, laneDistanceMax, randomSeed, raceType, trackDetails });
         }
 
         const hash = await hashPayload(content);
@@ -759,6 +611,11 @@ export default function RaceDataPage() {
             </div>
         ) : (
             <div className="action-bar">
+                {!isArchiveReplayRoute && (
+                    <Button variant="outline-secondary" size="sm" onClick={resetToUpload}>
+                        Clear
+                    </Button>
+                )}
                 <Button variant="primary" size="sm" onClick={() => fileInputRef.current?.click()}>
                     Upload new race
                 </Button>
@@ -802,7 +659,7 @@ export default function RaceDataPage() {
 
         {parsedRaceData && parsedHorseInfo ? (
             <>
-                {(!isArchiveReplayRoute && !isShared && isHorseActOutdated(horseActVersion)) && <Alert variant="info">
+                {(!isArchiveReplayRoute && !isShared && hasHorseActVersion && isHorseActOutdated(horseActVersion)) && <Alert variant="info">
                     The version of horseACT used to generate this file appears to be outdated. The current release is {CURRENT_HORSEACT_VERSION}, available at <a href={HORSEACT_RELEASE_URL} target="_blank" rel="noreferrer">{HORSEACT_RELEASE_URL}</a>. It's recommended to update by replacing your existing horseACT.dll.
                 </Alert>}
                 <PresenterErrorBoundary key={teamTrialRaces.length > 0 ? `team-trial-boundary-${selectedTeamTrialIndex}` : `race-boundary-${rawScenario.slice(0, 24)}`}>
@@ -811,7 +668,9 @@ export default function RaceDataPage() {
                         raceHorseInfo={parsedHorseInfo}
                         raceData={parsedRaceData}
                         laneDistanceMax={laneDistanceMax}
+                        randomSeed={randomSeed}
                         raceType={raceType}
+                        playerFrameOrder={playerFrameOrder}
                         trackDetails={trackDetails}
                         detectedCourseId={detectedCourseId} />
                 </PresenterErrorBoundary>

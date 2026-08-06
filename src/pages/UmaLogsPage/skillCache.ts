@@ -10,12 +10,16 @@ export type SerializedSkillOverviewStats = {
     uniqueRaces: number;
     uniqueHorses: number;
     learnedByHorses: number;
+    activationOpportunities?: number;
+    forcedActivationHorses?: number;
     winRate: number;
     avgFinishPosition: number;
     learnedByCharaIds: number[];
     learnedByStrategies: number[];
     learnedByHorsesByStrategy?: Record<string, number>;
     uniqueHorsesByStrategy?: Record<string, number>;
+    activationOpportunitiesByStrategy?: Record<string, number>;
+    forcedActivationHorsesByStrategy?: Record<string, number>;
     meanDistance: number;
     medianDistance: number;
     timesActivatedByStrategy?: Record<string, number>;
@@ -197,12 +201,16 @@ export function extractGroupSkillCachePayload(cmId: string, group: SerializedGro
                     uniqueRaces: skill.uniqueRaces,
                     uniqueHorses: skill.uniqueHorses,
                     learnedByHorses: skill.learnedByHorses,
+                    activationOpportunities: skill.activationOpportunities,
+                    forcedActivationHorses: skill.forcedActivationHorses,
                     winRate: skill.winRate,
                     avgFinishPosition: skill.avgFinishPosition,
                     learnedByCharaIds: skill.learnedByCharaIds ?? [],
                     learnedByStrategies: skill.learnedByStrategies ?? [],
                     learnedByHorsesByStrategy: skill.learnedByHorsesByStrategy,
                     uniqueHorsesByStrategy: skill.uniqueHorsesByStrategy,
+                    activationOpportunitiesByStrategy: skill.activationOpportunitiesByStrategy,
+                    forcedActivationHorsesByStrategy: skill.forcedActivationHorsesByStrategy,
                     meanDistance: skill.meanDistance,
                     medianDistance: skill.medianDistance,
                     timesActivatedByStrategy,

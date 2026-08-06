@@ -72,6 +72,12 @@
     background-color: #2a2a2a;
 }
 
+.mdb-diff-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0.5rem;
+}
+
 .mdb-diff-table-wrap {
     overflow-x: auto;
 }

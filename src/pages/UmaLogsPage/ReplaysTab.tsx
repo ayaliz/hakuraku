@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 
 import PaginationControls from "../../components/PaginationControls";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
-import { STRATEGY_NAMES } from "../MultiRacePage/components/WinDistributionCharts/constants";
+import { STYLE_BREAKDOWN_STRATEGY_ORDER, STRATEGY_NAMES } from "../MultiRacePage/components/WinDistributionCharts/constants";
 import {
     SUPPORT_CARD_LB_ANY,
     defaultStatValueForProperty,
@@ -21,18 +21,20 @@ import {
     type ReplayBootstrapPayload,
     type ReplayCharacterVariant,
     type ReplayExactBuildFilter,
+    type ReplayRaceFilter,
+    type ReplayRaceFilterField,
     type ReplaySearchRequest,
     type ReplaySearchResponse,
+    type ReplaySortDir,
+    type ReplaySortKey,
     type ReplayScopedTeamFilter,
     type ReplayTeamFilter,
     type ReplayTeamFilterScope,
     type ReplayTeamMemberFilter,
 } from "./replaysShared";
+import { buildReplaySearchRequest, validateUmaLogsQuerySpec, type UmaLogsQuerySpec } from "./umaLogsQueryShared";
 import { ReplayCharaSelect, ReplaySkillSelect, ReplaySupportCardSelect } from "./ReplaySelects";
 import { ReplayResultLineup } from "./ReplayResultDisplay";
-
-type ReplaySortKey = "finishTime" | "date";
-type ReplaySortDir = "asc" | "desc";
 
 type ReplaysTabProps = {
     cmId?: string | null;
@@ -49,7 +51,9 @@ type ScopedTeamDraft = {
     members: TeamDraft;
 };
 
-const PROPERTY_LABELS: Record<FilterProperty, string> = {
+type ReplayFilterProperty = Exclude<FilterProperty, "deckRaceBonus">;
+
+const PROPERTY_LABELS: Record<ReplayFilterProperty, string> = {
     none: "—",
     speed: "Speed",
     stamina: "Stamina",
@@ -62,10 +66,20 @@ const PROPERTY_LABELS: Record<FilterProperty, string> = {
     totalSkillPoints: "Skill pts",
     rankScore: "Score",
     careerWinCount: "Career wins",
-    deckRaceBonus: "Deck race bonus",
+    isDebuffer: "Is Debuffer",
     skill: "Skill",
     supportCard: "Support card",
 };
+const PROPERTY_OPTIONS = Object.keys(PROPERTY_LABELS) as ReplayFilterProperty[];
+const RACE_FILTER_FIELDS: Array<{ value: ReplayRaceFilterField; label: string }> = [
+    { value: "room_runaway_count", label: "Room Runaways" },
+    { value: "room_front_count", label: "Room Front Runners" },
+    { value: "room_pace_count", label: "Room Pace Chasers" },
+    { value: "room_late_count", label: "Room Late Surgers" },
+    { value: "room_end_count", label: "Room End Closers" },
+    { value: "horse_count", label: "Room characters" },
+    { value: "team_count", label: "Room teams" },
+];
 
 const SUPPORT_CARD_LB_OPTIONS = [
     { value: SUPPORT_CARD_LB_ANY, label: "Any" },
@@ -76,7 +90,7 @@ const SUPPORT_CARD_LB_OPTIONS = [
     { value: 4, label: "MLB" },
 ] as const;
 
-const STRATEGY_PILL_ORDER = [5, 1, 2, 3, 4] as const;
+const STRATEGY_PILL_ORDER = STYLE_BREAKDOWN_STRATEGY_ORDER;
 const REPLAY_RESULTS_PAGE_SIZE = 20;
 
 function createDefaultRequirement(skillVariants: SkillVariant[], supportCardVariants: SupportCardVariant[]): CharacterRequirement {
@@ -115,10 +129,15 @@ function parsePositiveIntParam(value: string | null): number | null {
 function normalizeReplayExactBuildFilter(parsed: Partial<ReplayExactBuildFilter>): ReplayExactBuildFilter | null {
     const cardId = Number(parsed.cardId);
     const strategy = Number(parsed.strategy);
-    if (!Number.isFinite(cardId) || cardId <= 0 || !Number.isFinite(strategy) || strategy <= 0) return null;
+    if (!Number.isFinite(cardId) || cardId <= 0) return null;
+    const legacyDebufferStrategy = Number.isFinite(strategy) && strategy === 6;
+    const normalizedStrategy = Number.isFinite(strategy) && strategy >= 1 && strategy <= 5
+        ? Math.floor(strategy)
+        : null;
     return {
         cardId: Math.floor(cardId),
-        strategy: Math.floor(strategy),
+        strategy: normalizedStrategy,
+        isDebuffer: parsed.isDebuffer === true || legacyDebufferStrategy,
         speed: Number(parsed.speed) || 0,
         stamina: Number(parsed.stamina) || 0,
         pow: Number(parsed.pow) || 0,
@@ -148,6 +167,51 @@ function readReplayExactBuildFilter(key: string | null): ReplayExactBuildFilter 
         const raw = sessionStorage.getItem(key);
         if (!raw) return null;
         return normalizeReplayExactBuildFilter(JSON.parse(raw) as Partial<ReplayExactBuildFilter>);
+    } catch {
+        return null;
+    }
+}
+
+function readReplayUqlFilter(key: string | null): string | null {
+    if (!key) return null;
+    const value = sessionStorage.getItem(key)?.trim() ?? "";
+    return value.length > 0 && value.length <= 2000 ? value : null;
+}
+
+function decodeReplayUqlParam(value: string | null): string | null {
+    if (!value) return null;
+    try {
+        const padded = value.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
+        const binary = atob(padded);
+        const decoded = new TextDecoder().decode(Uint8Array.from(binary, (char) => char.charCodeAt(0))).trim();
+        return decoded.length > 0 && decoded.length <= 2000 ? decoded : null;
+    } catch {
+        return null;
+    }
+}
+
+function normalizeReplayEntryQuerySpec(input: unknown): UmaLogsQuerySpec | null {
+    const result = validateUmaLogsQuerySpec(input, "entries");
+    return result.ok ? result.spec : null;
+}
+
+function readReplayEntryQuerySpec(key: string | null): UmaLogsQuerySpec | null {
+    if (!key) return null;
+    try {
+        const raw = sessionStorage.getItem(key);
+        return raw ? normalizeReplayEntryQuerySpec(JSON.parse(raw)) : null;
+    } catch {
+        return null;
+    }
+}
+
+function decodeReplayEntryQuerySpecParam(value: string | null): UmaLogsQuerySpec | null {
+    if (!value) return null;
+    try {
+        const padded = value.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
+        const binary = atob(padded);
+        const decoded = new TextDecoder().decode(Uint8Array.from(binary, (char) => char.charCodeAt(0)));
+        return normalizeReplayEntryQuerySpec(JSON.parse(decoded));
     } catch {
         return null;
     }
@@ -193,6 +257,7 @@ export default function ReplaysTab({ cmId, courseId, apiBase = "", strategyColor
     const [bootstrapError, setBootstrapError] = useState<string | null>(null);
 
     const [teamFilterDrafts, setTeamFilterDrafts] = useState<ScopedTeamDraft[]>([]);
+    const [raceFilters, setRaceFilters] = useState<ReplayRaceFilter[]>([]);
 
     const [queryLoading, setQueryLoading] = useState(false);
     const [queryError, setQueryError] = useState<string | null>(null);
@@ -211,9 +276,21 @@ export default function ReplaysTab({ cmId, courseId, apiBase = "", strategyColor
     const requestedReplayCardId = parsePositiveIntParam(searchParams.get("replayCardId"));
     const requestedReplayBuildKey = searchParams.get("replayBuildKey");
     const requestedReplayBuildParam = searchParams.get("replayBuild");
+    const requestedReplayUqlKey = searchParams.get("replayUqlKey");
+    const requestedReplayUqlParam = searchParams.get("replayUql");
+    const requestedReplayEntryQuerySpecKey = searchParams.get("replayEntryQuerySpecKey");
+    const requestedReplayEntryQuerySpecParam = searchParams.get("replayEntryQuerySpec");
     const requestedReplayBuild = useMemo(
         () => decodeReplayExactBuildParam(requestedReplayBuildParam) ?? readReplayExactBuildFilter(requestedReplayBuildKey),
         [requestedReplayBuildKey, requestedReplayBuildParam],
+    );
+    const requestedReplayUql = useMemo(
+        () => decodeReplayUqlParam(requestedReplayUqlParam) ?? readReplayUqlFilter(requestedReplayUqlKey),
+        [requestedReplayUqlKey, requestedReplayUqlParam],
+    );
+    const requestedReplayEntryQuerySpec = useMemo(
+        () => decodeReplayEntryQuerySpecParam(requestedReplayEntryQuerySpecParam) ?? readReplayEntryQuerySpec(requestedReplayEntryQuerySpecKey),
+        [requestedReplayEntryQuerySpecKey, requestedReplayEntryQuerySpecParam],
     );
     const shouldAutoRunReplayFilter = searchParams.get("replayAutoRun") === "1";
     const isExactBuildShortcut = requestedReplayBuild !== null && shouldAutoRunReplayFilter;
@@ -229,12 +306,13 @@ export default function ReplaysTab({ cmId, courseId, apiBase = "", strategyColor
                 cardId: requestedReplayCardId,
             } : null;
         setTeamFilterDrafts(requestedMember ? [createTeamFilterDraft("any", requestedMember)] : []);
+        setRaceFilters([]);
         setResults(null);
         setCurrentPage(1);
         setLastSubmittedRequest(null);
         setSortKey("date");
         setSortDir("desc");
-    }, [cmId, courseId, requestedReplayBuild, requestedReplayCardId]);
+    }, [cmId, courseId, requestedReplayBuild, requestedReplayCardId, requestedReplayEntryQuerySpec, requestedReplayUql]);
 
     useEffect(() => {
         if (!cmId || !courseId) return;
@@ -318,38 +396,49 @@ export default function ReplaysTab({ cmId, courseId, apiBase = "", strategyColor
             })
             .filter((team): team is ReplayScopedTeamFilter => team !== null);
 
-        const requestBase: Omit<ReplaySearchRequest, "limit" | "offset"> = {
-            teamFilters: teamFilters.length > 0 ? teamFilters : null,
+        const requestBase = buildReplaySearchRequest(
+            teamFilters,
             sortKey,
             sortDir,
-        };
+            raceFilters,
+            requestedReplayUql,
+            requestedReplayEntryQuerySpec,
+        );
 
         setLastSubmittedRequest(requestBase);
         executeQuery(requestBase, 1, true);
     };
 
     useEffect(() => {
-        if (!cmId || !courseId || (!requestedReplayCardId && !requestedReplayBuild) || !shouldAutoRunReplayFilter) return;
-        const key = `${cmId}:${courseId}:${requestedReplayBuildKey ?? requestedReplayBuildParam ?? requestedReplayCardId}`;
+        if (!cmId || !courseId || (!requestedReplayCardId && !requestedReplayBuild && !requestedReplayUql && !requestedReplayEntryQuerySpec) || !shouldAutoRunReplayFilter) return;
+        const key = `${cmId}:${courseId}:${requestedReplayEntryQuerySpecParam ?? requestedReplayEntryQuerySpecKey ?? requestedReplayUqlParam ?? requestedReplayUqlKey ?? requestedReplayBuildKey ?? requestedReplayBuildParam ?? requestedReplayCardId}`;
         if (autoRunKeyRef.current === key) return;
 
-        const requestedMember = requestedReplayBuild
-            ? buildReplayExactBuildMemberFilter(requestedReplayBuild)
-            : {
-                ...createEmptyMemberDraft(),
-                cardId: requestedReplayCardId,
-            };
+        const requestedMember = requestedReplayUql || requestedReplayEntryQuerySpec
+            ? null
+            : requestedReplayBuild
+                ? buildReplayExactBuildMemberFilter(requestedReplayBuild)
+                : {
+                    ...createEmptyMemberDraft(),
+                    cardId: requestedReplayCardId,
+                };
+        const teamFilters: ReplayScopedTeamFilter[] = requestedMember
+            ? [{ scope: "any", members: [requestedMember] }]
+            : [];
 
-        const requestBase: Omit<ReplaySearchRequest, "limit" | "offset"> = {
-            teamFilters: [{ scope: "any", members: [requestedMember] }],
+        const requestBase = buildReplaySearchRequest(
+            teamFilters,
             sortKey,
             sortDir,
-        };
+            [],
+            requestedReplayUql,
+            requestedReplayEntryQuerySpec,
+        );
 
         autoRunKeyRef.current = key;
         setLastSubmittedRequest(requestBase);
         executeQuery(requestBase, 1, true);
-    }, [cmId, courseId, executeQuery, requestedReplayBuild, requestedReplayBuildKey, requestedReplayBuildParam, requestedReplayCardId, shouldAutoRunReplayFilter, sortDir, sortKey]);
+    }, [cmId, courseId, executeQuery, requestedReplayBuild, requestedReplayBuildKey, requestedReplayBuildParam, requestedReplayCardId, requestedReplayEntryQuerySpec, requestedReplayEntryQuerySpecKey, requestedReplayEntryQuerySpecParam, requestedReplayUql, requestedReplayUqlKey, requestedReplayUqlParam, shouldAutoRunReplayFilter, sortDir, sortKey]);
 
     const changePage = (page: number) => {
         if (!lastSubmittedRequest || queryLoading || page === currentPage || page < 1) return;
@@ -358,6 +447,23 @@ export default function ReplaysTab({ cmId, courseId, apiBase = "", strategyColor
 
     const addTeamFilter = () => {
         setTeamFilterDrafts((previous) => [...previous, createTeamFilterDraft()]);
+    };
+
+    const addRaceFilter = () => {
+        setRaceFilters((previous) => [...previous, {
+            id: `${Date.now()}-${Math.random()}`,
+            field: "room_front_count",
+            operator: "=",
+            value: 0,
+        }]);
+    };
+
+    const updateRaceFilter = (id: string, patch: Partial<ReplayRaceFilter>) => {
+        setRaceFilters((previous) => previous.map((filter) => filter.id === id ? { ...filter, ...patch } : filter));
+    };
+
+    const removeRaceFilter = (id: string) => {
+        setRaceFilters((previous) => previous.filter((filter) => filter.id !== id));
     };
 
     const removeTeamFilter = (teamId: string) => {
@@ -477,12 +583,12 @@ export default function ReplaysTab({ cmId, courseId, apiBase = "", strategyColor
                 value={requirement.property}
                 onChange={(event) => onUpdate({ property: event.target.value as FilterProperty })}
             >
-                {(Object.keys(PROPERTY_LABELS) as FilterProperty[]).map((property) => (
+                {PROPERTY_OPTIONS.map((property) => (
                     <option key={property} value={property}>{PROPERTY_LABELS[property]}</option>
                 ))}
             </select>
 
-            {requirement.property !== "none" && requirement.property !== "skill" && requirement.property !== "supportCard" && (
+            {requirement.property !== "none" && requirement.property !== "skill" && requirement.property !== "supportCard" && requirement.property !== "isDebuffer" && (
                 <>
                     <div className="exp-toggle">
                         <button type="button" className={`exp-toggle-btn${requirement.statOp === ">" ? " active" : ""}`} onClick={() => onUpdate({ statOp: ">" })}>{">"}</button>
@@ -551,7 +657,7 @@ export default function ReplaysTab({ cmId, courseId, apiBase = "", strategyColor
                     value={member.strategy ?? ""}
                     onChange={(event) => updateTeamMember(team.id, index, { strategy: event.target.value === "" ? null : Number(event.target.value) })}
                 >
-                    <option value="">any strategy</option>
+                    <option value="">any style</option>
                     {STRATEGY_PILL_ORDER.map((strategy) => (
                         <option key={strategy} value={strategy}>{STRATEGY_NAMES[strategy]}</option>
                     ))}
@@ -622,6 +728,49 @@ export default function ReplaysTab({ cmId, courseId, apiBase = "", strategyColor
     return (
         <div className="uma-replays-tab">
             <div className="uma-replays-filters">
+                <div className="rpl-race-filter-section">
+                    <div className="rpl-race-filter-header">
+                        <strong>Race conditions</strong>
+                        <button type="button" className="exp-add-btn" onClick={addRaceFilter}>+ Add condition</button>
+                    </div>
+                    {raceFilters.length === 0 ? (
+                        <div className="rpl-empty-team-filters">No race-wide conditions.</div>
+                    ) : (
+                        <div className="rpl-race-filter-list">
+                            {raceFilters.map((filter) => (
+                                <div key={filter.id} className="rpl-race-filter-row">
+                                    <select
+                                        className="exp-select"
+                                        value={filter.field}
+                                        onChange={(event) => updateRaceFilter(filter.id, { field: event.target.value as ReplayRaceFilterField })}
+                                    >
+                                        {RACE_FILTER_FIELDS.map((option) => (
+                                            <option key={option.value} value={option.value}>{option.label}</option>
+                                        ))}
+                                    </select>
+                                    <select
+                                        className="exp-select rpl-race-filter-operator"
+                                        value={filter.operator}
+                                        onChange={(event) => updateRaceFilter(filter.id, { operator: event.target.value as ReplayRaceFilter["operator"] })}
+                                    >
+                                        <option value="=">=</option>
+                                        <option value="<=">&lt;=</option>
+                                        <option value=">=">&gt;=</option>
+                                    </select>
+                                    <input
+                                        className="exp-stat-input rpl-race-filter-value"
+                                        type="number"
+                                        min={0}
+                                        value={filter.value}
+                                        onChange={(event) => updateRaceFilter(filter.id, { value: Math.max(0, Number(event.target.value) || 0) })}
+                                    />
+                                    <button type="button" className="exp-remove-btn" onClick={() => removeRaceFilter(filter.id)}>x</button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
                 <div className="rpl-team-filter-toolbar" hidden={isExactBuildShortcut}>
                     <button type="button" className="rpl-add-team-btn" onClick={addTeamFilter}>
                         + Add team
@@ -630,7 +779,19 @@ export default function ReplaysTab({ cmId, courseId, apiBase = "", strategyColor
 
                 {teamFilterDrafts.length === 0 && !isExactBuildShortcut && (
                     <div className="rpl-empty-team-filters">
-                        Add a team to start filtering replays by lineup.
+                        {requestedReplayUql || requestedReplayEntryQuerySpec ? "Query filter active. Add a team to narrow it further." : "Add a team to start filtering replays by lineup."}
+                    </div>
+                )}
+
+                {requestedReplayUql && (
+                    <div className="rpl-exact-build-note">
+                        Written query filter active: <code>{requestedReplayUql}</code>
+                    </div>
+                )}
+
+                {requestedReplayEntryQuerySpec && (
+                    <div className="rpl-exact-build-note">
+                        Query filter active.
                     </div>
                 )}
 
@@ -715,7 +876,7 @@ export default function ReplaysTab({ cmId, courseId, apiBase = "", strategyColor
                                 className="uma-replays-result-row"
                                 role="button"
                                 tabIndex={0}
-                                onClick={() => openReplayRoute(row.raceUid, false)}
+                                onClick={(event) => openReplayRoute(row.raceUid, event.ctrlKey || event.metaKey)}
                                 onKeyDown={(event) => {
                                     if (event.key === "Enter" || event.key === " ") {
                                         event.preventDefault();

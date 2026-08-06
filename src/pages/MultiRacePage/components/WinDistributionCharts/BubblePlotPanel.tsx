@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { STRATEGY_DISPLAY_ORDER, STRATEGY_NAMES, STYLE_POP_FILTER_OPTIONS, BAYES_UMA, BAYES_TEAM } from "./constants";
 import { PieSlice } from "./types";
 import type { CharacterTeamRateRow } from "../../../UmaLogsPage/panelData";
@@ -13,9 +14,9 @@ type BubblePoint = {
     strategyId: number;
     popPct: number;
     stylePopPct: number;
-    adjWinRate: number;
+    winRate: number;
     count: number;
-    adjTeamWinRate: number;
+    teamWinRate: number;
 };
 
 interface BubblePlotPanelProps {
@@ -27,10 +28,25 @@ interface BubblePlotPanelProps {
 
 export function BubblePlotPanel({ rawPopSlices, rawWinsSlices, strategyColors, characterTeamRates }: BubblePlotPanelProps) {
     const [hovered, setHovered] = useState<string | null>(null);
+    const [expanded, setExpanded] = useState(false);
     const [minPopPct, setMinPopPct] = useState<0 | 1 | 3 | 5>(3);
     const [hiddenStrategies, setHiddenStrategies] = useState<Record<number, boolean>>(
         () => Object.fromEntries(STRATEGY_DISPLAY_ORDER.map((sid) => [sid, false])) as Record<number, boolean>
     );
+
+    useEffect(() => {
+        if (!expanded || typeof document === "undefined") return;
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "Escape") setExpanded(false);
+        };
+        window.addEventListener("keydown", onKeyDown);
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener("keydown", onKeyDown);
+        };
+    }, [expanded]);
 
     const winsByKey = useMemo(
         () => new Map(rawWinsSlices.filter(s => s.charaId).map(s => [s.charaId as string, s.value])),
@@ -64,13 +80,11 @@ export function BubblePlotPanel({ rawPopSlices, rawWinsSlices, strategyColors, c
                 const parts = key.split('_');
                 const wins = winsByKey.get(key) ?? 0;
                 const apps = s.value;
-                const adjWinRate = (wins + BAYES_UMA.K * BAYES_UMA.PRIOR) / (apps + BAYES_UMA.K);
+                const winRate = apps > 0 ? wins / apps : 0;
                 const tw = teamWinRateByKey.get(key);
                 const strategyId = Number(parts[2]);
                 const styleApps = styleAppsByStrategy.get(strategyId) ?? 0;
-                const adjTeamWinRate = tw
-                    ? (tw.wins + BAYES_TEAM.K * BAYES_TEAM.PRIOR) / (tw.apps + BAYES_TEAM.K)
-                    : BAYES_TEAM.PRIOR;
+                const teamWinRate = tw && tw.apps > 0 ? tw.wins / tw.apps : 0;
                 return {
                     key,
                     label: s.fullLabel ?? s.label,
@@ -79,9 +93,9 @@ export function BubblePlotPanel({ rawPopSlices, rawWinsSlices, strategyColors, c
                     strategyId,
                     popPct: s.percentage,
                     stylePopPct: styleApps > 0 ? (apps / styleApps) * 100 : 0,
-                    adjWinRate,
+                    winRate,
                     count: apps,
-                    adjTeamWinRate,
+                    teamWinRate,
                 };
             })
             .sort((a, b) => b.popPct - a.popPct);
@@ -105,11 +119,11 @@ export function BubblePlotPanel({ rawPopSlices, rawWinsSlices, strategyColors, c
 
     const hasVisiblePoints = points.length > 0;
 
-    const indRates = hasVisiblePoints ? points.map(p => p.adjWinRate) : [BAYES_UMA.PRIOR];
+    const indRates = hasVisiblePoints ? points.map(p => p.winRate) : [BAYES_UMA.PRIOR];
     const xMin = Math.min(...indRates, BAYES_UMA.PRIOR) * 0.85;
     const xMax = Math.max(...indRates, BAYES_UMA.PRIOR) * 1.15;
 
-    const twrValues = hasVisiblePoints ? points.map(p => p.adjTeamWinRate) : [BAYES_TEAM.PRIOR];
+    const twrValues = hasVisiblePoints ? points.map(p => p.teamWinRate) : [BAYES_TEAM.PRIOR];
     const yMin = Math.min(...twrValues, BAYES_TEAM.PRIOR) * 0.85;
     const yMax = Math.max(...twrValues, BAYES_TEAM.PRIOR) * 1.15;
 
@@ -133,8 +147,13 @@ export function BubblePlotPanel({ rawPopSlices, rawWinsSlices, strategyColors, c
         setHiddenStrategies((prev) => ({ ...prev, [strategyId]: !prev[strategyId] }));
     };
 
-    return (
-        <div className="sa-panel ca-panel">
+    const panel = (
+        <div
+            className={`sa-panel ca-panel ca-bubble-panel${expanded ? " ca-bubble-panel--expanded" : ""}`}
+            role={expanded ? "dialog" : undefined}
+            aria-modal={expanded ? true : undefined}
+            aria-label={expanded ? "Individual Win% vs Team Win%" : undefined}
+        >
             <div className="sa-panel-header">
                 <span>
                     Individual Win% vs Team Win%
@@ -144,6 +163,9 @@ export function BubblePlotPanel({ rawPopSlices, rawWinsSlices, strategyColors, c
                         tip="Bubble size represents total population."
                     />
                 </span>
+                <button type="button" className="sa-mobile-expand-btn" onClick={() => setExpanded((value) => !value)}>
+                    {expanded ? "Close" : "Expand"}
+                </button>
                 <div className="bp-pop-filter-toggle">
                     <span className="bp-pop-filter-label">Style pop:</span>
                     {STYLE_POP_FILTER_OPTIONS.map(opt => (
@@ -175,6 +197,7 @@ export function BubblePlotPanel({ rawPopSlices, rawWinsSlices, strategyColors, c
                     );
                 })}
             </div>
+            <div className="bp-chart-scroll">
             {points.length === 0 ? (
                 <div className="bp-empty-state">No data for the current style filters.</div>
             ) : (
@@ -215,17 +238,17 @@ export function BubblePlotPanel({ rawPopSlices, rawWinsSlices, strategyColors, c
 
                 {/* Axis labels */}
                 <text x={PAD.left + plotW / 2} y={H - 2} textAnchor="middle" fill="#4a5568" fontSize={10}>
-                    Adj. Individual Win%
+                    Individual Win%
                 </text>
                 <text x={12} y={PAD.top + plotH / 2} textAnchor="middle" fill="#4a5568" fontSize={10}
                     transform={`rotate(-90,12,${PAD.top + plotH / 2})`}>
-                    Adj. Team Win%
+                    Team Win%
                 </text>
 
                 {/* Bubbles */}
                 {points.map(p => {
-                    const cx = xScale(p.adjWinRate);
-                    const cy = yScale(p.adjTeamWinRate);
+                    const cx = xScale(p.winRate);
+                    const cy = yScale(p.teamWinRate);
                     const r = rScale(p.popPct);
                     const color = strategyColors[p.strategyId] ?? "#718096";
                     const isHov = hovered === p.key;
@@ -252,8 +275,8 @@ export function BubblePlotPanel({ rawPopSlices, rawWinsSlices, strategyColors, c
                     );
                 })}
                 {hoveredPoint && (() => {
-                    const cx = xScale(hoveredPoint.adjWinRate);
-                    const cy = yScale(hoveredPoint.adjTeamWinRate);
+                    const cx = xScale(hoveredPoint.winRate);
+                    const cy = yScale(hoveredPoint.teamWinRate);
                     const r = rScale(hoveredPoint.popPct);
                     const TW = 168, TH = 56;
                     const aboveFits = cy - r - 8 - TH >= PAD.top;
@@ -269,16 +292,23 @@ export function BubblePlotPanel({ rawPopSlices, rawWinsSlices, strategyColors, c
                                 {hoveredPoint.label} [{stratName}]
                             </text>
                             <text x={tx + 8} y={ty + 31} fill="#a0aec0" fontSize={10}>
-                                Win: {(hoveredPoint.adjWinRate * 100).toFixed(1)}% | Pop: {hoveredPoint.popPct.toFixed(1)}% total
+                                Win: {(hoveredPoint.winRate * 100).toFixed(1)}% | Pop: {hoveredPoint.popPct.toFixed(1)}% total
                             </text>
                             <text x={tx + 8} y={ty + 46} fill="#a0aec0" fontSize={10}>
-                                Team win: {(hoveredPoint.adjTeamWinRate * 100).toFixed(1)}% | Style pop: {hoveredPoint.stylePopPct.toFixed(1)}%
+                                Team win: {(hoveredPoint.teamWinRate * 100).toFixed(1)}% | Style pop: {hoveredPoint.stylePopPct.toFixed(1)}%
                             </text>
                         </g>
                     );
                 })()}
             </svg>
             )}
+            </div>
         </div>
     );
+
+    if (expanded && typeof document !== "undefined") {
+        return createPortal(panel, document.body);
+    }
+
+    return panel;
 }

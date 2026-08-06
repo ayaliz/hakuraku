@@ -202,7 +202,7 @@ export function calculateTargetSpeed(params: SpeedCalculationParams): TargetSpee
 
     const trackSpeedMultiplier = getTrackStatThresholdModifier(courseId || 0, { speed: speedStat, stamina: staminaStat, power: powerStat, guts: gutsStat, wisdom: wisdomStat }, mood);
 
-    const adjustedSpeed = adjustStat(speedStat, mood, greenSkillBonuses?.speed) * trackSpeedMultiplier;
+    const adjustedSpeed = adjustStat(speedStat, mood, 0) * trackSpeedMultiplier + (greenSkillBonuses?.speed ?? 0);
     const strategyProficiencyModifier = STRATEGY_PROFICIENCY_MODIFIER[strategyProficiency ?? 7] ?? 1.0;
     const adjustedWisdom = adjustStat(wisdomStat, mood) * strategyProficiencyModifier + (greenSkillBonuses?.wisdom ?? 0);
     const adjustedPower = adjustStat(powerStat, mood, greenSkillBonuses?.power);
@@ -329,7 +329,7 @@ export function calculateLastSpurtTargetSpeedWithTruncatedLateRaceBase(params: S
     } = params;
 
     const trackSpeedMultiplier = getTrackStatThresholdModifier(courseId || 0, { speed: speedStat, stamina: staminaStat, power: powerStat, guts: gutsStat, wisdom: wisdomStat }, mood);
-    const adjustedSpeed = adjustStat(speedStat, mood, greenSkillBonuses?.speed) * trackSpeedMultiplier;
+    const adjustedSpeed = adjustStat(speedStat, mood, 0) * trackSpeedMultiplier + (greenSkillBonuses?.speed ?? 0);
     const adjustedPower = adjustStat(powerStat, mood, greenSkillBonuses?.power);
     const adjustedGuts = adjustStat(gutsStat, mood, greenSkillBonuses?.guts);
 

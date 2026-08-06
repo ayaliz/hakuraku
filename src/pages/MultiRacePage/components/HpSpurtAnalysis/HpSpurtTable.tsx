@@ -25,6 +25,19 @@ function formatAvgTime(values: number[]): string {
     return values.length > 0 ? `${avg(values).toFixed(1)}s` : '-';
 }
 
+function median(values: number[]): number {
+    if (values.length === 0) return 0;
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+}
+
+function formatRaceTime(value: number): string {
+    const minutes = Math.floor(value / 60);
+    const seconds = value - minutes * 60;
+    return `${minutes}:${seconds.toFixed(2).padStart(5, '0')}`;
+}
+
 let _statIcons: Record<string, string> | null = null;
 function getStatIcons() {
     if (!_statIcons) {
@@ -38,6 +51,28 @@ function getStatIcons() {
         };
     }
     return _statIcons;
+}
+
+const MOOD_LABELS: Record<number, string> = {
+    1: 'Awful',
+    2: 'Bad',
+    3: 'Normal',
+    4: 'Good',
+    5: 'Great',
+};
+
+let _moodIcons: Record<number, string> | null = null;
+function getMoodIcons() {
+    if (!_moodIcons) {
+        _moodIcons = {
+            1: AssetLoader.getStatIcon('awful') ?? '',
+            2: AssetLoader.getStatIcon('bad') ?? '',
+            3: AssetLoader.getStatIcon('normal') ?? '',
+            4: AssetLoader.getStatIcon('good') ?? '',
+            5: AssetLoader.getStatIcon('great') ?? '',
+        };
+    }
+    return _moodIcons;
 }
 
 const StatsCell: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) => {
@@ -85,6 +120,24 @@ const StatsCell: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) => {
                     <span className="stat-label-item stat-sp-item"><img src={icons.hint} alt="Skill Points" className="stat-icon" />{totalSkillPoints}</span>
                 </OverlayTrigger>
             </div>
+        </div>
+    );
+};
+
+const MoodCell: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) => {
+    const icons = getMoodIcons();
+    const moods = [1, 2, 3, 4, 5];
+    const renderMood = (mood: number) => (
+        <span key={mood} className="hp-mood-count" title={MOOD_LABELS[mood]}>
+            <img src={icons[mood]} alt={MOOD_LABELS[mood]} className="hp-mood-icon" />
+            <span>{stat.moodCounts[mood] ?? 0}</span>
+        </span>
+    );
+
+    return (
+        <div className="hp-mood-counts">
+            <div className="hp-mood-row">{moods.slice(0, 3).map(renderMood)}</div>
+            <div className="hp-mood-row">{moods.slice(3).map(renderMood)}</div>
         </div>
     );
 };
@@ -138,12 +191,12 @@ const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats }) => {
                 return row.totalRuns > 0 ? (row.survivalCount / row.totalRuns) * 100 : 0;
             case 'avgDownhillModeTime':
                 return avg(row.downhillModeTimeSamples);
-            case 'duelProcRate':
+            case 'dueling':
                 return row.totalRuns > 0 ? (row.duelingTimeSamples.length / row.totalRuns) * 100 : 0;
-            case 'avgDuelTime':
-                return avg(row.duelingTimeSamples);
             case 'avgPaceUpDownTime':
                 return avg(row.paceUpTimeSamples) + avg(row.paceDownTimeSamples);
+            case 'finishTime':
+                return avg(row.finishTimeSamples);
             default:
                 return 0;
         }
@@ -186,6 +239,7 @@ const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats }) => {
                         <th className="hp-col-expand"></th>
                         <SortableHeader columnKey="charaName">Character</SortableHeader>
                         <th>Stats <span className="hp-sort-indicator" title="The sixth value is total SP in terms of learned skills, using costs without any hint levels.">ⓘ</span></th>
+                        <th className="hp-col-center">Mood</th>
                         <SortableHeader columnKey="rankScore" className="hp-col-center">Score</SortableHeader>
                         <SortableHeader columnKey="totalRuns" className="hp-col-center">Runs</SortableHeader>
                         <SortableHeader columnKey="wins" className="hp-col-center">Wins</SortableHeader>
@@ -194,9 +248,9 @@ const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats }) => {
                         <SortableHeader columnKey="fullSpurtRate">Full Spurt Rate</SortableHeader>
                         <SortableHeader columnKey="survivalRate">Survival Rate</SortableHeader>
                         <SortableHeader columnKey="avgDownhillModeTime" className="hp-col-center">Avg Downhill</SortableHeader>
-                        <SortableHeader columnKey="duelProcRate" className="hp-col-center">Duel Proc %</SortableHeader>
-                        <SortableHeader columnKey="avgDuelTime" className="hp-col-center">Avg Duel</SortableHeader>
-                        <SortableHeader columnKey="avgPaceUpDownTime" className="hp-col-center">Avg Pos Keep Modes</SortableHeader>
+                        <SortableHeader columnKey="dueling" className="hp-col-center">Dueling</SortableHeader>
+                        <SortableHeader columnKey="avgPaceUpDownTime" className="hp-col-center">Avg Pace</SortableHeader>
+                        <SortableHeader columnKey="finishTime" className="hp-col-center">Finish Times</SortableHeader>
                     </tr>
                 </thead>
                 <tbody>
@@ -211,6 +265,10 @@ const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats }) => {
                         const fullSpurtRate = row.totalRuns > 0 ? (row.hpOutcomesFullSpurt.length / row.totalRuns) * 100 : 0;
                         const survivalRate = row.totalRuns > 0 ? (row.survivalCount / row.totalRuns) * 100 : 0;
                         const duelProcRate = row.totalRuns > 0 ? (row.duelingTimeSamples.length / row.totalRuns) * 100 : 0;
+                        const averageFinishTime = avg(row.finishTimeSamples);
+                        const medianFinishTime = median(row.finishTimeSamples);
+                        const fastestFinishTime = row.finishTimeSamples.length > 0 ? Math.min(...row.finishTimeSamples) : 0;
+                        const slowestFinishTime = row.finishTimeSamples.length > 0 ? Math.max(...row.finishTimeSamples) : 0;
 
                         const mainRow = (
                             <tr key={`main-${row.uniqueId}`} onClick={() => toggleRow(row.uniqueId)}>
@@ -236,6 +294,7 @@ const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats }) => {
                                     ) : unknownCharaTag}
                                 </td>
                                 <td><StatsCell stat={row} /></td>
+                                <td className="hp-col-center"><MoodCell stat={row} /></td>
                                 <td className="hp-col-center">
                                     <div className="hp-score-cell">
                                         <img src={rankInfo.icon} alt={rankInfo.name} title={String(row.trainedChara.rankScore)} className="hp-rank-icon" />
@@ -286,13 +345,13 @@ const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats }) => {
                                         )}
                                     </div>
                                 </td>
-                                <td className="hp-col-center">
-                                    <span className="hp-rate-value">
-                                        {duelProcRate.toFixed(1)}% <span className="hp-rate-count text-muted">({row.duelingTimeSamples.length})</span>
-                                    </span>
-                                </td>
                                 <td className="hp-col-center" title={`${row.duelingTimeSamples.length} duel sample(s)`}>
-                                    {formatAvgTime(row.duelingTimeSamples)}
+                                    <div className="hp-dueling-cell">
+                                        <span className="hp-rate-value">
+                                            {duelProcRate.toFixed(1)}% <span className="hp-rate-count text-muted">({row.duelingTimeSamples.length})</span>
+                                        </span>
+                                        <span className="hp-dueling-average">{formatAvgTime(row.duelingTimeSamples)} avg</span>
+                                    </div>
                                 </td>
                                 <td className="hp-col-center" title={`${row.paceUpTimeSamples.length} pace up sample(s), ${row.paceDownTimeSamples.length} pace down sample(s)`}>
                                     <div className="hp-mode-time-cell">
@@ -305,6 +364,15 @@ const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats }) => {
                                         {row.paceUpTimeSamples.length === 0 && row.paceDownTimeSamples.length === 0 ? '-' : null}
                                     </div>
                                 </td>
+                                <td className="hp-col-center" title={`${row.finishTimeSamples.length} finish time sample(s)`}>
+                                    {row.finishTimeSamples.length > 0 ? (
+                                        <div className="hp-finish-time-cell">
+                                            <span className="hp-finish-time-primary">Avg {formatRaceTime(averageFinishTime)}</span>
+                                            <span>Median {formatRaceTime(medianFinishTime)}</span>
+                                            <span>{formatRaceTime(fastestFinishTime)} - {formatRaceTime(slowestFinishTime)}</span>
+                                        </div>
+                                    ) : '-'}
+                                </td>
                             </tr>
                         );
 
@@ -314,7 +382,7 @@ const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats }) => {
 
                         const expandedRow = (
                             <tr key={`expanded-${row.uniqueId}`}>
-                                <td colSpan={14} className="hp-expanded-td">
+                                <td colSpan={15} className="hp-expanded-td">
                                     <HpSpurtAnalysisDetail stat={row} />
                                 </td>
                             </tr>

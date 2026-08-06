@@ -115,7 +115,7 @@ The shaded horizontal bands are the speed ranges above, the solid vertical line 
 
 ## Aptitude appears to scale duration
 
-The speed gain and base duration behave as expected for characters with Front Runner aptitude A. In this [Sei and Daiwa replay](https://hakuraku.moe/racedata?kv=QICn9X9GaXoOQJ3w1Fa3lkEy), spot struggle starts at `11.588 s`.
+The speed gain and base duration behave as expected for characters with Front Runner aptitude A. In this [Sei and Daiwa replay](https://hakuraku.moe/racedata?kv=tg62V_LCWHz-65v400ImhXUC), spot struggle starts at `11.588 s`.
 
 ![Sei and Daiwa Scarlet speed graph](attachments/spot-struggle/sei-daiwa.svg)
 
@@ -128,7 +128,7 @@ On the `22.38 s` race frame, both are still verifiably spot struggling:
 
 By the `23.44 s` race frame, both have dropped back into non-spot-struggle speed ranges. That matches an approximately 11 second spot struggle starting at `11.588 s`.
 
-The behavior changes for characters with poor Front Runner aptitude. In this [Special Week and Super Creek replay](https://hakuraku.moe/racedata?kv=U1p-T0S9q0BSr35PUoJUMYCC), spot struggle starts at `13.120 s`.
+The behavior changes for characters with poor Front Runner aptitude. In this [Special Week and Super Creek replay](https://hakuraku.moe/racedata?kv=2HQB16iaxHrYP4FbhYWj6uvh), spot struggle starts at `13.120 s`.
 
 ![Special Week and Super Creek speed graph](attachments/spot-struggle/spe-creek.svg)
 
@@ -149,8 +149,8 @@ I was not able to produce any race where Special Week verifiably spot struggled 
 
 I also found cases where spot struggle ended early even for A-aptitude Front Runners:
 
-- [Race 1](https://hakuraku.moe/racedata?kv=bh5nvx-S4bFLaerx0D2I4BjH): Sei starts spot struggling at `14.585 s`, but is already down to `18.78 m/s` by the `24.51 s` race frame.
-- [Race 2](https://hakuraku.moe/racedata?kv=Fw8GBXFJpb3EYA6y-9rETyiE): Sei starts spot struggling at `12.854 s`, but is back down to `18.8 m/s` by the `19.18 s` race frame.
+- [Race 1](https://hakuraku.moe/racedata?kv=EnPJcMr_3xqQas-HwP7-4N04): Sei starts spot struggling at `14.585 s`, but is already down to `18.78 m/s` by the `24.51 s` race frame.
+- [Race 2](https://hakuraku.moe/racedata?kv=RY2q2NfKUnWSHH1wsUY8Cy5h): Sei starts spot struggling at `12.854 s`, but is back down to `18.8 m/s` by the `19.18 s` race frame.
 
 ![Early exit race 1 speed graph](attachments/spot-struggle/exit-1.svg)
 
@@ -164,8 +164,8 @@ That matters because the parameter file contains `DistanceGap2: 5.0`. The curren
 
 To test whether Oonige really can start spot struggle from around 5 m away, I looked for races where two Suzukas approached each other from outside the normal Front Runner threshold:
 
-- [Race 1](https://hakuraku.moe/racedata?kv=rIHfp8mGimuPeC90mYhy5QNx): On the `26.64 s` frame, the two Suzukas are `4.4 m` apart and do not start spot struggling. On the `27.71 s` frame, they are `3.1 m` apart. Spot struggle begins at `27.173 s`.
-- [Race 2](https://hakuraku.moe/racedata?kv=JJANaXG1EMudcLheAGxV_uhp): On the `28.77 s` frame, the two Suzukas are `4.1 m` apart and do not start spot struggling. On the `29.84 s` frame, they are `3.3 m` apart. Spot struggle begins at `29.104 s`.
+- [Race 1](https://hakuraku.moe/racedata?kv=7p2zdLd81GxzHXJGtF2rsdZT): On the `26.64 s` frame, the two Suzukas are `4.4 m` apart and do not start spot struggling. On the `27.71 s` frame, they are `3.1 m` apart. Spot struggle begins at `27.173 s`.
+- [Race 2](https://hakuraku.moe/racedata?kv=ETr8g4EwgjiJ9j8YsDJ5u8iT): On the `28.77 s` frame, the two Suzukas are `4.1 m` apart and do not start spot struggling. On the `29.84 s` frame, they are `3.3 m` apart. Spot struggle begins at `29.104 s`.
 
 ![Oonige entry race 1 speed graph](attachments/spot-struggle/oonige-1.svg)
 
@@ -175,7 +175,7 @@ These replays do not support the idea that Oonige have a wider 5 m spot struggle
 
 ## Addendum: Front S and three-way spot struggles
 
-One of the first follow-up questions I received was whether the duration scaling also applies to Front Runner aptitude S. This [Kitasan Black and Bourbon replay](https://hakuraku.moe/racedata?kv=QEVfPZy80UUVH4oWOuwlqnWv) gives a clean check.
+One of the first follow-up questions I received was whether the duration scaling also applies to Front Runner aptitude S. This [Kitasan Black and Bourbon replay](https://hakuraku.moe/racedata?kv=UoYZ26JgBIvxrzcfSZ3tAy0N) gives a clean check.
 
 Bourbon starts spot struggling at `8.258 s` with `518` guts and Front Runner aptitude S. The unmodified duration would be:
 
@@ -211,7 +211,7 @@ The next goal is to show how the distance-based exit condition behaves when more
 
 The examples below separate those cases one at a time.
 
-In a three-way spot struggle, being more than `5 m` behind only the frontmost spot struggler is not enough. In this [Palmer replay](https://hakuraku.moe/racedata?kv=mQM2aZ3KIE3IG9Ps8c1eroVt), Palmer is more than `7 m` behind the frontmost struggler on the `11.72 s` and `12.79 s` frames, but she remains in spot struggle because she is not yet more than `5 m` behind every other spot struggler.
+In a three-way spot struggle, being more than `5 m` behind only the frontmost spot struggler is not enough. In this [Palmer replay](https://hakuraku.moe/racedata?kv=DXu9TlV4QnAwUBJL3zHbaVFl), Palmer is more than `7 m` behind the frontmost struggler on the `11.72 s` and `12.79 s` frames, but she remains in spot struggle because she is not yet more than `5 m` behind every other spot struggler.
 
 ![Three-way exit check 1 distance graph](attachments/spot-struggle/three-way-exit-1.svg)
 
@@ -233,7 +233,7 @@ In a three-way spot struggle, being more than `5 m` behind only the frontmost sp
 
 Palmer therefore does not exit spot struggle early just from being `5 m` behind the frontmost spot struggler.
 
-However, in this [Ines Fujin replay](https://hakuraku.moe/racedata?kv=9Atmd5DnGQ2AJiXDpQMv7XeD), Ines stops spot struggling shortly after reaching a gap of more than `5 m` to both of her spot struggle partners, and is no longer spot struggling on the `12.79 s` and `13.85 s` frames.
+However, in this [Ines Fujin replay](https://hakuraku.moe/racedata?kv=eYfn5Yb2xYwkgEZanyJ6J_tm), Ines stops spot struggling shortly after reaching a gap of more than `5 m` to both of her spot struggle partners, and is no longer spot struggling on the `12.79 s` and `13.85 s` frames.
 
 ![Three-way exit check 2 distance graph](attachments/spot-struggle/three-way-exit-2.svg)
 
@@ -255,7 +255,7 @@ However, in this [Ines Fujin replay](https://hakuraku.moe/racedata?kv=9Atmd5DnGQ
 
 So the `5 m` exit condition observed in the two-uma examples still appears to exist, but with more participants it requires being behind *all* other active spot strugglers by `5 m`.
 
-The same rule also explains the cascade cases. In this [first replay](https://hakuraku.moe/racedata?kv=bySV7MpijTCufc0j4wolxSwV), Team 1 Bourbon exits around the `12.79 s` frame after falling at least `5 m` behind both other spot strugglers. Around the `13.85 s` frame, Sei and Team 3 Bourbon also get too far apart, leading both of them to exit early.
+The same rule also explains the cascade cases. In this [first replay](https://hakuraku.moe/racedata?kv=hiWgHLvoDu5nvHvXjz8D-gGh), Team 1 Bourbon exits around the `12.79 s` frame after falling at least `5 m` behind both other spot strugglers. Around the `13.85 s` frame, Sei and Team 3 Bourbon also get too far apart, leading both of them to exit early.
 
 ![Last struggler cascade 1 distance graph](attachments/spot-struggle/last-struggler-cascade-1.svg)
 
@@ -307,7 +307,7 @@ The same rule also explains the cascade cases. In this [first replay](https://ha
 | Spot struggle + pace up | Any value above the pace up only band | `>20.476 m/s` |
 :::
 
-In this [second replay](https://hakuraku.moe/racedata?kv=KBC7nMYSL9RfDBJ2zpcpIoxB), Sei falls more than `5 m` behind both other spot strugglers around the `13.85 s` frame and exits. Around the `15.98 s` frame, Bourbon and Grass Wonder form a `5 m` gap; that satisfies the distance exit for Grass, and Bourbon exits because she is then the last remaining active spot struggler.
+In this [second replay](https://hakuraku.moe/racedata?kv=78b0f0mdvs9G2bvQAY1ZfU7z), Sei falls more than `5 m` behind both other spot strugglers around the `13.85 s` frame and exits. Around the `15.98 s` frame, Bourbon and Grass Wonder form a `5 m` gap; that satisfies the distance exit for Grass, and Bourbon exits because she is then the last remaining active spot struggler.
 
 ![Last struggler cascade 2 distance graph](attachments/spot-struggle/last-struggler-cascade-2.svg)
 
@@ -402,4 +402,4 @@ Spot struggle can trigger once any uma in the race has passed the `150 m` mark, 
 
 It triggers when another uma of the same running style is within `3.75 m` behind the frontmost Front Runner or Oonige and at most `0.165` course widths away laterally. Upon triggering, all umas within `3.75 m` and `+/- 0.165` course widths of the frontmost uma of that style enter spot struggle together. Each style can only trigger spot struggle once per race.
 
-An uma exits spot struggle if she is `5 m` behind or `0.416` course lengths away laterally from all other spot strugglers of her style, losing the target speed bonus even if her duration has not expired. If all other spot strugglers have triggered the distance exit condition, the final spot struggler exits as well.
+An uma exits spot struggle if she is `5 m` behind or `0.416` course lengths away laterally from all other  spot strugglers of her style, losing the target speed bonus even if her duration has not expired. If all other spot strugglers have triggered the distance exit condition, the final spot struggler exits as well.

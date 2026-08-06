@@ -902,7 +902,7 @@ export default function AccountPage() {
                             <div className="auth-code-panel">
                                 <div className="auth-inline-note mb-3">
                                     {linkedGameAccount && verificationStatusLabel !== "pending"
-                                        ? "These are the current horseACT credentials for your linked account."
+                                        ? "These are the current horseACT credentials for your linked account. Viewing them does not rotate the API key."
                                         : "These credentials are shown once. If you lose them, just start a fresh verification."}
                                 </div>
                                 <Form.Group className="mb-3">

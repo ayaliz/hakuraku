@@ -34,7 +34,9 @@ type RaceDataPresenterProps = {
     raceData: RaceSimulateData,
     detectedCourseId?: number,
     laneDistanceMax?: number,
+    randomSeed?: number,
     raceType?: string,
+    playerFrameOrder?: number,
     trackDetails?: {
         condition?: string,
         weather?: string,
@@ -54,12 +56,22 @@ type RaceDataPresenterState = {
     showOtherRaceEvents: boolean,
 };
 
+function getInitialSelectedCharaFrameOrder(props: RaceDataPresenterProps): number | undefined {
+    if (props.raceType !== 'Single') return undefined;
+    if (
+        Number.isInteger(props.playerFrameOrder)
+        && props.playerFrameOrder! >= 0
+        && props.playerFrameOrder! < props.raceData.horseResult.length
+    ) return props.playerFrameOrder;
+    return props.raceData.horseResult.length > 0 ? 0 : undefined;
+}
+
 class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, RaceDataPresenterState> {
     constructor(props: RaceDataPresenterProps) {
         super(props);
 
         this.state = {
-            selectedCharaFrameOrder: undefined,
+            selectedCharaFrameOrder: getInitialSelectedCharaFrameOrder(props),
             activeCourseId: props.detectedCourseId,
 
             showSkills: true,
@@ -140,6 +152,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.state.activeCourseId, this.skillActivations(this.props.raceData), parseGroundCondition(this.props.trackDetails?.condition))}
                 raceType={this.props.raceType}
                 groundCondition={parseGroundCondition(this.props.trackDetails?.condition)}
+                randomSeed={this.props.randomSeed}
             />
 
             <div style={sectionDividerStyle} />
@@ -165,6 +178,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 <Form>
                     <Form.Group>
                         <Form.Control as="select"
+                            value={this.state.selectedCharaFrameOrder ?? ''}
                             onChange={(e) => this.setState({ selectedCharaFrameOrder: e.target.value ? parseInt(e.target.value) : undefined })}>
                             <option value="">Select Character</option>
                             {Object.entries(this.displayNames(this.props.raceHorseInfo, this.props.raceData))
@@ -203,6 +217,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 {this.state.selectedCharaFrameOrder !== undefined &&
                     <RaceGraph
                         raceData={this.props.raceData}
+                        raceHorseInfo={this.props.raceHorseInfo}
                         frameOrder={this.state.selectedCharaFrameOrder}
                         displayNames={this.displayNames(this.props.raceHorseInfo, this.props.raceData)}
                         showSkills={this.state.showSkills}

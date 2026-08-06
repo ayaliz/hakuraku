@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import { SkillStats, SkillActivationPoint, SkillActivationBuckets, CharacterStats, StrategyStats, HorseEntry } from "../../types";
 import { CharaHpSpurtStats } from "../HpSpurtAnalysis/types";
 import AssetLoader from "../../../../data/AssetLoader";
@@ -10,6 +9,7 @@ import { STRATS, DoubleProcBreakdown, LocalDoubleProcSummary, matchesRepresentat
 import WinBreakdownTable from "./WinBreakdownTable";
 import SerializedWinBreakdownTable, { filterWinBreakdownRows } from "./SerializedWinBreakdownTable";
 import DoubleProcTable, { computeDoubleProcSummary, estimateDoubleOpportunityRate } from "./DoubleProcTable";
+import { STRATEGY_COLORS, STRATEGY_DISPLAY_ORDER, STRATEGY_NAMES } from "../WinDistributionCharts/constants";
 
 interface SkillAnalysisProps {
     skillStats: Map<number, SkillStats>;
@@ -23,10 +23,20 @@ interface SkillAnalysisProps {
     lazySkillDetails?: Map<number, GroupSkillDetailPayload>;
     onLoadLazySkillDetail?: (skillId: number) => void;
     lazySkillDetailLoadingIds?: Set<number>;
+    showStrategyProcRates?: boolean;
+    enableActivationSortCycle?: boolean;
 }
 
-type SortKey = "skillName" | "timesActivated" | "learnedByHorses" | "uniqueRaces" | "winRate" | "avgFinishPosition" | "normalizedActivations" | "meanDistance" | "medianDistance";
+type SortKey = "skillName" | "timesActivated" | "learnedByHorses" | "uniqueRaces" | "winRate" | "avgFinishPosition" | "meanDistance" | "medianDistance";
 type SortDir = "asc" | "desc";
+type ActivationSortMode = "raw" | "rate" | "both";
+
+const MIN_ACTIVATIONS_FOR_RATE_SORT = 100;
+
+function activationRate(skill: SkillStats): number {
+    const opportunities = skill.activationOpportunities ?? skill.learnedByHorses;
+    return opportunities > 0 ? skill.uniqueHorses / opportunities : 0;
+}
 
 const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
     skillStats,
@@ -39,6 +49,8 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
     lazySkillDetails,
     onLoadLazySkillDetail,
     lazySkillDetailLoadingIds,
+    showStrategyProcRates = false,
+    enableActivationSortCycle = false,
 }) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedStrategy, setSelectedStrategy] = useState<string>("all");
@@ -77,7 +89,9 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
             if (!grouped.has(c.charaId)) grouped.set(c.charaId, []);
             grouped.get(c.charaId)!.push(c);
         });
-        const options: PortraitSelectOption[] = [];
+        const options: PortraitSelectOption[] = [
+            { label: "Own Characters", value: "own" },
+        ];
         grouped.forEach((versions, charaId) => {
             if (versions.length === 1) {
                 options.push({ label: versions[0].charaName, value: `unique:${versions[0].uniqueId}`, portrait: AssetLoader.getCharaThumb(versions[0].cardId) ?? undefined });
@@ -94,7 +108,9 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
     const ownCharaHorseKeys = useMemo(() => {
         if (selectedOwnCharaFilter === "all" || !ownCharas) return null;
         let relevantStats: CharaHpSpurtStats[] = [];
-        if (selectedOwnCharaFilter.startsWith("unique:")) {
+        if (selectedOwnCharaFilter === "own") {
+            relevantStats = ownCharas;
+        } else if (selectedOwnCharaFilter.startsWith("unique:")) {
             const uid = selectedOwnCharaFilter.slice(7);
             const stat = ownCharas.find(c => c.uniqueId === uid);
             if (stat) relevantStats = [stat];
@@ -113,10 +129,17 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
     const [expandedSkillId, setExpandedSkillId] = useState<number | null>(null);
     const [sortKey, setSortKey] = useState<SortKey>("timesActivated");
     const [sortDir, setSortDir] = useState<SortDir>("desc");
+    const [activationSortMode, setActivationSortMode] = useState<ActivationSortMode>("raw");
     const supportsLocalHorseFilters = !precomputedBuckets && !onLoadLazySkillDetail;
     const hasLazyBucketMode = !precomputedBuckets && !!onLoadLazySkillDetail;
 
     const handleSort = (key: SortKey) => {
+        if (key === "timesActivated" && enableActivationSortCycle) {
+            setSortKey(key);
+            setSortDir("desc");
+            setActivationSortMode(prev => sortKey !== key ? "raw" : prev === "raw" ? "rate" : prev === "rate" ? "both" : "raw");
+            return;
+        }
         if (sortKey === key) {
             setSortDir(prev => prev === "asc" ? "desc" : "asc");
         } else {
@@ -127,6 +150,10 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
 
     const renderSortIndicator = (key: SortKey) => {
         if (sortKey !== key) return <span className="sort-indicator">↕</span>;
+        if (key === "timesActivated" && enableActivationSortCycle) {
+            const label = activationSortMode === "raw" ? "#" : activationSortMode === "rate" ? "%" : "# + %";
+            return <span className="sort-indicator active">↓ {label}</span>;
+        }
         return <span className="sort-indicator active">{sortDir === "asc" ? "↑" : "↓"}</span>;
     };
 
@@ -179,13 +206,26 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                         if (matchesRepresentativeSkillGroup(sid, skill.skillId)) return true;
                     return false;
                 });
-                const uniqueHorses = horsesWhoActivated.length;
+                const uniqueHorses = skill.uniqueHorsesByStrategy?.[stratKey] ?? horsesWhoActivated.length;
                 const winsWithSkill = horsesWhoActivated.filter(h => h.finishOrder === 1).length;
                 const winRate = uniqueHorses > 0 ? (winsWithSkill / uniqueHorses) * 100 : 0;
                 const meanDistance = skill.meanDistanceByStrategy?.[stratKey] ?? skill.meanDistance;
                 const medianDistance = skill.medianDistanceByStrategy?.[stratKey] ?? skill.medianDistance;
+                const forcedActivationHorses = skill.forcedActivationHorsesByStrategy?.[stratKey] ?? 0;
+                const activationOpportunities = skill.activationOpportunitiesByStrategy?.[stratKey]
+                    ?? Math.max(0, learnedByHorses - forcedActivationHorses);
 
-                result.push({ ...skill, timesActivated, learnedByHorses, uniqueHorses, winRate, meanDistance, medianDistance });
+                result.push({
+                    ...skill,
+                    timesActivated,
+                    learnedByHorses,
+                    uniqueHorses,
+                    activationOpportunities,
+                    forcedActivationHorses,
+                    winRate,
+                    meanDistance,
+                    medianDistance,
+                });
             }
 
             return result;
@@ -202,6 +242,11 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                     ...skill,
                     timesActivated: skill.timesActivatedByStrategy?.[stratKey] ?? skill.timesActivated,
                     learnedByHorses: skill.learnedByHorsesByStrategy?.[stratKey] ?? skill.learnedByHorses,
+                    activationOpportunities: skill.activationOpportunitiesByStrategy?.[stratKey]
+                        ?? skill.learnedByHorsesByStrategy?.[stratKey]
+                        ?? skill.activationOpportunities
+                        ?? skill.learnedByHorses,
+                    forcedActivationHorses: skill.forcedActivationHorsesByStrategy?.[stratKey] ?? 0,
                     // Backward-compatible fallback: older cached payloads may not include uniqueHorsesByStrategy yet.
                     uniqueHorses: skill.uniqueHorsesByStrategy?.[stratKey] ?? skill.timesActivatedByStrategy?.[stratKey] ?? skill.uniqueHorses,
                     meanDistance: skill.meanDistanceByStrategy?.[stratKey] ?? skill.meanDistance,
@@ -237,6 +282,14 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                 return false;
             });
             const learnedByHorses = horsesWhoLearned.length;
+            const forcedActivationHorses = horsesWhoLearned.filter(h => {
+                const naturallyActivated = Array.from(h.activatedSkillIds)
+                    .some(id => matchesRepresentativeSkillGroup(id, baseStat.skillId));
+                const forceActivated = Array.from(h.forcedActivatedSkillIds ?? [])
+                    .some(id => matchesRepresentativeSkillGroup(id, baseStat.skillId));
+                return forceActivated && !naturallyActivated;
+            }).length;
+            const activationOpportunities = Math.max(0, learnedByHorses - forcedActivationHorses);
 
             if (filteredActivations.length === 0) return;
 
@@ -291,6 +344,8 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                 uniqueRaces,
                 uniqueHorses,
                 learnedByHorses,
+                activationOpportunities,
+                forcedActivationHorses,
                 winRate,
                 avgFinishPosition,
                 activationDistances: distances,
@@ -320,18 +375,27 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                     cmp = a.skillName.localeCompare(b.skillName);
                     break;
                 case "timesActivated":
-                    cmp = a.timesActivated - b.timesActivated;
+                    if (enableActivationSortCycle && activationSortMode !== "raw") {
+                        const aEligible = a.timesActivated >= MIN_ACTIVATIONS_FOR_RATE_SORT;
+                        const bEligible = b.timesActivated >= MIN_ACTIVATIONS_FOR_RATE_SORT;
+                        if (aEligible !== bEligible) return aEligible ? -1 : 1;
+
+                        if (activationSortMode === "rate") {
+                            cmp = activationRate(a) - activationRate(b);
+                            if (cmp === 0) cmp = a.timesActivated - b.timesActivated;
+                        } else {
+                            cmp = a.timesActivated - b.timesActivated;
+                            if (cmp === 0) cmp = activationRate(a) - activationRate(b);
+                        }
+                    } else {
+                        cmp = a.timesActivated - b.timesActivated;
+                    }
                     break;
                 case "uniqueRaces":
                     cmp = a.uniqueRaces - b.uniqueRaces;
                     break;
                 case "learnedByHorses":
                     cmp = a.learnedByHorses - b.learnedByHorses;
-                    break;
-                case "normalizedActivations":
-                    const aNorm = a.learnedByHorses > 0 ? a.normalizedActivations / a.learnedByHorses : 0;
-                    const bNorm = b.learnedByHorses > 0 ? b.normalizedActivations / b.learnedByHorses : 0;
-                    cmp = aNorm - bNorm;
                     break;
                 case "winRate":
                     cmp = a.winRate - b.winRate;
@@ -348,7 +412,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
             }
             return sortDir === "asc" ? cmp : -cmp;
         });
-    }, [filteredSkills, sortKey, sortDir]);
+    }, [filteredSkills, sortKey, sortDir, activationSortMode, enableActivationSortCycle]);
 
 
 
@@ -593,7 +657,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
 
         return (
             <tr key={`heatmap-${skill.skillId}`} className="heatmap-row">
-                <td colSpan={7} className="p-0">
+                <td colSpan={6} className="p-0">
                     <div className="inline-heatmap-container">
                         <div className="heatmap-track">
                             {buckets.map((count, i) => {
@@ -679,7 +743,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                 {supportsLocalHorseFilters && ownCharaDropdownOptions.length > 0 && (
                     <PortraitSelect
                         value={selectedOwnCharaFilter}
-                        defaultLabel="Own Characters"
+                        defaultLabel="Any Character"
                         options={ownCharaDropdownOptions}
                         onChange={v => {
                             setSelectedOwnCharaFilter(v);
@@ -725,27 +789,15 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                             <th className="sortable" onClick={() => handleSort("learnedByHorses")}>
                                 Learned {renderSortIndicator("learnedByHorses")}
                             </th>
-                            <th className="sortable" onClick={() => handleSort("timesActivated")}>
-                                Activations {renderSortIndicator("timesActivated")}
+                            <th
+                                className="sortable"
+                                onClick={() => handleSort("timesActivated")}
+                                title={enableActivationSortCycle
+                                    ? "Natural activations; rate excludes observations censored by 110071/910071. Sort by count, rate, or both."
+                                    : "Natural activations; rate excludes observations censored by 110071/910071."}
+                            >
+                                Natural activations {renderSortIndicator("timesActivated")}
                             </th>
-                            {supportsLocalHorseFilters && (
-                                <th className="sortable" onClick={() => handleSort("normalizedActivations")}>
-                                    <OverlayTrigger
-                                        placement="top"
-                                        overlay={
-                                            <Tooltip id="normalized-tooltip">
-                                                Estimate for how often the skill's conditions are met with wit checks excluded.
-                                            </Tooltip>
-                                        }
-                                    >
-                                        <span className="skill-help-hint">
-                                            Normalized
-                                        </span>
-                                    </OverlayTrigger>
-                                    {" "}
-                                    {renderSortIndicator("normalizedActivations")}
-                                </th>
-                            )}
                             <th className="sortable" onClick={() => handleSort("meanDistance")}>
                                 Mean Dist {renderSortIndicator("meanDistance")}
                             </th>
@@ -758,12 +810,9 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                     <tbody>
                         {sortedSkills.map(skill => {
                             const isExpanded = expandedSkillId === skill.skillId;
-                            const activationPct = skill.learnedByHorses > 0
-                                ? (skill.uniqueHorses / skill.learnedByHorses) * 100
-                                : 0;
-                            // Normalized (Conditions Met) Percentage
-                            const normalizedPct = skill.learnedByHorses > 0
-                                ? (skill.normalizedActivations / skill.learnedByHorses) * 100
+                            const activationOpportunities = skill.activationOpportunities ?? skill.learnedByHorses;
+                            const activationPct = activationOpportunities > 0
+                                ? (skill.uniqueHorses / activationOpportunities) * 100
                                 : 0;
                             return [
                                 <tr
@@ -787,15 +836,42 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                                     <td>{skill.learnedByHorses}</td>
                                     <td>
                                         {skill.timesActivated}
-                                        <span className="skill-activation-pct">
+                                        <span
+                                            className="skill-activation-pct"
+                                            title={`${skill.uniqueHorses} natural proc${skill.uniqueHorses === 1 ? "" : "s"} / ${activationOpportunities} observable learned entr${activationOpportunities === 1 ? "y" : "ies"}${(skill.forcedActivationHorses ?? 0) > 0 ? `; ${skill.forcedActivationHorses} forced-only entr${skill.forcedActivationHorses === 1 ? "y" : "ies"} excluded` : ""}`}
+                                        >
                                             ({activationPct.toFixed(1)}%)
                                         </span>
+                                        {showStrategyProcRates && selectedStrategy === "all" && (
+                                            <div className="skill-style-proc-rates">
+                                                {STRATEGY_DISPLAY_ORDER.map(strategy => {
+                                                    const strategyKey = String(strategy);
+                                                    const learned = skill.learnedByHorsesByStrategy?.[strategyKey] ?? 0;
+                                                    const opportunities = skill.activationOpportunitiesByStrategy?.[strategyKey] ?? learned;
+                                                    if (opportunities === 0) return null;
+                                                    const activations = skill.uniqueHorsesByStrategy?.[strategyKey]
+                                                        ?? skill.timesActivatedByStrategy?.[strategyKey]
+                                                        ?? 0;
+                                                    const procRate = activations / opportunities * 100;
+                                                    const styleName = STRATEGY_NAMES[strategy];
+                                                    return (
+                                                        <span
+                                                            key={strategy}
+                                                            className="skill-style-proc-rate"
+                                                            title={`${styleName}: ${activations} natural activations / ${opportunities} observable learned entries${opportunities !== learned ? ` (${learned - opportunities} forced-only excluded)` : ""}`}
+                                                        >
+                                                            <span
+                                                                className="skill-style-proc-dot"
+                                                                style={{ backgroundColor: STRATEGY_COLORS[strategy] }}
+                                                            />
+                                                            <span>{styleName.split(" ")[0]}</span>
+                                                            <strong>{procRate.toFixed(1)}%</strong>
+                                                        </span>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
                                     </td>
-                                    {supportsLocalHorseFilters && (
-                                        <td>
-                                            {normalizedPct.toFixed(1)}%
-                                        </td>
-                                    )}
                                     <td>{skill.meanDistance.toFixed(0)}m</td>
                                     <td>{skill.medianDistance.toFixed(0)}m</td>
                                     <td>

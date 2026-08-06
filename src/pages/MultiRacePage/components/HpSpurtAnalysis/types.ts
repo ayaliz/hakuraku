@@ -11,6 +11,8 @@ export interface CharaHpSpurtStats {
     totalRuns: number;
     wins: number;
     top3Finishes: number;
+    moodCounts: Record<number, number>;
+    finishTimeSamples: number[];
     skillActivationCounts: Record<number, number>;
     normalizedSkillActivationCounts: Record<number, number>;
     survivalCount: number;
@@ -21,9 +23,26 @@ export interface CharaHpSpurtStats {
     downhillModeTimePreLateSamples: number[];
     paceUpTimeSamples: number[];
     paceDownTimeSamples: number[];
+    spotStruggleStats: SpotStruggleStats;
     recoveryStats: Record<string, RecoveryScenarioStats>;
     recoveryStatsWithDebuffs: Record<string, RecoveryScenarioStats>;
     sourceRuns: { race: ParsedRace, horseFrameOrder: number }[];
+}
+
+export interface SpotStruggleStats {
+    totalRuns: number;
+    triggeredRuns: number;
+    winsWithTrigger: number;
+    winsWithoutTrigger: number;
+    dodgingDangerLearnedRuns: number;
+    dodgingDangerActivatedRuns: number;
+    triggeredWithDodgingDangerActivated: number;
+    winsWithTriggerAndDodgingDangerActivated: number;
+    winsWithoutTriggerAndDodgingDangerActivated: number;
+    dodgingDangerNotActivatedRuns: number;
+    triggeredWithDodgingDangerNotActivated: number;
+    winsWithTriggerAndDodgingDangerNotActivated: number;
+    winsWithoutTriggerAndDodgingDangerNotActivated: number;
 }
 
 export interface RecoveryScenarioStats {

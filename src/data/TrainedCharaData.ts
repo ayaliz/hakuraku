@@ -34,6 +34,9 @@ export type TrainedCharaData = {
 
     rankScore: number,
 
+    // Drives the fan-count tier multiplier on skills like 210071 / 210072.
+    fanCount?: number,
+
     rawData: any,
 };
 
@@ -173,6 +176,11 @@ function calcRankScore(raceHorseData: any, statusPoints: StatusPoints, charaSkil
     return rankScore;
 }
 
+function toFiniteNumber(value: any): number | undefined {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+}
+
 export function fromRaceHorseData(raceHorseData: any): TrainedCharaData {
     const normalizedRaceHorseData = hydrateCompactRaceHorseData(raceHorseData);
     const charaSkills: CharaSkill[] = normalizeSkillArray(normalizedRaceHorseData['skill_array']);
@@ -221,116 +229,66 @@ export function fromRaceHorseData(raceHorseData: any): TrainedCharaData {
         rankScore: calcRankScore(
             normalizedRaceHorseData, statusPoints, charaSkills, properRunningStyles, properDistances, {1: turf, 2: dirt}),
 
+        fanCount: toFiniteNumber(normalizedRaceHorseData['fan_count'] ?? normalizedRaceHorseData['fanCount']),
+
         rawData: normalizedRaceHorseData,
     };
 }
 
 function statusPoint(point: number): number {
-    if (point <= 1200) {
-        return statusPointToRankPointBelow1200[point];
-    }
-    return statusPointToRankPointOver1200(point);
+    const normalized = Math.max(0, Math.min(MAX_STATUS_POINT, Math.trunc(Number(point))));
+    return Number.isFinite(normalized) ? statusPointToRankPoint[normalized] : 0;
 }
 
-const statusPointToRankPointBelow1200: Record<number, number> = (() => {
-    const result: Record<number, number> = {};
+const MAX_STATUS_POINT = 2500;
+const statusPointRatesTo1200 = [
+    5, 8, 10, 13, 16, 18, 21, 24, 26, 28, 29, 30, 31, 33, 34, 35, 39, 41, 42, 43, 52, 55, 66, 68, 68,
+];
+const statusPointRatesTo2000 = [
+    79, 80, 81, 83, 84, 85, 86, 88, 89, 90, 92, 93, 94, 96, 97, 98, 100, 101, 102, 103, 105,
+    106, 107, 109, 110, 111, 113, 114, 115, 117, 118, 119, 121, 122, 123, 124, 126, 127, 128,
+    130, 131, 132, 134, 135, 136, 138, 139, 140, 141, 143, 144, 145, 147, 148, 149, 151, 152,
+    153, 155, 156, 157, 159, 160, 161, 162, 164, 165, 166, 168, 169, 170, 172, 173, 174, 176,
+    177, 178, 179, 181, 182, 182,
+];
 
-    const set369 = new Set([3, 6, 9]);
-    const set0257 = new Set([0, 2, 5, 7]);
-    const set2479 = new Set([2, 4, 7, 9]);
-    const set49 = new Set([4, 9]);
+const statusPointToRankPoint: number[] = (() => {
+    const scores = [0];
+    let rawScore = 0;
+    let rateIndex = 0;
 
-    const max = 1200;
-    let currentPoint = 0;
-
-    for (let i = 0; i <= max; i++) {
-        const lastDigit = i % 10;
-
-        let additionalPoint = 0;
-        if (i < 50) {
-            additionalPoint = (i % 2 === 0) ? 0 : 1;
-        } else if (i < 100) {
-            additionalPoint = (i % 5 === 0) ? 0 : 1;
-        } else if (i < 150) {
-            additionalPoint = 1;
-        } else if (i < 200) {
-            additionalPoint = (set369.has(lastDigit)) ? 2 : 1;
-        } else if (i < 250) {
-            additionalPoint = (set0257.has(lastDigit)) ? 1 : 2;
-        } else if (i < 300) {
-            additionalPoint = (i % 5 === 0) ? 1 : 2;
-        } else if (i < 350) {
-            additionalPoint = (lastDigit === 9) ? 3 : 2;
-        } else if (i < 400) {
-            additionalPoint = (set2479.has(lastDigit)) ? 3 : 2;
-        } else if (i < 450) {
-            additionalPoint = (set0257.has(lastDigit)) ? 2 : 3;
-        } else if (i < 500) {
-            additionalPoint = (i % 5 === 0) ? 2 : 3;
-        } else if (i < 550) {
-            additionalPoint = (lastDigit === 0) ? 2 : 3;
-        } else if (i < 600) {
-            additionalPoint = 3;
-        } else if (i < 650) {
-            additionalPoint = (lastDigit === 9) ? 4 : 3;
-        } else if (i < 700) {
-            additionalPoint = (set369.has(lastDigit)) ? 4 : 3;
-        } else if (i < 750) {
-            additionalPoint = (set2479.has(lastDigit)) ? 4 : 3;
-        } else if (i < 800) {
-            additionalPoint = (i % 2 === 0) ? 3 : 4;
-        } else if (i < 850) {
-            additionalPoint = (lastDigit === 0) ? 3 : 4;
-        } else if (i < 900) {
-            additionalPoint = (lastDigit === 9) ? 5 : 4;
-        } else if (i < 950) {
-            additionalPoint = (set49.has(lastDigit)) ? 5 : 4;
-        } else if (i < 1000) {
-            additionalPoint = (set369.has(lastDigit)) ? 5 : 4;
-        } else if (i < 1050) {
-            additionalPoint = (set49.has(lastDigit)) ? 6 : 5;
-        } else if (i < 1100) {
-            additionalPoint = (i % 2 === 0) ? 5 : 6;
-        } else if (i < 1150) {
-            additionalPoint = (set0257.has(lastDigit)) ? 6 : 7;
-        } else if (i < 1200) {
-            additionalPoint = (i % 5 === 0) ? 6 : 7;
-        } else {
-            additionalPoint = 6;
-        }
-        currentPoint += additionalPoint;
-
-        result[i] = currentPoint;
+    for (let stat = 1; stat <= 1200; stat++) {
+        if (stat <= 49) rateIndex = 0;
+        else if (stat <= 99) rateIndex = 1;
+        else if (stat % 50 === 0) rateIndex++;
+        rawScore += statusPointRatesTo1200[rateIndex];
+        scores[stat] = Math.round(rawScore / 10);
     }
 
-    return result;
+    rawScore = 38413;
+    rateIndex = 0;
+    for (let stat = 1201; stat <= 2000; stat++) {
+        if (stat <= 1209) rateIndex = 0;
+        else if (stat <= 1219) rateIndex = 1;
+        else if (stat % 10 === 0) rateIndex++;
+        rawScore += statusPointRatesTo2000[rateIndex];
+        scores[stat] = Math.round(rawScore / 10);
+    }
+
+    rawScore = 142796;
+    rateIndex = 0;
+    let rate = 183;
+    for (let stat = 2001; stat <= MAX_STATUS_POINT; stat++) {
+        if (rateIndex >= 25) {
+            rate++;
+            rateIndex = 0;
+        }
+        rawScore += rate;
+        rateIndex++;
+        scores[stat] = Math.round(rawScore / 10);
+    }
+
+    return scores;
 })();
-
-const over1200ObservationPoints = [
-    {x: 1200, y: 3841}, {x: 1202, y: 3857}, {x: 1203, y: 3865}, {x: 1212, y: 3936}, {x: 1220, y: 4001},
-    {x: 1236, y: 4132}, {x: 1264, y: 4368}, {x: 1266, y: 4386}, {x: 1270, y: 4420}, {x: 1271, y: 4429},
-    {x: 1285, y: 4553}, {x: 1300, y: 4688}, {x: 1317, y: 4845}, {x: 1324, y: 4910}, {x: 1345, y: 5112},
-    {x: 1352, y: 5180}, {x: 1358, y: 5239}, {x: 1364, y: 5298}, {x: 1368, y: 5338}, {x: 1370, y: 5359},
-    {x: 1371, y: 5369}, {x: 1372, y: 5379}, {x: 1384, y: 5500}, {x: 1389, y: 5551}, {x: 1397, y: 5634},
-    {x: 1399, y: 5654}, {x: 1407, y: 5798}, {x: 1413, y: 5802}, {x: 1421, y: 5887}, {x: 1424, y: 5919},
-    {x: 1429, y: 5972}, {x: 1434, y: 6027}, {x: 1443, y: 6125}, {x: 1445, y: 6147}, {x: 1447, y: 6169},
-    {x: 1456, y: 6269}, {x: 1459, y: 6302}, {x: 1467, y: 6393}, {x: 1473, y: 6461}, {x: 1475, y: 6484},
-    {x: 1477, y: 6507}, {x: 1483, y: 6575}, {x: 1489, y: 6644}, {x: 1546, y: 7328}, {x: 1555, y: 7439},
-    {x: 1557, y: 7464}, {x: 1558, y: 7476}, {x: 1560, y: 7501}, {x: 1564, y: 7551}, {x: 1572, y: 7653},
-    {x: 1585, y: 7818}, {x: 1588, y: 7857}, {x: 1589, y: 7869}, {x: 1594, y: 7934}, {x: 1600, y: 8013},
-    {x: 1604, y: 8065}, {x: 1605, y: 8078}, {x: 1665, y: 8889}, {x: 1684, y: 9155}];
-
-function statusPointToRankPointOver1200(e: number): number {
-    let prevX = 0, prevY = 0;
-    for (let point of over1200ObservationPoints) {
-        if (point.x > e) {
-            const slope = (point.y - prevY) / (point.x - prevX);
-            return prevY + Math.round(slope * (e - prevX));
-        }
-        prevX = point.x;
-        prevY = point.y;
-    }
-    return 0;
-}
 
 const properSkillMultiplier: Record<number, number> = {1: 0.7, 2: 0.8, 3: 0.8, 4: 0.8, 5: 0.9, 6: 0.9, 7: 1.1, 8: 1.1};

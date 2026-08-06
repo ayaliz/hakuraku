@@ -1,5 +1,7 @@
 import type { HorseEntry, TeamCompositionStats } from "../MultiRacePage/types";
 import { BAYES_TEAM, BAYES_UMA, CHARACTER_COLORS } from "../MultiRacePage/components/WinDistributionCharts/constants";
+import { makeBuiltTeamKey } from "../MultiRacePage/utils";
+import { effectiveStrategyForHorse, type DebufferClassifierOptions } from "../MultiRacePage/styleClassifier";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 import { getHorseDeckRaceBonus } from "./deckUtils";
 
@@ -41,6 +43,16 @@ export type RaceBonusOverviewRow = {
     popPct: number;
     adjWinRate: number;
     isOther: boolean;
+};
+
+export type ScenarioWinBreakdownRow = {
+    scenarioId: number;
+    name: string;
+    wins: number;
+    appearances: number;
+    winPct: number;
+    popPct: number;
+    pct: number;
 };
 
 export type CharacterSlice = {
@@ -121,6 +133,7 @@ export type GroupPanelData = {
     skillsByStrategy: Record<number, OverviewSkillRow[]>;
     supportCardRows: SupportCardSummaryRow[];
     raceBonusRows: RaceBonusOverviewRow[];
+    scenarioWinBreakdownRows: ScenarioWinBreakdownRow[];
     styleReps: Record<number, PanelStyleRepEntry[]>;
     styleCompositionRows: StyleCompositionSummaryRow[];
     characterTeamRates: CharacterTeamRateRow[];
@@ -142,6 +155,16 @@ export type GroupTeamData = {
 };
 
 const RACE_BONUS_OTHER_MIN_POP_PCT = 0.5;
+export const SCENARIO_NAMES: Record<number, string> = {
+    0: "Unknown",
+    1: "URA Finals",
+    2: "Aoharu",
+    3: "Grand Live",
+    4: "Make a new track",
+    5: "Grand Masters",
+    6: "L'arc",
+    7: "U.A.F.",
+};
 
 function niceHistogramStep(range: number): number {
     const raw = range / 20;
@@ -185,6 +208,25 @@ export function buildHistogramData(values: number[]): HistogramData | null {
     };
 }
 
+function percentile(sortedValues: number[], p: number): number | null {
+    if (sortedValues.length === 0) return null;
+    if (sortedValues.length === 1) return sortedValues[0];
+    const index = (sortedValues.length - 1) * p;
+    const lower = Math.floor(index);
+    const upper = Math.ceil(index);
+    if (lower === upper) return sortedValues[lower];
+    const weight = index - lower;
+    return sortedValues[lower] * (1 - weight) + sortedValues[upper] * weight;
+}
+
+function computeDebufferOptions(horses: HorseEntry[]): DebufferClassifierOptions {
+    const winnerScores = horses
+        .filter((horse) => horse.finishOrder === 1 && horse.rankScore > 0)
+        .map((horse) => horse.rankScore)
+        .sort((a, b) => a - b);
+    return { lowScoreRankThreshold: percentile(winnerScores, 0.05) };
+}
+
 export function computeUniqueUmaCount(horses: HorseEntry[]): number {
     const seen = new Set<string>();
     for (const horse of horses) {
@@ -194,10 +236,10 @@ export function computeUniqueUmaCount(horses: HorseEntry[]): number {
     return seen.size;
 }
 
-export function computeOverviewSkillRows(horses: HorseEntry[]): Record<number, OverviewSkillRow[]> {
+export function computeOverviewSkillRows(horses: HorseEntry[], debufferOptions: DebufferClassifierOptions = {}): Record<number, OverviewSkillRow[]> {
     const result: Record<number, OverviewSkillRow[]> = {};
-    for (const strategyId of [1, 2, 3, 4, 5]) {
-        const strategyHorses = horses.filter((horse) => horse.strategy === strategyId);
+    for (const strategyId of [1, 2, 3, 4, 5, 6]) {
+        const strategyHorses = horses.filter((horse) => effectiveStrategyForHorse(horse, debufferOptions) === strategyId);
         const total = strategyHorses.length;
         if (total === 0) continue;
         const totalWins = strategyHorses.filter((horse) => horse.finishOrder === 1).length;
@@ -316,6 +358,39 @@ export function computeRaceBonusRows(horses: HorseEntry[]): RaceBonusOverviewRow
     return rows;
 }
 
+export function computeScenarioWinBreakdownRows(horses: HorseEntry[], debufferOptions: DebufferClassifierOptions = {}): ScenarioWinBreakdownRow[] {
+    const winners = horses.filter((horse) => horse.finishOrder === 1);
+    const winCounts = new Map<number, number>();
+    for (const horse of winners) {
+        const scenarioId = Number.isFinite(Number(horse.scenarioId)) ? Number(horse.scenarioId) : 0;
+        winCounts.set(scenarioId, (winCounts.get(scenarioId) ?? 0) + 1);
+    }
+    const populationCounts = new Map<number, number>();
+    for (const horse of horses) {
+        if (effectiveStrategyForHorse(horse, debufferOptions) === 6) continue;
+        const scenarioId = Number.isFinite(Number(horse.scenarioId)) ? Number(horse.scenarioId) : 0;
+        populationCounts.set(scenarioId, (populationCounts.get(scenarioId) ?? 0) + 1);
+    }
+    const totalWins = winners.length;
+    const totalPopulation = Array.from(populationCounts.values()).reduce((sum, count) => sum + count, 0);
+    return Array.from(new Set([...winCounts.keys(), ...populationCounts.keys()]))
+        .map((scenarioId) => {
+            const wins = winCounts.get(scenarioId) ?? 0;
+            const appearances = populationCounts.get(scenarioId) ?? 0;
+            const winPct = totalWins > 0 ? (wins / totalWins) * 100 : 0;
+            return {
+            scenarioId,
+            name: SCENARIO_NAMES[scenarioId] ?? `Scenario ${scenarioId}`,
+            wins,
+            appearances,
+            winPct,
+            popPct: totalPopulation > 0 ? (appearances / totalPopulation) * 100 : 0,
+            pct: winPct,
+            };
+        })
+        .sort((a, b) => b.winPct - a.winPct || b.popPct - a.popPct || a.scenarioId - b.scenarioId);
+}
+
 export function computeStyleDeckRowsByStyle(horses: HorseEntry[]): Record<number, StyleDeckSummaryRow[]> {
     const result: Record<number, StyleDeckSummaryRow[]> = {};
     const styleIds = new Set(horses.filter((horse) => horse.supportCardIds.length === 6).map((horse) => horse.strategy));
@@ -351,7 +426,7 @@ export function computeStyleDeckRowsByStyle(horses: HorseEntry[]): Record<number
     return result;
 }
 
-function computeTeamStatsFromHorses(horses: HorseEntry[]): TeamCompositionStats[] {
+function computeTeamStatsFromHorses(horses: HorseEntry[], debufferOptions: DebufferClassifierOptions = {}): TeamCompositionStats[] {
     const races = new Map<string, HorseEntry[]>();
     for (const horse of horses) {
         if (!races.has(horse.raceId)) races.set(horse.raceId, []);
@@ -369,9 +444,12 @@ function computeTeamStatsFromHorses(horses: HorseEntry[]): TeamCompositionStats[
         const teams = Array.from(teamsById.values()).filter((team) => team.length > 0);
         const expected = teams.length > 0 ? 1 / teams.length : 0;
         for (const team of teams) {
-            const sorted = [...team].sort((a, b) => (a.cardId * 10 + a.strategy) - (b.cardId * 10 + b.strategy));
-            const key = sorted.map((horse) => `${horse.cardId}_${horse.strategy}`).join("__");
+            const sorted = [...team]
+                .map((horse) => ({ ...horse, strategy: effectiveStrategyForHorse(horse, debufferOptions) }))
+                .sort((a, b) => (a.cardId * 10 + a.strategy) - (b.cardId * 10 + b.strategy));
+            const key = makeBuiltTeamKey(sorted);
             const entry = compMap.get(key) ?? {
+                buildKey: key,
                 members: sorted.map((horse) => ({
                     charaId: horse.charaId,
                     cardId: horse.cardId,
@@ -423,7 +501,7 @@ function computeCharacterTeamRates(teamStats: TeamCompositionStats[]): Character
     return Array.from(tallies.values()).sort((a, b) => b.appearances - a.appearances || b.wins - a.wins || a.key.localeCompare(b.key));
 }
 
-export function computeStyleReps(horses: HorseEntry[]): Record<number, PanelStyleRepEntry[]> {
+export function computeStyleReps(horses: HorseEntry[], debufferOptions: DebufferClassifierOptions = {}): Record<number, PanelStyleRepEntry[]> {
     const DISTANCE_PRIOR_K = 72;
     const SCORE_BUCKET_K = 24;
     const SCORE_BUCKET_SIZE = 500;
@@ -441,7 +519,7 @@ export function computeStyleReps(horses: HorseEntry[]): Record<number, PanelStyl
     const strategyStrength = new Map<number, CountStat>();
     const distanceStrength = new Map<string, CountStat>();
     const scoreBucketStrength = new Map<string, CountStat>();
-    const characterTeamRates = computeCharacterTeamRates(computeTeamStatsFromHorses(horses));
+    const characterTeamRates = computeCharacterTeamRates(computeTeamStatsFromHorses(horses, debufferOptions));
     const teamRateByRepKey = new Map(characterTeamRates.map((row) => [`${row.strategy}_${row.cardId}`, row] as const));
 
     const recordCount = (statsMap: Map<number | string, CountStat>, key: number | string, win: boolean) => {
@@ -452,13 +530,14 @@ export function computeStyleReps(horses: HorseEntry[]): Record<number, PanelStyl
     };
 
     const expectedWinRate = (horse: HorseEntry): number => {
-        const strategyStats = strategyStrength.get(horse.strategy);
+        const strategy = effectiveStrategyForHorse(horse, debufferOptions);
+        const strategyStats = strategyStrength.get(strategy);
         const strategyPrior = strategyStats && strategyStats.appearances > 0
             ? strategyStats.wins / strategyStats.appearances
             : BAYES_UMA.PRIOR;
         if (horse.rankScore <= 0) return strategyPrior;
         const aptDistance = Number(horse.aptDistance ?? 0);
-        const distanceKey = `${horse.strategy}_${aptDistance}`;
+        const distanceKey = `${strategy}_${aptDistance}`;
         const scoreBucket = Math.floor(horse.rankScore / SCORE_BUCKET_SIZE) * SCORE_BUCKET_SIZE;
         const scoreBucketKey = `${distanceKey}_${scoreBucket}`;
         const distanceStats = distanceStrength.get(distanceKey);
@@ -473,11 +552,12 @@ export function computeStyleReps(horses: HorseEntry[]): Record<number, PanelStyl
 
     for (const horse of horses) {
         const win = horse.finishOrder === 1;
-        totalsByStrategy.set(horse.strategy, (totalsByStrategy.get(horse.strategy) ?? 0) + 1);
-        recordCount(strategyStrength, horse.strategy, win);
+        const strategy = effectiveStrategyForHorse(horse, debufferOptions);
+        totalsByStrategy.set(strategy, (totalsByStrategy.get(strategy) ?? 0) + 1);
+        recordCount(strategyStrength, strategy, win);
         if (horse.rankScore > 0) {
             const aptDistance = Number(horse.aptDistance ?? 0);
-            const distanceKey = `${horse.strategy}_${aptDistance}`;
+            const distanceKey = `${strategy}_${aptDistance}`;
             const scoreBucket = Math.floor(horse.rankScore / SCORE_BUCKET_SIZE) * SCORE_BUCKET_SIZE;
             recordCount(distanceStrength, distanceKey, win);
             recordCount(scoreBucketStrength, `${distanceKey}_${scoreBucket}`, win);
@@ -485,7 +565,8 @@ export function computeStyleReps(horses: HorseEntry[]): Record<number, PanelStyl
     }
 
     for (const horse of horses) {
-        const key = `${horse.strategy}_${horse.cardId}`;
+        const strategy = effectiveStrategyForHorse(horse, debufferOptions);
+        const key = `${strategy}_${horse.cardId}`;
         const tally = tallies.get(key) ?? {
             cardId: horse.cardId,
             charaId: horse.charaId,
@@ -502,7 +583,6 @@ export function computeStyleReps(horses: HorseEntry[]): Record<number, PanelStyl
 
     const result: Record<number, PanelStyleRepEntry[]> = {};
     for (const [key, tally] of tallies.entries()) {
-        if (tally.wins === 0) continue;
         const strategy = Number(key.split("_")[0]);
         const totalAppearances = totalsByStrategy.get(strategy) ?? 0;
         const expected = tally.expectedWins / Math.max(tally.appearances, 1);
@@ -510,6 +590,7 @@ export function computeStyleReps(horses: HorseEntry[]): Record<number, PanelStyl
         const teamRate = teamRateByRepKey.get(`${strategy}_${tally.cardId}`);
         const teamAppearances = teamRate?.appearances ?? 0;
         const teamWins = teamRate?.wins ?? 0;
+        if (tally.wins === 0 && teamWins === 0) continue;
         const entry: PanelStyleRepEntry = {
             ...tally,
             popPct: totalAppearances > 0 ? (tally.appearances / totalAppearances) * 100 : 0,
@@ -532,12 +613,12 @@ export function computeStyleReps(horses: HorseEntry[]): Record<number, PanelStyl
     return result;
 }
 
-export function computeCharacterSlices(horses: HorseEntry[]): {
+export function computeCharacterSlices(horses: HorseEntry[], debufferOptions: DebufferClassifierOptions = {}): {
     rawUnifiedCharacterWinsAll: CharacterSlice[];
     rawUnifiedCharacterWinsOpp: CharacterSlice[];
     rawUnifiedCharacterPop: CharacterSlice[];
 } {
-    const keyForHorse = (horse: HorseEntry) => `${horse.charaId}_${horse.cardId}_${horse.strategy}`;
+    const keyForHorse = (horse: HorseEntry) => `${horse.charaId}_${horse.cardId}_${effectiveStrategyForHorse(horse, debufferOptions)}`;
     const popMap = new Map<string, { name: string; fullLabel: string; count: number; charaId: number; strategy: number; cardId: number }>();
     const winMapAll = new Map<string, { name: string; fullLabel: string; count: number; charaId: number; strategy: number; cardId: number }>();
     const winMapOpp = new Map<string, { name: string; fullLabel: string; count: number; charaId: number; strategy: number; cardId: number }>();
@@ -551,7 +632,7 @@ export function computeCharacterSlices(horses: HorseEntry[]): {
             fullLabel: horse.charaName,
             count: 0,
             charaId: horse.charaId,
-            strategy: horse.strategy,
+            strategy: effectiveStrategyForHorse(horse, debufferOptions),
             cardId: horse.cardId,
         };
         entry.count += 1;
@@ -565,7 +646,7 @@ export function computeCharacterSlices(horses: HorseEntry[]): {
             fullLabel: horse.charaName,
             count: 0,
             charaId: horse.charaId,
-            strategy: horse.strategy,
+            strategy: effectiveStrategyForHorse(horse, debufferOptions),
             cardId: horse.cardId,
         };
         entry.count += 1;
@@ -598,7 +679,7 @@ export function computeCharacterSlices(horses: HorseEntry[]): {
             fullLabel: horse.charaName,
             count: 0,
             charaId: horse.charaId,
-            strategy: horse.strategy,
+            strategy: effectiveStrategyForHorse(horse, debufferOptions),
             cardId: horse.cardId,
         };
         entry.count += 1;
@@ -665,7 +746,8 @@ export function computeCharacterSlices(horses: HorseEntry[]): {
 export function buildGroupPanelData(cmId: string, courseId: number, horses: HorseEntry[]): GroupPanelData {
     const winners = horses.filter((horse) => horse.finishOrder === 1 && horse.finishTime > 0);
     const scoredWinners = winners.filter((horse) => horse.rankScore > 0);
-    const teamStats = computeTeamStatsFromHorses(horses);
+    const debufferOptions = computeDebufferOptions(horses);
+    const teamStats = computeTeamStatsFromHorses(horses, debufferOptions);
     const fastestWin = winners.reduce<HorseEntry | null>((best, horse) => !best || horse.finishTime < best.finishTime ? horse : best, null);
     const slowestWin = winners.reduce<HorseEntry | null>((best, horse) => !best || horse.finishTime > best.finishTime ? horse : best, null);
     const highestWinner = scoredWinners.reduce<HorseEntry | null>((best, horse) => !best || horse.rankScore > best.rankScore ? horse : best, null);
@@ -684,13 +766,14 @@ export function buildGroupPanelData(cmId: string, courseId: number, horses: Hors
             highestWinner: highestWinner ?? undefined,
             lowestWinner: lowestWinner ?? undefined,
         },
-        skillsByStrategy: computeOverviewSkillRows(horses),
+        skillsByStrategy: computeOverviewSkillRows(horses, debufferOptions),
         supportCardRows: computeSupportCardRows(horses),
         raceBonusRows: computeRaceBonusRows(horses),
-        styleReps: computeStyleReps(horses),
+        scenarioWinBreakdownRows: computeScenarioWinBreakdownRows(horses, debufferOptions),
+        styleReps: computeStyleReps(horses, debufferOptions),
         styleCompositionRows: [],
         characterTeamRates: computeCharacterTeamRates(teamStats),
-        ...computeCharacterSlices(horses),
+        ...computeCharacterSlices(horses, debufferOptions),
     };
 }
 

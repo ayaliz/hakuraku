@@ -44,24 +44,6 @@ export const toggleDefs: ToggleDef[] = [
         ),
     },
     {
-        id: "hp",
-        label: (
-            <span>
-                HP Bar
-                <OverlayTrigger
-                    placement="top"
-                    overlay={
-                        <Tooltip id="hp-info-tooltip">
-                            Toggles an HP bar to visualize remaining HP; displays numeric values and estimates for time to live during late-race.
-                        </Tooltip>
-                    }
-                >
-                    <span className="toggle-info-icon">{INFO_ICON}</span>
-                </OverlayTrigger>
-            </span>
-        ),
-    },
-    {
         id: "blocked",
         label: (
             <span>

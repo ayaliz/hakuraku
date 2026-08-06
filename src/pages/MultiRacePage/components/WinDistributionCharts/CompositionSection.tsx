@@ -1,9 +1,8 @@
 import { STRATEGY_NAMES } from "./constants";
-import type { StrategyStats, RoomCompositionEntry } from "../../types";
+import type { RoomCompositionEntry } from "../../types";
 import { ANALYSIS_STRATEGY_IDS } from "./shared";
 
-export function CompositionSection({ strategyStats, totalRaces, roomCompositions, strategyColors }: {
-    strategyStats: StrategyStats[];
+export function CompositionSection({ totalRaces, roomCompositions, strategyColors }: {
     totalRaces: number;
     roomCompositions: RoomCompositionEntry[];
     strategyColors: Record<number, string>;
@@ -20,10 +19,9 @@ export function CompositionSection({ strategyStats, totalRaces, roomCompositions
                 : sum;
         }, 0)
         : 0;
-    const avgCounts = ANALYSIS_STRATEGY_IDS.map(sId => {
-        const stat = strategyStats.find(s => s.strategy === sId);
-        return totalRaces > 0 ? (stat?.totalRaces ?? 0) / totalRaces : 0;
-    });
+    const avgCounts = ANALYSIS_STRATEGY_IDS.map((_, i) => totalRaces > 0
+        ? roomCompositions.reduce((sum, comp) => sum + ((comp.counts[i] ?? 0) * comp.occurrences), 0) / totalRaces
+        : 0);
     const colMaxes = ANALYSIS_STRATEGY_IDS.map((_, i) =>
         Math.max(...topRows.map(c => c.counts[i]), avgCounts[i], 1)
     );

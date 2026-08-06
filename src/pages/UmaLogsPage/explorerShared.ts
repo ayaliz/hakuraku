@@ -1,5 +1,6 @@
 import type { HorseEntry } from "../MultiRacePage/types";
-import { STRATEGY_NAMES } from "../MultiRacePage/components/WinDistributionCharts/constants";
+import { BAYES_TEAM, STRATEGY_NAMES } from "../MultiRacePage/components/WinDistributionCharts/constants";
+import { isDebufferHorse, originalStrategyForHorse } from "../MultiRacePage/styleClassifier";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 import { getHorseDeckRaceBonus } from "./deckUtils";
 
@@ -17,6 +18,7 @@ export type FilterProperty =
     | "rankScore"
     | "careerWinCount"
     | "deckRaceBonus"
+    | "isDebuffer"
     | "skill"
     | "supportCard";
 export type StatOp = ">" | "<" | "=";
@@ -55,12 +57,15 @@ export interface AggRow {
     charaId?: number;
     cardId?: number;
     strategy?: number;
+    isDebuffer?: boolean;
     entries: number;
     teams: number;
     wins: number;
     teamWins: number;
     awPct: number;
     teamWinPct: number;
+    meanFinishTime?: number;
+    medianFinishTime?: number;
 }
 
 export interface CharaVariant {
@@ -89,6 +94,10 @@ export interface ExplorerDrilldownEntry {
     bayesianWinRate: number;
     winRate: number;
     appearances: number;
+    teamBayesianWinRate?: number;
+    teamWinRate?: number;
+    teamWins?: number;
+    teamAppearances?: number;
 }
 
 export interface ExplorerBootstrapPayload {
@@ -107,6 +116,7 @@ export interface ExplorerQueryPayload {
     hasCharacterFilter: boolean;
     rows: AggRow[];
     drilldown: ExplorerDrilldownEntry[];
+    teamDrilldown?: ExplorerDrilldownEntry[];
 }
 
 export const SUPPORT_CARD_LB_ANY = -1;
@@ -154,7 +164,7 @@ function matchStatProperty(filter: PropertyFilter, horse: HorseEntry): boolean {
         ? computeSkillPoints(horse.learnedSkillIds)
         : filter.property === "deckRaceBonus"
             ? getHorseDeckRaceBonus(horse)
-            : horse[filter.property as Exclude<FilterProperty, "none" | "skill" | "totalSkillPoints" | "deckRaceBonus" | "supportCard">] as number;
+            : horse[filter.property as Exclude<FilterProperty, "none" | "skill" | "totalSkillPoints" | "deckRaceBonus" | "supportCard" | "isDebuffer">] as number;
     if (value == null) return false;
     if (filter.statOp === ">") return value > filter.statValue;
     if (filter.statOp === "<") return value < filter.statValue;
@@ -162,15 +172,18 @@ function matchStatProperty(filter: PropertyFilter, horse: HorseEntry): boolean {
 }
 
 function matchesFeatureCharacter(feature: CharacterFeature, horse: HorseEntry): boolean {
-    const matchesCard = feature.cardId === 0
+    const matchesCard = feature.cardId === null || feature.cardId === 0
         ? true
         : feature.characterMatchMode === "is"
             ? horse.cardId === feature.cardId
             : horse.cardId !== feature.cardId;
-    return matchesCard && (feature.cardStrategy === null || horse.strategy === feature.cardStrategy);
+    return matchesCard && (feature.cardStrategy === null || originalStrategyForHorse(horse) === feature.cardStrategy);
 }
 
 function matchesPropertyFilter(filter: PropertyFilter, horse: HorseEntry): boolean {
+    if (filter.property === "isDebuffer") {
+        return isDebufferHorse(horse);
+    }
     if (filter.property === "skill") {
         if (filter.skillId === null) return false;
         return filter.skillMode === "learned"
@@ -205,11 +218,29 @@ export function sanitizeCharacterRequirement(requirement: CharacterRequirement):
 }
 
 export function sanitizeCharacterFeature(feature: CharacterFeature): CharacterFeature {
+    const legacyDebufferStyle = feature.cardStrategy === 6;
     return {
         ...feature,
+        cardStrategy: legacyDebufferStyle ? null : feature.cardStrategy,
         requirements: feature.requirements
             .map(sanitizeCharacterRequirement)
-            .filter((requirement): requirement is CharacterRequirement => requirement !== null),
+            .filter((requirement): requirement is CharacterRequirement => requirement !== null)
+            .concat(
+                legacyDebufferStyle && !feature.requirements.some((requirement) => requirement.property === "isDebuffer")
+                    ? [{
+                        id: `legacy-debuffer-${feature.id}`,
+                        truthMode: "require",
+                        property: "isDebuffer",
+                        statOp: "=",
+                        statValue: 0,
+                        skillId: null,
+                        skillMode: "learned",
+                        supportCardId: null,
+                        supportCardPresent: true,
+                        supportCardLb: SUPPORT_CARD_LB_ANY,
+                    }]
+                    : [],
+            ),
     };
 }
 
@@ -269,6 +300,8 @@ export function defaultStatValueForProperty(property: FilterProperty): number {
             return 35;
         case "deckRaceBonus":
             return 50;
+        case "isDebuffer":
+            return 0;
         default:
             return 35;
     }
@@ -286,41 +319,49 @@ export function aggregateHorses(
         charaId?: number;
         cardId?: number;
         strategy?: number;
+        isDebuffer: boolean;
         entries: number;
         teams: Set<string>;
         winningTeams: Set<string>;
         wins: number;
+        finishTimes: number[];
     }>();
 
     for (const horse of horses) {
+        const strategy = originalStrategyForHorse(horse);
+        const isDebuffer = isDebufferHorse(horse);
         const key = mode === "card-strategy"
-            ? `cd${horse.cardId}_s${horse.strategy}`
-            : `s${horse.strategy}`;
+            ? `cd${horse.cardId}_s${strategy}_d${isDebuffer ? 1 : 0}`
+            : `s${strategy}_d${isDebuffer ? 1 : 0}`;
 
         if (!groups.has(key)) {
             if (mode === "card-strategy") {
                 const cardName = UMDatabaseWrapper.cards[horse.cardId]?.name ?? horse.charaName;
                 const label = cardName === horse.charaName ? horse.charaName : `${horse.charaName} ${cardName}`;
-                const stratName = STRATEGY_NAMES[horse.strategy] ?? `Strategy ${horse.strategy}`;
+                const stratName = STRATEGY_NAMES[strategy] ?? `Strategy ${strategy}`;
                 groups.set(key, {
                     label,
                     sublabel: stratName,
                     charaId: horse.charaId,
                     cardId: horse.cardId,
-                    strategy: horse.strategy,
+                    strategy,
+                    isDebuffer,
                     entries: 0,
                     teams: new Set(),
                     winningTeams: new Set(),
                     wins: 0,
+                    finishTimes: [],
                 });
             } else {
                 groups.set(key, {
-                    label: STRATEGY_NAMES[horse.strategy] ?? `Strategy ${horse.strategy}`,
-                    strategy: horse.strategy,
+                    label: STRATEGY_NAMES[strategy] ?? `Strategy ${strategy}`,
+                    strategy,
+                    isDebuffer,
                     entries: 0,
                     teams: new Set(),
                     winningTeams: new Set(),
                     wins: 0,
+                    finishTimes: [],
                 });
             }
         }
@@ -331,22 +372,37 @@ export function aggregateHorses(
         group.teams.add(teamKey);
         if (horse.finishOrder === 1) group.wins += 1;
         if (horse.finishOrder === 1) group.winningTeams.add(teamKey);
+        if (horse.finishTime > 0) group.finishTimes.push(horse.finishTime);
     }
 
-    const result: AggRow[] = Array.from(groups.values()).map((group) => ({
-        key: group.cardId !== undefined ? `cd${group.cardId}_s${group.strategy}` : `s${group.strategy}`,
-        label: group.label,
-        sublabel: group.sublabel,
-        charaId: group.charaId,
-        cardId: group.cardId,
-        strategy: group.strategy,
-        entries: group.entries,
-        teams: group.teams.size,
-        wins: group.wins,
-        teamWins: group.winningTeams.size,
-        awPct: group.entries > 0 ? (100 * group.wins) / group.entries : 0,
-        teamWinPct: group.teams.size > 0 ? (100 * group.winningTeams.size) / group.teams.size : 0,
-    }));
+    const result: AggRow[] = Array.from(groups.values()).map((group) => {
+        const finishTimes = group.finishTimes.sort((a, b) => a - b);
+        const midpoint = Math.floor(finishTimes.length / 2);
+        const medianFinishTime = finishTimes.length === 0
+            ? undefined
+            : finishTimes.length % 2 === 0
+                ? (finishTimes[midpoint - 1] + finishTimes[midpoint]) / 2
+                : finishTimes[midpoint];
+        return {
+            key: group.cardId !== undefined
+                ? `cd${group.cardId}_s${group.strategy}_d${group.isDebuffer ? 1 : 0}`
+                : `s${group.strategy}_d${group.isDebuffer ? 1 : 0}`,
+            label: group.label,
+            sublabel: group.sublabel,
+            charaId: group.charaId,
+            cardId: group.cardId,
+            strategy: group.strategy,
+            isDebuffer: group.isDebuffer,
+            entries: group.entries,
+            teams: group.teams.size,
+            wins: group.wins,
+            teamWins: group.winningTeams.size,
+            awPct: group.entries > 0 ? (100 * group.wins) / group.entries : 0,
+            teamWinPct: group.teams.size > 0 ? (100 * group.winningTeams.size) / group.teams.size : 0,
+            meanFinishTime: finishTimes.length > 0 ? finishTimes.reduce((sum, value) => sum + value, 0) / finishTimes.length : undefined,
+            medianFinishTime,
+        };
+    });
 
     result.sort((a, b) => {
         if (sortKey === "wins") {
@@ -435,7 +491,10 @@ export function buildExplorerBootstrap(horses: HorseEntry[]): ExplorerBootstrapP
 export function buildExplorerDrilldown(horses: HorseEntry[], selection: AggRow | null): ExplorerDrilldownEntry[] {
     if (!selection || selection.cardId === undefined || selection.strategy === undefined) return [];
     const filtered = horses.filter(
-        (horse) => horse.cardId === selection.cardId && horse.strategy === selection.strategy && horse.rankScore > 0,
+        (horse) => horse.cardId === selection.cardId
+            && originalStrategyForHorse(horse) === selection.strategy
+            && isDebufferHorse(horse) === (selection.isDebuffer === true)
+            && horse.rankScore > 0,
     );
 
     const buildMap = new Map<string, { rep: HorseEntry; wins: number; appearances: number }>();
@@ -459,6 +518,57 @@ export function buildExplorerDrilldown(horses: HorseEntry[], selection: AggRow |
             appearances,
         }))
         .sort((a, b) => b.bayesianWinRate - a.bayesianWinRate)
+        .slice(0, 6);
+}
+
+export function buildExplorerTeamDrilldown(horses: HorseEntry[], selection: AggRow | null): ExplorerDrilldownEntry[] {
+    if (!selection || selection.cardId === undefined || selection.strategy === undefined) return [];
+    const teamMap = buildTeamMap(horses);
+    const teamWonByOccurrence = new Map<string, boolean>();
+    for (const teammates of teamMap.values()) {
+        const teamWon = teammates.some((horse) => horse.finishOrder === 1);
+        for (const horse of teammates) {
+            teamWonByOccurrence.set(`${horse.raceId}_${horse.teamId}_${horse.frameOrder}`, teamWon);
+        }
+    }
+
+    const filtered = horses.filter(
+        (horse) => horse.cardId === selection.cardId
+            && originalStrategyForHorse(horse) === selection.strategy
+            && isDebufferHorse(horse) === (selection.isDebuffer === true)
+            && horse.rankScore > 0,
+    );
+
+    const buildMap = new Map<string, { rep: HorseEntry; wins: number; appearances: number; personalWins: number }>();
+    for (const horse of filtered) {
+        const key = `${horse.rankScore}_${horse.speed}_${horse.stamina}_${horse.pow}_${horse.guts}_${horse.wiz}`;
+        if (!buildMap.has(key)) {
+            buildMap.set(key, { rep: horse, wins: 0, appearances: 0, personalWins: 0 });
+        }
+        const entry = buildMap.get(key)!;
+        entry.appearances += 1;
+        if (teamWonByOccurrence.get(`${horse.raceId}_${horse.teamId}_${horse.frameOrder}`)) entry.wins += 1;
+        if (horse.finishOrder === 1) entry.personalWins += 1;
+    }
+
+    const prior = BAYES_TEAM.PRIOR;
+    const k = BAYES_TEAM.K;
+    return Array.from(buildMap.values())
+        .map(({ rep, wins, appearances, personalWins }) => ({
+            horse: rep,
+            bayesianWinRate: (personalWins + 54 * (1 / 9)) / (appearances + 54),
+            winRate: personalWins / appearances,
+            appearances,
+            teamBayesianWinRate: (wins + k * prior) / (appearances + k),
+            teamWinRate: wins / appearances,
+            teamWins: wins,
+            teamAppearances: appearances,
+        }))
+        .sort((a, b) => (
+            (b.teamBayesianWinRate ?? 0) - (a.teamBayesianWinRate ?? 0)
+            || (b.teamWinRate ?? 0) - (a.teamWinRate ?? 0)
+            || (b.teamAppearances ?? 0) - (a.teamAppearances ?? 0)
+        ))
         .slice(0, 6);
 }
 
@@ -513,5 +623,6 @@ export function runExplorerQuery(
         hasCharacterFilter,
         rows,
         drilldown: buildExplorerDrilldown(horses, selectedRow),
+        teamDrilldown: buildExplorerTeamDrilldown(horses, selectedRow),
     };
 }

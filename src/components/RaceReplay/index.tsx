@@ -98,6 +98,46 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         return 0;
     }, [frames, raceData.horseResult]);
 
+    const phaseTimeline = useMemo(() => {
+        if (!goalInX || frames.length < 2 || endTime <= startTime) return null;
+
+        const leaderDistanceAtFrame = (frame: typeof frames[number]) => Math.max(
+            0,
+            ...(frame.horseFrame ?? []).map((horse) => horse?.distance ?? 0),
+        );
+        const timeAtDistance = (targetDistance: number) => {
+            let previousFrame = frames[0];
+            let previousDistance = leaderDistanceAtFrame(previousFrame);
+            if (previousDistance >= targetDistance) return previousFrame.time ?? startTime;
+
+            for (let index = 1; index < frames.length; index++) {
+                const currentFrame = frames[index];
+                const currentDistance = leaderDistanceAtFrame(currentFrame);
+                if (currentDistance >= targetDistance) {
+                    const previousTime = previousFrame.time ?? startTime;
+                    const currentTime = currentFrame.time ?? previousTime;
+                    const distanceDelta = currentDistance - previousDistance;
+                    if (distanceDelta <= 1e-6) return currentTime;
+                    const alpha = clamp((targetDistance - previousDistance) / distanceDelta, 0, 1);
+                    return previousTime + (currentTime - previousTime) * alpha;
+                }
+                previousFrame = currentFrame;
+                previousDistance = currentDistance;
+            }
+            return endTime;
+        };
+
+        const midStart = timeAtDistance(goalInX / 6);
+        const lateStart = timeAtDistance(goalInX * 2 / 3);
+        const toPct = (time: number) => `${clamp((time - startTime) / (endTime - startTime), 0, 1) * 100}%`;
+        return {
+            midMarkerLeft: toPct(midStart),
+            lateMarkerLeft: toPct(lateStart),
+            midTime: midStart,
+            lateTime: lateStart,
+        };
+    }, [endTime, frames, goalInX, startTime]);
+
     const availableTracks = useAvailableTracks(goalInX);
     const { selectedTrackId, setSelectedTrackId, guessStatus } = useGuessTrack(detectedCourseId, goalInX, availableTracks);
 
@@ -116,7 +156,8 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
 
     const horseInfoByIdx = useMemo(() => { const map: Record<number, any> = {}; (raceHorseInfo ?? []).forEach((h: any) => { const idx = (h.frame_order ?? h.frameOrder) - 1; if (idx >= 0) map[idx] = h; }); return map; }, [raceHorseInfo]);
 
-    const { t: toggles, bind } = useToggles();
+    const { t: toggles, bind, setAll: setAllToggles } = useToggles();
+    const allTogglesEnabled = toggleDefs.every(({ id }) => toggles[id]);
 
     const groundCondition = parseGroundCondition(trackDetails?.condition);
     const worldTransformEstimate = useWorldTransformEstimate(frames, selectedTrackId, laneDistanceMax);
@@ -149,6 +190,29 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     const cycleVisibility = useCallback((name: string) => {
         setCharacterVisibility(prev => ({ ...prev, [name]: ((prev[name] ?? 0) + 1) % 3 as VisibilityState }));
     }, []);
+    const focusRacer = useCallback((name: string) => {
+        if (!legendNames.includes(name)) return;
+        setCharacterVisibility(prev => {
+            const otherNames = legendNames.filter(otherName => otherName !== name);
+            const allOthersDimmed = otherNames.every(otherName => (prev[otherName] ?? 0) === 1);
+            const allOthersHidden = otherNames.every(otherName => (prev[otherName] ?? 0) === 2);
+            const nextOtherState: VisibilityState = allOthersDimmed ? 2 : allOthersHidden ? 0 : 1;
+
+            return Object.fromEntries(
+                legendNames.map(otherName => [otherName, otherName === name ? 0 : nextOtherState]),
+            ) as Record<string, VisibilityState>;
+        });
+    }, [legendNames]);
+    const cycleAllRacerVisibility = useCallback(() => {
+        setCharacterVisibility(prev => Object.fromEntries(
+            legendNames.map(name => [name, ((prev[name] ?? 0) + 1) % 3 as VisibilityState]),
+        ) as Record<string, VisibilityState>);
+    }, [legendNames]);
+    const resetRacerVisibility = useCallback(() => {
+        setCharacterVisibility(Object.fromEntries(
+            legendNames.map(name => [name, 0]),
+        ) as Record<string, VisibilityState>);
+    }, [legendNames]);
     const [hoveredLegendName, setHoveredLegendName] = useState<string | null>(null);
 
     const startDelayByIdx = useMemo(() => {
@@ -167,6 +231,8 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     const yMaxWithHeadroom = Math.max(6000, maxLanePosition);
 
     const { tick, interpolatedFrameRef, xAxisRef, horseHoverDataRef } = useCanvasOverlay(echartsRef, canvasRef, {
+        raceData,
+        raceHorseInfo,
         frames,
         displayNames,
         horseInfoByIdx,
@@ -552,10 +618,21 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                     {/* RIGHT SECTION: Legends, Frame, ClipMaker */}
                     <div className="d-flex flex-column align-items-end ms-auto rr-toolbar-right">
                         <div className="d-flex align-items-center mb-2 rr-legend-row">
-                            <LegendItem color={STRAIGHT_FILL} label="Straight" />
-                            <LegendItem color={STRAIGHT_FINAL_FILL} label="Final straight" />
-                            <LegendItem color={CORNER_FILL} label="Corner" />
-                            <LegendItem color={CORNER_FINAL_FILL} label="Final corner" />
+                            <Button
+                                size="sm"
+                                variant="secondary"
+                                className="rr-toggle-all-btn"
+                                onClick={() => setAllToggles(!allTogglesEnabled)}
+                                title={allTogglesEnabled ? "Disable all replay options" : "Enable all replay options"}
+                            >
+                                Toggle all
+                            </Button>
+                            <div className="d-flex align-items-center rr-legend-items">
+                                <LegendItem color={STRAIGHT_FILL} label="Straight" />
+                                <LegendItem color={STRAIGHT_FINAL_FILL} label="Final straight" />
+                                <LegendItem color={CORNER_FILL} label="Corner" />
+                                <LegendItem color={CORNER_FINAL_FILL} label="Final corner" />
+                            </div>
                         </div>
 
                         <div className="mb-2 rr-frame-display">
@@ -616,6 +693,15 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
 
             {legendNames.length > 0 && (
                 <div className="char-vis-list">
+                    <Button
+                        size="sm"
+                        variant="secondary"
+                        className="char-vis-toggle-all"
+                        onClick={(event) => event.shiftKey ? resetRacerVisibility() : cycleAllRacerVisibility()}
+                        title="Advance every racer to the next visibility state; Shift-click to reset"
+                    >
+                        Toggle All
+                    </Button>
                     {Object.entries(displayNames).map(([iStr, name]) => {
                         const idx = +iStr;
                         const state = characterVisibility[name] ?? 0;
@@ -623,7 +709,14 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                         const stateClass = state === 1 ? " char-vis-dim" : state === 2 ? " char-vis-hidden" : "";
                         const stateTitle = state === 0 ? "Click to dim" : state === 1 ? "Click to hide" : "Click to show";
                         return (
-                            <button key={name} className={`char-vis-btn${stateClass}`} onClick={() => cycleVisibility(name)} title={stateTitle} onMouseEnter={() => setHoveredLegendName(name)} onMouseLeave={() => setHoveredLegendName(null)}>
+                            <button
+                                key={name}
+                                className={`char-vis-btn${stateClass}`}
+                                onClick={(event) => event.shiftKey ? focusRacer(name) : cycleVisibility(name)}
+                                title={`${stateTitle}; Shift-click to focus`}
+                                onMouseEnter={() => setHoveredLegendName(name)}
+                                onMouseLeave={() => setHoveredLegendName(null)}
+                            >
                                 <span className="char-vis-dot" style={{ background: color }} />
                                 {name}
                             </button>
@@ -660,6 +753,11 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                             if (d2 < nearestD2) { nearestD2 = d2; nearest = { idx: entry.idx, x: mx, y: my, containerW }; }
                         }
                         setHoveredHorse(nearest);
+                    }}
+                    onClick={() => {
+                        if (hoveredHorse) {
+                            focusRacer(displayNames[hoveredHorse.idx] ?? "");
+                        }
                     }}
                     onMouseLeave={() => setHoveredHorse(null)}
                 >
@@ -698,16 +796,24 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
 
                 <div className="d-flex align-items-center justify-content-between mt-2 rr-playback-row">
                     <div className="d-flex align-items-center flex-grow-1">
-                        <Button onClick={playPause} className="me-3">{isPlaying ? "Pause" : "Play"}</Button>
-                        <Form.Control
-                            type="range"
-                            min={startTime}
-                            max={endTime}
-                            step={0.001}
-                            value={clampedRenderTime}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRenderTime(clamp(parseFloat(e.target.value), startTime, endTime))}
-                            className="flex-grow-1"
-                        />
+                        <Button onClick={playPause} className="me-3 rr-playback-btn">{isPlaying ? "Pause" : "Play"}</Button>
+                        <div className="rr-timeline-wrap">
+                            {phaseTimeline && (
+                                <div className="rr-phase-track" aria-hidden="true">
+                                    <div className="rr-phase-marker" style={{ left: phaseTimeline.midMarkerLeft }} title={`Mid race starts at ${phaseTimeline.midTime.toFixed(2)}s`} />
+                                    <div className="rr-phase-marker" style={{ left: phaseTimeline.lateMarkerLeft }} title={`Late race starts at ${phaseTimeline.lateTime.toFixed(2)}s`} />
+                                </div>
+                            )}
+                            <Form.Control
+                                type="range"
+                                min={startTime}
+                                max={endTime}
+                                step={0.001}
+                                value={clampedRenderTime}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRenderTime(clamp(parseFloat(e.target.value), startTime, endTime))}
+                                className="rr-timeline-range"
+                            />
+                        </div>
                         <span className="ms-3">{clampedRenderTime.toFixed(2)}s / {endTime.toFixed(2)}s</span>
                     </div>
                     <div className="ms-3">

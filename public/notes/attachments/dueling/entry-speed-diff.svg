@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="460" viewBox="0 0 920 460" role="img" aria-label="Dueling entry speed difference (1.629 samples)">
+  <style>
+    .grid { stroke: #d1d5db; stroke-width: 1; }
+    .axis { stroke: #111827; stroke-width: 1.4; }
+    .guide { stroke: #dc2626; stroke-width: 1.2; stroke-dasharray: 7 7; }
+    .bar-a { fill: #2563eb; fill-opacity: 0.78; }
+    .bar-b { fill: #f59e0b; fill-opacity: 0.72; }
+    .tick { fill: #475569; font: 12px system-ui, sans-serif; }
+    .label { fill: #111827; font: 14px system-ui, sans-serif; font-weight: 700; }
+    .title { fill: #111827; font: 20px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 800; }
+    .legend { fill: #111827; font: 12px system-ui, sans-serif; }
+    .guide-label { fill: #b91c1c; font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 800; }
+  </style>
+  <rect width="920" height="460" rx="6" fill="#ffffff"/>
+  <text x="72" y="26" class="title">Dueling entry speed difference (1.629 samples)</text>
+  
+  <line x1="72" y1="390" x2="884" y2="390" class="grid"/><text x="62" y="394" class="tick" text-anchor="end">0</text>
+<line x1="72" y1="305.7113402061856" x2="884" y2="305.7113402061856" class="grid"/><text x="62" y="309.7113402061856" class="tick" text-anchor="end">73</text>
+<line x1="72" y1="221.42268041237114" x2="884" y2="221.42268041237114" class="grid"/><text x="62" y="225.42268041237114" class="tick" text-anchor="end">146</text>
+<line x1="72" y1="138.28865979381442" x2="884" y2="138.28865979381442" class="grid"/><text x="62" y="142.28865979381442" class="tick" text-anchor="end">218</text>
+<line x1="72" y1="54" x2="884" y2="54" class="grid"/><text x="62" y="58" class="tick" text-anchor="end">291</text>
+  <line x1="173.50000000000006" y1="54" x2="173.50000000000006" y2="390" class="guide"/><text x="178.50000000000006" y="72" class="guide-label">-0.6</text>
+<line x1="782.5" y1="54" x2="782.5" y2="390" class="guide"/><text x="787.5" y="72" class="guide-label">+0.6</text>
+  <rect x="73" y="390" width="48.75" height="0" class="bar-a"><title>-0.8--0.7: 0</title></rect>
+<rect x="123.75" y="390" width="48.75" height="0" class="bar-a"><title>-0.7--0.6: 0</title></rect>
+<rect x="174.5" y="54" width="48.74999999999997" height="336" class="bar-a"><title>-0.6--0.5: 291</title></rect>
+<rect x="225.24999999999997" y="281.4639175257732" width="48.75000000000003" height="108.53608247422682" class="bar-a"><title>-0.5--0.4: 94</title></rect>
+<rect x="276" y="284.92783505154637" width="48.74999999999994" height="105.07216494845363" class="bar-a"><title>-0.4--0.3: 91</title></rect>
+<rect x="326.74999999999994" y="271.07216494845363" width="48.75" height="118.92783505154637" class="bar-a"><title>-0.3--0.2: 103</title></rect>
+<rect x="377.49999999999994" y="258.37113402061857" width="48.75000000000006" height="131.62886597938143" class="bar-a"><title>-0.2--0.1: 114</title></rect>
+<rect x="428.25" y="253.75257731958763" width="48.75" height="136.24742268041237" class="bar-a"><title>-0.1--0.0: 118</title></rect>
+<rect x="479" y="238.7422680412371" width="48.75" height="151.2577319587629" class="bar-a"><title>-0.0-0.1: 131</title></rect>
+<rect x="529.75" y="259.5257731958763" width="48.75" height="130.4742268041237" class="bar-a"><title>0.1-0.2: 113</title></rect>
+<rect x="580.5" y="275.69072164948454" width="48.75" height="114.30927835051546" class="bar-a"><title>0.2-0.3: 99</title></rect>
+<rect x="631.25" y="281.4639175257732" width="48.75" height="108.53608247422682" class="bar-a"><title>0.3-0.4: 94</title></rect>
+<rect x="682" y="260.680412371134" width="48.75" height="129.31958762886597" class="bar-a"><title>0.4-0.5: 112</title></rect>
+<rect x="732.75" y="79.40206185567007" width="48.75" height="310.59793814432993" class="bar-a"><title>0.5-0.6: 269</title></rect>
+<rect x="783.5" y="390" width="48.750000000000114" height="0" class="bar-a"><title>0.6-0.7: 0</title></rect>
+<rect x="834.2500000000001" y="390" width="48.749999999999886" height="0" class="bar-a"><title>0.7-0.8: 0</title></rect>
+  <line x1="72" y1="390" x2="884" y2="390" class="axis"/>
+  <line x1="72" y1="54" x2="72" y2="390" class="axis"/>
+  <text x="97.375" y="424" class="tick" text-anchor="middle">-0.8--0.7</text>
+<text x="148.125" y="424" class="tick" text-anchor="middle">-0.7--0.6</text>
+<text x="198.875" y="424" class="tick" text-anchor="middle">-0.6--0.5</text>
+<text x="249.625" y="424" class="tick" text-anchor="middle">-0.5--0.4</text>
+<text x="300.375" y="424" class="tick" text-anchor="middle">-0.4--0.3</text>
+<text x="351.12499999999994" y="424" class="tick" text-anchor="middle">-0.3--0.2</text>
+<text x="401.875" y="424" class="tick" text-anchor="middle">-0.2--0.1</text>
+<text x="452.625" y="424" class="tick" text-anchor="middle">-0.1--0.0</text>
+<text x="503.375" y="424" class="tick" text-anchor="middle">-0.0-0.1</text>
+<text x="554.125" y="424" class="tick" text-anchor="middle">0.1-0.2</text>
+<text x="604.875" y="424" class="tick" text-anchor="middle">0.2-0.3</text>
+<text x="655.625" y="424" class="tick" text-anchor="middle">0.3-0.4</text>
+<text x="706.375" y="424" class="tick" text-anchor="middle">0.4-0.5</text>
+<text x="757.125" y="424" class="tick" text-anchor="middle">0.5-0.6</text>
+<text x="807.875" y="424" class="tick" text-anchor="middle">0.6-0.7</text>
+<text x="858.625" y="424" class="tick" text-anchor="middle">0.7-0.8</text>
+  <text x="478" y="448" class="label" text-anchor="middle">other dueler speed - first dueler speed (m/s)</text>
+  <text transform="translate(24 222) rotate(-90)" class="label" text-anchor="middle">samples</text>
+</svg>

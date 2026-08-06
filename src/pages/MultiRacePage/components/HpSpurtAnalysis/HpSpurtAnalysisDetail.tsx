@@ -57,6 +57,59 @@ const RecoveryScenarioLabel: React.FC<{ label: string }> = ({ label }) => {
     );
 };
 
+const SpotStruggleRateRow: React.FC<{
+    label: string;
+    triggered: number;
+    runs: number;
+    winsWithTrigger: number;
+    winsWithoutTrigger: number;
+}> = ({
+    label,
+    triggered,
+    runs,
+    winsWithTrigger,
+    winsWithoutTrigger,
+}) => {
+    const rate = runs > 0 ? triggered / runs * 100 : 0;
+    const runsWithoutTrigger = runs - triggered;
+    const renderWinRate = (wins: number, samples: number) => {
+        if (samples === 0) return <div className="hp-scenario-metric-secondary">No samples</div>;
+        const winRate = wins / samples * 100;
+        return (
+            <>
+                <div className="hp-scenario-metric-primary" style={{ color: getRateColor(winRate) }}>
+                    {winRate.toFixed(1)}%
+                </div>
+                <div className="hp-scenario-metric-secondary">{wins} / {samples}</div>
+            </>
+        );
+    };
+    return (
+        <tr>
+            <td>{label}</td>
+            <td className="text-center hp-scenario-cell">{runs}</td>
+            <td className="text-center hp-scenario-cell">
+                {runs > 0 ? (
+                    <>
+                        <div className="hp-scenario-metric-primary" style={{ color: getRateColor(rate) }}>
+                            {rate.toFixed(1)}%
+                        </div>
+                        <div className="hp-scenario-metric-secondary">{triggered} / {runs}</div>
+                    </>
+                ) : (
+                    <div className="hp-scenario-metric-secondary">No samples</div>
+                )}
+            </td>
+            <td className="text-center hp-scenario-cell">
+                {renderWinRate(winsWithTrigger, triggered)}
+            </td>
+            <td className="text-center hp-scenario-cell">
+                {renderWinRate(winsWithoutTrigger, runsWithoutTrigger)}
+            </td>
+        </tr>
+    );
+};
+
 const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) => {
     const [modalOpen, setModalOpen] = React.useState(false);
     const [modalTitle, setModalTitle] = React.useState('');
@@ -121,6 +174,54 @@ const HpSpurtAnalysisDetail: React.FC<{ stat: CharaHpSpurtStats }> = ({ stat }) 
                 title={modalTitle}
                 data={modalData}
             />
+
+            {stat.spotStruggleStats.triggeredRuns > 0 && (
+                <div className="hp-detail-panel">
+                    <div className="hp-detail-panel__header">
+                        <div className="hp-detail-panel__header-copy">
+                            <h5 className="hp-detail-panel__title">Spot Struggle Analysis</h5>
+                        </div>
+                    </div>
+                    <Table className="mb-0 detail-table hp-spot-struggle-table" size="sm" responsive>
+                        <thead>
+                            <tr>
+                                <th>Condition</th>
+                                <th className="text-center">Runs</th>
+                                <th className="text-center">Spot Struggle rate</th>
+                                <th className="text-center">Win rate with Spot Struggle</th>
+                                <th className="text-center">Win rate without Spot Struggle</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <SpotStruggleRateRow
+                                label="Overall"
+                                triggered={stat.spotStruggleStats.triggeredRuns}
+                                runs={stat.spotStruggleStats.totalRuns}
+                                winsWithTrigger={stat.spotStruggleStats.winsWithTrigger}
+                                winsWithoutTrigger={stat.spotStruggleStats.winsWithoutTrigger}
+                            />
+                            {stat.spotStruggleStats.dodgingDangerLearnedRuns > 0 && (
+                                <>
+                                    <SpotStruggleRateRow
+                                        label="Dodging Danger activated within 5s"
+                                        triggered={stat.spotStruggleStats.triggeredWithDodgingDangerActivated}
+                                        runs={stat.spotStruggleStats.dodgingDangerActivatedRuns}
+                                        winsWithTrigger={stat.spotStruggleStats.winsWithTriggerAndDodgingDangerActivated}
+                                        winsWithoutTrigger={stat.spotStruggleStats.winsWithoutTriggerAndDodgingDangerActivated}
+                                    />
+                                    <SpotStruggleRateRow
+                                        label="Dodging Danger not activated within 5s"
+                                        triggered={stat.spotStruggleStats.triggeredWithDodgingDangerNotActivated}
+                                        runs={stat.spotStruggleStats.dodgingDangerNotActivatedRuns}
+                                        winsWithTrigger={stat.spotStruggleStats.winsWithTriggerAndDodgingDangerNotActivated}
+                                        winsWithoutTrigger={stat.spotStruggleStats.winsWithoutTriggerAndDodgingDangerNotActivated}
+                                    />
+                                </>
+                            )}
+                        </tbody>
+                    </Table>
+                </div>
+            )}
 
             <div className="hp-detail-panel">
                 <div className="hp-detail-panel__header">

@@ -1,6 +1,7 @@
 import { ParsedRace } from "../../types";
 import { CharaHpSpurtStats, RecoveryScenarioStats } from "./types";
 import { filterCharaSkills, filterCharaTargetedSkills } from "../../../../data/RaceDataUtils";
+import { RaceSimulateEventData_SimulateEventType } from "../../../../data/race_data_pb";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import { getAvailableTracks, guessTrackId } from "../../../../components/RaceReplay/utils/guessTrackUtils";
 import { computeOtherEvents } from "../../../../components/RaceReplay/utils/analysisUtils";
@@ -99,6 +100,7 @@ export const computeHpSpurtStats = (
     onlyPlayer: boolean = false,
     statsFilter?: { speed: number, stamina: number, pow: number, guts: number, wiz: number },
     groupByStats: boolean = false,
+    fullSurvivalDistance: number = 0,
 ): CharaHpSpurtStats[] => {
     const statsMap = new Map<string, CharaHpSpurtStats>();
     const groundConditionCounts = new Map<number, number>();
@@ -130,8 +132,8 @@ export const computeHpSpurtStats = (
         if (!def || !def.conditionGroups) return null;
 
         for (const group of def.conditionGroups) {
-            const firstEffect = group.effects?.[0];
-            if (firstEffect?.type === 9 && firstEffect.value < 0) return firstEffect.value;
+            const hpDebuff = group.effects?.find(effect => effect.type === 9 && effect.value < 0);
+            if (hpDebuff) return hpDebuff.value;
         }
         return null;
     };
@@ -227,6 +229,8 @@ export const computeHpSpurtStats = (
                     totalRuns: 0,
                     wins: 0,
                     top3Finishes: 0,
+                    moodCounts: {},
+                    finishTimeSamples: [],
                     skillActivationCounts: {},
                     normalizedSkillActivationCounts: {},
                     survivalCount: 0,
@@ -237,6 +241,21 @@ export const computeHpSpurtStats = (
                     downhillModeTimePreLateSamples: [],
                     paceUpTimeSamples: [],
                     paceDownTimeSamples: [],
+                    spotStruggleStats: {
+                        totalRuns: 0,
+                        triggeredRuns: 0,
+                        winsWithTrigger: 0,
+                        winsWithoutTrigger: 0,
+                        dodgingDangerLearnedRuns: 0,
+                        dodgingDangerActivatedRuns: 0,
+                        triggeredWithDodgingDangerActivated: 0,
+                        winsWithTriggerAndDodgingDangerActivated: 0,
+                        winsWithoutTriggerAndDodgingDangerActivated: 0,
+                        dodgingDangerNotActivatedRuns: 0,
+                        triggeredWithDodgingDangerNotActivated: 0,
+                        winsWithTriggerAndDodgingDangerNotActivated: 0,
+                        winsWithoutTriggerAndDodgingDangerNotActivated: 0,
+                    },
                     recoveryStats: {},
                     recoveryStatsWithDebuffs: {},
                     sourceRuns: []
@@ -246,6 +265,12 @@ export const computeHpSpurtStats = (
             currentStats.totalRuns++;
             if (charaData.finishOrder === 1) currentStats.wins++;
             if (charaData.finishOrder <= 3) currentStats.top3Finishes++;
+            const runMotivation = charaData.motivation ?? 3;
+            currentStats.moodCounts[runMotivation] = (currentStats.moodCounts[runMotivation] ?? 0) + 1;
+            const finishTime = charaData.horseResultData.finishTimeRaw;
+            if (typeof finishTime === "number" && Number.isFinite(finishTime) && finishTime > 0) {
+                currentStats.finishTimeSamples.push(finishTime);
+            }
 
             currentStats.sourceRuns.push({ race, horseFrameOrder: frameOrder });
             const duelingTime = charaData.duelingTime ?? 0;
@@ -270,6 +295,41 @@ export const computeHpSpurtStats = (
             // Track Skill Activations
             const frameSkills = skillActivations[frameOrder] || [];
             const activatedIds = new Set(frameSkills.map(s => s.param[1]));
+            const spotStruggleTriggered = raceData.event.some(({ event }) => (
+                event?.type === RaceSimulateEventData_SimulateEventType.COMPETE_TOP
+                && event.param[0] === frameOrder
+            ));
+            const dodgingDangerLearned = trainedChara.skills.some(skill => skill.skillId === 201262);
+            const dodgingDangerActivated = frameSkills.some(skill => (
+                skill.param[1] === 201262
+                && skill.time <= 5
+            ));
+
+            currentStats.spotStruggleStats.totalRuns++;
+            if (spotStruggleTriggered) currentStats.spotStruggleStats.triggeredRuns++;
+            const won = charaData.finishOrder === 1;
+            if (won && spotStruggleTriggered) currentStats.spotStruggleStats.winsWithTrigger++;
+            if (won && !spotStruggleTriggered) currentStats.spotStruggleStats.winsWithoutTrigger++;
+            if (dodgingDangerLearned) {
+                currentStats.spotStruggleStats.dodgingDangerLearnedRuns++;
+                if (dodgingDangerActivated) {
+                    currentStats.spotStruggleStats.dodgingDangerActivatedRuns++;
+                    if (spotStruggleTriggered) {
+                        currentStats.spotStruggleStats.triggeredWithDodgingDangerActivated++;
+                        if (won) currentStats.spotStruggleStats.winsWithTriggerAndDodgingDangerActivated++;
+                    } else if (won) {
+                        currentStats.spotStruggleStats.winsWithoutTriggerAndDodgingDangerActivated++;
+                    }
+                } else {
+                    currentStats.spotStruggleStats.dodgingDangerNotActivatedRuns++;
+                    if (spotStruggleTriggered) {
+                        currentStats.spotStruggleStats.triggeredWithDodgingDangerNotActivated++;
+                        if (won) currentStats.spotStruggleStats.winsWithTriggerAndDodgingDangerNotActivated++;
+                    } else if (won) {
+                        currentStats.spotStruggleStats.winsWithoutTriggerAndDodgingDangerNotActivated++;
+                    }
+                }
+            }
 
             // Calculate activation chance for this run
             const wiz = trainedChara.wiz ?? 300;
@@ -332,7 +392,13 @@ export const computeHpSpurtStats = (
             const hpOutcome = charaData.hpOutcome;
 
             if (hpOutcome) {
-                if (hpOutcome.type === 'survived') {
+                const countsAsSurvived = hpOutcome.type === 'survived'
+                    || (
+                        fullSurvivalDistance > 0
+                        && hpOutcome.type === 'died'
+                        && hpOutcome.distance <= fullSurvivalDistance
+                    );
+                if (countsAsSurvived) {
                     currentStats.survivalCount++;
                 }
 
@@ -358,7 +424,7 @@ export const computeHpSpurtStats = (
                     .map(s => ({ ...s, value: s.value! }));
                 let earlyDebuffTotal = 0;
                 let lateDebuffTotal = 0;
-                filterCharaTargetedSkills(raceData, frameOrder).forEach(event => {
+                filterCharaTargetedSkills(raceData, frameOrder, race.horseInfo).forEach(event => {
                     const value = getHpDebuffValue(event.param[1]);
                     if (value === null) return;
 
@@ -435,7 +501,7 @@ export const computeHpSpurtStats = (
                         recStats.fullSpurtCount++;
                         recStats.hpOutcomesFullSpurt.push(outcomeValue);
                     }
-                    if (hpOutcome.type === 'survived') recStats.survivalCount++;
+                    if (countsAsSurvived) recStats.survivalCount++;
                     recStats.hpOutcomes.push(outcomeValue);
                     if (spurtDelay !== undefined) recStats.spurtDelaySamples.push(spurtDelay);
                     if (normalizedSpeedDiff !== undefined) recStats.speedDiffSamples.push(normalizedSpeedDiff);

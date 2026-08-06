@@ -19,9 +19,12 @@ const DEFAULT_CONFIG: OptimizerConfig = {
     scenarioWeight: 10,
     highValueSkills: [],
     highValueSkillBonus: 20,
+    highValueSkillSparks: [],
+    highValueSkillSparkWeight: 10,
 };
 
 type FactorSummary = { name: string; level: number };
+type SparkOption = { key: number; name: string; maxLevel: number; count: number };
 
 type TransferResult = {
     veteran: Veteran;
@@ -44,6 +47,7 @@ const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ veterans }) => {
     const [config, setConfig] = useState<OptimizerConfig>(DEFAULT_CONFIG);
     const [results, setResults] = useState<TransferResult[] | null>(null);
     const [skillSearch, setSkillSearch] = useState('');
+    const [skillSparkSearch, setSkillSparkSearch] = useState('');
 
     const allSkillIds = React.useMemo(() => {
         const ids = new Set<number>();
@@ -51,11 +55,41 @@ const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ veterans }) => {
         return Array.from(ids).sort((a, b) => a - b);
     }, [veterans]);
 
+    const allSkillSparkOptions = React.useMemo(() => {
+        const options = new Map<number, SparkOption>();
+        veterans.forEach(veteran => {
+            aggregateFactors(veteran)
+                .filter(f => f.category === 5 && f.isGold)
+                .forEach(f => {
+                    const key = Math.floor(f.factorId / 100);
+                    const existing = options.get(key);
+                    if (existing) {
+                        existing.maxLevel = Math.max(existing.maxLevel, f.level);
+                        existing.count += 1;
+                    } else {
+                        options.set(key, {
+                            key,
+                            name: f.name,
+                            maxLevel: f.level,
+                            count: 1,
+                        });
+                    }
+                });
+        });
+        return Array.from(options.values()).sort((a, b) => a.name.localeCompare(b.name));
+    }, [veterans]);
+
     const filteredSkillIds = React.useMemo(() => {
         if (!skillSearch.trim()) return allSkillIds;
         const q = skillSearch.toLowerCase();
         return allSkillIds.filter(id => UMDatabaseWrapper.skillName(id).toLowerCase().includes(q));
     }, [allSkillIds, skillSearch]);
+
+    const filteredSkillSparkOptions = React.useMemo(() => {
+        if (!skillSparkSearch.trim()) return allSkillSparkOptions;
+        const q = skillSparkSearch.toLowerCase();
+        return allSkillSparkOptions.filter(option => option.name.toLowerCase().includes(q));
+    }, [allSkillSparkOptions, skillSparkSearch]);
 
     const updateConfig = (patch: Partial<OptimizerConfig>) =>
         setConfig(c => ({ ...c, ...patch }));
@@ -65,6 +99,14 @@ const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ veterans }) => {
             highValueSkills: config.highValueSkills.includes(id)
                 ? config.highValueSkills.filter(s => s !== id)
                 : [...config.highValueSkills, id],
+        });
+    };
+
+    const toggleSkillSpark = (key: number) => {
+        updateConfig({
+            highValueSkillSparks: config.highValueSkillSparks.includes(key)
+                ? config.highValueSkillSparks.filter(s => s !== key)
+                : [...config.highValueSkillSparks, key],
         });
     };
 
@@ -82,7 +124,7 @@ const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ veterans }) => {
             const raceBonus = calculateRaceBonus(v).total;
             return { veteran: v, score, bluesFactors, aptFactors, uniqueStars, skillStars, skillFactors, scenarioFactors, raceBonus };
         });
-        scored.sort((a, b) => a.score - b.score);
+        scored.sort((a, b) => b.score - a.score);
         setResults(scored);
     };
 
@@ -105,6 +147,7 @@ const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ veterans }) => {
                             ['Skill spark weight (score/★)', 'skillWeight'],
                             ['Scenario spark weight (score/★)', 'scenarioWeight'],
                             ['Important skill bonus (score)', 'highValueSkillBonus'],
+                            ['Important skill spark weight (score/★)', 'highValueSkillSparkWeight'],
                         ] as [string, keyof OptimizerConfig][]).map(([label, key]) => (
                             <div key={key} className="col-sm-6 col-md-4 col-lg-3">
                                 <Form.Label className="opt-label">{label}</Form.Label>
@@ -144,6 +187,32 @@ const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ veterans }) => {
                         </div>
                     </div>
 
+                    <div className="mb-3">
+                        <Form.Label className="opt-label-bold">Important skill sparks</Form.Label>
+                        <Form.Control
+                            size="sm"
+                            placeholder="Search skill sparks..."
+                            value={skillSparkSearch}
+                            onChange={e => setSkillSparkSearch(e.target.value)}
+                            className="mb-1"
+                        />
+                        <div className="opt-skills-scroll">
+                            {filteredSkillSparkOptions.map(option => (
+                                <Form.Check
+                                    key={option.key}
+                                    type="checkbox"
+                                    id={`skill-spark-${option.key}`}
+                                    label={`${option.name} ★${option.maxLevel} (${option.count})`}
+                                    checked={config.highValueSkillSparks.includes(option.key)}
+                                    onChange={() => toggleSkillSpark(option.key)}
+                                    className="opt-checkbox"
+                                />
+                            ))}
+                            {allSkillSparkOptions.length === 0 && <small className="text-muted">No skill sparks found in loaded veterans.</small>}
+                            {allSkillSparkOptions.length > 0 && filteredSkillSparkOptions.length === 0 && <small className="text-muted">No skill sparks match search.</small>}
+                        </div>
+                    </div>
+
                     <Button variant="primary" onClick={calculate}>
                         Calculate
                     </Button>
@@ -154,6 +223,7 @@ const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ veterans }) => {
                                 <thead>
                                     <tr>
                                         <th>Character</th>
+                                        <th>Score</th>
                                         <th>Rating</th>
                                         <th>Blues</th>
                                         <th>Aptitude</th>
@@ -169,6 +239,7 @@ const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ veterans }) => {
                                                 <img src={getCharaImageUrl(r.veteran.card_id)} alt="" className="opt-char-img" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                                                 {formatCardName(getCardName(r.veteran.card_id))}
                                             </td>
+                                            <td>{r.score.toLocaleString()}</td>
                                             <td className="opt-cell-nowrap">
                                                 {(() => { const ri = getRankIcon(r.veteran.rank_score); return <><img src={ri.icon} alt={ri.name} className="opt-rank-icon" />{r.veteran.rank_score.toLocaleString()}</>; })()}
                                             </td>

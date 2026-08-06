@@ -1,11 +1,11 @@
-import { RaceSimulateData } from "../../../../data/race_data_pb";
-import { filterCharaSkills, filterCharaTargetedSkills } from "../../../../data/RaceDataUtils";
+import { RaceSimulateData, RaceSimulateEventData_SimulateEventType } from "../../../../data/race_data_pb";
+import { filterCharaSkills, filterCharaTargetedSkills, isSkillEventTargetingFrame } from "../../../../data/RaceDataUtils";
 import { fromRaceHorseData, TrainedCharaData } from "../../../../data/TrainedCharaData";
 import GameDataLoader from "../../../../data/GameDataLoader";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import { useAvailableTracks } from "../../../RaceReplay/hooks/useAvailableTracks";
 import { useGuessTrack } from "../../../RaceReplay/hooks/useGuessTrack";
-import { getPassiveStatModifiers, getSkillDurationSecs, getSkillBaseTime } from "../../../RaceReplay/utils/SkillDataUtils";
+import { getPassiveStatModifiers, getSkillDurationSecs, getSkillBaseTime, getHpDrainRatio, countGreenSkills } from "../../../RaceReplay/utils/SkillDataUtils";
 import {
     adjustStat,
     calculateTargetSpeed,
@@ -26,6 +26,7 @@ import { computeHeuristicEvents } from "../../../RaceReplay/utils/computeHeurist
 import { calculateRaceDistance } from "../../utils/RacePresenterUtils";
 import { CharaTableData, SkillEventData } from "./types";
 import { RaceSimulateFrameData } from "../../../../data/race_data_pb";
+import { computeRaceSkillLottery } from "../../utils/witLottery";
 
 function interpolateDistance(frames: RaceSimulateFrameData[], horseIndex: number, time: number): number {
     if (!frames || frames.length === 0) return 0;
@@ -76,7 +77,8 @@ export const computeCharaTableData = (
     skillActivations: Record<number, { time: number; name: string; param: number[] }[]> | undefined,
     otherEvents: Record<number, { time: number; duration: number; name: string }[]> | undefined,
     raceType?: string,
-    groundCondition?: number
+    groundCondition?: number,
+    randomSeed?: number
 ): CharaTableData[] => {
     const raceDistance = calculateRaceDistance(raceData);
 
@@ -90,6 +92,7 @@ export const computeCharaTableData = (
     const groundModifier = computeGroundModifier(surface, groundCondition ?? 0);
     const groundSpeedBonus = (groundCondition ?? 0) === 4 ? -50 : 0;
     const groundPowerBonus = computeGroundPowerBonus(surface, groundCondition ?? 0);
+    const skillLottery = computeRaceSkillLottery(raceHorseInfo, raceData, randomSeed);
 
     // Prepare data for heuristic events calculation
     const trainedCharaByIdx: Record<number, TrainedCharaData> = {};
@@ -105,12 +108,13 @@ export const computeCharaTableData = (
         horseInfoByIdx[frameOrder] = data;
 
         const skillEvents = filterCharaSkills(raceData, frameOrder);
-        const activatedSkillIds = new Set(skillEvents.map(e => e.param[1]));
+        const activatedSkillGroups = new Map(skillEvents.map(e => [e.param[1], e.param?.[3]]));
+        const activatedSkillIds = new Set(activatedSkillGroups.keys());
         oonigeByIdx[frameOrder] = activatedSkillIds.has(202051);
 
         const passiveStats = { speed: 0, stamina: 0, power: 0, guts: 0, wisdom: 0 };
-        activatedSkillIds.forEach(id => {
-            const mods = getPassiveStatModifiers(id);
+        activatedSkillGroups.forEach((conditionGroupIndex, id) => {
+            const mods = getPassiveStatModifiers(id, conditionGroupIndex);
             passiveStats.speed += mods.speed || 0;
             passiveStats.stamina += mods.stamina || 0;
             passiveStats.power += mods.power || 0;
@@ -144,7 +148,8 @@ export const computeCharaTableData = (
         skillActivations: skillActivations ?? {},
         otherEvents: otherEvents ?? {},
         lastSpurtStartDistances,
-        detectedCourseId: effectiveCourseId
+        detectedCourseId: effectiveCourseId,
+        raceData,
     });
 
     const tableData: CharaTableData[] = raceHorseInfo.map(data => {
@@ -163,15 +168,16 @@ export const computeCharaTableData = (
 
         // Calculate Last Spurt Speed
         const skillEvents = filterCharaSkills(raceData, frameOrder);
-        const activatedSkillIds = new Set(skillEvents.map(e => e.param[1]));
+        const activatedSkillGroups = new Map(skillEvents.map(e => [e.param[1], e.param?.[3]]));
+        const activatedSkillIds = new Set(activatedSkillGroups.keys());
         const activatedSkillCounts = new Map<number, number>();
         skillEvents.forEach(e => {
             const skillId = e.param[1];
             activatedSkillCounts.set(skillId, (activatedSkillCounts.get(skillId) || 0) + 1);
         });
         const passiveStats = { speed: 0, stamina: 0, power: 0, guts: 0, wisdom: 0 };
-        activatedSkillIds.forEach(id => {
-            const mods = getPassiveStatModifiers(id);
+        activatedSkillGroups.forEach((conditionGroupIndex, id) => {
+            const mods = getPassiveStatModifiers(id, conditionGroupIndex);
             passiveStats.speed += mods.speed || 0;
             passiveStats.stamina += mods.stamina || 0;
             passiveStats.power += mods.power || 0;
@@ -261,7 +267,6 @@ export const computeCharaTableData = (
             courseId: effectiveCourseId
         });
 
-
         let maxAdjSpeed = 0;
         let maxAdjSpeedTime = 0;
         let maxAdjSpeedDebug: MaxAdjustedSpeedDebug | undefined;
@@ -296,7 +301,7 @@ export const computeCharaTableData = (
                     })),
                 }
                 : skillActivations;
-            const targetedSkillActivations = filterCharaTargetedSkills(raceData, frameOrder).map(event => ({
+            const targetedSkillActivations = filterCharaTargetedSkills(raceData, frameOrder, raceHorseInfo).map(event => ({
                 time: event.frameTime!,
                 name: UMDatabaseWrapper.skillNameWithEnglishFallback(event.param[1]),
                 param: event.param,
@@ -312,7 +317,8 @@ export const computeCharaTableData = (
                 trackSlopes,
                 adjustedGuts,
                 adjustedPower,
-                lastSpurtStartDistances[frameOrder] ?? -1
+                lastSpurtStartDistances[frameOrder] ?? -1,
+                { ...trainedCharaData, greenSkillCount: countGreenSkills(skillActivations?.[frameOrder]) }
             );
             maxAdjSpeed = maxAdj.speed;
             maxAdjSpeedTime = maxAdj.time;
@@ -579,6 +585,7 @@ export const computeCharaTableData = (
 
             activatedSkills: activatedSkillIds,
             activatedSkillCounts: activatedSkillCounts,
+            skillLotteryResults: skillLottery?.byFrameOrder.get(frameOrder + 1),
             skillEvents: parsedSkillEvents,
             positionHistory: positionHistory,
 
@@ -625,6 +632,61 @@ export const computeCharaTableData = (
         curr.finishDistanceToPrev = Math.max(0, raceDistance - currDistanceAtPrevFinish);
     }
 
+    const rowByFrameOrder = new Map(tableData.map(row => [row.frameOrder - 1, row]));
+    raceData.event.forEach(({ event }) => {
+        if (!event || event.type !== RaceSimulateEventData_SimulateEventType.SKILL) return;
+
+        const skillId = event.param[1];
+        const drainRatio = getHpDrainRatio(skillId, event.param?.[3]);
+        if (drainRatio <= 0) return;
+
+        const casterFrameOrder = event.param[0];
+        const caster = rowByFrameOrder.get(casterFrameOrder);
+        if (!caster) return;
+
+        tableData.forEach(target => {
+            const targetFrameOrder = target.frameOrder - 1;
+            if (!isSkillEventTargetingFrame(raceData, event, targetFrameOrder, raceHorseInfo)) return;
+
+            const maxHp = target.hpOutcome?.startHp
+                ?? raceData.frame?.[0]?.horseFrame?.[targetFrameOrder]?.hp
+                ?? 0;
+            const estimatedHpDrain = Math.max(0, maxHp * drainRatio);
+            const skillName = UMDatabaseWrapper.skillNameWithEnglishFallback(skillId);
+            const casterBaseName = caster.chara?.name ?? caster.trainedChara.viewerName ?? `Character ${caster.frameOrder}`;
+            const targetBaseName = target.chara?.name ?? target.trainedChara.viewerName ?? `Character ${target.frameOrder}`;
+            const casterName = `${casterBaseName}${caster.subLabel ? ` ${caster.subLabel}` : ""}`;
+            const targetName = `${targetBaseName}${target.subLabel ? ` ${target.subLabel}` : ""}`;
+
+            target.hpDebuffHits ??= [];
+            target.hpDebuffHits.push({
+                skillId,
+                skillName,
+                casterFrameOrder: caster.frameOrder,
+                casterName,
+                time: event.frameTime ?? 0,
+                drainRatio,
+                estimatedHpDrain,
+            });
+
+            const hadNoSpareHpAtPhase3 = target.hpAtPhase3Start !== undefined
+                && target.requiredSpurtHp !== undefined
+                && target.hpAtPhase3Start <= target.requiredSpurtHp;
+            const didNotFinishWithHp = target.hpOutcome?.type === "died"
+                || (target.hpOutcome?.type === "survived" && target.hpOutcome.hp <= 0);
+            if (!hadNoSpareHpAtPhase3 && !didNotFinishWithHp) return;
+
+            caster.debuffSpurtImpacts ??= new Map();
+            const impacts = caster.debuffSpurtImpacts.get(skillId) ?? [];
+            impacts.push({
+                targetFrameOrder: target.frameOrder,
+                targetName,
+                estimatedHpDrain,
+            });
+            caster.debuffSpurtImpacts.set(skillId, impacts);
+        });
+    });
+
     return tableData;
 };
 
@@ -635,14 +697,15 @@ export const useCharaTableData = (
     skillActivations: Record<number, { time: number; name: string; param: number[] }[]> | undefined,
     otherEvents: Record<number, { time: number; duration: number; name: string }[]> | undefined,
     raceType?: string,
-    groundCondition?: number
+    groundCondition?: number,
+    randomSeed?: number
 ) => {
     const raceDistance = calculateRaceDistance(raceData);
     const availableTracks = useAvailableTracks(raceDistance);
     const { selectedTrackId } = useGuessTrack(detectedCourseId, raceDistance, availableTracks);
     const effectiveCourseId = selectedTrackId ? parseInt(selectedTrackId) : undefined;
 
-    const tableData = computeCharaTableData(raceHorseInfo, raceData, effectiveCourseId, skillActivations, otherEvents, raceType, groundCondition);
+    const tableData = computeCharaTableData(raceHorseInfo, raceData, effectiveCourseId, skillActivations, otherEvents, raceType, groundCondition, randomSeed);
 
     return { tableData, effectiveCourseId };
 };

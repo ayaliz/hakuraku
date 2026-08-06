@@ -17,8 +17,8 @@ const RaceListPanel: React.FC<RaceListPanelProps> = ({ races, onRemoveRace, onCl
                         {races.length}
                     </span>
                 </h3>
-                <button className="clear-all-btn" onClick={onClearAll}>
-                    Clear All
+                <button className="upload-reset-btn" onClick={onClearAll}>
+                    Clear
                 </button>
             </div>
             <div className="race-list">

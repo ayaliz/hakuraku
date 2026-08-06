@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="540" viewBox="0 0 920 540" role="img" aria-label="Selected Spirit spark outcomes">
+<style>
+        .grid { stroke: #d1d5db; stroke-width: 1; }
+        .axis { stroke: #111827; stroke-width: 1.5; }
+        .tick { fill: #475569; font: 12px system-ui, sans-serif; }
+        .label { fill: #111827; font: 14px system-ui, sans-serif; font-weight: 700; }
+        .value { fill: #111827; font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 800; }
+        .title { fill: #111827; font: 20px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 800; }
+        .subtitle { fill: #64748b; font: 13px system-ui, sans-serif; }
+        .legend { fill: #334155; font: 13px system-ui, sans-serif; }
+        </style>
+<rect width="920" height="540" rx="6" fill="#ffffff"/>
+<text x="54" y="34" class="title">Selected Spirit spark outcomes</text>
+<text x="54" y="58" class="subtitle">Raw kept-result rates across both data sources</text>
+<line x1="100" y1="420.0" x2="850" y2="420.0" class="grid"/>
+<text x="88" y="424.0" class="tick" text-anchor="end">0%</text>
+<line x1="100" y1="365.3" x2="850" y2="365.3" class="grid"/>
+<text x="88" y="369.3" class="tick" text-anchor="end">10%</text>
+<line x1="100" y1="310.7" x2="850" y2="310.7" class="grid"/>
+<text x="88" y="314.7" class="tick" text-anchor="end">20%</text>
+<line x1="100" y1="256.0" x2="850" y2="256.0" class="grid"/>
+<text x="88" y="260.0" class="tick" text-anchor="end">30%</text>
+<line x1="100" y1="201.3" x2="850" y2="201.3" class="grid"/>
+<text x="88" y="205.3" class="tick" text-anchor="end">40%</text>
+<line x1="100" y1="146.7" x2="850" y2="146.7" class="grid"/>
+<text x="88" y="150.7" class="tick" text-anchor="end">50%</text>
+<line x1="100" y1="92.0" x2="850" y2="92.0" class="grid"/>
+<text x="88" y="96.0" class="tick" text-anchor="end">60%</text>
+<line x1="100" y1="420" x2="850" y2="420" class="axis"/>
+<rect x="210.0" y="276.2" width="180" height="143.8" fill="#0f766e"/>
+<text x="300" y="353.1" text-anchor="middle" fill="#ffffff" class="value">26.3% normal</text>
+<text x="300" y="264.2" text-anchor="middle" class="value">26.3% either</text>
+<text x="300" y="454" text-anchor="middle" class="label">Not available</text>
+<text x="300" y="476" text-anchor="middle" class="subtitle">In another scenario</text>
+<text x="300" y="497" text-anchor="middle" class="subtitle">n = 16,452 trials</text>
+<rect x="560.0" y="310.4" width="180" height="109.6" fill="#0f766e"/>
+<rect x="560.0" y="149.9" width="180" height="160.5" fill="#e45b43"/>
+<text x="650" y="370.2" text-anchor="middle" fill="#ffffff" class="value">20.0% normal</text>
+<text x="650" y="235.2" text-anchor="middle" fill="#ffffff" class="value">29.4% +</text>
+<text x="650" y="137.9" text-anchor="middle" class="value">49.4% either</text>
+<text x="650" y="454" text-anchor="middle" class="label">Available</text>
+<text x="650" y="476" text-anchor="middle" class="subtitle">In its origin scenario</text>
+<text x="650" y="497" text-anchor="middle" class="subtitle">n = 2,338,032 trials</text>
+<rect x="600" y="65" width="13" height="13" fill="#0f766e"/>
+<text x="620" y="77" class="legend">Normal</text>
+<rect x="700" y="65" width="13" height="13" fill="#e45b43"/>
+<text x="720" y="77" class="legend">+</text>
+</svg>

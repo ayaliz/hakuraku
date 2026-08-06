@@ -51,6 +51,7 @@ type ECOption = ComposeOption<
 
 type RaceGraphProps = {
     raceData: RaceSimulateData;
+    raceHorseInfo: any[];
     frameOrder: number;
     displayNames: Record<number, string>;
     showSkills: boolean;
@@ -62,6 +63,7 @@ type RaceGraphProps = {
 
 const RaceGraph: React.FC<RaceGraphProps> = ({
     raceData,
+    raceHorseInfo,
     frameOrder,
     displayNames,
     showSkills,
@@ -93,7 +95,7 @@ const RaceGraph: React.FC<RaceGraphProps> = ({
             } as MarkLine1DDataItemOption;
         });
 
-    const skillTargetedSkillPlotLines = filterCharaTargetedSkills(raceData, frameOrder)
+    const skillTargetedSkillPlotLines = filterCharaTargetedSkills(raceData, frameOrder, raceHorseInfo)
         .map(event => {
             return {
                 xAxis: event.frameTime,

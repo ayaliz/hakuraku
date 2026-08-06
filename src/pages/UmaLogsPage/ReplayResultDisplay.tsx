@@ -5,9 +5,9 @@ import { STRATEGY_NAMES } from "../MultiRacePage/components/WinDistributionChart
 import { getRankIcon } from "../../components/RaceDataPresenter/components/CharaList/rankUtils";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 
-export function formatMember(member: { cardId: number; charaId: number; strategy: number }): string {
+export function formatMember(member: { cardId: number; charaId: number; strategy: number; isDebuffer?: boolean }): string {
     const charaName = UMDatabaseWrapper.charas[member.charaId]?.name ?? `Chara ${member.charaId}`;
-    return `${charaName} (${STRATEGY_NAMES[member.strategy] ?? member.strategy})`;
+    return `${charaName} (${STRATEGY_NAMES[member.strategy] ?? member.strategy}${member.isDebuffer ? ", Debuffer" : ""})`;
 }
 
 function orderWinnerTeamMembers(
@@ -62,6 +62,9 @@ export function ReplayResultPortrait({
                         <div className="uma-replays-team-member-fallback">{member.cardId}</div>
                     )}
                     {isRaceWinner && <span className="uma-replays-team-member-badge">W</span>}
+                    {member.isDebuffer && (
+                        <span className="uma-replays-team-member-debuffer-badge" title="Debuffer">D</span>
+                    )}
                 </div>
                 <div className="uma-replays-team-member-rank" title={member.rankScore ? member.rankScore.toLocaleString() : undefined}>
                     <img

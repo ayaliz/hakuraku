@@ -83,6 +83,10 @@ const UmaFeatCard: React.FC<UmaFeatCardProps> = ({ horse, label, displayValue, d
     const activeStrategyColors = strategyColors ?? STRATEGY_COLORS;
     const strategyColor = activeStrategyColors[profileHorse.strategy] ?? "#718096";
     const strategyName = STRATEGY_NAMES[profileHorse.strategy] ?? `Strategy ${profileHorse.strategy}`;
+    const aptitudeStrategy = profileHorse.rawStrategy ?? (profileHorse.strategy === 6 ? undefined : profileHorse.strategy);
+    const aptitudeStrategyName = aptitudeStrategy !== undefined
+        ? STRATEGY_NAMES[aptitudeStrategy] ?? `Strategy ${aptitudeStrategy}`
+        : "Style";
     const rankInfo = getRankIcon(profileHorse.rankScore);
 
     const portraitUrl = AssetLoader.getCharaThumb(profileHorse.cardId);
@@ -345,7 +349,7 @@ const UmaFeatCard: React.FC<UmaFeatCardProps> = ({ horse, label, displayValue, d
                                     )}
                                     {profileHorse.aptStyle !== undefined && (
                                         <div className="fup-apt-item">
-                                            <span className="fup-apt-cat">{strategyName}</span>
+                                            <span className="fup-apt-cat">{aptitudeStrategyName}</span>
                                             <img
                                                 src={AssetLoader.getGradeIcon(GRADE_LETTERS[profileHorse.aptStyle]) ?? ""}
                                                 alt={GRADE_LETTERS[profileHorse.aptStyle] ?? "-"}

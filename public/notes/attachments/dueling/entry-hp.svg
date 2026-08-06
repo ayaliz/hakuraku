@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="460" viewBox="0 0 920 460" role="img" aria-label="Dueling entry HP (3.258 duelers)">
+  <style>
+    .grid { stroke: #d1d5db; stroke-width: 1; }
+    .axis { stroke: #111827; stroke-width: 1.4; }
+    .guide { stroke: #dc2626; stroke-width: 1.2; stroke-dasharray: 7 7; }
+    .bar-a { fill: #2563eb; fill-opacity: 0.78; }
+    .bar-b { fill: #f59e0b; fill-opacity: 0.72; }
+    .tick { fill: #475569; font: 12px system-ui, sans-serif; }
+    .label { fill: #111827; font: 14px system-ui, sans-serif; font-weight: 700; }
+    .title { fill: #111827; font: 20px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 800; }
+    .legend { fill: #111827; font: 12px system-ui, sans-serif; }
+    .guide-label { fill: #b91c1c; font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 800; }
+  </style>
+  <rect width="920" height="460" rx="6" fill="#ffffff"/>
+  <text x="72" y="26" class="title">Dueling entry HP (3.258 duelers)</text>
+  
+  <line x1="72" y1="390" x2="884" y2="390" class="grid"/><text x="62" y="394" class="tick" text-anchor="end">0</text>
+<line x1="72" y1="306" x2="884" y2="306" class="grid"/><text x="62" y="310" class="tick" text-anchor="end">218</text>
+<line x1="72" y1="222" x2="884" y2="222" class="grid"/><text x="62" y="226" class="tick" text-anchor="end">436</text>
+<line x1="72" y1="138" x2="884" y2="138" class="grid"/><text x="62" y="142" class="tick" text-anchor="end">654</text>
+<line x1="72" y1="54" x2="884" y2="54" class="grid"/><text x="62" y="58" class="tick" text-anchor="end">872</text>
+  
+  <rect x="73" y="390" width="38.599999999999994" height="0" class="bar-a"><title>0-5: 0</title></rect>
+<rect x="113.6" y="390" width="38.599999999999994" height="0" class="bar-a"><title>5-10: 0</title></rect>
+<rect x="154.2" y="390" width="38.60000000000002" height="0" class="bar-a"><title>10-15: 0</title></rect>
+<rect x="194.8" y="335.2844036697248" width="38.599999999999994" height="54.71559633027522" class="bar-a"><title>15-20: 142</title></rect>
+<rect x="235.4" y="332.20183486238534" width="38.599999999999994" height="57.79816513761466" class="bar-a"><title>20-25: 150</title></rect>
+<rect x="276" y="303.302752293578" width="38.60000000000002" height="86.69724770642199" class="bar-a"><title>25-30: 225</title></rect>
+<rect x="316.6" y="267.08256880733944" width="38.599999999999966" height="122.91743119266056" class="bar-a"><title>30-35: 319</title></rect>
+<rect x="357.2" y="247.8165137614679" width="38.60000000000002" height="142.1834862385321" class="bar-a"><title>35-40: 369</title></rect>
+<rect x="397.8" y="213.1376146788991" width="38.60000000000002" height="176.8623853211009" class="bar-a"><title>40-45: 459</title></rect>
+<rect x="438.40000000000003" y="54" width="38.599999999999966" height="336" class="bar-a"><title>45-50: 872</title></rect>
+<rect x="479" y="158.0366972477064" width="38.60000000000002" height="231.9633027522936" class="bar-a"><title>50-55: 602</title></rect>
+<rect x="519.6" y="349.1559633027523" width="38.60000000000002" height="40.8440366972477" class="bar-a"><title>55-60: 106</title></rect>
+<rect x="560.2" y="385.76146788990826" width="38.60000000000002" height="4.2385321100917395" class="bar-a"><title>60-65: 11</title></rect>
+<rect x="600.8000000000001" y="388.8440366972477" width="38.59999999999991" height="1.1559633027522977" class="bar-a"><title>65-70: 3</title></rect>
+<rect x="641.4" y="390" width="38.60000000000002" height="0" class="bar-a"><title>70-75: 0</title></rect>
+<rect x="682" y="390" width="38.60000000000002" height="0" class="bar-a"><title>75-80: 0</title></rect>
+<rect x="722.6" y="390" width="38.59999999999991" height="0" class="bar-a"><title>80-85: 0</title></rect>
+<rect x="763.1999999999999" y="390" width="38.600000000000136" height="0" class="bar-a"><title>85-90: 0</title></rect>
+<rect x="803.8000000000001" y="390" width="38.59999999999991" height="0" class="bar-a"><title>90-95: 0</title></rect>
+<rect x="844.4" y="390" width="38.60000000000002" height="0" class="bar-a"><title>95-100: 0</title></rect>
+  <line x1="72" y1="390" x2="884" y2="390" class="axis"/>
+  <line x1="72" y1="54" x2="72" y2="390" class="axis"/>
+  <text x="92.3" y="424" class="tick" text-anchor="middle">0-5</text>
+
+<text x="173.5" y="424" class="tick" text-anchor="middle">10-15</text>
+
+<text x="254.7" y="424" class="tick" text-anchor="middle">20-25</text>
+
+<text x="335.9" y="424" class="tick" text-anchor="middle">30-35</text>
+
+<text x="417.1" y="424" class="tick" text-anchor="middle">40-45</text>
+
+<text x="498.3" y="424" class="tick" text-anchor="middle">50-55</text>
+
+<text x="579.5" y="424" class="tick" text-anchor="middle">60-65</text>
+
+<text x="660.7" y="424" class="tick" text-anchor="middle">70-75</text>
+
+<text x="741.9" y="424" class="tick" text-anchor="middle">80-85</text>
+
+<text x="823.1" y="424" class="tick" text-anchor="middle">90-95</text>
+
+  <text x="478" y="448" class="label" text-anchor="middle">current HP (% of starting HP)</text>
+  <text transform="translate(24 222) rotate(-90)" class="label" text-anchor="middle">samples</text>
+</svg>

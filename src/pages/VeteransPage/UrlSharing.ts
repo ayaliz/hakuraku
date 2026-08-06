@@ -60,6 +60,16 @@ function toFactorInfoArray(factorIds: number[]): Veteran["factor_info_array"] {
     }));
 }
 
+function getFactorIds(source: { factor_id_array?: number[]; factor_info_array?: Array<{ factor_id: number }> }): number[] {
+    if (Array.isArray(source.factor_id_array)) return source.factor_id_array;
+    if (Array.isArray(source.factor_info_array)) {
+        return source.factor_info_array
+            .map(factor => factor.factor_id)
+            .filter(factorId => Number.isFinite(factorId));
+    }
+    return [];
+}
+
 function mapBorrowedSearchResultToVeteran(data: NewBorrowResponse): Veteran {
     const item = data.items?.[0];
     const inheritance = item?.inheritance;
@@ -169,13 +179,13 @@ function stripVeteran(v: Veteran) {
         card_id: v.card_id,
         rank_score: v.rank_score,
         create_time: v.create_time,
-        factor_id_array: v.factor_id_array,
+        factor_id_array: getFactorIds(v),
         win_saddle_id_array: v.win_saddle_id_array ?? [],
         skill_array: (v.skill_array ?? []).map(s => ({ skill_id: s.skill_id })),
         succession_chara_array: (v.succession_chara_array ?? []).map(p => ({
             position_id: p.position_id,
             card_id: p.card_id,
-            factor_id_array: p.factor_id_array,
+            factor_id_array: getFactorIds(p),
             win_saddle_id_array: p.win_saddle_id_array ?? [],
         })),
     };

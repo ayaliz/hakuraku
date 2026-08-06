@@ -7,6 +7,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1026.0",
     "@bufbuild/protobuf": "^2.11.0",
+    "@codemirror/autocomplete": "^6.20.3",
     "@codemirror/lang-sql": "^6.10.0",
     "@codemirror/theme-one-dark": "^6.1.3",
     "@codemirror/view": "^6.39.14",
@@ -32,7 +33,9 @@
     "webm-muxer": "^5.1.4"
   },
   "scripts": {
-    "start": "vite --host 127.0.0.1",
+    "start": "vite --host 127.0.0.1 --mode live-api",
+    "start:local": "vite --host 127.0.0.1",
+    "start:live-api": "vite --host 127.0.0.1 --mode live-api",
     "build": "vite build",
     "build:github-pages-redirect": "node --import tsx tools/build-github-pages-redirect-site.mts",
     "build:cloudflare": "node --import tsx tools/build-cloudflare-site.mts",
@@ -40,6 +43,7 @@
     "typecheck": "tsc --noEmit",
     "dev:race-api": "node --import tsx tools/dev-race-platform-api.mts",
     "deploy:cloudflare": "yarn build:cloudflare && wrangler deploy",
+    "deploy:cloudflare:worker": "wrangler deploy --message \"Worker-only source update; reuse existing local dist assets\"",
     "backfill:races": "node --import tsx tools/backfill-races-to-r2-postgres.mts",
     "enqueue:umalogs-refresh": "node --import tsx tools/enqueue-umalogs-refresh.mts",
     "upload:race-archive": "node --import tsx tools/upload-race-archive-to-r2.mts",
@@ -48,6 +52,7 @@
     "rebuild:race-entry-search": "node --import tsx tools/rebuild-race-entry-search-data.mts",
     "rebuild:replay-index": "node --import tsx tools/rebuild-replay-index.mts",
     "repair:missing-replay-index": "node --import tsx tools/repair-missing-replay-index.mts",
+    "backfill:race-entry-scenarios": "node --import tsx tools/backfill-race-entry-scenarios.mts",
     "refresh:umalogs-cache": "node --max-old-space-size=12288 --import tsx tools/refresh-umalogs-cache.mts",
     "refresh:umalogs-worker": "node --import tsx tools/run-umalogs-refresh-worker.mts",
     "build:shop-refresh": "node scripts/build-shop-refresh-data.mjs",

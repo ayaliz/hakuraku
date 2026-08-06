@@ -107,6 +107,11 @@ message Skill {
     optional int32 rarity = 5;
     repeated SkillConditionGroup condition_groups = 6;
     optional int32 icon_id = 7;
+
+    // skill_data.activate_lot: 1 means the skill rolls the pre-race wisdom (wit) lottery to determine
+    // whether it's even eligible to fire this race; 0 means it's guaranteed-eligible (still subject to its
+    // own activation condition). See RaceDataPresenter/utils/witLottery.ts.
+    optional int32 activate_lot = 8;
 }
 
 message TextData {

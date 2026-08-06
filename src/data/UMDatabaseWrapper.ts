@@ -103,6 +103,12 @@ class _UMDatabaseWrapper {
     skillName = (skillId: number) =>
         this.skills[skillId]?.name ?? `Unknown Skill ${skillId}`;
 
+    // skill_data.activate_lot: true iff the skill rolls the pre-race wisdom (wit) lottery to determine
+    // whether it's even eligible to fire this race. An unknown skill id is treated as not lot-gated
+    // (matches the previous static-table lookup's `?? false` behavior).
+    hasSkillActivateLot = (skillId: number) =>
+        this.skills[skillId]?.activateLot === 1;
+
     skillNameWithEnglishFallback = (skillId: number) =>
         this.skills[skillId]?.name
         ?? GameDataLoader.getSkillNameFallback(skillId)?.enname

@@ -8,8 +8,9 @@ export function buildRaceTeamUrl(raceId: string, teamId: number): string {
     return `${UMA_LOGS_API_BASE}/api/races/${encodeURIComponent(raceId)}/teams/${teamId}`;
 }
 
-export function buildCompositionRepsUrl(cmId: string, courseId: number, compositionKey: string, apiBase = UMA_LOGS_API_BASE): string {
-    return `${apiBase}/api/umalogs/${encodeURIComponent(cmId)}/groups/${courseId}/composition-reps/${encodeURIComponent(compositionKey)}`;
+export function buildCompositionRepsUrl(cmId: string, courseId: number, compositionKey: string, apiBase = UMA_LOGS_API_BASE, buildKey?: string): string {
+    const query = buildKey ? `?buildKey=${encodeURIComponent(buildKey)}` : "";
+    return `${apiBase}/api/umalogs/${encodeURIComponent(cmId)}/groups/${courseId}/composition-reps/${encodeURIComponent(compositionKey)}${query}`;
 }
 
 export function buildCompositionTeamsUrl(cmId: string, courseId: number, compositionKey: string, apiBase = UMA_LOGS_API_BASE): string {
@@ -17,7 +18,7 @@ export function buildCompositionTeamsUrl(cmId: string, courseId: number, composi
 }
 
 export const ANALYSIS_STRATEGY_IDS = STRATEGY_DISPLAY_ORDER;
-export const REPRESENTATIVE_STRATEGY_IDS = [1, 2, 3, 4] as const;
+export const REPRESENTATIVE_STRATEGY_IDS = [1, 2, 3, 4, 5, 6] as const;
 export const FIELD_VIEW_SUBJECT_STRATEGY_IDS: number[] = ANALYSIS_STRATEGY_IDS.filter((sid) => sid !== 5);
 export const MOBILE_FIELD_LEGEND_NAMES: Record<number, string> = {
     1: "Front",
@@ -25,6 +26,7 @@ export const MOBILE_FIELD_LEGEND_NAMES: Record<number, string> = {
     3: "Late",
     4: "End",
     5: "Runaway",
+    6: "Debuffer",
 };
 export const strategyOrderIndex = (strategy: number) => {
     const idx = ANALYSIS_STRATEGY_IDS.indexOf(strategy as (typeof ANALYSIS_STRATEGY_IDS)[number]);

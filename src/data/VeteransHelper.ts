@@ -32,6 +32,16 @@ const formatFactor = (factorId: number): { name: string; level: number } | null 
     return null;
 };
 
+function getFactorIds(source: { factor_id_array?: number[]; factor_info_array?: Array<{ factor_id: number }> }): number[] {
+    if (Array.isArray(source.factor_id_array)) return source.factor_id_array;
+    if (Array.isArray(source.factor_info_array)) {
+        return source.factor_info_array
+            .map(factor => factor.factor_id)
+            .filter(factorId => Number.isFinite(factorId));
+    }
+    return [];
+}
+
 export const aggregateFactors = (veteran: Veteran): FactorItem[] => {
     const allFactors: FactorItem[] = [];
 
@@ -51,13 +61,13 @@ export const aggregateFactors = (veteran: Veteran): FactorItem[] => {
         });
     };
 
-    processIDs(veteran.factor_id_array, true, 'self');
+    processIDs(getFactorIds(veteran), true, 'self');
 
-    veteran.succession_chara_array.forEach((p) => {
+    (veteran.succession_chara_array ?? []).forEach((p) => {
         if (p.position_id === 10) {
-            processIDs(p.factor_id_array, false, 'gp1');
+            processIDs(getFactorIds(p), false, 'gp1');
         } else if (p.position_id === 20) {
-            processIDs(p.factor_id_array, false, 'gp2');
+            processIDs(getFactorIds(p), false, 'gp2');
         }
     });
 
@@ -83,15 +93,61 @@ export const aggregateFactors = (veteran: Veteran): FactorItem[] => {
 
 type RaceBonusEntry = { saddleId: number; name: string; bonus: number };
 type RaceBonusResult = { entries: RaceBonusEntry[]; total: number };
+const G1_RACE_AFFINITY_VALUE = 3;
+let g1WinSaddleSource: typeof UMDatabaseWrapper.umdb | null = null;
+let g1WinSaddleIds: Set<number> | null = null;
+
+function isG1RaceInstanceId(raceInstanceId: number): boolean {
+    // Bundled UMDB omits race grade/type fields; race instance IDs in the 100xxx range are G1, including 110xxx dirt G1s.
+    return raceInstanceId >= 100000 && raceInstanceId < 200000;
+}
+
+function getG1WinSaddleIds(): Set<number> {
+    if (g1WinSaddleIds && g1WinSaddleSource === UMDatabaseWrapper.umdb) {
+        return g1WinSaddleIds;
+    }
+
+    const ids = new Set<number>();
+    UMDatabaseWrapper.umdb.singleModeWinsSaddle.forEach(saddle => {
+        const raceInstanceIds = saddle.raceInstanceIds.length > 0
+            ? saddle.raceInstanceIds
+            : saddle.raceInstanceId
+                ? [saddle.raceInstanceId]
+                : [];
+        if (raceInstanceIds.length === 1 && isG1RaceInstanceId(raceInstanceIds[0])) {
+            ids.add(saddle.id!);
+        }
+    });
+    g1WinSaddleSource = UMDatabaseWrapper.umdb;
+    g1WinSaddleIds = ids;
+    return ids;
+}
+
+function countSharedG1RaceWins(a: { win_saddle_id_array?: number[] }, b: { win_saddle_id_array?: number[] }): number {
+    const g1Saddles = getG1WinSaddleIds();
+    const bWins = new Set(b.win_saddle_id_array ?? []);
+    let shared = 0;
+    for (const saddleId of new Set(a.win_saddle_id_array ?? [])) {
+        if (g1Saddles.has(saddleId) && bWins.has(saddleId)) shared++;
+    }
+    return shared;
+}
+
+function calculateSharedG1RaceAffinity(a: { win_saddle_id_array?: number[] }, b: { win_saddle_id_array?: number[] }): number {
+    return countSharedG1RaceWins(a, b) * G1_RACE_AFFINITY_VALUE;
+}
 
 export const calculateRaceBonus = (veteran: Veteran): RaceBonusResult => {
     const gp1 = veteran.succession_chara_array.find(p => p.position_id === 10);
     const gp2 = veteran.succession_chara_array.find(p => p.position_id === 20);
     const gp1Races = new Set(gp1?.win_saddle_id_array ?? []);
     const gp2Races = new Set(gp2?.win_saddle_id_array ?? []);
+    const g1Saddles = getG1WinSaddleIds();
 
     const entries: RaceBonusEntry[] = (veteran.win_saddle_id_array ?? []).map(saddleId => {
-        const bonus = (gp1Races.has(saddleId) ? 1 : 0) + (gp2Races.has(saddleId) ? 1 : 0);
+        const bonus = g1Saddles.has(saddleId)
+            ? ((gp1Races.has(saddleId) ? 1 : 0) + (gp2Races.has(saddleId) ? 1 : 0)) * G1_RACE_AFFINITY_VALUE
+            : 0;
         const name = UMDatabaseWrapper.getTextData(111, saddleId)?.text ?? `Race ${saddleId}`;
         return { saddleId, name, bonus };
     });
@@ -114,7 +170,7 @@ export const calculatePairAffinity = (veteran1: Veteran, veteran2: Veteran): num
     const id2 = Math.floor(veteran2.card_id / 100);
     const rel1 = UMDatabaseWrapper.charaRelationTypes[id1] ?? new Set<number>();
     const rel2 = UMDatabaseWrapper.charaRelationTypes[id2] ?? new Set<number>();
-    return sumSharedRelationPoints(rel1, rel2);
+    return sumSharedRelationPoints(rel1, rel2) + calculateSharedG1RaceAffinity(veteran1, veteran2);
 };
 
 export const calculateGrandparentAffinity = (
@@ -133,11 +189,7 @@ export const calculateGrandparentAffinity = (
 
     const treeBase = sumSharedRelationPoints(targetRelations, parentRelations, gpRelations);
 
-    const gpRaces = new Set(gp.win_saddle_id_array ?? []);
-    let raceBonus = 0;
-    for (const saddleId of (parent.win_saddle_id_array ?? [])) {
-        if (gpRaces.has(saddleId)) raceBonus++;
-    }
+    const raceBonus = calculateSharedG1RaceAffinity(parent, gp);
 
     return treeBase + raceBonus;
 };
@@ -195,6 +247,8 @@ export const calculateAffinity = (veteran: Veteran, targetCharaId: number): numb
     return sum1 + sum2 + sum3 + raceBonus;
 };
 
+const getSparkPresetKey = (factorId: number): number => Math.floor(factorId / 100);
+
 export const calculateOptimizerScore = (veteran: Veteran, config: OptimizerConfig): number => {
     const factors = aggregateFactors(veteran);
 
@@ -205,6 +259,10 @@ export const calculateOptimizerScore = (veteran: Veteran, config: OptimizerConfi
 
     const skillIds = new Set(veteran.skill_array.map(s => s.skill_id));
     const highValueSkillCount = config.highValueSkills.filter(id => skillIds.has(id)).length;
+    const highValueSkillSparkKeys = new Set(config.highValueSkillSparks);
+    const highValueSkillSparkStars = factors
+        .filter(f => f.category === 5 && f.isGold && highValueSkillSparkKeys.has(getSparkPresetKey(f.factorId)))
+        .reduce((s, f) => s + f.level, 0);
 
     // Scenario sparks: category 4 factors whose ID starts with '3' (e.g. 3000101, 3000202)
     const scenarioStars = factors
@@ -217,6 +275,7 @@ export const calculateOptimizerScore = (veteran: Veteran, config: OptimizerConfi
         uniqueStars * config.uniqueWeight +
         skillStars * config.skillWeight +
         scenarioStars * config.scenarioWeight +
-        highValueSkillCount * config.highValueSkillBonus
+        highValueSkillCount * config.highValueSkillBonus +
+        highValueSkillSparkStars * config.highValueSkillSparkWeight
     );
 };

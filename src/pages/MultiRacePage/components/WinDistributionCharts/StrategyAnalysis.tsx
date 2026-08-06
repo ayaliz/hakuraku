@@ -27,6 +27,7 @@ interface StrategyAnalysisProps {
     skillStats?: Map<number, SkillStats>;
     strategyColors?: Record<number, string>;
     onViewReplays?: (horse: HorseEntry) => void;
+    hideSaturation?: boolean;
 }
 
 const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
@@ -43,6 +44,7 @@ const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
     skillStats,
     strategyColors,
     onViewReplays,
+    hideSaturation = false,
 }) => {
     const hasData = strategyStats && strategyStats.length > 0 && totalRaces != null && totalRaces > 0;
     const activeStrategyColors = strategyColors ?? STRATEGY_COLORS;
@@ -53,16 +55,26 @@ const StrategyAnalysis: React.FC<StrategyAnalysisProps> = ({
                 <>
                     <div className="sa-top-panels-row">
                         <StyleBreakdownPanel strategyStats={strategyStats!} totalRaces={totalRaces!} strategyColors={activeStrategyColors} />
-                        <SaturationPanel strategyStats={strategyStats!} totalRaces={totalRaces!} strategyColors={activeStrategyColors} />
-                    </div>
-                    {roomCompositions && (
-                        <div className="sa-comp-row">
+                        {!hideSaturation && (
+                            <SaturationPanel strategyStats={strategyStats!} totalRaces={totalRaces!} strategyColors={activeStrategyColors} />
+                        )}
+                        {hideSaturation && roomCompositions && (
                             <CompositionSection
-                                strategyStats={strategyStats!}
                                 totalRaces={totalRaces!}
-                                roomCompositions={roomCompositions ?? []}
+                                roomCompositions={roomCompositions}
                                 strategyColors={activeStrategyColors}
                             />
+                        )}
+                    </div>
+                    {roomCompositions && (!hideSaturation || styleReps) && (
+                        <div className="sa-comp-row">
+                            {!hideSaturation && (
+                                <CompositionSection
+                                    totalRaces={totalRaces!}
+                                    roomCompositions={roomCompositions}
+                                    strategyColors={activeStrategyColors}
+                                />
+                            )}
                             {styleReps && (
                                 <StyleRepsPanel
                                     cmId={cmId}

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import './CharaList.css';
 import { CharaTableData, ParentEntry } from "./types";
 import { aggregateFactors, formatFactor, getCharaImageUrl, getFactorColor } from "./utils";
@@ -9,6 +10,8 @@ import { getSkillDef } from "../../../RaceReplay/utils/SkillDataUtils";
 import { getCourseAptitudeFilters } from "../../../../pages/MultiRacePage/utils";
 import AssetLoader from "../../../../data/AssetLoader";
 import SkillBreakdownModal from "./SkillBreakdownModal";
+import type { SkillLotteryResult } from "../../utils/witLottery";
+import type { CharaSkill } from "../../../../data/TrainedCharaData";
 
 const ChevronIcon = () => (
     <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor">
@@ -162,49 +165,79 @@ const CharaTable: React.FC<CharaTableProps> = ({ data, courseId, showPredictionC
                                             </div>
                                             <div className="skills-list" onClick={() => setSelectedSkillRow(row)}>
                                                 {(() => {
-                                                    const inherentSkill = row.trainedChara.skills.length > 0 ? row.trainedChara.skills[0] : undefined;
+                                                    const skillGroups = buildSkillListGroups(row);
 
-                                                    const otherSkills = row.trainedChara.skills.slice(1).sort((a, b) => {
-                                                        const aUsed = row.activatedSkillCounts.has(a.skillId) ? 1 : 0;
-                                                        const bUsed = row.activatedSkillCounts.has(b.skillId) ? 1 : 0;
-                                                        // Sort by used (descending), then iconid (ascending)
-                                                        if (aUsed !== bUsed) return bUsed - aUsed;
-
-                                                        const aDef = getSkillDef(a.skillId);
-                                                        const bDef = getSkillDef(b.skillId);
-                                                        return (aDef?.iconId || 0) - (bDef?.iconId || 0);
-                                                    });
-
-                                                    const sortedSkills = inherentSkill ? [inherentSkill, ...otherSkills] : otherSkills;
-
-                                                    return sortedSkills.map((cs, idx) => {
-                                                        const count = row.activatedSkillCounts.get(cs.skillId);
-                                                        const skillDef = getSkillDef(cs.skillId);
-                                                        return (
-                                                            <div key={idx} className="skill-item">
-                                                                <div className="skill-info">
-                                                                    {skillDef?.iconId ? (
-                                                                        <img
-                                                                            src={AssetLoader.getSkillIcon(skillDef.iconId)}
-                                                                            alt=""
-                                                                            className="skill-icon"
-                                                                        />
-                                                                    ) : (
-                                                                        <div className="skill-icon"></div>
-                                                                    )}
-                                                                    <span>{UMDatabaseWrapper.skillNameWithEnglishFallback(cs.skillId)}</span>
-                                                                </div>
-                                                                {count ? (
-                                                                    <span className={`skill-badge ${count > 1 ? 'multiple' : ''}`}>
-                                                                        {count > 1 ? `${count}x Used` : 'Used'}
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="skill-badge failed">
-                                                                        ✕
-                                                                    </span>
-                                                                )}
+                                                    return skillGroups.flatMap((group) => {
+                                                        const header = (
+                                                            <div key={`group-${group.key}`} className="skill-list-group-header">
+                                                                {group.label}
                                                             </div>
                                                         );
+                                                        const items = group.skills.map((cs) => {
+                                                            const count = row.activatedSkillCounts.get(cs.skillId);
+                                                            const skillDef = getSkillDef(cs.skillId);
+                                                            const usedBadge = count ? getUsedSkillBadge(cs.skillId, count, row.skillLotteryResults?.get(cs.skillId)) : undefined;
+                                                            const missedBadge = getMissedSkillBadge(row.skillLotteryResults?.get(cs.skillId));
+                                                            const spurtImpacts = row.debuffSpurtImpacts?.get(cs.skillId) ?? [];
+                                                            const impactsByTarget = new Map<number, { name: string; estimatedDrain: number }>();
+                                                            spurtImpacts.forEach(impact => {
+                                                                const existing = impactsByTarget.get(impact.targetFrameOrder);
+                                                                impactsByTarget.set(
+                                                                    impact.targetFrameOrder,
+                                                                    {
+                                                                        name: impact.targetName,
+                                                                        estimatedDrain: (existing?.estimatedDrain ?? 0) + impact.estimatedHpDrain,
+                                                                    }
+                                                                );
+                                                            });
+                                                            return (
+                                                                <div key={cs.skillId} className="skill-item">
+                                                                    <div className="skill-info">
+                                                                        {skillDef?.iconId ? (
+                                                                            <img
+                                                                                src={AssetLoader.getSkillIcon(skillDef.iconId)}
+                                                                                alt=""
+                                                                                className="skill-icon"
+                                                                            />
+                                                                        ) : (
+                                                                            <div className="skill-icon"></div>
+                                                                        )}
+                                                                        <span>{UMDatabaseWrapper.skillNameWithEnglishFallback(cs.skillId)}</span>
+                                                                        {impactsByTarget.size > 0 && (
+                                                                            <OverlayTrigger
+                                                                                placement="top"
+                                                                                overlay={
+                                                                                    <Tooltip id={`debuff-spurt-${row.frameOrder}-${cs.skillId}`}>
+                                                                                        {Array.from(impactsByTarget.entries()).map(([targetFrameOrder, impact]) => (
+                                                                                            <div key={targetFrameOrder}>
+                                                                                                This debuff affected the last spurt of {impact.name}.
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </Tooltip>
+                                                                                }
+                                                                            >
+                                                                                <img
+                                                                                    src={AssetLoader.getBlockedIcon() ?? ""}
+                                                                                    alt="Affected last spurt"
+                                                                                    className="skill-spurt-impact-icon"
+                                                                                />
+                                                                            </OverlayTrigger>
+                                                                        )}
+                                                                    </div>
+                                                                    {usedBadge ? (
+                                                                        <span className={`skill-badge ${usedBadge.className}`} title={usedBadge.title}>
+                                                                            {usedBadge.label}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className={`skill-badge ${missedBadge.className}`} title={missedBadge.title}>
+                                                                            {missedBadge.label}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        });
+
+                                                        return [header, ...items];
                                                     });
                                                 })()}
                                             </div>
@@ -281,5 +314,132 @@ const CharaTable: React.FC<CharaTableProps> = ({ data, courseId, showPredictionC
         </div>
     );
 };
+
+function formatPercent(value: number | undefined): string {
+    return value === undefined ? "?" : `${value.toFixed(1)}%`;
+}
+
+function isGoldSkill(skillId: number): boolean {
+    return getSkillDef(skillId)?.rarity === 2;
+}
+
+type SkillListGroupKey = "activated" | "failed-wit" | "failed-condition" | "not-activated";
+
+type SkillListGroup = {
+    key: SkillListGroupKey;
+    label: string;
+    skills: CharaSkill[];
+};
+
+const skillListGroupOrder: SkillListGroupKey[] = ["activated", "failed-wit", "failed-condition", "not-activated"];
+
+const skillListGroupLabels: Record<SkillListGroupKey, string> = {
+    "activated": "Activated",
+    "failed-wit": "Failed wit check",
+    "failed-condition": "Failed condition",
+    "not-activated": "Not activated",
+};
+
+function buildSkillListGroups(row: CharaTableData): SkillListGroup[] {
+    const grouped = new Map<SkillListGroupKey, CharaSkill[]>();
+    skillListGroupOrder.forEach((key) => grouped.set(key, []));
+
+    row.trainedChara.skills.forEach((skill) => {
+        grouped.get(getSkillListGroup(row, skill))!.push(skill);
+    });
+
+    return skillListGroupOrder
+        .map((key) => ({
+            key,
+            label: skillListGroupLabels[key],
+            skills: grouped.get(key)!.sort(compareSkillsForBreakdown),
+        }))
+        .filter((group) => group.skills.length > 0);
+}
+
+function getSkillListGroup(row: CharaTableData, skill: CharaSkill): SkillListGroupKey {
+    if (row.activatedSkillCounts.has(skill.skillId)) {
+        return "activated";
+    }
+
+    const lotteryResult = row.skillLotteryResults?.get(skill.skillId);
+    if (lotteryResult?.category === "LOTTERY_FAILED" && !lotteryResult.retriggered) {
+        return "failed-wit";
+    }
+
+    if (lotteryResult?.category === "WON_NOT_TRIGGERED" || lotteryResult?.category === "GUARANTEED_NOT_TRIGGERED") {
+        return "failed-condition";
+    }
+
+    return "not-activated";
+}
+
+function compareSkillsForBreakdown(a: CharaSkill, b: CharaSkill): number {
+    const aDef = getSkillDef(a.skillId);
+    const bDef = getSkillDef(b.skillId);
+    return (aDef?.iconId || 0) - (bDef?.iconId || 0) || a.skillId - b.skillId;
+}
+
+function getUsedSkillBadge(skillId: number, count: number, lotteryResult: SkillLotteryResult | undefined): { label: string; className: string; title?: string } {
+    if (count > 1) {
+        return {
+            label: `${count}x Used`,
+            className: "multiple",
+        };
+    }
+
+    if (isGoldSkill(skillId) && lotteryResult?.triggeredBy564) {
+        return {
+            label: "564",
+            className: "",
+            title: "Activated by 564 Escapades.",
+        };
+    }
+
+    return {
+        label: "Used",
+        className: "",
+    };
+}
+
+function getMissedSkillBadge(lotteryResult: SkillLotteryResult | undefined): { label: string; className: string; title: string } {
+    if (!lotteryResult) {
+        return {
+            label: "✕",
+            className: "failed",
+            title: "Skill did not activate.",
+        };
+    }
+
+    if (lotteryResult.category === "LOTTERY_FAILED" && !lotteryResult.retriggered) {
+        return {
+            label: "✕",
+            className: "failed failed-wit",
+            title: `Failed wit check. Roll ${formatPercent(lotteryResult.roll)} vs activation chance ${formatPercent(lotteryResult.perThreshold)}.`,
+        };
+    }
+
+    if (lotteryResult.category === "WON_NOT_TRIGGERED") {
+        return {
+            label: "✕",
+            className: "failed failed-condition",
+            title: `Passed wit check. Roll ${formatPercent(lotteryResult.roll)} vs activation chance ${formatPercent(lotteryResult.perThreshold)}, but the activation condition was not met.`,
+        };
+    }
+
+    if (lotteryResult.category === "GUARANTEED_NOT_TRIGGERED") {
+        return {
+            label: "✕",
+            className: "failed failed-condition",
+            title: "No wit check required; the activation condition was not met.",
+        };
+    }
+
+    return {
+        label: "✕",
+        className: "failed",
+        title: "Skill did not activate.",
+    };
+}
 
 export default CharaTable;

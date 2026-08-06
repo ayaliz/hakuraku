@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { fromRaceHorseData, TrainedCharaData } from "../../../data/TrainedCharaData";
-import { getCharaActivatedSkillIds } from "../../../data/RaceDataUtils";
+import { filterCharaSkills } from "../../../data/RaceDataUtils";
 import { getPassiveStatModifiers } from "../utils/SkillDataUtils";
 import { useHeuristicEvents } from "./useHeuristicEvents";
 import GameDataLoader from "../../../data/GameDataLoader";
@@ -166,10 +166,11 @@ export function useRaceDerivedData(
         (raceHorseInfo || []).forEach((h: any) => {
             const idx = (h.frame_order ?? h.frameOrder) - 1;
             if (idx < 0) return;
-            const skillIds = getCharaActivatedSkillIds(raceData, idx);
+            const skillEvents = filterCharaSkills(raceData, idx);
+            const activatedSkillGroups = new Map(skillEvents.map(event => [event.param[1], event.param?.[3]]));
             const totalMods = { speed: careerBonus, stamina: careerBonus, power: careerBonus, guts: careerBonus, wisdom: careerBonus };
-            skillIds.forEach(id => {
-                const mods = getPassiveStatModifiers(id);
+            activatedSkillGroups.forEach((conditionGroupIndex, id) => {
+                const mods = getPassiveStatModifiers(id, conditionGroupIndex);
                 totalMods.speed += mods.speed || 0;
                 totalMods.stamina += mods.stamina || 0;
                 totalMods.power += mods.power || 0;
@@ -194,7 +195,8 @@ export function useRaceDerivedData(
         {},
         lastSpurtStartDistances,
         selectedTrackId ? +selectedTrackId : undefined,
-        groundCondition
+        groundCondition,
+        raceData,
     );
 
     const combinedOtherEvents = useMemo(() => {

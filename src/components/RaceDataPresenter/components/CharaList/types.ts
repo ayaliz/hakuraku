@@ -2,6 +2,7 @@ import { Chara } from "../../../../data/data_pb";
 import { RaceSimulateHorseResultData } from "../../../../data/race_data_pb";
 import { TrainedCharaData } from "../../../../data/TrainedCharaData";
 import type { MaxAdjustedSpeedDebug } from "../../../RaceReplay/utils/analysisUtils";
+import type { SkillLotteryResult } from "../../utils/witLottery";
 
 export type SupportCardEntry = {
     position: number;
@@ -30,6 +31,22 @@ export type SkillEventData = {
     segments?: { startDistance: number; endDistance: number }[];
 };
 
+export type HpDebuffHit = {
+    skillId: number;
+    skillName: string;
+    casterFrameOrder: number;
+    casterName: string;
+    time: number;
+    drainRatio: number;
+    estimatedHpDrain: number;
+};
+
+export type DebuffSpurtImpact = {
+    targetFrameOrder: number;
+    targetName: string;
+    estimatedHpDrain: number;
+};
+
 export type CharaTableData = {
     trainedChara: TrainedCharaData,
     chara: Chara | undefined,
@@ -46,6 +63,7 @@ export type CharaTableData = {
 
     activatedSkills: Set<number>,
     activatedSkillCounts: Map<number, number>,
+    skillLotteryResults?: Map<number, SkillLotteryResult>,
     skillEvents: SkillEventData[],
     positionHistory?: { startDistance: number; endDistance: number; rank: number }[],
 
@@ -66,6 +84,8 @@ export type CharaTableData = {
     hpOutcome?: { type: 'died'; distance: number; deficit: number; startHp: number } | { type: 'survived'; hp: number; startHp: number };
     hpAtPhase3Start?: number;
     requiredSpurtHp?: number;
+    hpDebuffHits?: HpDebuffHit[];
+    debuffSpurtImpacts?: Map<number, DebuffSpurtImpact[]>;
     duelingTime?: number;
     downhillModeTime?: number;
     downhillModeTimePreLate?: number;

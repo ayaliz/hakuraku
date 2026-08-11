@@ -234,6 +234,16 @@ function readScenarioId(trainedChara: any): number | undefined {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
 }
 
+function readFanCount(trainedChara: any): number | undefined {
+    const raw = trainedChara?.fan_count
+        ?? trainedChara?.fanCount
+        ?? trainedChara?.fans
+        ?? trainedChara?.Fans
+        ?? trainedChara?.["<Fans>k__BackingField"];
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+}
+
 function parseCourseIdFromFilename(fileName?: string): number | undefined {
     if (!fileName) return undefined;
     const match = fileName.match(/^(\d+)_/);
@@ -296,6 +306,7 @@ function parseActFormatRaceJson(json: any): ParsedStandardRaceJson | { error: st
             }
             return {
                 ...horseData,
+                fan_count: horseData.fan_count ?? horseData.fanCount ?? horseData.fans ?? readFanCount(trainedChara),
                 rank_score: horseData.rank_score ?? readRankScore(trainedChara),
                 scenario_id: readScenarioId(trainedChara),
                 deck,
@@ -370,6 +381,7 @@ function parseApiFormatRaceJson(json: any, options?: { fileName?: string }): Par
             if (viewerId !== undefined && cardId !== undefined) deckByViewerAndCard.set(`${viewerId}:${cardId}`, deckValue);
             return {
                 ...hydrated,
+                fan_count: hydrated.fan_count ?? hydrated.fanCount ?? hydrated.fans ?? readFanCount(trainedChara),
                 rank_score: hydrated.rank_score ?? readRankScore(trainedChara),
                 scenario_id: readScenarioId(trainedChara),
                 deck,

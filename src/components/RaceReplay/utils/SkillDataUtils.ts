@@ -131,7 +131,7 @@ function getHighestStatScalingMultiplier(stats?: SkillScalingStats): number {
 }
 
 function getFanCountScalingMultiplier(fanCount?: number): number {
-    if (fanCount === undefined || !Number.isFinite(fanCount)) return 1;
+    if (fanCount === undefined || !Number.isFinite(fanCount)) return 1.2;
     if (fanCount < 20000) return 0.8;
     if (fanCount < 50000) return 0.9;
     if (fanCount < 100000) return 1.0;

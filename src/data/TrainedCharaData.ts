@@ -91,6 +91,13 @@ export function hydrateCompactRaceHorseData(
         ...raceHorseData,
     };
 
+    if (normalized["fan_count"] === undefined) {
+        const fanCount = normalized["fanCount"] ?? normalized["fans"];
+        if (fanCount !== undefined) {
+            normalized["fan_count"] = fanCount;
+        }
+    }
+
     if (Array.isArray(normalized["skill_array"])) {
         normalized["skill_array"] = normalizeSkillArray(normalized["skill_array"]);
     }
@@ -229,7 +236,7 @@ export function fromRaceHorseData(raceHorseData: any): TrainedCharaData {
         rankScore: calcRankScore(
             normalizedRaceHorseData, statusPoints, charaSkills, properRunningStyles, properDistances, {1: turf, 2: dirt}),
 
-        fanCount: toFiniteNumber(normalizedRaceHorseData['fan_count'] ?? normalizedRaceHorseData['fanCount']),
+        fanCount: toFiniteNumber(normalizedRaceHorseData['fan_count'] ?? normalizedRaceHorseData['fanCount'] ?? normalizedRaceHorseData['fans']),
 
         rawData: normalizedRaceHorseData,
     };

@@ -8477,6 +8477,13 @@
       "courseSetId": 10912
     },
     {
+      "id": 904199,
+      "name": "Junior Make Debut",
+      "distance": 1200,
+      "groundType": "TURF",
+      "courseSetId": 11001
+    },
+    {
       "id": 910001,
       "name": "URA Finale Qualifier",
       "distance": 1200,
@@ -12591,6 +12598,20 @@
       "distance": 2200,
       "groundType": "TURF",
       "courseSetId": 10906
+    },
+    {
+      "id": 1200201,
+      "name": "Sprinters S. (Hard)",
+      "distance": 1200,
+      "groundType": "TURF",
+      "courseSetId": 10501
+    },
+    {
+      "id": 1200202,
+      "name": "Sprinters S. (Hard)",
+      "distance": 1200,
+      "groundType": "TURF",
+      "courseSetId": 10501
     },
     {
       "id": 650001,
@@ -26990,7 +27011,7 @@
     },
     {
       "id": 202401,
-      "name": "Flash Forward",
+      "name": "Lightning Surge",
       "gradeValue": 508,
       "tagId": [
         "201",
@@ -29515,6 +29536,39 @@
       "activateLot": 1
     },
     {
+      "id": 900421,
+      "name": "I'm Possible!",
+      "gradeValue": 180,
+      "tagId": [
+        "401"
+      ],
+      "rarity": 1,
+      "conditionGroups": [
+        {
+          "condition": "remain_distance<=201&remain_distance>=199&distance_diff_top<=5&order>=2",
+          "baseTime": 30000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 2500
+            }
+          ]
+        },
+        {
+          "condition": "remain_distance<=201&remain_distance>=199&distance_diff_top<=10&order>=2",
+          "baseTime": 30000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 1500
+            }
+          ]
+        }
+      ],
+      "iconId": 20011,
+      "activateLot": 1
+    },
+    {
       "id": 900441,
       "name": "Victory belongs to me—Strelitzia! ☆",
       "gradeValue": 180,
@@ -30456,7 +30510,7 @@
     },
     {
       "id": 910221,
-      "name": "Best day ever",
+      "name": "Best Day Ever",
       "gradeValue": 180,
       "tagId": [
         "401",
@@ -32715,6 +32769,32 @@
       ]
     },
     {
+      "id": 10079,
+      "name": "[Tracen Academy] Daiichi Ruby",
+      "charaId": 1085,
+      "raceBonus": 0,
+      "raceBonusByLimitBreak": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 10080,
+      "name": "[Tracen Academy] K.S.Miracle",
+      "charaId": 1093,
+      "raceBonus": 0,
+      "raceBonusByLimitBreak": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
       "id": 10081,
       "name": "[Tracen Academy] Tsurumaru Tsuyoshi",
       "charaId": 1073,
@@ -33375,6 +33455,19 @@
         5,
         5,
         5
+      ]
+    },
+    {
+      "id": 20051,
+      "name": "[The 3rd Miracle] K.S.Miracle",
+      "charaId": 1093,
+      "raceBonus": 0,
+      "raceBonusByLimitBreak": [
+        0,
+        0,
+        0,
+        0,
+        0
       ]
     },
     {
@@ -34779,6 +34872,19 @@
         1,
         5,
         5
+      ]
+    },
+    {
+      "id": 30114,
+      "name": "[Ah, Such Majesty] Daiichi Ruby",
+      "charaId": 1085,
+      "raceBonus": 0,
+      "raceBonusByLimitBreak": [
+        0,
+        0,
+        0,
+        0,
+        0
       ]
     },
     {
@@ -43152,19 +43258,19 @@
       "id": 147,
       "category": 147,
       "index": 10220201,
-      "text": "Best day ever"
+      "text": "Best Day Ever"
     },
     {
       "id": 147,
       "category": 147,
       "index": 10220202,
-      "text": "Best day ever"
+      "text": "Best Day Ever"
     },
     {
       "id": 147,
       "category": 147,
       "index": 10220203,
-      "text": "Best day ever"
+      "text": "Best Day Ever"
     },
     {
       "id": 147,
@@ -48406,6 +48512,13 @@
     },
     {
       "id": 900411,
+      "needSkillPoint": 200,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
+      "id": 900421,
       "needSkillPoint": 200,
       "statusType": 0,
       "statusValue": 0,
@@ -56022,6 +56135,11 @@
       "charaId": 1021
     },
     {
+      "id": 59,
+      "relationType": 106,
+      "charaId": 1042
+    },
+    {
       "id": 60,
       "relationType": 106,
       "charaId": 1045
@@ -56235,6 +56353,11 @@
       "id": 106,
       "relationType": 202,
       "charaId": 1040
+    },
+    {
+      "id": 107,
+      "relationType": 202,
+      "charaId": 1042
     },
     {
       "id": 108,
@@ -56475,6 +56598,11 @@
       "id": 159,
       "relationType": 319,
       "charaId": 1039
+    },
+    {
+      "id": 160,
+      "relationType": 319,
+      "charaId": 1042
     },
     {
       "id": 161,
@@ -57122,6 +57250,11 @@
       "charaId": 1039
     },
     {
+      "id": 297,
+      "relationType": 2602,
+      "charaId": 1042
+    },
+    {
       "id": 298,
       "relationType": 2602,
       "charaId": 1044
@@ -57577,6 +57710,11 @@
       "charaId": 1010
     },
     {
+      "id": 394,
+      "relationType": 2810,
+      "charaId": 1042
+    },
+    {
       "id": 395,
       "relationType": 2810,
       "charaId": 1056
@@ -57882,6 +58020,11 @@
       "charaId": 1039
     },
     {
+      "id": 460,
+      "relationType": 2903,
+      "charaId": 1042
+    },
+    {
       "id": 462,
       "relationType": 2903,
       "charaId": 1053
@@ -57992,6 +58135,11 @@
       "charaId": 1038
     },
     {
+      "id": 485,
+      "relationType": 3001,
+      "charaId": 1042
+    },
+    {
       "id": 486,
       "relationType": 3001,
       "charaId": 1051
@@ -58070,6 +58218,11 @@
       "id": 502,
       "relationType": 3002,
       "charaId": 1039
+    },
+    {
+      "id": 503,
+      "relationType": 3002,
+      "charaId": 1042
     },
     {
       "id": 505,
@@ -58605,6 +58758,11 @@
       "id": 614,
       "relationType": 3101,
       "charaId": 1039
+    },
+    {
+      "id": 615,
+      "relationType": 3101,
+      "charaId": 1042
     },
     {
       "id": 616,
@@ -59332,6 +59490,11 @@
       "charaId": 1014
     },
     {
+      "id": 772,
+      "relationType": 2507,
+      "charaId": 1042
+    },
+    {
       "id": 773,
       "relationType": 2529,
       "charaId": 1046
@@ -59340,6 +59503,11 @@
       "id": 774,
       "relationType": 3201,
       "charaId": 1022
+    },
+    {
+      "id": 780,
+      "relationType": 3204,
+      "charaId": 1042
     },
     {
       "id": 791,
@@ -62382,9 +62550,19 @@
       "charaId": 1060
     },
     {
+      "id": 1437,
+      "relationType": 8302,
+      "charaId": 1042
+    },
+    {
       "id": 1438,
       "relationType": 8302,
       "charaId": 1004
+    },
+    {
+      "id": 1439,
+      "relationType": 8303,
+      "charaId": 1042
     },
     {
       "id": 1440,
@@ -62392,9 +62570,19 @@
       "charaId": 1007
     },
     {
+      "id": 1441,
+      "relationType": 8304,
+      "charaId": 1042
+    },
+    {
       "id": 1442,
       "relationType": 8304,
       "charaId": 1009
+    },
+    {
+      "id": 1443,
+      "relationType": 8305,
+      "charaId": 1042
     },
     {
       "id": 1444,
@@ -62402,14 +62590,34 @@
       "charaId": 1022
     },
     {
+      "id": 1445,
+      "relationType": 8306,
+      "charaId": 1042
+    },
+    {
       "id": 1446,
       "relationType": 8306,
       "charaId": 1045
     },
     {
+      "id": 1447,
+      "relationType": 8307,
+      "charaId": 1042
+    },
+    {
       "id": 1448,
       "relationType": 8307,
       "charaId": 1046
+    },
+    {
+      "id": 1449,
+      "relationType": 8308,
+      "charaId": 1042
+    },
+    {
+      "id": 1451,
+      "relationType": 8309,
+      "charaId": 1042
     },
     {
       "id": 1454,
@@ -64042,6 +64250,11 @@
       "charaId": 1069
     },
     {
+      "id": 1834,
+      "relationType": 8459,
+      "charaId": 1042
+    },
+    {
       "id": 1835,
       "relationType": 8460,
       "charaId": 1069
@@ -64640,6 +64853,11 @@
       "id": 1971,
       "relationType": 8527,
       "charaId": 1072
+    },
+    {
+      "id": 1972,
+      "relationType": 8527,
+      "charaId": 1042
     },
     {
       "id": 1973,
@@ -65287,6 +65505,11 @@
       "charaId": 1068
     },
     {
+      "id": 2124,
+      "relationType": 8603,
+      "charaId": 1042
+    },
+    {
       "id": 2125,
       "relationType": 8604,
       "charaId": 1068
@@ -65480,6 +65703,11 @@
       "id": 2169,
       "relationType": 8626,
       "charaId": 1067
+    },
+    {
+      "id": 2170,
+      "relationType": 8626,
+      "charaId": 1042
     },
     {
       "id": 2171,
@@ -66527,6 +66755,11 @@
       "charaId": 1098
     },
     {
+      "id": 2569,
+      "relationType": 2604,
+      "charaId": 1042
+    },
+    {
       "id": 2592,
       "relationType": 202,
       "charaId": 1098
@@ -66600,6 +66833,11 @@
       "id": 2647,
       "relationType": 2601,
       "charaId": 1098
+    },
+    {
+      "id": 2665,
+      "relationType": 2706,
+      "charaId": 1042
     },
     {
       "id": 2680,
@@ -66985,6 +67223,11 @@
       "id": 2965,
       "relationType": 8754,
       "charaId": 1037
+    },
+    {
+      "id": 2967,
+      "relationType": 8755,
+      "charaId": 1042
     },
     {
       "id": 2969,
@@ -67497,6 +67740,11 @@
       "charaId": 1037
     },
     {
+      "id": 3249,
+      "relationType": 8910,
+      "charaId": 1042
+    },
+    {
       "id": 3251,
       "relationType": 8911,
       "charaId": 1044
@@ -67602,6 +67850,11 @@
       "charaId": 1037
     },
     {
+      "id": 3305,
+      "relationType": 8942,
+      "charaId": 1042
+    },
+    {
       "id": 3307,
       "relationType": 8943,
       "charaId": 1044
@@ -67705,6 +67958,11 @@
       "id": 3359,
       "relationType": 8973,
       "charaId": 1037
+    },
+    {
+      "id": 3361,
+      "relationType": 8974,
+      "charaId": 1042
     },
     {
       "id": 3363,
@@ -68232,6 +68490,11 @@
       "charaId": 1098
     },
     {
+      "id": 3571,
+      "relationType": 9101,
+      "charaId": 1042
+    },
+    {
       "id": 3572,
       "relationType": 9102,
       "charaId": 1098
@@ -68547,6 +68810,11 @@
       "charaId": 1037
     },
     {
+      "id": 3709,
+      "relationType": 9193,
+      "charaId": 1042
+    },
+    {
       "id": 3711,
       "relationType": 9194,
       "charaId": 1044
@@ -68645,6 +68913,11 @@
       "id": 3755,
       "relationType": 9228,
       "charaId": 1057
+    },
+    {
+      "id": 3757,
+      "relationType": 2406,
+      "charaId": 1042
     },
     {
       "id": 3768,

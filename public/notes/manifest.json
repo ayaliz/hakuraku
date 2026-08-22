@@ -54,5 +54,12 @@
     "filename": "plus-sparks.md",
     "date": "2026-07-08",
     "description": "Post-patch selected-result evidence for Racing Spirit and Ignited Spirit + sparks."
+  },
+  {
+    "id": "light-hello",
+    "title": "Light Hello proc rates and specialty priority",
+    "filename": "light-hello.md",
+    "date": "2026-08-21",
+    "description": "Observed Light Hello post-training event rates and a revised Specialty Priority placement model."
   }
 ]

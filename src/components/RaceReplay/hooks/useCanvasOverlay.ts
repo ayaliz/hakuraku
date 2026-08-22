@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect, type MutableRefObject, type RefObject } from "react";
 import { bisectFrameIndex, clamp01, lerp, getCharaIcon, formatSigned, mixWithWhite } from "../RaceReplay.utils";
 import { buildPositionKeepSeries, teamColorFor } from "../utils/chartBuilders";
-import { getSkillDurationSecs, getActiveSpeedDebuff, hasTargetDebuffEffect, getActiveSpeedModifier, countGreenSkills } from "../utils/SkillDataUtils";
+import { getSkillDurationSecs, getActiveSpeedDebuff, getRushedDebuffDurationSecs, hasTargetDebuffEffect, getActiveSpeedModifier, countGreenSkills } from "../utils/SkillDataUtils";
 import { calculateTargetSpeed, getDistanceCategory, computeGroundPowerBonus } from "../utils/speedCalculations";
 import GameDataLoader from "../../../data/GameDataLoader";
 import { InterpolatedFrame } from "../RaceReplay.types";
@@ -484,8 +484,11 @@ export function useCanvasOverlay(
                 };
 
                 const mode = hf.temptationMode ?? 0;
-                if (p.toggles.skills && mode) {
-                    labels.push({ text: TEMPTATION_TEXT[mode] ?? "Rushed", bg: bgColor });
+                const hasActiveFrenziedRushedTimer = (p.combinedOtherEvents[idx] ?? []).some(e =>
+                    e.name === "Rushed (Frenzied)" && time >= e.time && time < e.time + e.duration
+                );
+                if (p.toggles.skills && (mode || hasActiveFrenziedRushedTimer)) {
+                    labels.push({ text: mode ? TEMPTATION_TEXT[mode] ?? "Rushed" : "Rushed", bg: bgColor });
                 }
 
                 if (p.toggles.skills) {
@@ -506,11 +509,13 @@ export function useCanvasOverlay(
                             if (!activationTargetsFrame(p, s, idx)) return false;
                             if ((p.skillActivations?.[idx] ?? []).some((self: any) => self === s)) return false;
                             if (!hasTargetDebuffEffect(s.param[1], s.param?.[3])) return false;
-                            const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2], s.param?.[3]);
+                            const rushedDuration = getRushedDebuffDurationSecs(s.param[1], s.param?.[3]);
+                            const dur = rushedDuration || getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2], s.param?.[3]);
                             return time >= s.time && time < s.time + dur && !EXCLUDE_SKILL_RE.test(s.name);
                         })
                         .forEach(s => {
-                            const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2], s.param?.[3]);
+                            const rushedDuration = getRushedDebuffDurationSecs(s.param[1], s.param?.[3]);
+                            const dur = rushedDuration || getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2], s.param?.[3]);
                             const remaining = Math.max(0, s.time + dur - time);
                             addMergedSkillLabel(s.name, "#ffcccb", remaining, s.time, "↓ ");
                         });
@@ -530,6 +535,7 @@ export function useCanvasOverlay(
                 (p.combinedOtherEvents[idx] ?? [])
                     .filter(e => {
                         if (time < e.time || time >= e.time + e.duration) return false;
+                        if (e.name === "Rushed (Frenzied)") return false;
                         return p.toggles.skills || (p.toggles.heuristics && isHeuristicLabel(e.name));
                     })
                     .sort((a, b) => a.time - b.time || a.name.localeCompare(b.name))

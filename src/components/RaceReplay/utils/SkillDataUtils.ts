@@ -219,6 +219,17 @@ export function hasSkillEffect(skillId: number, effectType: number, conditionGro
     );
 }
 
+export function getRushedDebuffDurationSecs(skillId: number, conditionGroupIndex?: number): number {
+    const group = getSkillConditionGroup(skillId, conditionGroupIndex);
+    if (!group) return 0;
+
+    return group.effects.reduce((duration, effect) => (
+        effect.type === 13 && effect.value > 0
+            ? Math.max(duration, effect.value / 10000)
+            : duration
+    ), 0);
+}
+
 export function getHpDrainRatio(skillId: number, conditionGroupIndex?: number): number {
     const group = getSkillConditionGroup(skillId, conditionGroupIndex);
     if (!group) return 0;

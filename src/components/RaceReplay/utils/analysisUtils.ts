@@ -1,8 +1,8 @@
 import { RaceSimulateData, RaceSimulateEventData_SimulateEventType } from "../../../data/race_data_pb";
 import { fromRaceHorseData, TrainedCharaData } from "../../../data/TrainedCharaData";
 import { getDistanceCategory, calculateTargetSpeed, adjustStat, calculateReferenceHpConsumption, computeGroundPowerBonus, STRATEGY_PROFICIENCY_MODIFIER } from "./speedCalculations";
-import { getPassiveStatModifiers, getSkillDurationSecs, getActiveSpeedModifier, getActiveSpeedDebuff, hasSkillEffect, countGreenSkills, SkillScalingStats } from "./SkillDataUtils";
-import { filterCharaSkills } from "../../../data/RaceDataUtils";
+import { getPassiveStatModifiers, getSkillDurationSecs, getActiveSpeedModifier, getActiveSpeedDebuff, getRushedDebuffDurationSecs, hasSkillEffect, countGreenSkills, SkillScalingStats } from "./SkillDataUtils";
+import { filterCharaSkills, filterCharaTargetedSkills, isSkillEventTargetingFrame } from "../../../data/RaceDataUtils";
 import GameDataLoader from "../../../data/GameDataLoader";
 import {
     BASE_SPEED_CONSTANT, BASE_SPEED_COURSE_OFFSET, BASE_SPEED_COURSE_SCALE,
@@ -96,6 +96,21 @@ export function computeOtherEvents(
         const frameOrder = e.param[0];
         const startTime = e.frameTime!;
 
+        if (e.type === RaceSimulateEventData_SimulateEventType.SKILL) {
+            const rushedDuration = getRushedDebuffDurationSecs(e.param[1], e.param?.[3]);
+            if (rushedDuration > 0) {
+                for (let targetFrameOrder = 0; targetFrameOrder < raceData.horseResult.length; targetFrameOrder++) {
+                    if (!isSkillEventTargetingFrame(raceData, e, targetFrameOrder, raceHorseInfo)) continue;
+                    if (!allOtherEvents[targetFrameOrder]) allOtherEvents[targetFrameOrder] = [];
+                    allOtherEvents[targetFrameOrder].push({
+                        time: startTime,
+                        duration: rushedDuration,
+                        name: "Rushed (Frenzied)",
+                    });
+                }
+            }
+        }
+
         if (e.type === RaceSimulateEventData_SimulateEventType.COMPETE_FIGHT) {
             const startHp = raceData.frame[0].horseFrame[frameOrder].hp!;
             const hpThreshold = startHp * DUELING_HP_THRESHOLD_RATIO;
@@ -116,6 +131,7 @@ export function computeOtherEvents(
             let strategyProficiency = 7;
             let learnedSkillLevelById = new Map<number, number>();
             let hasFullSpurtHp = true;
+            const targetedSkillActivations = filterCharaTargetedSkills(raceData, frameOrder, raceHorseInfo);
             const scalingStats: SkillScalingStats | undefined = trainedChara
                 ? { ...trainedChara, greenSkillCount: countGreenSkills(skillActivations?.[frameOrder]) }
                 : undefined;
@@ -255,6 +271,12 @@ export function computeOtherEvents(
                             }
                         });
                     }
+                    targetedSkillActivations.forEach(s => {
+                        const duration = getSkillDurationSecs(s.param[1], goalInX, s.frameTime, s.param?.[2], s.param?.[3]);
+                        if (frameTime >= s.frameTime && frameTime < s.frameTime + duration) {
+                            activeSpeedBuff -= getActiveSpeedDebuff(s.param[1], s.param?.[3]);
+                        }
+                    });
 
                     const targetRes = calculateTargetSpeed({
                         courseDistance: goalInX,
@@ -358,6 +380,12 @@ export function computeOtherEvents(
                                     }
                                 });
                             }
+                            targetedSkillActivations.forEach(s => {
+                                const dur = getSkillDurationSecs(s.param[1], goalInX, s.frameTime, s.param?.[2], s.param?.[3]);
+                                if (futureTime >= s.frameTime && futureTime < s.frameTime + dur) {
+                                    futureActiveSpeedBuff -= getActiveSpeedDebuff(s.param[1], s.param?.[3]);
+                                }
+                            });
 
                             const futureTargetRes = calculateTargetSpeed({
                                 courseDistance: goalInX,

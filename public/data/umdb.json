@@ -15600,6 +15600,29 @@
       "activateLot": 0
     },
     {
+      "id": 110191,
+      "name": "THE MOE AAAA Thanks for My Life",
+      "gradeValue": 340,
+      "tagId": [
+        "401"
+      ],
+      "rarity": 5,
+      "conditionGroups": [
+        {
+          "condition": "near_count>=3&phase==1&corner!=0&order_rate>=40",
+          "baseTime": 50000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 3500
+            }
+          ]
+        }
+      ],
+      "iconId": 20013,
+      "activateLot": 0
+    },
+    {
       "id": 110201,
       "name": "Break It Down!",
       "gradeValue": 340,
@@ -16027,6 +16050,38 @@
             {
               "type": 27,
               "value": 3500
+            }
+          ]
+        }
+      ],
+      "iconId": 20013,
+      "activateLot": 0
+    },
+    {
+      "id": 110581,
+      "name": "Spooky, Scary, Happy",
+      "gradeValue": 340,
+      "tagId": [
+        "401",
+        "406"
+      ],
+      "rarity": 5,
+      "conditionGroups": [
+        {
+          "condition": "is_last_straight_onetime==1&order_rate<=40",
+          "baseTime": 50000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 3500
+            },
+            {
+              "type": 21,
+              "value": -500
+            },
+            {
+              "type": 21,
+              "value": -500
             }
           ]
         }
@@ -30471,6 +30526,29 @@
       "activateLot": 1
     },
     {
+      "id": 910191,
+      "name": "THE MOE AAAA Thanks for My Life",
+      "gradeValue": 180,
+      "tagId": [
+        "401"
+      ],
+      "rarity": 1,
+      "conditionGroups": [
+        {
+          "condition": "near_count>=3&phase==1&corner!=0&order_rate>=40",
+          "baseTime": 30000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 1500
+            }
+          ]
+        }
+      ],
+      "iconId": 20011,
+      "activateLot": 1
+    },
+    {
       "id": 910201,
       "name": "Break It Down!",
       "gradeValue": 180,
@@ -30898,6 +30976,38 @@
             {
               "type": 27,
               "value": 1500
+            }
+          ]
+        }
+      ],
+      "iconId": 20011,
+      "activateLot": 1
+    },
+    {
+      "id": 910581,
+      "name": "Spooky, Scary, Happy",
+      "gradeValue": 180,
+      "tagId": [
+        "401",
+        "406"
+      ],
+      "rarity": 1,
+      "conditionGroups": [
+        {
+          "condition": "is_last_straight_onetime==1&order_rate<=40",
+          "baseTime": 30000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 1500
+            },
+            {
+              "type": 21,
+              "value": -250
+            },
+            {
+              "type": 21,
+              "value": -250
             }
           ]
         }
@@ -34878,6 +34988,45 @@
       "id": 30114,
       "name": "[Ah, Such Majesty] Daiichi Ruby",
       "charaId": 1085,
+      "raceBonus": 0,
+      "raceBonusByLimitBreak": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 30115,
+      "name": "[Moonlit Devil ♪] Mejiro Palmer",
+      "charaId": 1064,
+      "raceBonus": 0,
+      "raceBonusByLimitBreak": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 30116,
+      "name": "[Sunlit Angel ♪] Daitaku Helios",
+      "charaId": 1065,
+      "raceBonus": 10,
+      "raceBonusByLimitBreak": [
+        5,
+        5,
+        5,
+        5,
+        10
+      ]
+    },
+    {
+      "id": 30117,
+      "name": "[Onwards, Demon Queen Lackeys!] Shinko Windy",
+      "charaId": 1043,
       "raceBonus": 0,
       "raceBonusByLimitBreak": [
         0,
@@ -48770,6 +48919,13 @@
       "solvableType": 0
     },
     {
+      "id": 910191,
+      "needSkillPoint": 200,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
       "id": 910201,
       "needSkillPoint": 200,
       "statusType": 0,
@@ -48869,6 +49025,13 @@
     },
     {
       "id": 910561,
+      "needSkillPoint": 200,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
+      "id": 910581,
       "needSkillPoint": 200,
       "statusType": 0,
       "statusValue": 0,

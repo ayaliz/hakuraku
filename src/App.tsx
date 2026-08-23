@@ -7,6 +7,8 @@ import UMDatabaseWrapper from './data/UMDatabaseWrapper';
 import GameDataLoader from './data/GameDataLoader';
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import PageMeta from "./components/PageMeta";
+import { formatNoteDate, sortNotesNewestFirst } from "./notesManifest";
+import type { NoteEntry } from "./notesManifest";
 import type { Manifest, ManifestEntry } from "./pages/UmaLogsPage/umaLogsTypes";
 
 // Wraps lazy() to auto-reload once on chunk load failure (stale deploy hash mismatch).
@@ -184,6 +186,7 @@ export default function App() {
 function AppShell() {
     const { loading, authenticated, user } = useAuth();
     const [umaLogsBadgeLabel, setUmaLogsBadgeLabel] = useState("CM12 update!");
+    const [latestNote, setLatestNote] = useState<NoteEntry | null>(null);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -209,6 +212,25 @@ function AppShell() {
         };
     }, []);
 
+    useEffect(() => {
+        const controller = new AbortController();
+        fetch(`${import.meta.env.BASE_URL}notes/manifest.json`, { signal: controller.signal })
+            .then((response) => {
+                if (!response.ok) throw new Error(`HTTP ${response.status} - manifest not found`);
+                return response.json() as Promise<NoteEntry[]>;
+            })
+            .then((notes) => {
+                setLatestNote(sortNotesNewestFirst(notes)[0] ?? null);
+            })
+            .catch((error: Error) => {
+                if (error.name !== "AbortError") {
+                    console.warn("Failed to load notes manifest for navbar badge:", error);
+                }
+            });
+
+        return () => controller.abort();
+    }, []);
+
     return <>
         <Navbar className="haku-nav" variant="dark" expand="lg">
             <Container>
@@ -222,7 +244,20 @@ function AppShell() {
                         <Nav.Link as={NavLink} to="/racedata">Race Analysis</Nav.Link>
                         <Nav.Link as={NavLink} to="/multirace">Multi-Race Analysis</Nav.Link>
                         <Nav.Link as={NavLink} to="/masterdata">Master Data</Nav.Link>
-                        <Nav.Link as={NavLink} to="/notes">Research Notes</Nav.Link>
+                        <Nav.Link as={NavLink} to="/notes">
+                            <span className="haku-nav-link-with-badge">
+                                <span>Research Notes</span>
+                                {latestNote && (
+                                    <time
+                                        className="haku-nav-badge"
+                                        dateTime={latestNote.date}
+                                        title={`Latest note: ${latestNote.title}`}
+                                    >
+                                        {formatNoteDate(latestNote.date)}
+                                    </time>
+                                )}
+                            </span>
+                        </Nav.Link>
                         <Nav.Link as={NavLink} to="/umalogs">
                             <span className="haku-nav-link-with-badge">
                                 <span>UmaLogs</span>

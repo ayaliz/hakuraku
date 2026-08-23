@@ -6,15 +6,9 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
+import { formatNoteDate, sortNotesNewestFirst } from '../notesManifest';
+import type { NoteEntry } from '../notesManifest';
 import './NotesPage.css';
-
-interface NoteEntry {
-    id: string;
-    title: string;
-    filename: string;
-    date: string;
-    description: string;
-}
 
 function NoteCard({ entry, onClick }: { entry: NoteEntry; onClick: () => void }) {
     return (
@@ -22,7 +16,9 @@ function NoteCard({ entry, onClick }: { entry: NoteEntry; onClick: () => void })
             className="np-card"
             onClick={onClick}
         >
-            <div className="np-card-date">{entry.date}</div>
+            <time className="np-card-date" dateTime={entry.date}>
+                Published {formatNoteDate(entry.date)}
+            </time>
             <h3 className="np-card-title">{entry.title}</h3>
             <p className="np-card-desc">{entry.description}</p>
         </div>
@@ -124,10 +120,11 @@ export default function NotesPage() {
                 return r.json();
             })
             .then((data: NoteEntry[]) => {
-                setNotes(data);
+                const sortedNotes = sortNotesNewestFirst(data);
+                setNotes(sortedNotes);
                 setLoading(false);
                 if (noteId) {
-                    const entry = data.find((n: NoteEntry) => n.id === noteId);
+                    const entry = sortedNotes.find((n: NoteEntry) => n.id === noteId);
                     if (entry) openNote(entry, false);
                 }
             })
@@ -184,9 +181,14 @@ export default function NotesPage() {
                 {mdLoading ? (
                     <div className="np-md-loading">Loading…</div>
                 ) : (
-                    <div className="np-md-container">
-                        {renderMarkdownWithDetails(markdown)}
-                    </div>
+                    <>
+                        <time className="np-note-date" dateTime={selected.date}>
+                            Published {formatNoteDate(selected.date)}
+                        </time>
+                        <div className="np-md-container">
+                            {renderMarkdownWithDetails(markdown)}
+                        </div>
+                    </>
                 )}
             </div>
         );

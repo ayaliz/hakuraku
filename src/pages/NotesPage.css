@@ -41,9 +41,18 @@
 }
 
 .np-card-date {
-    font-size: 0.8rem;
-    color: var(--haku-text-muted);
-    margin-bottom: 6px;
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    margin-bottom: 12px;
+    padding: 4px 9px;
+    border: 1px solid rgba(168, 230, 184, 0.4);
+    border-radius: 999px;
+    background: rgba(101, 210, 131, 0.12);
+    color: #a8e6b8;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
 }
 
 .np-card-title {
@@ -90,6 +99,14 @@
 
 .np-md-loading {
     color: var(--haku-text-muted);
+}
+
+.np-note-date {
+    display: block;
+    margin: -8px 0 12px;
+    color: #a8e6b8;
+    font-size: 0.88rem;
+    font-weight: 700;
 }
 
 .np-md-container {

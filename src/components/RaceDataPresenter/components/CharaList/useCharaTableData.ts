@@ -1,11 +1,12 @@
 import { RaceSimulateData, RaceSimulateEventData_SimulateEventType } from "../../../../data/race_data_pb";
-import { filterCharaSkills, filterCharaTargetedSkills, isSkillEventTargetingFrame } from "../../../../data/RaceDataUtils";
+import { filterCharaSkills, getSkillEventTargetingState, isSkillEventTargetingFrame } from "../../../../data/RaceDataUtils";
 import { fromRaceHorseData, TrainedCharaData } from "../../../../data/TrainedCharaData";
 import GameDataLoader from "../../../../data/GameDataLoader";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import { useAvailableTracks } from "../../../RaceReplay/hooks/useAvailableTracks";
 import { useGuessTrack } from "../../../RaceReplay/hooks/useGuessTrack";
 import { getPassiveStatModifiers, getSkillDurationSecs, getSkillBaseTime, getHpDrainRatio, countGreenSkills } from "../../../RaceReplay/utils/SkillDataUtils";
+import type { SkillScalingStats } from "../../../RaceReplay/utils/SkillDataUtils";
 import {
     adjustStat,
     calculateTargetSpeed,
@@ -100,6 +101,7 @@ export const computeCharaTableData = (
     const horseInfoByIdx: Record<number, any> = {};
     const passiveStatModifiers: Record<number, any> = {};
     const lastSpurtStartDistances: Record<number, number> = {};
+    const unityTeamStatsByIdx: Record<number, SkillScalingStats["unityTeamStats"]> = {};
 
     raceHorseInfo.forEach(data => {
         const frameOrder = data['frame_order'] - 1;
@@ -137,6 +139,29 @@ export const computeCharaTableData = (
         lastSpurtStartDistances[frameOrder] = horseResult?.lastSpurtStartDistance ?? -1;
     });
 
+    const unityTeamTotals = new Map<number, NonNullable<SkillScalingStats["unityTeamStats"]>>();
+    raceHorseInfo.forEach(data => {
+        const teamId = Number(data['team_id']);
+        if (!Number.isInteger(teamId) || teamId <= 0 || unityTeamTotals.has(teamId)) return;
+        const total = { speed: 0, stamina: 0, pow: 0, guts: 0, wiz: 0 };
+        raceHorseInfo.forEach(member => {
+            if (Number(member['team_id']) !== teamId) return;
+            const trained = fromRaceHorseData(member);
+            const mood = Number(member['motivation'] ?? 3);
+            total.speed += adjustStat(trained.speed, mood);
+            total.stamina += adjustStat(trained.stamina, mood);
+            total.pow += adjustStat(trained.pow, mood);
+            total.guts += adjustStat(trained.guts, mood);
+            total.wiz += adjustStat(trained.wiz, mood);
+        });
+        unityTeamTotals.set(teamId, total);
+    });
+    raceHorseInfo.forEach(data => {
+        const frameOrder = data['frame_order'] - 1;
+        const teamId = Number(data['team_id']);
+        if (unityTeamTotals.has(teamId)) unityTeamStatsByIdx[frameOrder] = unityTeamTotals.get(teamId);
+    });
+
     const heuristicEvents = computeHeuristicEvents({
         frames: raceData.frame ?? [],
         goalInX: raceDistance,
@@ -145,6 +170,7 @@ export const computeCharaTableData = (
         horseInfoByIdx,
         trackSlopes,
         passiveStatModifiers,
+        unityTeamStatsByIdx,
         skillActivations: skillActivations ?? {},
         otherEvents: otherEvents ?? {},
         lastSpurtStartDistances,
@@ -301,11 +327,19 @@ export const computeCharaTableData = (
                     })),
                 }
                 : skillActivations;
-            const targetedSkillActivations = filterCharaTargetedSkills(raceData, frameOrder, raceHorseInfo).map(event => ({
-                time: event.frameTime!,
-                name: UMDatabaseWrapper.skillNameWithEnglishFallback(event.param[1]),
-                param: event.param,
-            }));
+            const targetedSkillActivations = raceData.event.flatMap(wrapper => {
+                const event = wrapper.event;
+                if (!event || event.type !== RaceSimulateEventData_SimulateEventType.SKILL) return [];
+                const targetingState = getSkillEventTargetingState(raceData, event, frameOrder, raceHorseInfo);
+                if (targetingState === "miss") return [];
+                return [{
+                    time: event.frameTime!,
+                    name: UMDatabaseWrapper.skillNameWithEnglishFallback(event.param[1]),
+                    param: event.param,
+                    ambiguousTarget: targetingState === "ambiguous-hit" || targetingState === "ambiguous-miss",
+                    nominallyTargeted: targetingState === "hit" || targetingState === "ambiguous-hit",
+                }];
+            });
 
             const maxAdj = calculateMaxAdjustedSpeed(
                 raceData.frame,
@@ -318,7 +352,12 @@ export const computeCharaTableData = (
                 adjustedGuts,
                 adjustedPower,
                 lastSpurtStartDistances[frameOrder] ?? -1,
-                { ...trainedCharaData, greenSkillCount: countGreenSkills(skillActivations?.[frameOrder]) }
+                {
+                    ...trainedCharaData,
+                    greenSkillCount: countGreenSkills(skillActivations?.[frameOrder]),
+                    unityTeamStats: unityTeamStatsByIdx[frameOrder],
+                },
+                lastSpurtTargetSpeed
             );
             maxAdjSpeed = maxAdj.speed;
             maxAdjSpeedTime = maxAdj.time;

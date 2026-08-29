@@ -1,6 +1,7 @@
 import { TrainedCharaData } from "../../../data/TrainedCharaData";
 import { calculateTargetSpeed, getDistanceCategory, calculateReferenceHpConsumption, computeGroundPowerBonus } from "./speedCalculations";
 import { getActiveSpeedModifier, getHpDrainRatio, getSkillDef, getSkillDurationSecs, countGreenSkills } from "./SkillDataUtils";
+import type { SkillScalingStats } from "./SkillDataUtils";
 import GameDataLoader from "../../../data/GameDataLoader";
 import { isSkillEventTargetingFrame } from "../../../data/RaceDataUtils";
 import { RaceSimulateEventData_SimulateEventType } from "../../../data/race_data_pb";
@@ -75,6 +76,7 @@ type ComputeHeuristicEventsParams = {
     horseInfoByIdx: Record<number, any>;
     trackSlopes: any[];
     passiveStatModifiers: Record<number, any>;
+    unityTeamStatsByIdx?: Record<number, SkillScalingStats["unityTeamStats"]>;
     skillActivations: Record<number, any[]>;
     otherEvents: Record<number, any[]>;
     lastSpurtStartDistances: Record<number, number>;
@@ -318,7 +320,11 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
 
             const greenStats = passiveStatModifiers?.[i];
             const learnedSkillLevelById = new Map(trainedChara.skills.map(skill => [skill.skillId, skill.level]));
-            const scalingStats = { ...trainedChara, greenSkillCount: countGreenSkills(skillActivations?.[i]) };
+            const scalingStats = {
+                ...trainedChara,
+                greenSkillCount: countGreenSkills(skillActivations?.[i]),
+                unityTeamStats: params.unityTeamStatsByIdx?.[i],
+            };
             let activeSpeedBuff = 0;
             if (skillActivations && skillActivations[i]) {
                 skillActivations[i].forEach(activation => {

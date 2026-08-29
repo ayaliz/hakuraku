@@ -34,6 +34,13 @@ const DUELING_END_TIME_LOOKAHEAD = 1.5;    // Seconds to skip after dueling expi
 const SPEED_BUFF_DROP_FRAME_LOOKAHEAD = 0; // Skip the drop frame; dense snapshots are covered by the time lookahead
 const SPEED_BUFF_DROP_TIME_LOOKAHEAD = 0.5; // Seconds to skip after a speed skill falls off when snapshots are dense
 const TYPE_28_POWER_SPEED_SCALE = 0.0002;
+const LAST_SPURT_HIGH_SPEED_TOLERANCE = 0.05;
+const SPEED_COMPARISON_EPSILON = 1e-9;
+const GAME_TICK_SECONDS = 1 / 15;
+const MAX_AMBIGUOUS_DEBUFFS_TO_ENUMERATE = 12;
+const DOWNHILL_EXIT_DISTANCE_GRACE = 10;   // Compensate sampled speed that retains the downhill bonus just past the slope boundary
+const DOWNHILL_EXIT_REJECTION_GRACE = 11;  // In the outer fringe, reject only clearly high observations instead of subtracting the full bonus
+const PROGRESSIVE_ACTIVATION_SPEED_SKILL_IDS = new Set([110351, 910351]);
 
 function computeGroundHpModifier(surface: number, condition: number): number {
     if (surface === 1) {
@@ -499,14 +506,21 @@ export function calculateMaxAdjustedSpeed(
     frames: any[],
     frameOrder: number,
     raceDistance: number,
-    skillActivations: Record<number, { time: number; name: string; param: number[] }[]> | undefined,
-    targetedSkillActivations: { time: number; name: string; param: number[] }[] | undefined,
+    skillActivations: Record<number, { time: number; name: string; param: number[]; skillLevel?: number }[]> | undefined,
+    targetedSkillActivations: {
+        time: number;
+        name: string;
+        param: number[];
+        ambiguousTarget?: boolean;
+        nominallyTargeted?: boolean;
+    }[] | undefined,
     otherEvents: Record<number, { time: number; duration: number; name: string }[]> | undefined,
     trackSlopes: any[],
     adjustedGuts: number,
     adjustedPower: number,
     lastSpurtStartDistance: number = -1,
-    scalingStats?: SkillScalingStats
+    scalingStats?: SkillScalingStats,
+    lastSpurtTargetSpeed?: number
 ): { speed: number; time: number; debug: MaxAdjustedSpeedDebug } {
     let maxAdjSpeed = 0;
     let maxAdjSpeedTime = 0;
@@ -517,6 +531,9 @@ export function calculateMaxAdjustedSpeed(
     let previousFrameSkillBuff = 0;
     let previousFrameSpeedBuffKeys = new Set<string>();
     let lastSpeedBuffDropFrameIndex = -100;
+    const observedLastSpurtTargetSpeed = lastSpurtTargetSpeed
+        ? Math.floor((lastSpurtTargetSpeed + 1e-9) * 100) / 100
+        : undefined;
 
     for (let fIdx = 0; fIdx < frames.length; fIdx++) {
         const frame = frames[fIdx];
@@ -536,15 +553,31 @@ export function calculateMaxAdjustedSpeed(
         const type28SkillNames: string[] = [];
         const frameSkillBuffs: { name: string; value: number }[] = [];
         const frameSkillDebuffs: { name: string; value: number }[] = [];
+        const ambiguousTargetedDebuffs: { name: string; value: number; nominallyActive: boolean }[] = [];
         const frameSpeedBuffKeys = new Set<string>();
         let frameTrackedSpeedBuff = 0;
 
         // Skills
         if (skillActivations && skillActivations[frameOrder]) {
-            skillActivations[frameOrder].forEach(s => {
+            const runnerSkillActivations = skillActivations[frameOrder];
+            runnerSkillActivations.forEach((s, activationIndex) => {
                 const duration = getSkillDurationSecs(s.param[1], raceDistance, s.time, s.param?.[2], s.param?.[3]);
                 if (time >= s.time && time < s.time + duration) {
-                    const mod = getActiveSpeedModifier(s.param[1], s.param?.[3], (s as any).skillLevel, scalingStats);
+                    const subsequentActivationCount = PROGRESSIVE_ACTIVATION_SPEED_SKILL_IDS.has(s.param[1])
+                        ? runnerSkillActivations.reduce((count, candidate, candidateIndex) => {
+                            if (candidateIndex <= activationIndex) return count;
+                            if (candidate.time > time + SPEED_COMPARISON_EPSILON) return count;
+                            if (candidate.time >= s.time + duration) return count;
+                            return count + 1;
+                        }, 0)
+                        : undefined;
+                    const mod = getActiveSpeedModifier(
+                        s.param[1],
+                        s.param?.[3],
+                        s.skillLevel,
+                        scalingStats,
+                        subsequentActivationCount,
+                    );
                     if (mod !== 0) {
                         buff += mod;
                         frameSkillBuffs.push({ name: s.name || String(s.param[1]), value: mod });
@@ -577,12 +610,23 @@ export function calculateMaxAdjustedSpeed(
 
         targetedSkillActivations?.forEach(s => {
             const duration = getSkillDurationSecs(s.param[1], raceDistance, s.time, s.param?.[2], s.param?.[3]);
-            if (time >= s.time && time < s.time + duration) {
-                const debuff = getActiveSpeedDebuff(s.param[1], s.param?.[3]);
-                if (debuff !== 0) {
-                    buff -= debuff;
-                    frameSkillDebuffs.push({ name: s.name || String(s.param[1]), value: debuff });
-                }
+            const eventEndTime = s.time + duration;
+            const inNominalTimeWindow = time >= s.time && time < eventEndTime;
+            const nominallyActive = inNominalTimeWindow && (s.nominallyTargeted ?? true);
+            const debuff = getActiveSpeedDebuff(s.param[1], s.param?.[3]);
+            const ambiguousTarget = Boolean(s.ambiguousTarget) && inNominalTimeWindow;
+            const ambiguousExpiry = time >= s.time
+                && Math.abs(time - eventEndTime) <= GAME_TICK_SECONDS
+                && (s.nominallyTargeted ?? true);
+            if (debuff !== 0 && (ambiguousTarget || ambiguousExpiry)) {
+                ambiguousTargetedDebuffs.push({
+                    name: s.name || String(s.param[1]),
+                    value: debuff,
+                    nominallyActive,
+                });
+            } else if (nominallyActive && debuff !== 0) {
+                buff -= debuff;
+                frameSkillDebuffs.push({ name: s.name || String(s.param[1]), value: debuff });
             }
         });
 
@@ -650,6 +694,19 @@ export function calculateMaxAdjustedSpeed(
         const dist = h.distance ?? 0;
         const currentSlopeObj = trackSlopes.find((s: any) => dist >= s.start && dist < s.start + s.length);
         const currentSlope = currentSlopeObj?.slope ?? 0;
+        const recentDownhillSlope = currentSlope === 0
+            ? trackSlopes.find((s: any) => {
+                const slopeEnd = s.start + s.length;
+                return s.slope < 0 && dist >= slopeEnd && dist < slopeEnd + DOWNHILL_EXIT_DISTANCE_GRACE;
+            })?.slope ?? 0
+            : 0;
+        const isInDownhillExitRejectionFringe = currentSlope === 0 && trackSlopes.some((s: any) => {
+            const slopeEnd = s.start + s.length;
+            return s.slope < 0
+                && dist >= slopeEnd + DOWNHILL_EXIT_DISTANCE_GRACE
+                && dist < slopeEnd + DOWNHILL_EXIT_REJECTION_GRACE;
+        });
+        const effectiveDownhillSlope = currentSlope < 0 ? currentSlope : recentDownhillSlope;
         if (currentSlope > 0) {
             const prevFrame = frames[fIdx - 1];
             const prevDist = prevFrame?.horseFrame?.[frameOrder]?.distance;
@@ -669,10 +726,10 @@ export function calculateMaxAdjustedSpeed(
         }
 
         let frameDownhillBuff = 0;
-        if (currentSlope < 0) {
+        if (effectiveDownhillSlope < 0) {
             const isInLastSpurt = lastSpurtStartDistance > 0 && dist >= lastSpurtStartDistance;
             if (isInLastSpurt) {
-                frameDownhillBuff = DOWNHILL_BONUS_BASE + Math.abs(currentSlope) / DOWNHILL_BONUS_DIVISOR;
+                frameDownhillBuff = DOWNHILL_BONUS_BASE + Math.abs(effectiveDownhillSlope) / DOWNHILL_BONUS_DIVISOR;
                 buff += frameDownhillBuff;
             } else {
                 const nextFrame = frames[fIdx + 1];
@@ -684,7 +741,7 @@ export function calculateMaxAdjustedSpeed(
                             const rate = ((h.hp ?? 0) - (hNext.hp ?? 0)) / dt;
                             const expected = calculateReferenceHpConsumption(speed, raceDistance);
                             if (expected > 0 && rate > 0 && rate < expected * DOWNHILL_HP_RATIO_THRESHOLD) {
-                                frameDownhillBuff = DOWNHILL_BONUS_BASE + Math.abs(currentSlope) / DOWNHILL_BONUS_DIVISOR;
+                                frameDownhillBuff = DOWNHILL_BONUS_BASE + Math.abs(effectiveDownhillSlope) / DOWNHILL_BONUS_DIVISOR;
                                 buff += frameDownhillBuff;
                             }
                         }
@@ -726,6 +783,58 @@ export function calculateMaxAdjustedSpeed(
             continue;
         }
 
+        const isInLastSpurt = lastSpurtStartDistance > 0 && (h.distance ?? 0) >= lastSpurtStartDistance;
+        let selectedAmbiguousDebuffs = ambiguousTargetedDebuffs.map((debuff) => debuff.nominallyActive);
+        if (
+            isInLastSpurt
+            && observedLastSpurtTargetSpeed !== undefined
+            && ambiguousTargetedDebuffs.length > 0
+            && ambiguousTargetedDebuffs.length <= MAX_AMBIGUOUS_DEBUFFS_TO_ENUMERATE
+        ) {
+            const matchingMasks: number[] = [];
+            const interpretationCount = 2 ** ambiguousTargetedDebuffs.length;
+            for (let mask = 0; mask < interpretationCount; mask++) {
+                let activeDebuff = 0;
+                for (let index = 0; index < ambiguousTargetedDebuffs.length; index++) {
+                    if (mask & (2 ** index)) activeDebuff += ambiguousTargetedDebuffs[index].value;
+                }
+                const candidateSpeed = speed - (buff - activeDebuff);
+                if (Math.abs(candidateSpeed - observedLastSpurtTargetSpeed) <= LAST_SPURT_HIGH_SPEED_TOLERANCE + SPEED_COMPARISON_EPSILON) {
+                    matchingMasks.push(mask);
+                }
+            }
+            if (matchingMasks.length === 1) {
+                const selectedMask = matchingMasks[0];
+                selectedAmbiguousDebuffs = ambiguousTargetedDebuffs.map((_, index) => Boolean(selectedMask & (2 ** index)));
+            }
+        }
+        ambiguousTargetedDebuffs.forEach((debuff, index) => {
+            if (!selectedAmbiguousDebuffs[index]) return;
+            buff -= debuff.value;
+            frameSkillDebuffs.push({ name: debuff.name, value: debuff.value });
+        });
+
+        const adj = speed - buff;
+        if (
+            isInDownhillExitRejectionFringe
+            && isInLastSpurt
+            && observedLastSpurtTargetSpeed !== undefined
+            && adj - observedLastSpurtTargetSpeed > LAST_SPURT_HIGH_SPEED_TOLERANCE + SPEED_COMPARISON_EPSILON
+        ) {
+            previousFrameSkillBuff = frameTrackedSpeedBuff;
+            previousFrameSpeedBuffKeys = frameSpeedBuffKeys;
+            continue;
+        }
+        if (
+            ambiguousTargetedDebuffs.length > 0
+            && isInLastSpurt
+            && observedLastSpurtTargetSpeed !== undefined
+            && adj - observedLastSpurtTargetSpeed > LAST_SPURT_HIGH_SPEED_TOLERANCE + SPEED_COMPARISON_EPSILON
+        ) {
+            previousFrameSkillBuff = frameTrackedSpeedBuff;
+            previousFrameSpeedBuffKeys = frameSpeedBuffKeys;
+            continue;
+        }
         if (isWithinDuelingEndTimeLookahead) {
             const prevFrame = frames[fIdx - 1];
             const nextFrame = frames[fIdx + 1];
@@ -738,15 +847,30 @@ export function calculateMaxAdjustedSpeed(
             const isStableAfterDuel =
                 (prevSpeed !== undefined && Math.abs(speed - prevSpeed) <= 0.02)
                 || (nextSpeed !== undefined && Math.abs(nextSpeed - speed) <= 0.02);
-            if (!isStableAfterDuel) {
+            const wouldCreateHighObservation = isInLastSpurt
+                && observedLastSpurtTargetSpeed !== undefined
+                && adj - observedLastSpurtTargetSpeed > LAST_SPURT_HIGH_SPEED_TOLERANCE + SPEED_COMPARISON_EPSILON;
+            if (!isStableAfterDuel || wouldCreateHighObservation) {
                 previousFrameSkillBuff = frameTrackedSpeedBuff;
                 previousFrameSpeedBuffKeys = frameSpeedBuffKeys;
                 continue;
             }
         }
-
-        const adj = speed - buff;
-        if (adj > maxAdjSpeed) {
+        // An effect-28 speed contribution can occasionally survive in a sampled frame even
+        // though the quantized lane coordinate did not change. Keep ordinary unchanged-lane
+        // samples, but reject one when it would create a clearly high last-spurt observation.
+        if (
+            isType28Active
+            && !lanePositionChanged
+            && isInLastSpurt
+            && observedLastSpurtTargetSpeed !== undefined
+            && adj - observedLastSpurtTargetSpeed > LAST_SPURT_HIGH_SPEED_TOLERANCE + SPEED_COMPARISON_EPSILON
+        ) {
+            previousFrameSkillBuff = frameTrackedSpeedBuff;
+            previousFrameSpeedBuffKeys = frameSpeedBuffKeys;
+            continue;
+        }
+        if (isInLastSpurt && adj > maxAdjSpeed) {
             maxAdjSpeed = adj;
             maxAdjSpeedTime = time;
             maxAdjDebug = {

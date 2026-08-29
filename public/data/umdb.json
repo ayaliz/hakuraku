@@ -5166,6 +5166,13 @@
       "courseSetId": 11103
     },
     {
+      "id": 600034,
+      "name": "Libra Cup",
+      "distance": 1600,
+      "groundType": "TURF",
+      "courseSetId": 10903
+    },
+    {
       "id": 600041,
       "name": "Taurus Cup Finals",
       "distance": 2400,
@@ -5199,6 +5206,13 @@
       "distance": 2000,
       "groundType": "DIRT",
       "courseSetId": 11103
+    },
+    {
+      "id": 600046,
+      "name": "Libra Cup Finals",
+      "distance": 1600,
+      "groundType": "TURF",
+      "courseSetId": 10903
     },
     {
       "id": 610000,
@@ -15188,6 +15202,34 @@
             {
               "type": 27,
               "value": 1500
+            }
+          ]
+        }
+      ],
+      "iconId": 20013,
+      "activateLot": 0
+    },
+    {
+      "id": 100871,
+      "name": "Silent Letter",
+      "gradeValue": 340,
+      "tagId": [
+        "401",
+        "403"
+      ],
+      "rarity": 5,
+      "conditionGroups": [
+        {
+          "condition": "remain_distance<=400&order<=2&overtake_target_time>=1",
+          "baseTime": 50000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 2500
+            },
+            {
+              "type": 31,
+              "value": 3000
             }
           ]
         }
@@ -30165,6 +30207,34 @@
       "activateLot": 1
     },
     {
+      "id": 900871,
+      "name": "Silent Letter",
+      "gradeValue": 180,
+      "tagId": [
+        "401",
+        "403"
+      ],
+      "rarity": 1,
+      "conditionGroups": [
+        {
+          "condition": "remain_distance<=400&order<=2&overtake_target_time>=1",
+          "baseTime": 30000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 500
+            },
+            {
+              "type": 31,
+              "value": 1000
+            }
+          ]
+        }
+      ],
+      "iconId": 20011,
+      "activateLot": 1
+    },
+    {
       "id": 900981,
       "name": "Luck Runs My Way",
       "gradeValue": 180,
@@ -30588,7 +30658,7 @@
     },
     {
       "id": 910221,
-      "name": "Best Day Ever",
+      "name": "Best day ever",
       "gradeValue": 180,
       "tagId": [
         "401",
@@ -32931,6 +33001,19 @@
       ]
     },
     {
+      "id": 10084,
+      "name": "[Tracen Academy] Tanino Gimlet",
+      "charaId": 1084,
+      "raceBonus": 5,
+      "raceBonusByLimitBreak": [
+        1,
+        1,
+        1,
+        5,
+        5
+      ]
+    },
+    {
       "id": 20001,
       "name": "[Well, Look Who's Home] Fuji Kiseki",
       "charaId": 1005,
@@ -35047,6 +35130,19 @@
         0,
         0,
         0
+      ]
+    },
+    {
+      "id": 30145,
+      "name": "[Welcome to Umayuru] Tanino Gimlet",
+      "charaId": 1084,
+      "raceBonus": 5,
+      "raceBonusByLimitBreak": [
+        1,
+        1,
+        1,
+        5,
+        5
       ]
     }
   ],
@@ -43407,19 +43503,19 @@
       "id": 147,
       "category": 147,
       "index": 10220201,
-      "text": "Best Day Ever"
+      "text": "Best day ever"
     },
     {
       "id": 147,
       "category": 147,
       "index": 10220202,
-      "text": "Best Day Ever"
+      "text": "Best day ever"
     },
     {
       "id": 147,
       "category": 147,
       "index": 10220203,
-      "text": "Best Day Ever"
+      "text": "Best day ever"
     },
     {
       "id": 147,
@@ -48815,6 +48911,13 @@
     },
     {
       "id": 900741,
+      "needSkillPoint": 200,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
+      "id": 900871,
       "needSkillPoint": 200,
       "statusType": 0,
       "statusValue": 0,
@@ -66123,6 +66226,11 @@
       "charaId": 1098
     },
     {
+      "id": 2233,
+      "relationType": 2901,
+      "charaId": 1087
+    },
+    {
       "id": 2237,
       "relationType": 2902,
       "charaId": 1071
@@ -66146,6 +66254,11 @@
       "id": 2248,
       "relationType": 2903,
       "charaId": 1074
+    },
+    {
+      "id": 2261,
+      "relationType": 3001,
+      "charaId": 1087
     },
     {
       "id": 2270,
@@ -66333,6 +66446,11 @@
       "charaId": 1068
     },
     {
+      "id": 2340,
+      "relationType": 3203,
+      "charaId": 1087
+    },
+    {
       "id": 2343,
       "relationType": 3203,
       "charaId": 1098
@@ -66481,6 +66599,11 @@
       "id": 2399,
       "relationType": 102,
       "charaId": 1066
+    },
+    {
+      "id": 2401,
+      "relationType": 102,
+      "charaId": 1087
     },
     {
       "id": 2407,
@@ -66923,6 +67046,16 @@
       "charaId": 1042
     },
     {
+      "id": 2570,
+      "relationType": 2604,
+      "charaId": 1087
+    },
+    {
+      "id": 2582,
+      "relationType": 202,
+      "charaId": 1087
+    },
+    {
       "id": 2592,
       "relationType": 202,
       "charaId": 1098
@@ -66998,9 +67131,24 @@
       "charaId": 1098
     },
     {
+      "id": 2653,
+      "relationType": 2602,
+      "charaId": 1087
+    },
+    {
+      "id": 2662,
+      "relationType": 2704,
+      "charaId": 1087
+    },
+    {
       "id": 2665,
       "relationType": 2706,
       "charaId": 1042
+    },
+    {
+      "id": 2675,
+      "relationType": 2815,
+      "charaId": 1087
     },
     {
       "id": 2680,
@@ -67011,6 +67159,11 @@
       "id": 2693,
       "relationType": 3003,
       "charaId": 1098
+    },
+    {
+      "id": 2704,
+      "relationType": 3101,
+      "charaId": 1087
     },
     {
       "id": 2713,
@@ -67036,6 +67189,11 @@
       "id": 2740,
       "relationType": 2501,
       "charaId": 1098
+    },
+    {
+      "id": 2742,
+      "relationType": 2513,
+      "charaId": 1087
     },
     {
       "id": 2748,
@@ -67066,6 +67224,11 @@
       "id": 2773,
       "relationType": 8657,
       "charaId": 1048
+    },
+    {
+      "id": 2777,
+      "relationType": 8659,
+      "charaId": 1087
     },
     {
       "id": 2783,
@@ -67268,6 +67431,11 @@
       "charaId": 1048
     },
     {
+      "id": 2897,
+      "relationType": 8719,
+      "charaId": 1087
+    },
+    {
       "id": 2903,
       "relationType": 8722,
       "charaId": 1050
@@ -67331,6 +67499,11 @@
       "id": 2933,
       "relationType": 8737,
       "charaId": 1048
+    },
+    {
+      "id": 2937,
+      "relationType": 8739,
+      "charaId": 1087
     },
     {
       "id": 2943,
@@ -67523,6 +67696,11 @@
       "charaId": 1048
     },
     {
+      "id": 3045,
+      "relationType": 8797,
+      "charaId": 1087
+    },
+    {
       "id": 3051,
       "relationType": 8800,
       "charaId": 1004
@@ -67653,9 +67831,19 @@
       "charaId": 1051
     },
     {
+      "id": 3120,
+      "relationType": 8838,
+      "charaId": 1087
+    },
+    {
       "id": 3121,
       "relationType": 8838,
       "charaId": 1007
+    },
+    {
+      "id": 3122,
+      "relationType": 8839,
+      "charaId": 1087
     },
     {
       "id": 3123,
@@ -67663,9 +67851,24 @@
       "charaId": 1009
     },
     {
+      "id": 3124,
+      "relationType": 8840,
+      "charaId": 1087
+    },
+    {
       "id": 3125,
       "relationType": 8840,
       "charaId": 1046
+    },
+    {
+      "id": 3126,
+      "relationType": 8841,
+      "charaId": 1087
+    },
+    {
+      "id": 3128,
+      "relationType": 8842,
+      "charaId": 1087
     },
     {
       "id": 3129,
@@ -67673,9 +67876,34 @@
       "charaId": 1067
     },
     {
+      "id": 3130,
+      "relationType": 8843,
+      "charaId": 1087
+    },
+    {
       "id": 3131,
       "relationType": 8843,
       "charaId": 1068
+    },
+    {
+      "id": 3132,
+      "relationType": 8845,
+      "charaId": 1087
+    },
+    {
+      "id": 3134,
+      "relationType": 8846,
+      "charaId": 1087
+    },
+    {
+      "id": 3136,
+      "relationType": 8847,
+      "charaId": 1087
+    },
+    {
+      "id": 3138,
+      "relationType": 8848,
+      "charaId": 1087
     },
     {
       "id": 3139,
@@ -67683,9 +67911,24 @@
       "charaId": 1098
     },
     {
+      "id": 3140,
+      "relationType": 8849,
+      "charaId": 1087
+    },
+    {
+      "id": 3142,
+      "relationType": 8850,
+      "charaId": 1087
+    },
+    {
       "id": 3143,
       "relationType": 8850,
       "charaId": 1004
+    },
+    {
+      "id": 3144,
+      "relationType": 8851,
+      "charaId": 1087
     },
     {
       "id": 3145,
@@ -67693,9 +67936,19 @@
       "charaId": 1045
     },
     {
+      "id": 3146,
+      "relationType": 8852,
+      "charaId": 1087
+    },
+    {
       "id": 3147,
       "relationType": 8852,
       "charaId": 1069
+    },
+    {
+      "id": 3148,
+      "relationType": 8853,
+      "charaId": 1087
     },
     {
       "id": 3149,
@@ -67703,9 +67956,19 @@
       "charaId": 1072
     },
     {
+      "id": 3150,
+      "relationType": 8854,
+      "charaId": 1087
+    },
+    {
       "id": 3151,
       "relationType": 8854,
       "charaId": 1003
+    },
+    {
+      "id": 3152,
+      "relationType": 8855,
+      "charaId": 1087
     },
     {
       "id": 3153,
@@ -67713,9 +67976,29 @@
       "charaId": 1013
     },
     {
+      "id": 3154,
+      "relationType": 8856,
+      "charaId": 1087
+    },
+    {
       "id": 3155,
       "relationType": 8856,
       "charaId": 1017
+    },
+    {
+      "id": 3156,
+      "relationType": 8858,
+      "charaId": 1087
+    },
+    {
+      "id": 3158,
+      "relationType": 8859,
+      "charaId": 1087
+    },
+    {
+      "id": 3160,
+      "relationType": 8861,
+      "charaId": 1087
     },
     {
       "id": 3161,
@@ -67723,9 +68006,19 @@
       "charaId": 1029
     },
     {
+      "id": 3162,
+      "relationType": 8862,
+      "charaId": 1087
+    },
+    {
       "id": 3163,
       "relationType": 8862,
       "charaId": 1041
+    },
+    {
+      "id": 3164,
+      "relationType": 8863,
+      "charaId": 1087
     },
     {
       "id": 3165,
@@ -69081,6 +69374,11 @@
       "id": 3757,
       "relationType": 2406,
       "charaId": 1042
+    },
+    {
+      "id": 3765,
+      "relationType": 2409,
+      "charaId": 1087
     },
     {
       "id": 3768,

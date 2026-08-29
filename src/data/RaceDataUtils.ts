@@ -8,10 +8,13 @@ type CustomSkillHitContext = {
     targetFrameOrder: number;
 };
 
+export type SkillTargetingState = "hit" | "miss" | "ambiguous-hit" | "ambiguous-miss";
+
 // Return undefined when the detector cannot decide, so the recorded bitmask remains the fallback.
-export type CustomSkillHitDetector = (context: CustomSkillHitContext) => boolean | undefined;
+export type CustomSkillHitDetector = (context: CustomSkillHitContext) => boolean | SkillTargetingState | undefined;
 
 const customSkillHitDetectors = new Map<number, CustomSkillHitDetector>();
+const OPPONENTS_AHEAD_TARGET_DISTANCE_AMBIGUITY = 0.2;
 
 export function registerCustomSkillHitDetector(skillIds: number[], detector: CustomSkillHitDetector): void {
     skillIds.forEach(skillId => customSkillHitDetectors.set(skillId, detector));
@@ -53,6 +56,9 @@ const opponentsAheadHitDetector: CustomSkillHitDetector = ({ raceSimulateData, r
     const casterDistance = distanceAtTime(raceSimulateData, casterFrameOrder, activationTime);
     const targetDistance = distanceAtTime(raceSimulateData, targetFrameOrder, activationTime);
     if (casterDistance === undefined || targetDistance === undefined) return undefined;
+    if (Math.abs(targetDistance - casterDistance) <= OPPONENTS_AHEAD_TARGET_DISTANCE_AMBIGUITY) {
+        return targetDistance > casterDistance ? "ambiguous-hit" : "ambiguous-miss";
+    }
     return targetDistance > casterDistance;
 };
 
@@ -80,7 +86,17 @@ export function isSkillEventTargetingFrame(
     targetFrameOrder: number,
     raceHorseInfo?: any[],
 ): boolean {
-    if (event.param[0] === targetFrameOrder) return false;
+    const state = getSkillEventTargetingState(raceSimulateData, event, targetFrameOrder, raceHorseInfo);
+    return state === "hit" || state === "ambiguous-hit";
+}
+
+export function getSkillEventTargetingState(
+    raceSimulateData: RaceSimulateData,
+    event: RaceSimulateEventData,
+    targetFrameOrder: number,
+    raceHorseInfo?: any[],
+): SkillTargetingState {
+    if (event.param[0] === targetFrameOrder) return "miss";
     const detector = customSkillHitDetectors.get(event.param[1]);
     if (detector) {
         const customHit = detector({
@@ -90,9 +106,10 @@ export function isSkillEventTargetingFrame(
             casterFrameOrder: event.param[0],
             targetFrameOrder,
         });
-        if (customHit !== undefined) return customHit;
+        if (typeof customHit === "string") return customHit;
+        if (customHit !== undefined) return customHit ? "hit" : "miss";
     }
-    return event.paramCount! >= 5 && Boolean(event.param[4] & (1 << targetFrameOrder));
+    return event.paramCount! >= 5 && Boolean(event.param[4] & (1 << targetFrameOrder)) ? "hit" : "miss";
 }
 
 // frameOrder should be 0-indexed. This excludes skills casted by self.

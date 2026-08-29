@@ -77,6 +77,14 @@ const GREEN_SKILL_COUNT_SCALED_PORTION: Record<number, number> = {
     100981: 0.05,
 };
 
+// These uniques start with a base type-27 speed modifier, then add the second
+// type-27 value once for each subsequent skill activation, up to three times.
+// skill_data stores the base and per-activation increment but not the repeat cap.
+const PROGRESSIVE_ACTIVATION_SPEED_SKILLS: Record<number, { base: number; increment: number; maxIncrements: number }> = {
+    110351: { base: 0.25, increment: 0.05, maxIncrements: 3 },
+    910351: { base: 0.05, increment: 0.05, maxIncrements: 3 },
+};
+
 // Stat-modifier effect types. A green skill is a passive that grants one of these.
 const GREEN_SKILL_STAT_EFFECT_TYPES = new Set([1, 2, 3, 4, 5]);
 
@@ -88,7 +96,40 @@ export type SkillScalingStats = {
     wiz: number;
     fanCount?: number;
     greenSkillCount?: number;
+    unityTeamStats?: {
+        speed: number;
+        stamina: number;
+        pow: number;
+        guts: number;
+        wiz: number;
+    };
 };
+
+type UnityTeamStat = keyof NonNullable<SkillScalingStats["unityTeamStats"]>;
+
+const UNITY_CUP_SKILL_TEAM_STAT: Record<number, UnityTeamStat> = {
+    210011: "speed",
+    210012: "speed",
+    210021: "stamina",
+    210022: "stamina",
+    210031: "pow",
+    210032: "pow",
+    210041: "guts",
+    210042: "guts",
+    210051: "wiz",
+    210052: "wiz",
+};
+
+export function getUnityCupEffectMultiplier(skillId: number, stats?: SkillScalingStats): number {
+    const teamStat = UNITY_CUP_SKILL_TEAM_STAT[skillId];
+    const total = teamStat ? stats?.unityTeamStats?.[teamStat] : undefined;
+    if (total === undefined || !Number.isFinite(total)) return 1;
+    if (total < 1200) return 0.8;
+    if (total < 1800) return 0.9;
+    if (total < 2600) return 1.0;
+    if (total < 3600) return 1.1;
+    return 1.2;
+}
 
 /**
  * Green skills resolve on frame 0, but frame 0 is not enough on its own to identify them:
@@ -149,6 +190,9 @@ function getGreenSkillCountMultiplier(greenSkillCount?: number): number {
 
 function applySpecialSpeedScaling(skillId: number, speed: number, stats?: SkillScalingStats): number {
     if (speed <= 0) return speed;
+    if (skillId in UNITY_CUP_SKILL_TEAM_STAT) {
+        return speed * getUnityCupEffectMultiplier(skillId, stats);
+    }
     if (HIGHEST_STAT_SCALING_SKILLS.has(skillId)) {
         return speed * getHighestStatScalingMultiplier(stats);
     }
@@ -167,19 +211,27 @@ export function getActiveSpeedModifier(
     skillId: number,
     conditionGroupIndex?: number,
     skillLevel?: number,
-    stats?: SkillScalingStats
+    stats?: SkillScalingStats,
+    subsequentActivationCount?: number,
 ): number {
     if (skillId in HARDCODED_SPEED_MODIFIERS) return HARDCODED_SPEED_MODIFIERS[skillId];
 
     const group = getSkillConditionGroup(skillId, conditionGroupIndex);
     if (!group) return 0;
 
-    let speedInc = 0;
-    group.effects.forEach(eff => {
-        if (eff.type === 22 || eff.type === 27) {
-            speedInc += eff.value / 10000; // e.g. 4500 -> 0.45 m/s
-        }
-    });
+    const progressive = PROGRESSIVE_ACTIVATION_SPEED_SKILLS[skillId];
+    let speedInc: number;
+    if (progressive && subsequentActivationCount !== undefined) {
+        const increments = Math.max(0, Math.min(progressive.maxIncrements, Math.floor(subsequentActivationCount)));
+        speedInc = progressive.base + progressive.increment * increments;
+    } else {
+        speedInc = 0;
+        group.effects.forEach(eff => {
+            if (eff.type === 22 || eff.type === 27) {
+                speedInc += eff.value / 10000; // e.g. 4500 -> 0.45 m/s
+            }
+        });
+    }
     return applySpecialSpeedScaling(skillId, applyUniqueSkillLevelScaling(skillId, speedInc, skillLevel), stats);
 }
 

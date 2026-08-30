@@ -890,6 +890,30 @@
     overflow: hidden;
     height: 65px;
     display: flex;
+    cursor: crosshair;
+    touch-action: none;
+    user-select: none;
+}
+
+.heatmap-bucket {
+    position: relative;
+}
+
+.heatmap-track--has-selection .heatmap-bucket {
+    opacity: 0.42;
+}
+
+.heatmap-range-selection {
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    bottom: 0;
+    box-sizing: border-box;
+    border: 3px solid #90cdf4;
+    border-radius: 3px;
+    background: rgba(99, 179, 237, 0.25);
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.9), 0 0 12px rgba(99, 179, 237, 0.8);
+    pointer-events: none;
 }
 
 /* Phase separator markers inside inline heatmaps */
@@ -935,12 +959,33 @@
     padding-top: 8px;
 }
 .swb-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 10px;
     font-weight: 600;
     color: #718096;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 6px;
+}
+.swb-range-label {
+    color: #90cdf4;
+    text-transform: none;
+}
+.swb-range-clear {
+    margin-left: auto;
+    padding: 1px 6px;
+    border: 1px solid rgba(144, 205, 244, 0.35);
+    border-radius: 3px;
+    background: transparent;
+    color: #90cdf4;
+    font: inherit;
+    text-transform: uppercase;
+}
+.swb-range-clear:hover {
+    border-color: #90cdf4;
+    background: rgba(144, 205, 244, 0.1);
 }
 .swb-table {
     width: 100%;

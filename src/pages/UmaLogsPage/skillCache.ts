@@ -37,11 +37,13 @@ export type SerializedSkillWinBreakdownRow = {
     apps: number;
     isTotal: boolean;
     variantId: number | null;
+    cohort?: "variant" | "activatedAny" | "activatedNeither";
     cellsByStrategy: Record<string, SerializedSkillWinBreakdownCell | null>;
     total: SerializedSkillWinBreakdownCell | null;
 };
 
 export type GroupSkillDetailPayload = {
+    skillDetailVersion?: 2 | 3;
     buckets: SkillActivationBuckets;
     winBreakdown: SerializedSkillWinBreakdownRow[] | null;
 };
@@ -72,6 +74,11 @@ type UmaLogsDataWithGroups = {
 
 const STRATS = [5, 1, 2, 3, 4] as const;
 
+export function skillDetailVersionForCmId(cmId: string): 3 | undefined {
+    const match = cmId.trim().toLowerCase().match(/^cm(\d+)$/);
+    return match && Number(match[1]) >= 19 ? 3 : undefined;
+}
+
 function getSkillGroupBaseIds(representativeSkillId: number): Set<number> {
     const baseId = Math.floor(representativeSkillId / 10);
     const ids = new Set<number>([baseId]);
@@ -91,6 +98,7 @@ function getSkillVariantLabel(skillId: number): string {
 export function buildSkillWinBreakdownRows(
     representativeSkillId: number,
     sourceHorses: SkillBreakdownSourceHorse[],
+    skillDetailVersion?: 2 | 3,
 ): SerializedSkillWinBreakdownRow[] | null {
     type Cell = SerializedSkillWinBreakdownCell;
 
@@ -99,8 +107,11 @@ export function buildSkillWinBreakdownRows(
     const byVariantStrat = new Map<string, Cell>();
     const byVariantAll = new Map<number, Cell>();
     const byStratAll = new Map<number, Cell>();
+    const byStratNeither = new Map<number, Cell>();
     let totalApps = 0;
     let totalWins = 0;
+    let neitherApps = 0;
+    let neitherWins = 0;
 
     const bump = (map: Map<string | number, Cell>, key: string | number, won: boolean) => {
         if (!map.has(key)) {
@@ -131,6 +142,12 @@ export function buildSkillWinBreakdownRows(
             if (won) {
                 totalWins += 1;
             }
+        } else if (skillDetailVersion !== undefined && STRATS.includes(horse.strategy as (typeof STRATS)[number])) {
+            bump(byStratNeither, horse.strategy, won);
+            neitherApps += 1;
+            if (won) {
+                neitherWins += 1;
+            }
         }
     }
 
@@ -147,6 +164,7 @@ export function buildSkillWinBreakdownRows(
                 apps: byVariantAll.get(variantId)?.apps ?? 0,
                 isTotal: false,
                 variantId,
+                ...(skillDetailVersion !== undefined ? { cohort: "variant" as const } : {}),
                 cellsByStrategy: Object.fromEntries(
                     STRATS.map((strategy) => [
                         String(strategy),
@@ -163,6 +181,7 @@ export function buildSkillWinBreakdownRows(
         apps: totalApps,
         isTotal: true,
         variantId: null,
+        ...(skillDetailVersion !== undefined ? { cohort: "activatedAny" as const } : {}),
         cellsByStrategy: Object.fromEntries(
             STRATS.map((strategy) => [
                 String(strategy),
@@ -171,6 +190,23 @@ export function buildSkillWinBreakdownRows(
         ),
         total: totalApps > 0 ? { apps: totalApps, wins: totalWins } : null,
     });
+
+    if (skillDetailVersion !== undefined) {
+        rows.push({
+            label: "Neither",
+            apps: neitherApps,
+            isTotal: false,
+            variantId: null,
+            cohort: "activatedNeither",
+            cellsByStrategy: Object.fromEntries(
+                STRATS.map((strategy) => [
+                    String(strategy),
+                    byStratNeither.get(strategy) ?? null,
+                ]),
+            ),
+            total: neitherApps > 0 ? { apps: neitherApps, wins: neitherWins } : null,
+        });
+    }
 
     return rows;
 }
@@ -223,10 +259,12 @@ export function extractGroupSkillCachePayload(cmId: string, group: SerializedGro
 }
 
 export function extractGroupSkillDetailEntries(
+    cmId: string,
     group: SerializedGroupWithSkillData,
     sourceHorses: SkillBreakdownSourceHorse[],
 ): [number, GroupSkillDetailPayload][] {
     const bucketMap = new Map<number, SkillActivationBuckets>(group.stats.skillBuckets ?? []);
+    const skillDetailVersion = skillDetailVersionForCmId(cmId);
     return (group.stats.skillStats ?? [])
         .map(([skillId, skill]) => {
             const buckets = bucketMap.get(skillId);
@@ -234,8 +272,9 @@ export function extractGroupSkillDetailEntries(
             return [
                 skillId,
                 {
+                    ...(skillDetailVersion ? { skillDetailVersion } : {}),
                     buckets,
-                    winBreakdown: buildSkillWinBreakdownRows(skill.skillId, sourceHorses),
+                    winBreakdown: buildSkillWinBreakdownRows(skill.skillId, sourceHorses, skillDetailVersion),
                 } satisfies GroupSkillDetailPayload,
             ] as [number, GroupSkillDetailPayload];
         })

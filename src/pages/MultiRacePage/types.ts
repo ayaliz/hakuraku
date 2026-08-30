@@ -109,6 +109,7 @@ export type SkillStats = {
 };
 
 export type SkillActivationPoint = {
+    skillId: number;
     raceId: string;
     horseFrameOrder: number;
     distance: number;
@@ -121,11 +122,16 @@ export type SkillDoubleProcStats = {
     estimatedDoubleOpportunityRate: number; // estimated P(two valid proc windows were present | learned)
 };
 
+export type SkillActivationBucketSeries = {
+    all: number[];
+    win: number[];
+    byStrategy: Record<string, number[]>;
+    winByStrategy?: Record<string, number[]>;
+};
+
 // Precomputed activation histogram for a single skill (used by UmaLogs, avoids storing raw points)
-export type SkillActivationBuckets = {
-    all: number[];                     // counts per distance bucket, all activations
-    win: number[];                     // counts per distance bucket, winning horses only
-    byStrategy: Record<string, number[]>; // counts per distance bucket, keyed by strategy ID
+export type SkillActivationBuckets = SkillActivationBucketSeries & {
+    byVariant?: Record<string, SkillActivationBucketSeries>; // per-rank/variant series (skill detail v3+)
     doubleProc?: SkillDoubleProcStats;
     doubleProcByStrategy?: Record<string, SkillDoubleProcStats>;
 };

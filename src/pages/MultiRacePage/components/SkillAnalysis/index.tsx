@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { SkillStats, SkillActivationPoint, SkillActivationBuckets, CharacterStats, StrategyStats, HorseEntry } from "../../types";
 import { CharaHpSpurtStats } from "../HpSpurtAnalysis/types";
 import AssetLoader from "../../../../data/AssetLoader";
@@ -7,7 +7,7 @@ import PortraitSelect, { PortraitSelectOption } from "../PortraitSelect";
 import type { GroupSkillDetailPayload } from "../../../UmaLogsPage/skillCache";
 import { STRATS, DoubleProcBreakdown, LocalDoubleProcSummary, matchesRepresentativeSkillGroup, isGuaranteedSkill } from "./skillUtils";
 import WinBreakdownTable from "./WinBreakdownTable";
-import SerializedWinBreakdownTable, { filterWinBreakdownRows } from "./SerializedWinBreakdownTable";
+import SerializedWinBreakdownTable, { buildBucketRangeWinBreakdownRows, filterWinBreakdownRows } from "./SerializedWinBreakdownTable";
 import DoubleProcTable, { computeDoubleProcSummary, estimateDoubleOpportunityRate } from "./DoubleProcTable";
 import { STRATEGY_COLORS, STRATEGY_DISPLAY_ORDER, STRATEGY_NAMES } from "../WinDistributionCharts/constants";
 
@@ -30,6 +30,7 @@ interface SkillAnalysisProps {
 type SortKey = "skillName" | "timesActivated" | "learnedByHorses" | "uniqueRaces" | "winRate" | "avgFinishPosition" | "meanDistance" | "medianDistance";
 type SortDir = "asc" | "desc";
 type ActivationSortMode = "raw" | "rate" | "both";
+type SkillBucketRange = { start: number; end: number };
 
 const MIN_ACTIVATIONS_FOR_RATE_SORT = 100;
 
@@ -58,6 +59,8 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
     const [selectedOwnCharaFilter, setSelectedOwnCharaFilter] = useState<string>("all");
     const [minDist, setMinDist] = useState<string>("");
     const [maxDist, setMaxDist] = useState<string>("");
+    const [bucketRanges, setBucketRanges] = useState<Record<number, SkillBucketRange>>({});
+    const bucketDragRef = useRef<{ skillId: number; anchor: number; pointerId: number } | null>(null);
 
     const allCharaDropdownOptions = useMemo((): PortraitSelectOption[] => {
         const cardsByChara = new Map<number, { name: string; cardIds: Set<number> }>();
@@ -432,6 +435,50 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
         }
     }, [expandedSkillId, hasLazyBucketMode, lazySkillDetails, onLoadLazySkillDetail]);
 
+    const clearBucketRange = (skillId: number) => {
+        setBucketRanges((current) => {
+            const next = { ...current };
+            delete next[skillId];
+            return next;
+        });
+    };
+
+    const bucketIndexFromPointer = (event: React.PointerEvent<HTMLDivElement>, bucketCount: number) => {
+        const bounds = event.currentTarget.getBoundingClientRect();
+        const ratio = bounds.width > 0 ? (event.clientX - bounds.left) / bounds.width : 0;
+        return Math.max(0, Math.min(bucketCount - 1, Math.floor(ratio * bucketCount)));
+    };
+
+    const beginBucketDrag = (skillId: number, bucketCount: number, event: React.PointerEvent<HTMLDivElement>) => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        const anchor = bucketIndexFromPointer(event, bucketCount);
+        bucketDragRef.current = { skillId, anchor, pointerId: event.pointerId };
+        event.currentTarget.setPointerCapture(event.pointerId);
+        setBucketRanges((current) => ({ ...current, [skillId]: { start: anchor, end: anchor } }));
+    };
+
+    const updateBucketDrag = (skillId: number, bucketCount: number, event: React.PointerEvent<HTMLDivElement>) => {
+        const drag = bucketDragRef.current;
+        if (!drag || drag.skillId !== skillId || drag.pointerId !== event.pointerId) return;
+        const currentBucket = bucketIndexFromPointer(event, bucketCount);
+        setBucketRanges((current) => ({
+            ...current,
+            [skillId]: {
+                start: Math.min(drag.anchor, currentBucket),
+                end: Math.max(drag.anchor, currentBucket),
+            },
+        }));
+    };
+
+    const endBucketDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+        if (bucketDragRef.current?.pointerId !== event.pointerId) return;
+        bucketDragRef.current = null;
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+        }
+    };
+
     const renderHeatmap = (skill: SkillStats) => {
         // Precomputed path
         if (precomputedBuckets) {
@@ -517,7 +564,21 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                     },
                 };
             const totalActivations = buckets.reduce((s, c) => s + c, 0);
-            const filteredWinBreakdown = filterWinBreakdownRows(detailData.winBreakdown, selectedStrategy);
+            const selectedBucketRange = bucketRanges[skill.skillId];
+            const canSelectRange = selectedStrategy === "all" || !!bucketData.winByStrategy?.[String(selectedStrategy)];
+            const rangeStart = selectedBucketRange
+                ? Math.max(0, Math.min(selectedBucketRange.start, buckets.length - 1))
+                : undefined;
+            const rangeEnd = selectedBucketRange && rangeStart !== undefined
+                ? Math.max(rangeStart, Math.min(selectedBucketRange.end, buckets.length - 1))
+                : undefined;
+            const rangeBreakdown = rangeStart !== undefined && rangeEnd !== undefined
+                ? buildBucketRangeWinBreakdownRows(detailData.winBreakdown, bucketData, rangeStart, rangeEnd)
+                : detailData.winBreakdown;
+            const filteredWinBreakdown = filterWinBreakdownRows(rangeBreakdown, selectedStrategy);
+            const rangeLabel = rangeStart !== undefined && rangeEnd !== undefined
+                ? `${Math.round((rangeStart / buckets.length) * avgRaceDistance)}–${Math.round(((rangeEnd + 1) / buckets.length) * avgRaceDistance)}m`
+                : undefined;
             if (totalActivations === 0) {
                 return (
                     <tr key={`heatmap-${skill.skillId}`} className="heatmap-row">
@@ -537,16 +598,37 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                 <tr key={`heatmap-${skill.skillId}`} className="heatmap-row">
                     <td colSpan={6} className="p-0">
                         <div className="inline-heatmap-container">
-                            <div className="heatmap-track">
+                            <div
+                                className={selectedBucketRange ? "heatmap-track heatmap-track--has-selection" : "heatmap-track"}
+                                onPointerDown={canSelectRange ? (event) => beginBucketDrag(skill.skillId, buckets.length, event) : undefined}
+                                onPointerMove={canSelectRange ? (event) => updateBucketDrag(skill.skillId, buckets.length, event) : undefined}
+                                onPointerUp={canSelectRange ? endBucketDrag : undefined}
+                                onPointerCancel={canSelectRange ? endBucketDrag : undefined}
+                                onDoubleClick={canSelectRange ? () => clearBucketRange(skill.skillId) : undefined}
+                                title={canSelectRange ? "Click and drag to filter win rates by activation distance. Double-click to clear." : undefined}
+                            >
                                 {buckets.map((count, i) => {
                                     const pct = (count / totalActivations) * 100;
                                     const distStart = ((i / buckets.length) * avgRaceDistance).toFixed(0);
                                     const distEnd = (((i + 1) / buckets.length) * avgRaceDistance).toFixed(0);
                                     return (
-                                        <div key={i} style={{ flex: 1, height: "100%", background: getBarColor(count), transition: "background 0.2s ease", cursor: count > 0 ? "help" : "default" }}
-                                            title={count > 0 ? `${distStart}-${distEnd}m: ${count} activation${count > 1 ? 's' : ''} (${pct.toFixed(1)}%)` : undefined} />
+                                        <div
+                                            key={i}
+                                            className="heatmap-bucket"
+                                            style={{ flex: 1, height: "100%", background: getBarColor(count), transition: "background 0.2s ease" }}
+                                            title={`${distStart}-${distEnd}m: ${count} activation${count === 1 ? '' : 's'}${count > 0 ? ` (${pct.toFixed(1)}%)` : ''}`}
+                                        />
                                     );
                                 })}
+                                {rangeStart !== undefined && rangeEnd !== undefined && (
+                                    <div
+                                        className="heatmap-range-selection"
+                                        style={{
+                                            left: `${(rangeStart / buckets.length) * 100}%`,
+                                            width: `${((rangeEnd - rangeStart + 1) / buckets.length) * 100}%`,
+                                        }}
+                                    />
+                                )}
                                 <div className="heatmap-phase-marker heatmap-phase-marker--mid" />
                                 <div className="heatmap-phase-marker heatmap-phase-marker--late" />
                                 <div className="heatmap-phase-marker heatmap-phase-marker--spurt" />
@@ -559,7 +641,11 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                                 <span className="heatmap-label--end">{Math.round(avgRaceDistance)}m</span>
                             </div>
                             <DoubleProcTable breakdown={doubleProcBreakdown} />
-                            <SerializedWinBreakdownTable rows={filteredWinBreakdown} />
+                            <SerializedWinBreakdownTable
+                                rows={filteredWinBreakdown}
+                                rangeLabel={rangeLabel}
+                                onClearRange={rangeLabel ? () => clearBucketRange(skill.skillId) : undefined}
+                            />
                         </div>
                     </td>
                 </tr>

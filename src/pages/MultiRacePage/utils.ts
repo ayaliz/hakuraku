@@ -372,6 +372,7 @@ function extractSkillActivationPoints(
         const finishOrder = horseResult ? (horseResult.finishOrder ?? 99) + 1 : 99;
 
         const point: SkillActivationPoint = {
+            skillId,
             raceId: race.id,
             horseFrameOrder: frameOrder,
             distance: distanceAtTime(frameOrder, activationTime),

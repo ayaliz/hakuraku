@@ -59,10 +59,10 @@ const WEATHER_LABELS: Record<number, string> = {
     4: "Snowy",
 };
 const GROUND_CONDITION_LABELS: Record<number, string> = {
-    1: "Good",
-    2: "Soft",
-    3: "Heavy",
-    4: "Bad",
+    1: "Firm",
+    2: "Good",
+    3: "Soft",
+    4: "Heavy",
 };
 const GROUND_APTITUDE_FIELD: Record<number, string> = {
     1: "proper_ground_turf",

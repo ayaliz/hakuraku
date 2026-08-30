@@ -334,7 +334,7 @@ function parseActFormatRaceJson(json: any): ParsedStandardRaceJson | { error: st
         raceType: json["<RaceType>k__BackingField"] ?? json.raceType,
         trackDetails: {
             condition: json["<GroundCondition>k__BackingField"] ?? json.groundCondition,
-            weather: json["<Weather>k__BackingField"],
+            weather: json["<Weather>k__BackingField"] ?? json.weather ?? json.Weather,
             season: normalizeSeasonValue(json["<Season>k__BackingField"] ?? json.season)?.toString(),
         },
         playerFrameOrder: getPlayerFrameOrder(playerMembers),

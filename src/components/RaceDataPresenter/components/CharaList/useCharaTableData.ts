@@ -6,7 +6,9 @@ import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import { useAvailableTracks } from "../../../RaceReplay/hooks/useAvailableTracks";
 import { useGuessTrack } from "../../../RaceReplay/hooks/useGuessTrack";
 import { getPassiveStatModifiers, getSkillDurationSecs, getSkillBaseTime, getHpDrainRatio, countGreenSkills } from "../../../RaceReplay/utils/SkillDataUtils";
+import { getSelfHpDrainEstimate } from "../../../RaceReplay/utils/selfHpDrainUtils";
 import type { SkillScalingStats } from "../../../RaceReplay/utils/SkillDataUtils";
+import { TEMPTATION_TEXT } from "../../../RaceReplay/RaceReplay.constants";
 import {
     adjustStat,
     calculateTargetSpeed,
@@ -592,6 +594,70 @@ export const computeCharaTableData = (
             });
         }
 
+        // Match the Race Graph's received-frame boundaries for Rushed modes.
+        const rushedEvents: { name: string; time: number; duration: number }[] = [];
+        let activeRushedMode = 0;
+        let activeRushedStartTime = 0;
+        for (let frameIndex = 0; frameIndex < raceData.frame.length; frameIndex++) {
+            const frame = raceData.frame[frameIndex];
+            const previousTime = frameIndex === 0 ? 0 : (raceData.frame[frameIndex - 1].time ?? 0);
+            const mode = frame.horseFrame?.[frameOrder]?.temptationMode ?? 0;
+            if (mode === activeRushedMode) continue;
+            if (activeRushedMode !== 0 && previousTime > activeRushedStartTime) {
+                rushedEvents.push({
+                    name: TEMPTATION_TEXT[activeRushedMode] ?? "Rushed",
+                    time: activeRushedStartTime,
+                    duration: previousTime - activeRushedStartTime,
+                });
+            }
+            activeRushedStartTime = previousTime;
+            activeRushedMode = mode;
+        }
+        const lastFrameTime = raceData.frame.at(-1)?.time ?? 0;
+        if (activeRushedMode !== 0 && lastFrameTime > activeRushedStartTime) {
+            rushedEvents.push({
+                name: TEMPTATION_TEXT[activeRushedMode] ?? "Rushed",
+                time: activeRushedStartTime,
+                duration: lastFrameTime - activeRushedStartTime,
+            });
+        }
+        (otherEvents?.[frameOrder] ?? []).forEach(event => {
+            if (!event.name?.includes("Rushed") || event.duration <= 0) return;
+            rushedEvents.push({ name: event.name, time: event.time, duration: event.duration });
+        });
+        const mergedRushedIntervals = rushedEvents
+            .map(event => ({ start: event.time, end: event.time + event.duration }))
+            .sort((a, b) => a.start - b.start)
+            .reduce<{ start: number; end: number }[]>((merged, interval) => {
+                const previous = merged.at(-1);
+                if (previous && interval.start <= previous.end) {
+                    previous.end = Math.max(previous.end, interval.end);
+                } else {
+                    merged.push({ ...interval });
+                }
+                return merged;
+            }, []);
+        const observedRushedDuration = mergedRushedIntervals.reduce(
+            (total, interval) => total + interval.end - interval.start,
+            0,
+        );
+        const frenziedActivationTime = rushedEvents
+            .filter(event => event.name.includes("Frenzied"))
+            .reduce((first, event) => Math.min(first, event.time), Infinity);
+        const rushedStartTime = rushedEvents.reduce(
+            (first, event) => Math.min(first, event.time),
+            Infinity,
+        );
+        const rushedDuration = rushedEvents.length === 0
+            ? 0
+            : Number.isFinite(frenziedActivationTime)
+                ? Math.max(0, frenziedActivationTime - rushedStartTime) + 5
+                : ([3, 6, 9, 12] as const).reduce((nearest, duration) => (
+                    Math.abs(duration - observedRushedDuration) < Math.abs(nearest - observedRushedDuration)
+                        ? duration
+                        : nearest
+                ), 3);
+
         const totalSkillPoints = trainedCharaData.skills.reduce((sum, cs) => {
             const base = UMDatabaseWrapper.skillNeedPoints[cs.skillId] ?? 0;
             let upgrade = 0;
@@ -611,6 +677,7 @@ export const computeCharaTableData = (
         return {
             trainedChara: trainedCharaData,
             chara: UMDatabaseWrapper.charas[trainedCharaData.charaId],
+            displayName: UMDatabaseWrapper.raceHorseDisplayName(data),
             subLabel,
 
             frameOrder: frameOrder + 1,
@@ -644,6 +711,8 @@ export const computeCharaTableData = (
             maxAdjustedSpeedDebug: maxAdjSpeedDebug,
             hpAtPhase3Start,
             requiredSpurtHp,
+            rushedDuration,
+            rushedEvents,
             duelingTime,
             downhillModeTime,
             downhillModeTimePreLate,
@@ -676,12 +745,33 @@ export const computeCharaTableData = (
         if (!event || event.type !== RaceSimulateEventData_SimulateEventType.SKILL) return;
 
         const skillId = event.param[1];
-        const drainRatio = getHpDrainRatio(skillId, event.param?.[3]);
-        if (drainRatio <= 0) return;
-
         const casterFrameOrder = event.param[0];
         const caster = rowByFrameOrder.get(casterFrameOrder);
         if (!caster) return;
+
+        const selfCost = getSelfHpDrainEstimate(raceData, event, raceHorseInfo);
+        if (selfCost) {
+            const selfCostDistance = interpolateDistance(
+                raceData.frame ?? [],
+                casterFrameOrder,
+                event.frameTime ?? 0,
+            );
+            caster.hpDebuffHits ??= [];
+            caster.hpDebuffHits.push({
+                skillId,
+                skillName: UMDatabaseWrapper.skillNameWithEnglishFallback(skillId),
+                casterFrameOrder: caster.frameOrder,
+                casterName: caster.displayName ?? caster.trainedChara.viewerName ?? `Character ${caster.frameOrder}`,
+                time: event.frameTime ?? 0,
+                drainRatio: selfCost.drainRatio,
+                estimatedHpDrain: selfCost.estimatedHpDrain,
+                isSelfCost: true,
+                isLateRace: selfCostDistance >= raceDistance * 2 / 3,
+            });
+        }
+
+        const drainRatio = getHpDrainRatio(skillId, event.param?.[3]);
+        if (drainRatio <= 0) return;
 
         tableData.forEach(target => {
             const targetFrameOrder = target.frameOrder - 1;
@@ -691,9 +781,14 @@ export const computeCharaTableData = (
                 ?? raceData.frame?.[0]?.horseFrame?.[targetFrameOrder]?.hp
                 ?? 0;
             const estimatedHpDrain = Math.max(0, maxHp * drainRatio);
+            const drainDistance = interpolateDistance(
+                raceData.frame ?? [],
+                targetFrameOrder,
+                event.frameTime ?? 0,
+            );
             const skillName = UMDatabaseWrapper.skillNameWithEnglishFallback(skillId);
-            const casterBaseName = caster.chara?.name ?? caster.trainedChara.viewerName ?? `Character ${caster.frameOrder}`;
-            const targetBaseName = target.chara?.name ?? target.trainedChara.viewerName ?? `Character ${target.frameOrder}`;
+            const casterBaseName = caster.displayName ?? caster.trainedChara.viewerName ?? `Character ${caster.frameOrder}`;
+            const targetBaseName = target.displayName ?? target.trainedChara.viewerName ?? `Character ${target.frameOrder}`;
             const casterName = `${casterBaseName}${caster.subLabel ? ` ${caster.subLabel}` : ""}`;
             const targetName = `${targetBaseName}${target.subLabel ? ` ${target.subLabel}` : ""}`;
 
@@ -706,6 +801,7 @@ export const computeCharaTableData = (
                 time: event.frameTime ?? 0,
                 drainRatio,
                 estimatedHpDrain,
+                isLateRace: drainDistance >= raceDistance * 2 / 3,
             });
 
             const hadNoSpareHpAtPhase3 = target.hpAtPhase3Start !== undefined

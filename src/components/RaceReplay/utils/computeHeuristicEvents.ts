@@ -12,6 +12,7 @@ import {
     TEMPTATION_MODE_RUSH_BOOST,
 } from "./raceConstants";
 import { getPositionKeepRange, POSITION_KEEP_RANGE_LEEWAY } from "./positionKeepUtils";
+import { getSelfHpDrainEstimate } from "./selfHpDrainUtils";
 
 // Event filtering
 const MIN_EVENT_DURATION = 0.1;            // Discard events shorter than this (seconds)
@@ -252,6 +253,15 @@ export function computeHeuristicEvents(params: ComputeHeuristicEventsParams): Re
         for (const wrappedEvent of raceData.event) {
             const event = wrappedEvent?.event;
             if (!event?.param || event.type !== RaceSimulateEventData_SimulateEventType.SKILL) continue;
+            const selfCost = getSelfHpDrainEstimate(raceData, event, raceHorseInfo);
+            if (selfCost && selfCost.estimatedHpDrain > 0) {
+                const caster = event.param[0];
+                hpDebuffHitsByIdx[caster] ??= [];
+                hpDebuffHitsByIdx[caster].push({
+                    time: event.frameTime ?? 0,
+                    amount: selfCost.estimatedHpDrain,
+                });
+            }
             const drainRatio = getHpDrainRatio(event.param[1], event.param?.[3]);
             if (drainRatio <= 0) continue;
             for (let target = 0; target < numHorses; target++) {

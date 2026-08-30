@@ -308,6 +308,7 @@ export function buildExplorerQuerySpec(
     features: CharacterFeature[],
     sortKey: SortKey,
     sortDesc: boolean,
+    raceFilters: ReplayRaceFilter[] = [],
 ): UmaLogsQuerySpec {
     const orderField: Record<SortKey, string> = {
         label: "character",
@@ -339,10 +340,16 @@ export function buildExplorerQuerySpec(
             excludedMembers,
         }
         : null;
+    const racePredicate = groupPredicates("and", raceFilters.map((filter) => ({
+        type: "compare",
+        field: filter.field,
+        operator: filter.operator,
+        value: filter.value,
+    })));
     return {
         version: 1,
         subject: "teams",
-        where: teamPredicate,
+        where: groupPredicates("and", [racePredicate, teamPredicate]),
         select: ["character", "style", "is_debuffer", "entries", "teams", "wins", "team_wins", "team_win_rate"],
         groupBy: ["character", "style", "is_debuffer"],
         orderBy: [{ field: orderField[sortKey], direction: sortDesc ? "desc" : "asc" }],
@@ -355,9 +362,10 @@ export function buildExplorerQueryRequest(
     sortKey: SortKey,
     sortDesc: boolean,
     selectedRowKey: string | null,
+    raceFilters: ReplayRaceFilter[] = [],
 ) {
     return {
-        querySpec: buildExplorerQuerySpec(features, sortKey, sortDesc),
+        querySpec: buildExplorerQuerySpec(features, sortKey, sortDesc, raceFilters),
         sortKey,
         sortDesc,
         selectedRowKey,

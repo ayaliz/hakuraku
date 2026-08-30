@@ -39,6 +39,8 @@ export type HpDebuffHit = {
     time: number;
     drainRatio: number;
     estimatedHpDrain: number;
+    isSelfCost?: boolean;
+    isLateRace: boolean;
 };
 
 export type DebuffSpurtImpact = {
@@ -47,9 +49,16 @@ export type DebuffSpurtImpact = {
     estimatedHpDrain: number;
 };
 
+export type RushedEventData = {
+    name: string;
+    time: number;
+    duration: number;
+};
+
 export type CharaTableData = {
     trainedChara: TrainedCharaData,
     chara: Chara | undefined,
+    displayName?: string,
     subLabel?: string,
 
     frameOrder: number,
@@ -85,6 +94,8 @@ export type CharaTableData = {
     hpAtPhase3Start?: number;
     requiredSpurtHp?: number;
     hpDebuffHits?: HpDebuffHit[];
+    rushedDuration?: number;
+    rushedEvents?: RushedEventData[];
     debuffSpurtImpacts?: Map<number, DebuffSpurtImpact[]>;
     duelingTime?: number;
     downhillModeTime?: number;

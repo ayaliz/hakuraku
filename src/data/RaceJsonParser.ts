@@ -244,6 +244,38 @@ function readFanCount(trainedChara: any): number | undefined {
     return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
 }
 
+function normalizeCharaName(name: unknown): string {
+    return typeof name === "string"
+        ? name.trim().toLocaleLowerCase().replace(/[\s'’._-]+/g, "")
+        : "";
+}
+
+function findCharaIdByName(name: unknown): number | undefined {
+    const normalizedName = normalizeCharaName(name);
+    if (!normalizedName) return undefined;
+
+    const match = Object.values(UMDatabaseWrapper.charas).find(
+        chara => normalizeCharaName(chara.name) === normalizedName,
+    );
+    return match?.id;
+}
+
+function hydrateActCharaIdentity(horseData: any, member: any): any {
+    const raceCharaName = member?.charaName ?? member?.chara_name;
+    const responseCharaId = Number(horseData?.chara_id ?? horseData?.charaId);
+    const memberCharaId = Number(member?.charaId ?? member?.chara_id);
+    const namedCharaId = findCharaIdByName(raceCharaName);
+    const resolvedCharaId = namedCharaId
+        ?? (UMDatabaseWrapper.charas[memberCharaId] ? memberCharaId : undefined)
+        ?? responseCharaId;
+
+    return {
+        ...horseData,
+        chara_id: resolvedCharaId,
+        chara_name: raceCharaName ?? horseData?.chara_name ?? horseData?.charaName,
+    };
+}
+
 function parseCourseIdFromFilename(fileName?: string): number | undefined {
     if (!fileName) return undefined;
     const match = fileName.match(/^(\d+)_/);
@@ -305,7 +337,7 @@ function parseActFormatRaceJson(json: any): ParsedStandardRaceJson | { error: st
                 deckByViewerAndCard.set(`${viewerId}:${cardId}`, deckMapValue(deck));
             }
             return {
-                ...horseData,
+                ...hydrateActCharaIdentity(horseData, member),
                 fan_count: horseData.fan_count ?? horseData.fanCount ?? horseData.fans ?? readFanCount(trainedChara),
                 rank_score: horseData.rank_score ?? readRankScore(trainedChara),
                 scenario_id: readScenarioId(trainedChara),

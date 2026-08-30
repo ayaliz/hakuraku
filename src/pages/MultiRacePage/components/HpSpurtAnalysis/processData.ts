@@ -9,6 +9,7 @@ import { computeCharaTableData } from "../../../../components/RaceDataPresenter/
 import { calculateRaceDistance } from "../../../../components/RaceDataPresenter/utils/RacePresenterUtils";
 import { hasLowHpNegativeSpurtSuspicion } from "../../../../components/RaceDataPresenter/components/CharaList/utils";
 import { getSkillDef } from "../../../../components/RaceReplay/utils/SkillDataUtils";
+import { getSelfHpDrainEstimate } from "../../../../components/RaceReplay/utils/selfHpDrainUtils";
 
 const FULL_SPURT_SPEED_TOLERANCE = 0.05;
 
@@ -58,19 +59,33 @@ function formatEffectPercent(value: number): string {
     return `${percent.toFixed(digits)}%`;
 }
 
-function buildDebuffScenarioDescriptor(earlyDebuffTotal: number, lateDebuffTotal: number) {
-    const scenarioId = `debuff-e${Math.abs(earlyDebuffTotal)}-l${Math.abs(lateDebuffTotal)}`;
-    if (earlyDebuffTotal === 0 && lateDebuffTotal === 0) {
+function buildHpDrainScenarioDescriptor(earlyDrainTotal: number, lateDrainTotal: number) {
+    const scenarioId = `drain-e${Math.abs(earlyDrainTotal)}-l${Math.abs(lateDrainTotal)}`;
+    if (earlyDrainTotal === 0 && lateDrainTotal === 0) {
         return { scenarioId, label: "" };
     }
 
     const labelParts: string[] = [];
-    if (earlyDebuffTotal !== 0) labelParts.push(`${formatEffectPercent(earlyDebuffTotal)} early`);
-    if (lateDebuffTotal !== 0) labelParts.push(`${formatEffectPercent(lateDebuffTotal)} late`);
+    if (earlyDrainTotal !== 0) labelParts.push(`${formatEffectPercent(earlyDrainTotal)} early`);
+    if (lateDrainTotal !== 0) labelParts.push(`${formatEffectPercent(lateDrainTotal)} late`);
 
     return {
         scenarioId,
-        label: `Debuffs: ${labelParts.join(", ")}`,
+        label: `HP drains: ${labelParts.join(", ")}`,
+    };
+}
+
+function buildRushedScenarioDescriptor(
+    rushedDuration: number | undefined,
+    isFrenzied: boolean,
+) {
+    const duration = rushedDuration && rushedDuration > 0 ? rushedDuration : 0;
+    const durationKey = duration.toFixed(3).replace(/\.?0+$/, "");
+    return {
+        scenarioId: `rushed-${durationKey}${isFrenzied ? "-frenzied" : ""}`,
+        label: duration > 0
+            ? `Rushed: ${duration.toFixed(Number.isInteger(duration) ? 0 : 2)}s${isFrenzied ? " (Frenzied)" : ""}`
+            : "Rushed: none",
     };
 }
 
@@ -422,17 +437,29 @@ export const computeHpSpurtStats = (
                     .map(id => ({ id, value: getRecoveryValue(id) }))
                     .filter(s => s.value !== null)
                     .map(s => ({ ...s, value: s.value! }));
-                let earlyDebuffTotal = 0;
-                let lateDebuffTotal = 0;
+                let earlyDrainTotal = 0;
+                let lateDrainTotal = 0;
                 filterCharaTargetedSkills(raceData, frameOrder, race.horseInfo).forEach(event => {
                     const value = getHpDebuffValue(event.param[1]);
                     if (value === null) return;
 
                     const startDistance = interpolateDistanceAtTime(raceData.frame ?? [], frameOrder, event.frameTime ?? 0);
                     if (startDistance >= phase3Start) {
-                        lateDebuffTotal += value;
+                        lateDrainTotal += value;
                     } else {
-                        earlyDebuffTotal += value;
+                        earlyDrainTotal += value;
+                    }
+                });
+                filterCharaSkills(raceData, frameOrder).forEach(event => {
+                    const selfCost = getSelfHpDrainEstimate(raceData, event, race.horseInfo);
+                    if (!selfCost || selfCost.drainRatio <= 0) return;
+
+                    const value = -selfCost.drainRatio * 10000;
+                    const startDistance = interpolateDistanceAtTime(raceData.frame ?? [], frameOrder, event.frameTime ?? 0);
+                    if (startDistance >= phase3Start) {
+                        lateDrainTotal += value;
+                    } else {
+                        earlyDrainTotal += value;
                     }
                 });
 
@@ -481,11 +508,14 @@ export const computeHpSpurtStats = (
                     label = labelParts.join(", ") || NO_RECOVERY_SCENARIO_LABEL;
                 }
 
-                const debuffScenario = buildDebuffScenarioDescriptor(earlyDebuffTotal, lateDebuffTotal);
-                const debuffScenarioKey = `${scenarioKey}__${debuffScenario.scenarioId}`;
-                const debuffScenarioLabel = debuffScenario.label
-                    ? `${label} | ${debuffScenario.label}`
-                    : label;
+                const hpDrainScenario = buildHpDrainScenarioDescriptor(earlyDrainTotal, lateDrainTotal);
+                const rushedScenario = buildRushedScenarioDescriptor(
+                    charaData.rushedDuration,
+                    (charaData.rushedEvents ?? []).some(event => event.name.includes("Frenzied")),
+                );
+                const debuffScenarioKey = `${scenarioKey}__${hpDrainScenario.scenarioId}__${rushedScenario.scenarioId}`;
+                const detailedLabels = [label, hpDrainScenario.label, rushedScenario.label].filter(Boolean);
+                const debuffScenarioLabel = detailedLabels.join(" | ");
 
                 if (!currentStats.recoveryStats[scenarioKey]) {
                     currentStats.recoveryStats[scenarioKey] = createRecoveryScenarioStats(scenarioKey, label);

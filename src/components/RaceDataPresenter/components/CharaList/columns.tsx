@@ -32,15 +32,46 @@ function HpDebuffSummary({ row }: { row: CharaTableData }) {
     if (hits.length === 0) return null;
     const total = hits.reduce((sum, hit) => sum + hit.estimatedHpDrain, 0);
 
+    const timingGroups = (
+        ([false, true] as const).map(isLateRace => {
+            const timingHits = hits.filter(hit => hit.isLateRace === isLateRace);
+            if (timingHits.length === 0) return null;
+            const timingTotal = timingHits.reduce((sum, hit) => sum + hit.estimatedHpDrain, 0);
+            return (
+                <div key={isLateRace ? 'late' : 'pre-late'} className="hp-drain-timing-group">
+                    <div className="hp-drain-timing-heading">
+                        {isLateRace ? 'Late race' : 'Pre-late race'}: {timingTotal.toFixed(1)} HP
+                    </div>
+                    {timingHits.map((hit, index) => (
+                        <div key={`${hit.skillId}-${hit.time}-${index}`} className="hp-debuff-hit">
+                            {hit.skillName}{hit.isSelfCost ? '' : ` by ${hit.casterName}`}: {hit.estimatedHpDrain.toFixed(1)} HP
+                            {' '}({(hit.drainRatio * 100).toFixed(1)}%)
+                        </div>
+                    ))}
+                </div>
+            );
+        })
+    );
+
     return (
         <div className="hp-debuff-summary">
-            <strong>Estimated HP drained by debuffs: {total.toFixed(1)}</strong>
-            {hits.map((hit, index) => (
-                <div key={`${hit.skillId}-${hit.time}-${index}`} className="hp-debuff-hit">
-                    {hit.skillName} by {hit.casterName}: {hit.estimatedHpDrain.toFixed(1)} HP
-                    {' '}({(hit.drainRatio * 100).toFixed(1)}%)
-                </div>
-            ))}
+            <div><strong>HP loss from skills: {total.toFixed(1)}</strong></div>
+            {timingGroups}
+        </div>
+    );
+}
+
+function RushedSummary({ row }: { row: CharaTableData }) {
+    const rushedEvents = row.rushedEvents ?? [];
+    if (rushedEvents.length === 0 || !(row.rushedDuration && row.rushedDuration > 0)) return null;
+    const isFrenzied = rushedEvents.some(event => event.name.includes("Frenzied"));
+
+    return (
+        <div className="rushed-summary">
+            <div>
+                <strong>Rushed duration: {row.rushedDuration.toFixed(2)}s</strong>
+                {isFrenzied && ' (Frenzied)'}
+            </div>
         </div>
     );
 }
@@ -239,8 +270,18 @@ const baseCharaTableColumns: CharaColumnDef[] = [
         cellClassName: 'chara-name-cell',
         renderCell: (row) => {
             const rankInfo = getRankIcon(row.trainedChara.rankScore);
-            const charaThumb = AssetLoader.getCharaThumb(row.trainedChara.cardId);
-            return row.chara ? (
+            const portraitCardId = row.trainedChara.cardId > 0
+                ? row.trainedChara.cardId
+                : row.chara?.id
+                    ? row.chara.id * 100 + 1
+                    : undefined;
+            const charaThumb = portraitCardId !== undefined
+                ? AssetLoader.getCharaThumb(portraitCardId)
+                : undefined;
+            const portraitName = portraitCardId !== undefined
+                ? UMDatabaseWrapper.cards[portraitCardId]?.name ?? row.displayName ?? String(portraitCardId)
+                : row.displayName ?? '';
+            return (
                 <div className="col-chara-ident">
                     <img
                         src={rankInfo.icon}
@@ -251,20 +292,20 @@ const baseCharaTableColumns: CharaColumnDef[] = [
                     {charaThumb && (
                         <img
                             src={charaThumb}
-                            alt={UMDatabaseWrapper.cards[row.trainedChara.cardId]?.name ?? String(row.trainedChara.cardId)}
-                            title={UMDatabaseWrapper.cards[row.trainedChara.cardId]?.name ?? String(row.trainedChara.cardId)}
+                            alt={portraitName}
+                            title={portraitName}
                             className="col-chara-thumb"
                             onError={(e) => { e.currentTarget.style.display = 'none'; }}
                         />
                     )}
                     <div>
-                        <span className="chara-name-primary">{row.chara.name}</span>
+                        <span className="chara-name-primary">{row.displayName ?? unknownCharaTag}</span>
                         {row.subLabel && (
                             <span className="chara-viewer-name">{row.subLabel}</span>
                         )}
                     </div>
                 </div>
-            ) : unknownCharaTag;
+            );
         },
     },
     {
@@ -341,7 +382,7 @@ const baseCharaTableColumns: CharaColumnDef[] = [
             const spurtDist = row.horseResultData.lastSpurtStartDistance;
             if (spurtDist === -1) {
                 const noSpurtContent = <span className="status-bad">No spurt</span>;
-                if (!row.hpDebuffHits?.length) return noSpurtContent;
+                if (!row.hpDebuffHits?.length && !row.rushedEvents?.length) return noSpurtContent;
                 return (
                     <OverlayTrigger
                         placement="auto"
@@ -349,6 +390,7 @@ const baseCharaTableColumns: CharaColumnDef[] = [
                             <Tooltip id={`spurt-hp-${row.frameOrder}`}>
                                 <div className="col-hp-tooltip">
                                     <HpDebuffSummary row={row} />
+                                    <RushedSummary row={row} />
                                 </div>
                             </Tooltip>
                         }
@@ -376,6 +418,7 @@ const baseCharaTableColumns: CharaColumnDef[] = [
 
             const hasHpInfo = row.hpAtPhase3Start !== undefined || row.requiredSpurtHp !== undefined;
             const hasHpDebuffs = (row.hpDebuffHits?.length ?? 0) > 0;
+            const hasRushed = (row.rushedEvents?.length ?? 0) > 0;
             const hasSpurtSpeedInfo = row.maxAdjustedSpeed !== undefined || expectedObservedSpurtSpeed !== undefined;
             const startHp = row.hpOutcome?.startHp;
 
@@ -395,7 +438,7 @@ const baseCharaTableColumns: CharaColumnDef[] = [
             const blockedIconUrl = hasPotentialSpurtIssue ? AssetLoader.getBlockedIcon() : null;
 
             const cellContent = (
-                <div className={`col-spurt-cell${hasHpInfo || hasPotentialSpurtIssue || hasHpDebuffs || hasSpurtSpeedInfo ? ' col-spurt-help' : ''}`}>
+                <div className={`col-spurt-cell${hasHpInfo || hasPotentialSpurtIssue || hasHpDebuffs || hasRushed || hasSpurtSpeedInfo ? ' col-spurt-help' : ''}`}>
                     <span>Delay: <span className="col-spurt-delay-val" style={{ color: spurtColor }}>{spurtDelay.toFixed(1)}m</span></span>
                     {row.maxAdjustedSpeed && row.lastSpurtTargetSpeed && (
                         <>
@@ -414,7 +457,7 @@ const baseCharaTableColumns: CharaColumnDef[] = [
                 </div>
             );
 
-            if (!hasHpInfo && !hasPotentialSpurtIssue && !hasHpDebuffs && !hasSpurtSpeedInfo) return cellContent;
+            if (!hasHpInfo && !hasPotentialSpurtIssue && !hasHpDebuffs && !hasRushed && !hasSpurtSpeedInfo) return cellContent;
 
             const hpPct = (row.hpAtPhase3Start !== undefined && startHp)
                 ? ` (${((row.hpAtPhase3Start / startHp) * 100).toFixed(1)}%)`
@@ -452,6 +495,7 @@ const baseCharaTableColumns: CharaColumnDef[] = [
                             </div>
                         )}
                         <HpDebuffSummary row={row} />
+                        <RushedSummary row={row} />
                         {hasLateHeal && (
                             <div className="late-heal-warning">
                                 <strong>Potential spurt issue</strong>

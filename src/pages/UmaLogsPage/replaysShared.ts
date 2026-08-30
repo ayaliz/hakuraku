@@ -23,8 +23,7 @@ export type ReplayRaceFilterField =
     | "room_pace_count"
     | "room_late_count"
     | "room_end_count"
-    | "horse_count"
-    | "team_count";
+    | "room_debuffer_count";
 export type ReplayRaceFilter = {
     id: string;
     field: ReplayRaceFilterField;

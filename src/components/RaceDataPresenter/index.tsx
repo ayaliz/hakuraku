@@ -92,8 +92,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
         if (raceHorseInfo && raceHorseInfo.length === raceData.horseResult.length) {
             raceHorseInfo.forEach((d: any) => {
                 const frameOrder = d['frame_order'] - 1; // 0-indexed
-                const charaId = d['chara_id'];
-                const charaDisplayName = charaId in UMDatabaseWrapper.charas ? UMDatabaseWrapper.charas[charaId].name : unknownCharaTag;
+                const charaDisplayName = UMDatabaseWrapper.raceHorseDisplayName(d) ?? unknownCharaTag;
                 const trainerNameSuffix = d['trainer_name'] ? ` [${d['trainer_name']}]` : '';
                 nameFromRaceHorseInfo[frameOrder] = ` ${charaDisplayName}${trainerNameSuffix}`;
             });

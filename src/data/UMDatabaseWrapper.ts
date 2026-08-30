@@ -124,6 +124,19 @@ class _UMDatabaseWrapper {
 
     getTextData = (category: number, index: number): TextData | undefined =>
         this.textData[category]?.[index];
+
+    raceHorseDisplayName = (raceHorse: any): string | undefined => {
+        const charaId = Number(raceHorse?.chara_id ?? raceHorse?.charaId);
+        const charaName = this.charas[charaId]?.name;
+        if (charaName) return charaName;
+
+        const mobId = Number(raceHorse?.mob_id ?? raceHorse?.mobId);
+        const mobName = this.getTextData(59, mobId)?.text;
+        if (mobName) return mobName;
+
+        const embeddedName = raceHorse?.chara_name ?? raceHorse?.charaName;
+        return typeof embeddedName === 'string' && embeddedName.trim() ? embeddedName.trim() : undefined;
+    };
 }
 
 const UMDatabaseWrapper = new _UMDatabaseWrapper();

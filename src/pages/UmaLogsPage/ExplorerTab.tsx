@@ -15,6 +15,7 @@ import {
 import { SerializedHorseEntry, UMA_LOGS_API_BASE, deserializeHorseEntry } from "./umaLogsApi";
 import { CharaSelect, SkillSelect, SupportCardSelect } from "./ExplorerSelects";
 import { buildExplorerQueryRequest, buildExplorerQuerySpec, serializeUmaLogsQuerySpec } from "./umaLogsQueryShared";
+import type { ReplayRaceFilter, ReplayRaceFilterField } from "./replaysShared";
 import "./UmaLogsPage.css";
 
 interface ExplorerTabProps {
@@ -36,6 +37,8 @@ type SavedExplorerState = {
     sortDesc: boolean;
     hideLowQuantity: boolean;
     minimumEntries: number;
+    raceFilters: ReplayRaceFilter[];
+    appliedRaceFilters: ReplayRaceFilter[];
 };
 
 function explorerStateKey(cmId?: string | null, courseId?: number): string | null {
@@ -56,6 +59,8 @@ function readSavedExplorerState(cmId?: string | null, courseId?: number): SavedE
             sortDesc: parsed.sortDesc !== false,
             hideLowQuantity: parsed.hideLowQuantity === true,
             minimumEntries: Math.max(0, Number(parsed.minimumEntries) || 200),
+            raceFilters: sanitizeRaceFilters(parsed.raceFilters),
+            appliedRaceFilters: sanitizeRaceFilters(parsed.appliedRaceFilters),
         };
     } catch {
         return null;
@@ -95,6 +100,27 @@ const PROPERTY_LABELS: Record<ExplorerFilterProperty, string> = {
     supportCard: "Support card",
 };
 const PROPERTY_OPTIONS = Object.keys(PROPERTY_LABELS) as ExplorerFilterProperty[];
+const RACE_FILTER_FIELDS: Array<{ value: ReplayRaceFilterField; label: string }> = [
+    { value: "room_runaway_count", label: "Room Runaways" },
+    { value: "room_front_count", label: "Room Front Runners" },
+    { value: "room_pace_count", label: "Room Pace Chasers" },
+    { value: "room_late_count", label: "Room Late Surgers" },
+    { value: "room_end_count", label: "Room End Closers" },
+    { value: "room_debuffer_count", label: "Room Debuffers" },
+];
+const RACE_FILTER_FIELD_SET = new Set<ReplayRaceFilterField>(RACE_FILTER_FIELDS.map(({ value }) => value));
+
+function sanitizeRaceFilters(input: unknown): ReplayRaceFilter[] {
+    if (!Array.isArray(input)) return [];
+    return input.flatMap((value) => {
+        if (!value || typeof value !== "object") return [];
+        const filter = value as Partial<ReplayRaceFilter>;
+        if (!filter.id || !RACE_FILTER_FIELD_SET.has(filter.field as ReplayRaceFilterField) || !["=", "<=", ">="].includes(String(filter.operator))) return [];
+        const numericValue = Number(filter.value);
+        if (!Number.isFinite(numericValue) || numericValue < 0) return [];
+        return [{ ...filter, value: Math.floor(numericValue) } as ReplayRaceFilter];
+    }).slice(0, 10);
+}
 
 const STRATEGIES = STYLE_BREAKDOWN_STRATEGY_ORDER;
 const APTITUDE_GRADE_OPTIONS = [
@@ -197,6 +223,8 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
     const [queryError, setQueryError] = useState<string | null>(null);
     const [hideLowQuantity, setHideLowQuantity] = useState(initialSavedState?.hideLowQuantity ?? false);
     const [minimumEntries, setMinimumEntries] = useState(initialSavedState?.minimumEntries ?? 200);
+    const [raceFilters, setRaceFilters] = useState<ReplayRaceFilter[]>(initialSavedState?.raceFilters ?? []);
+    const [appliedRaceFilters, setAppliedRaceFilters] = useState<ReplayRaceFilter[]>(initialSavedState?.appliedRaceFilters ?? []);
     const [loadedStateKey, setLoadedStateKey] = useState(explorerStateKey(cmId, courseId));
 
     const cardVariants = useMemo(
@@ -239,6 +267,8 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
         setSelectedRowKey(null);
         setHideLowQuantity(saved?.hideLowQuantity ?? false);
         setMinimumEntries(saved?.minimumEntries ?? 200);
+        setRaceFilters(saved?.raceFilters ?? []);
+        setAppliedRaceFilters(saved?.appliedRaceFilters ?? []);
         setLoadedStateKey(explorerStateKey(cmId, courseId));
     }, [cmId, courseId]);
 
@@ -253,9 +283,11 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
             sortDesc,
             hideLowQuantity,
             minimumEntries,
+            raceFilters,
+            appliedRaceFilters,
         };
         sessionStorage.setItem(key, JSON.stringify(saved));
-    }, [appliedCharacterFeatures, characterFeatures, cmId, courseId, hideLowQuantity, loadedStateKey, minimumEntries, queryVersion, sortDesc, sortKey]);
+    }, [appliedCharacterFeatures, appliedRaceFilters, characterFeatures, cmId, courseId, hideLowQuantity, loadedStateKey, minimumEntries, queryVersion, raceFilters, sortDesc, sortKey]);
 
     useEffect(() => {
         if (!apiMode || !cmId || !courseId || bootstrap !== null) return;
@@ -301,6 +333,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                     sortKey,
                     sortDesc,
                     selectedRowKey,
+                    appliedRaceFilters,
                 )),
                 signal: controller.signal,
             })
@@ -331,7 +364,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
             window.clearTimeout(timeout);
             controller.abort();
         };
-    }, [apiBase, apiMode, appliedCharacterFeatures, bootstrap, cmId, courseId, queryVersion, selectedRowKey, sortDesc, sortKey]);
+    }, [apiBase, apiMode, appliedCharacterFeatures, appliedRaceFilters, bootstrap, cmId, courseId, queryVersion, selectedRowKey, sortDesc, sortKey]);
 
     const addCharacterFeature = () => setCharacterFeatures(prev => [...prev, {
         id: `${Date.now()}-${Math.random()}`,
@@ -383,6 +416,17 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                 }),
             };
         }));
+
+    const addRaceFilter = () => setRaceFilters((current) => [...current, {
+        id: `${Date.now()}-${Math.random()}`,
+        field: "room_front_count",
+        operator: "=",
+        value: 0,
+    }]);
+    const updateRaceFilter = (id: string, patch: Partial<ReplayRaceFilter>) =>
+        setRaceFilters((current) => current.map((filter) => filter.id === id ? { ...filter, ...patch } : filter));
+    const removeRaceFilter = (id: string) =>
+        setRaceFilters((current) => current.filter((filter) => filter.id !== id));
 
     const handleSort = (key: SortKey) => {
         if (sortKey === key) setSortDesc(d => !d);
@@ -439,10 +483,13 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
     const activeStrategyColors = strategyColors ?? STRATEGY_COLORS;
     const effectiveFeatureSignature = useMemo(() => JSON.stringify(effectiveCharacterFeatures), [effectiveCharacterFeatures]);
     const appliedFeatureSignature = useMemo(() => JSON.stringify(appliedCharacterFeatures), [appliedCharacterFeatures]);
-    const filtersDirty = effectiveFeatureSignature !== appliedFeatureSignature;
+    const raceFilterSignature = useMemo(() => JSON.stringify(raceFilters), [raceFilters]);
+    const appliedRaceFilterSignature = useMemo(() => JSON.stringify(appliedRaceFilters), [appliedRaceFilters]);
+    const filtersDirty = effectiveFeatureSignature !== appliedFeatureSignature || raceFilterSignature !== appliedRaceFilterSignature;
     const hasRunQuery = queryVersion > 0;
     const runQuery = () => {
         setAppliedCharacterFeatures(effectiveCharacterFeatures);
+        setAppliedRaceFilters(raceFilters);
         setQueryVersion((current) => current + 1);
         setSelectedRowKey(null);
     };
@@ -451,6 +498,8 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
         if (key) sessionStorage.removeItem(key);
         setCharacterFeatures([]);
         setAppliedCharacterFeatures([]);
+        setRaceFilters([]);
+        setAppliedRaceFilters([]);
         setQueryVersion(0);
         setSortKey("entries");
         setSortDesc(true);
@@ -566,6 +615,36 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
 
                 <div className="exp-subsection">
                     <div className="exp-subsection-header">
+                        <span className="exp-subsection-title">Race Conditions</span>
+                        <span className="exp-subsection-note">Apply constraints to the whole room.</span>
+                        <div className="exp-subsection-actions">
+                            <button type="button" className="exp-add-btn" onClick={addRaceFilter}>+ Add condition</button>
+                        </div>
+                    </div>
+                    {raceFilters.length === 0 ? (
+                        <div className="rpl-empty-team-filters">No race-wide conditions.</div>
+                    ) : (
+                        <div className="rpl-race-filter-list">
+                            {raceFilters.map((filter) => (
+                                <div key={filter.id} className="rpl-race-filter-row">
+                                    <select className="exp-select" value={filter.field} onChange={(event) => updateRaceFilter(filter.id, { field: event.target.value as ReplayRaceFilterField })}>
+                                        {RACE_FILTER_FIELDS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                    </select>
+                                    <select className="exp-select rpl-race-filter-operator" value={filter.operator} onChange={(event) => updateRaceFilter(filter.id, { operator: event.target.value as ReplayRaceFilter["operator"] })}>
+                                        <option value="=">=</option>
+                                        <option value="<=">&lt;=</option>
+                                        <option value=">=">&gt;=</option>
+                                    </select>
+                                    <input className="exp-stat-input rpl-race-filter-value" type="number" min={0} value={filter.value} onChange={(event) => updateRaceFilter(filter.id, { value: Math.max(0, Number(event.target.value) || 0) })} />
+                                    <button type="button" className="exp-remove-btn" onClick={() => removeRaceFilter(filter.id)}>x</button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <div className="exp-subsection">
+                    <div className="exp-subsection-header">
                         <span className="exp-subsection-title">Your Team</span>
                         <span className="exp-subsection-note">
                             Each card matches a different uma on your team.
@@ -586,7 +665,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                                 <button
                                     className="query-help-btn"
                                     type="button"
-                                    onClick={() => onEditAsQuery(serializeUmaLogsQuerySpec(buildExplorerQuerySpec(effectiveCharacterFeatures, sortKey, sortDesc)))}
+                                    onClick={() => onEditAsQuery(serializeUmaLogsQuerySpec(buildExplorerQuerySpec(effectiveCharacterFeatures, sortKey, sortDesc, raceFilters)))}
                                 >
                                     Edit as query
                                 </button>
@@ -595,7 +674,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                                 className="query-help-btn"
                                 type="button"
                                 onClick={resetQuery}
-                                disabled={queryLoading || (!characterFeatures.length && !hasRunQuery && sortKey === "entries" && sortDesc && !hideLowQuantity && minimumEntries === 200)}
+                                disabled={queryLoading || (!characterFeatures.length && !raceFilters.length && !hasRunQuery && sortKey === "entries" && sortDesc && !hideLowQuantity && minimumEntries === 200)}
                             >
                                 Reset
                             </button>

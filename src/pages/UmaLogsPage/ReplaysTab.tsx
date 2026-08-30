@@ -77,8 +77,7 @@ const RACE_FILTER_FIELDS: Array<{ value: ReplayRaceFilterField; label: string }>
     { value: "room_pace_count", label: "Room Pace Chasers" },
     { value: "room_late_count", label: "Room Late Surgers" },
     { value: "room_end_count", label: "Room End Closers" },
-    { value: "horse_count", label: "Room characters" },
-    { value: "team_count", label: "Room teams" },
+    { value: "room_debuffer_count", label: "Room Debuffers" },
 ];
 
 const SUPPORT_CARD_LB_OPTIONS = [

@@ -582,6 +582,7 @@ export function runExplorerQuery(
     const teamMap = buildTeamMap(horses);
     const hasCharacterFilter = characterFeatures.length > 0;
     const displayHorses: HorseEntry[] = [];
+    const filteredHorses: HorseEntry[] = [];
     let filteredTeams = 0;
     let filteredEntries = 0;
     let filteredTeamWins = 0;
@@ -597,6 +598,7 @@ export function runExplorerQuery(
 
         for (const horse of teammates) {
             if (horse.teamId <= 0) continue;
+            filteredHorses.push(horse);
             filteredEntries += 1;
             if (horse.finishOrder === 1) teamWon = true;
             if (!hasCharacterFilter) displayHorses.push(horse);
@@ -622,7 +624,7 @@ export function runExplorerQuery(
         filteredEntries,
         hasCharacterFilter,
         rows,
-        drilldown: buildExplorerDrilldown(horses, selectedRow),
-        teamDrilldown: buildExplorerTeamDrilldown(horses, selectedRow),
+        drilldown: buildExplorerDrilldown(displayHorses, selectedRow),
+        teamDrilldown: buildExplorerTeamDrilldown(filteredHorses, selectedRow),
     };
 }

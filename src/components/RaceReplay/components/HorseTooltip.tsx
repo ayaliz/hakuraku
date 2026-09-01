@@ -23,6 +23,7 @@ const HorseTooltip: React.FC<HorseTooltipProps> = ({ hoveredHorse, entry, name, 
     const hpStr = entry.maxHp > 0
         ? `HP: ${Math.round(entry.hp)}/${Math.round(entry.maxHp)} (${((entry.hp / entry.maxHp) * 100).toFixed(1)}%)`
         : null;
+    const signed = (value: number, digits: number) => `${value >= 0 ? "+" : ""}${value.toFixed(digits)}`;
 
     const tipY = Math.max(hoveredHorse.y - 8, 4);
     const flipLeft = hoveredHorse.x > hoveredHorse.containerW / 2;
@@ -46,6 +47,13 @@ const HorseTooltip: React.FC<HorseTooltipProps> = ({ hoveredHorse, entry, name, 
                 entry.targetSpeedMin === entry.targetSpeedMax
                     ? <div>Target: {entry.targetSpeedMin.toFixed(2)} m/s</div>
                     : <div>Target: {entry.targetSpeedMin.toFixed(2)} - {entry.targetSpeedMax.toFixed(2)} m/s</div>
+            )}
+            {entry.sectionNumber !== undefined
+                && entry.sectionBaseSpeedAddend !== undefined
+                && entry.sectionBaseSpeedPercentage !== undefined && (
+                <div>
+                    Section {entry.sectionNumber} speed wit roll: {signed(entry.sectionBaseSpeedAddend, 3)} m/s ({signed(entry.sectionBaseSpeedPercentage, 3)}%)
+                </div>
             )}
             {hpStr && <div>{hpStr}</div>}
             {entry.startDelay > 0 && <div>Start delay: {(entry.startDelay * 1000).toFixed(0)} ms</div>}

@@ -54,6 +54,7 @@ import {
 } from "./utils/chartBuilders";
 import GameDataLoader from "../../data/GameDataLoader";
 import { parseGroundCondition } from "../RaceDataPresenter/utils/RacePresenterUtils";
+import { computeRaceSkillLottery } from "../RaceDataPresenter/utils/witLottery";
 
 echarts.use([
     ScatterChart,
@@ -77,6 +78,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     detectedCourseId,
     laneDistanceMax,
     raceType,
+    randomSeed,
     trackDetails,
     onTrackChange,
 }) => {
@@ -221,6 +223,10 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         return map;
     }, [raceData.horseResult]);
 
+    const sectionWitRollsByFrameOrder = useMemo(() => (
+        computeRaceSkillLottery(raceHorseInfo, raceData, randomSeed, raceType)?.sectionWitRollsByFrameOrder
+    ), [raceData, raceHorseInfo, raceType, randomSeed]);
+
     const echartsRef = React.useRef<any>(null);
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
     const { isExporting, handleExport } = useRaceExport(echartsRef, canvasRef, renderTime, isPlaying, playPause, setRenderTime);
@@ -254,6 +260,7 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
         cameraWindow,
         yMaxWithHeadroom,
         groundCondition,
+        sectionWitRollsByFrameOrder,
     });
     tickRef.current = tick;
     const replayInstanceKey = useMemo(() => {

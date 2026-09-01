@@ -96,6 +96,7 @@ export type CharaTableData = {
     hpDebuffHits?: HpDebuffHit[];
     rushedDuration?: number;
     rushedEvents?: RushedEventData[];
+    rushedPreventedByRestraint?: boolean;
     debuffSpurtImpacts?: Map<number, DebuffSpurtImpact[]>;
     duelingTime?: number;
     downhillModeTime?: number;

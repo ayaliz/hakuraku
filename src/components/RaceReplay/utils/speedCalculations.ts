@@ -135,6 +135,28 @@ export function adjustStat(stat: number, mood: number, bonus: number = 0): numbe
     return val * moodMod + bonus;
 }
 
+export function calculateSectionBaseSpeedWitRoll(params: {
+    courseDistance: number;
+    wisdomStat: number;
+    strategyProficiency?: number;
+    mood: number;
+    wisdomBonus?: number;
+    roll: number;
+}): { speedAddend: number; percentage: number } {
+    const baseSpeed = BASE_SPEED_CONSTANT
+        - (params.courseDistance - BASE_SPEED_COURSE_OFFSET) / BASE_SPEED_COURSE_SCALE;
+    const strategyProficiencyModifier = STRATEGY_PROFICIENCY_MODIFIER[params.strategyProficiency ?? 7] ?? 1.0;
+    const adjustedWisdom = adjustStat(params.wisdomStat, params.mood) * strategyProficiencyModifier
+        + (params.wisdomBonus ?? 0);
+    const rangeMax = (adjustedWisdom / WISDOM_VARIANCE_DIVISOR)
+        * Math.log10(WISDOM_LOG_SCALE * adjustedWisdom);
+    const percentage = rangeMax - WISDOM_MIN_PCT_OFFSET + params.roll * WISDOM_MIN_PCT_OFFSET;
+    return {
+        speedAddend: baseSpeed * percentage / 100,
+        percentage,
+    };
+}
+
 function getTrackStatThresholdModifier(courseId: number, stats: { speed: number, stamina: number, power: number, guts: number, wisdom: number }, mood: number): number {
     if (!courseId) return 1.0;
     const trackInfo = GameDataLoader.racetracks.pageProps.racetrackFilterData.find((t: any) => t.id === courseId);

@@ -54,6 +54,19 @@ export function getPassiveStatModifiers(skillId: number, conditionGroupIndex?: n
     return mods;
 }
 
+export function getRushedChanceModifier(skillId: number, conditionGroupIndex?: number): number {
+    const def = getSkillDef(skillId);
+    if (!def || def.conditionGroups.length === 0) return 0;
+
+    const groups = conditionGroupIndex === undefined
+        ? def.conditionGroups
+        : [getSkillConditionGroup(skillId, conditionGroupIndex)].filter(group => group !== undefined);
+    return groups.reduce((total, group) => total + group.effects.reduce(
+        (groupTotal, effect) => groupTotal + (effect.type === 29 ? effect.value / 10000 : 0),
+        0,
+    ), 0);
+}
+
 // Hardcoded for special skills whose effects are custom-scripted and absent from skill_data
 const HARDCODED_SPEED_MODIFIERS: Record<number, number> = {
     210061: 0.3,

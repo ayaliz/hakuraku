@@ -5,7 +5,7 @@ import GameDataLoader from "../../../../data/GameDataLoader";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import { useAvailableTracks } from "../../../RaceReplay/hooks/useAvailableTracks";
 import { useGuessTrack } from "../../../RaceReplay/hooks/useGuessTrack";
-import { getPassiveStatModifiers, getSkillDurationSecs, getSkillBaseTime, getHpDrainRatio, countGreenSkills } from "../../../RaceReplay/utils/SkillDataUtils";
+import { getPassiveStatModifiers, getRushedChanceModifier, getSkillDurationSecs, getSkillBaseTime, getHpDrainRatio, countGreenSkills } from "../../../RaceReplay/utils/SkillDataUtils";
 import { getSelfHpDrainEstimate } from "../../../RaceReplay/utils/selfHpDrainUtils";
 import type { SkillScalingStats } from "../../../RaceReplay/utils/SkillDataUtils";
 import { TEMPTATION_TEXT } from "../../../RaceReplay/RaceReplay.constants";
@@ -95,7 +95,7 @@ export const computeCharaTableData = (
     const groundModifier = computeGroundModifier(surface, groundCondition ?? 0);
     const groundSpeedBonus = (groundCondition ?? 0) === 4 ? -50 : 0;
     const groundPowerBonus = computeGroundPowerBonus(surface, groundCondition ?? 0);
-    const skillLottery = computeRaceSkillLottery(raceHorseInfo, raceData, randomSeed);
+    const skillLottery = computeRaceSkillLottery(raceHorseInfo, raceData, randomSeed, raceType);
 
     // Prepare data for heuristic events calculation
     const trainedCharaByIdx: Record<number, TrainedCharaData> = {};
@@ -674,6 +674,15 @@ export const computeCharaTableData = (
             return sum + base + upgrade;
         }, 0);
 
+        const rushedLotteryResult = skillLottery?.rushedByFrameOrder.get(frameOrder + 1);
+        const restraintModifier = activatedSkillIds.has(202161)
+            ? getRushedChanceModifier(202161, activatedSkillGroups.get(202161))
+            : 0;
+        const rushedPreventedByRestraint = restraintModifier < 0
+            && rushedLotteryResult !== undefined
+            && !rushedLotteryResult.enabled
+            && rushedLotteryResult.threshold - restraintModifier > rushedLotteryResult.enableRoll;
+
         return {
             trainedChara: trainedCharaData,
             chara: UMDatabaseWrapper.charas[trainedCharaData.charaId],
@@ -713,6 +722,7 @@ export const computeCharaTableData = (
             requiredSpurtHp,
             rushedDuration,
             rushedEvents,
+            rushedPreventedByRestraint,
             duelingTime,
             downhillModeTime,
             downhillModeTimePreLate,

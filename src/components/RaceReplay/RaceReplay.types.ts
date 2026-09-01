@@ -10,6 +10,7 @@ export type RaceReplayProps = {
     detectedCourseId?: number;
     laneDistanceMax?: number;
     raceType?: string;
+    randomSeed?: number;
     onTrackChange?: (courseId: number | undefined) => void;
     trackDetails?: {
         condition?: string;

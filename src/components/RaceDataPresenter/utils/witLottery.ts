@@ -1,6 +1,10 @@
 import { RaceSimulateData, RaceSimulateEventData_SimulateEventType } from "../../../data/race_data_pb";
 import { CharaSkill, fromRaceHorseData, TrainedCharaData } from "../../../data/TrainedCharaData";
 import UMDatabaseWrapper from "../../../data/UMDatabaseWrapper";
+import { filterCharaSkills } from "../../../data/RaceDataUtils";
+import { getPassiveStatModifiers, getRushedChanceModifier } from "../../RaceReplay/utils/SkillDataUtils";
+import { STRATEGY_PROFICIENCY_MODIFIER } from "../../RaceReplay/utils/speedCalculations";
+import { CAREER_RACE_STAT_BONUS } from "../../RaceReplay/utils/raceConstants";
 
 // skill_data.activate_lot, read live off the generated master.mdb data (UMDatabaseWrapper.skills) rather
 // than a hand-maintained static table — see umdb/data.proto's Skill.activate_lot and
@@ -10,6 +14,7 @@ const hasSkillActivateLot = UMDatabaseWrapper.hasSkillActivateLot;
 const MBIG = 2147483647;
 const MSEED = 161803398;
 const MAX_BASE_SCAN = 2500;
+export const RACE_SECTION_COUNT = 24;
 const BYPASS_RETRIGGER_WINDOW_S = 0.5;
 const BYPASS_UNIQUE_IDS = new Set([110071, 910071]);
 
@@ -49,6 +54,19 @@ export type RaceSkillLotteryResult = {
     measuredBase?: number;
     totalLots: number;
     byFrameOrder: Map<number, Map<number, SkillLotteryResult>>;
+    /** Raw NextDouble() uniforms for race sections 1..24, keyed by one-based frame order. */
+    sectionWitRollsByFrameOrder: Map<number, number[]>;
+    rushedByFrameOrder: Map<number, RushedLotteryResult>;
+};
+
+export type RushedLotteryResult = {
+    wisdomFinal: number;
+    enableRoll: number;
+    thresholdModifier: number;
+    threshold: number;
+    enabled: boolean;
+    sectionRoll?: number;
+    section?: number;
 };
 
 class DotNetRandom {
@@ -202,6 +220,37 @@ function buildEquippedHorses(raceHorseInfo: any[], horseCount: number): Equipped
     return horses.filter(Boolean).sort((a, b) => a.frameOrder - b.frameOrder);
 }
 
+function rushedInputsFor(
+    horse: EquippedHorse,
+    raceData: RaceSimulateData,
+    raceType?: string,
+): { wisdomFinal: number; thresholdModifier: number } {
+    const activatedSkillGroups = new Map<number, number | undefined>();
+    for (const event of filterCharaSkills(raceData, horse.frameOrder)) {
+        activatedSkillGroups.set(Number(event.param[1]), event.param?.[3]);
+    }
+    let passiveWisdom = 0;
+    let thresholdModifier = 0;
+    activatedSkillGroups.forEach((conditionGroupIndex, skillId) => {
+        passiveWisdom += getPassiveStatModifiers(skillId, conditionGroupIndex).wisdom || 0;
+        thresholdModifier += getRushedChanceModifier(skillId, conditionGroupIndex);
+    });
+
+    const rawStyle = Number(
+        horse.trainedChara.rawData?.running_style
+        ?? horse.trainedChara.rawData?.runningStyle
+        ?? raceData.horseResult[horse.frameOrder]?.runningStyle
+        ?? 1,
+    );
+    const aptitudeStyle = rawStyle === 5 ? 1 : rawStyle;
+    const strategyProficiency = horse.trainedChara.properRunningStyles[aptitudeStyle] ?? 7;
+    const careerBonus = raceType === "Single" ? CAREER_RACE_STAT_BONUS : 0;
+    return {
+        wisdomFinal: horse.wisdom * (STRATEGY_PROFICIENCY_MODIFIER[strategyProficiency] ?? 1) + passiveWisdom + careerBonus,
+        thresholdModifier,
+    };
+}
+
 function buildTriggeredSkillEvents(raceData: RaceSimulateData): Map<string, { time: number; real: boolean }[]> {
     const byKey = new Map<string, { time: number; real: boolean }[]>();
     for (const wrapper of raceData.event ?? []) {
@@ -266,7 +315,9 @@ function calculateGateAbilitiesForBase(horses: EquippedHorse[], samples: number[
 
 function findMeasuredBase(raceData: RaceSimulateData, horses: EquippedHorse[], seed: number, totalLots: number): { base?: number; samples: number[] } {
     const horseCount = raceData.horseResult.length;
-    const samples = drawSamples(seed, MAX_BASE_SCAN + horseCount + 1);
+    // Keep the post-delay per-section block in the same stream buffer. Its final
+    // draw is at base + N + 24*N - 1, and base itself may be MAX_BASE_SCAN.
+    const samples = drawSamples(seed, MAX_BASE_SCAN + horseCount * (RACE_SECTION_COUNT + 3));
     const startDelayBits = raceData.horseResult.map(result => f32Bits(result.startDelayTime ?? 0));
 
     for (let base = totalLots; base <= MAX_BASE_SCAN; base++) {
@@ -288,6 +339,7 @@ export function computeRaceSkillLottery(
     raceHorseInfo: any[],
     raceData: RaceSimulateData,
     randomSeed: number | undefined,
+    raceType?: string,
 ): RaceSkillLotteryResult | undefined {
     if (randomSeed === undefined || !Number.isFinite(randomSeed) || raceData.horseResult.length === 0) return undefined;
 
@@ -305,11 +357,47 @@ export function computeRaceSkillLottery(
             streamVerified: false,
             totalLots,
             byFrameOrder: new Map(),
+            sectionWitRollsByFrameOrder: new Map(),
+            rushedByFrameOrder: new Map(),
         };
     }
 
     const eventsByKey = buildTriggeredSkillEvents(raceData);
     const byFrameOrder = new Map<number, Map<number, SkillLotteryResult>>();
+    const sectionWitRollsByFrameOrder = new Map<number, number[]>();
+    const sectionBlockStart = base + raceData.horseResult.length;
+    for (let frameOrder = 0; frameOrder < raceData.horseResult.length; frameOrder++) {
+        const start = sectionBlockStart + RACE_SECTION_COUNT * frameOrder;
+        sectionWitRollsByFrameOrder.set(
+            frameOrder + 1,
+            samples.slice(start, start + RACE_SECTION_COUNT),
+        );
+    }
+    const rushedByFrameOrder = new Map<number, RushedLotteryResult>();
+    if (horses.length === raceData.horseResult.length) {
+        let rushedPosition = sectionBlockStart + RACE_SECTION_COUNT * raceData.horseResult.length;
+        for (const horse of horses) {
+            const { wisdomFinal, thresholdModifier } = rushedInputsFor(horse, raceData, raceType);
+            const enableRoll = Math.trunc(samples[rushedPosition++] * 100);
+            const threshold = (6.5 / Math.log10(0.1 * wisdomFinal + 1)) ** 2 + thresholdModifier;
+            const enabled = threshold > enableRoll;
+            let sectionRoll: number | undefined;
+            let section: number | undefined;
+            if (enabled) {
+                sectionRoll = samples[rushedPosition++];
+                section = Math.trunc(sectionRoll * 8) + 2;
+            }
+            rushedByFrameOrder.set(horse.frameOrder + 1, {
+                wisdomFinal,
+                enableRoll,
+                thresholdModifier,
+                threshold,
+                enabled,
+                sectionRoll,
+                section,
+            });
+        }
+    }
     let lotPosition = base - totalLots;
 
     for (const horse of horses) {
@@ -360,5 +448,7 @@ export function computeRaceSkillLottery(
         measuredBase: base,
         totalLots,
         byFrameOrder,
+        sectionWitRollsByFrameOrder,
+        rushedByFrameOrder,
     };
 }

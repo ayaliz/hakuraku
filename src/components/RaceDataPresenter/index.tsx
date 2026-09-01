@@ -166,6 +166,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                     detectedCourseId={this.props.detectedCourseId}
                     laneDistanceMax={this.props.laneDistanceMax}
                     raceType={this.props.raceType}
+                    randomSeed={this.props.randomSeed}
                     trackDetails={this.props.trackDetails}
                     onTrackChange={this.handleTrackChange}
                 />

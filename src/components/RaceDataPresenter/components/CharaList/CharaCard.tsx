@@ -223,6 +223,22 @@ const CharaTable: React.FC<CharaTableProps> = ({ data, courseId, showPredictionC
                                                                                 />
                                                                             </OverlayTrigger>
                                                                         )}
+                                                                        {cs.skillId === 202161 && row.rushedPreventedByRestraint && (
+                                                                            <OverlayTrigger
+                                                                                placement="top"
+                                                                                overlay={
+                                                                                    <Tooltip id={`rushed-prevented-${row.frameOrder}-${cs.skillId}`}>
+                                                                                        This skill prevented this uma from becoming Rushed.
+                                                                                    </Tooltip>
+                                                                                }
+                                                                            >
+                                                                                <img
+                                                                                    src={AssetLoader.getBlockedIcon() ?? ""}
+                                                                                    alt="Prevented Rushed"
+                                                                                    className="skill-spurt-impact-icon"
+                                                                                />
+                                                                            </OverlayTrigger>
+                                                                        )}
                                                                     </div>
                                                                     {usedBadge ? (
                                                                         <span className={`skill-badge ${usedBadge.className}`} title={usedBadge.title}>

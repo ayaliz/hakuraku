@@ -2,7 +2,7 @@ import { useRef, useCallback, useEffect, type MutableRefObject, type RefObject }
 import { bisectFrameIndex, clamp01, lerp, getCharaIcon, formatSigned, mixWithWhite } from "../RaceReplay.utils";
 import { buildPositionKeepSeries, teamColorFor } from "../utils/chartBuilders";
 import { getSkillDurationSecs, getActiveSpeedDebuff, getRushedDebuffDurationSecs, hasTargetDebuffEffect, getActiveSpeedModifier, countGreenSkills } from "../utils/SkillDataUtils";
-import { calculateTargetSpeed, getDistanceCategory, computeGroundPowerBonus } from "../utils/speedCalculations";
+import { calculateSectionBaseSpeedWitRoll, calculateTargetSpeed, getDistanceCategory, computeGroundPowerBonus } from "../utils/speedCalculations";
 import GameDataLoader from "../../../data/GameDataLoader";
 import { InterpolatedFrame } from "../RaceReplay.types";
 import { TrainedCharaData } from "../../../data/TrainedCharaData";
@@ -112,6 +112,7 @@ interface CanvasOverlayParams {
     cameraWindow: number;
     yMaxWithHeadroom: number;
     groundCondition?: number;
+    sectionWitRollsByFrameOrder?: Map<number, number[]>;
 }
 
 function activationTargetsFrame(p: CanvasOverlayParams, activation: { time: number; param: number[] }, frameOrder: number): boolean {
@@ -137,6 +138,9 @@ export type HorseHoverEntry = {
     startDelay: number;
     targetSpeedMin?: number;
     targetSpeedMax?: number;
+    sectionNumber?: number;
+    sectionBaseSpeedAddend?: number;
+    sectionBaseSpeedPercentage?: number;
 };
 
 export function useCanvasOverlay(
@@ -268,6 +272,9 @@ export function useCanvasOverlay(
             // Compute target speed for hover tooltip
             let targetSpeedMin: number | undefined;
             let targetSpeedMax: number | undefined;
+            let sectionNumber: number | undefined;
+            let sectionBaseSpeedAddend: number | undefined;
+            let sectionBaseSpeedPercentage: number | undefined;
             const trainedChara = p.trainedCharaByIdx[idx];
             if (trainedChara && p.goalInX > 0) {
                 const runningStyleStr = info.running_style ?? 0;
@@ -283,6 +290,23 @@ export function useCanvasOverlay(
                 const groundPowerBonus = computeGroundPowerBonus(trackSurface, p.groundCondition ?? 0);
                 const learnedSkillLevelById = new Map(trainedChara.skills.map(skill => [skill.skillId, skill.level]));
                 const scalingStats = { ...trainedChara, greenSkillCount: countGreenSkills(p.skillActivations?.[idx]) };
+                const strategyProficiency = trainedChara.properRunningStyles[isOonige ? 1 : strategy] ?? 7;
+
+                const sectionIndex = Math.max(0, Math.min(23, Math.floor(currentDistance / (p.goalInX / 24))));
+                const sectionRoll = p.sectionWitRollsByFrameOrder?.get(idx + 1)?.[sectionIndex];
+                if (sectionRoll !== undefined) {
+                    const sectionWitRoll = calculateSectionBaseSpeedWitRoll({
+                        courseDistance: p.goalInX,
+                        wisdomStat: trainedChara.wiz,
+                        strategyProficiency,
+                        mood: info.motivation ?? 3,
+                        wisdomBonus: greenStats?.wisdom ?? 0,
+                        roll: sectionRoll,
+                    });
+                    sectionNumber = sectionIndex + 1;
+                    sectionBaseSpeedAddend = sectionWitRoll.speedAddend;
+                    sectionBaseSpeedPercentage = sectionWitRoll.percentage;
+                }
 
                 let activeSpeedBuff = 0;
                 (p.skillActivations?.[idx] ?? []).forEach((s: any) => {
@@ -337,7 +361,7 @@ export function useCanvasOverlay(
                     staminaStat: trainedChara.stamina,
                     strategy,
                     distanceProficiency: trainedChara.properDistances[getDistanceCategory(p.goalInX)] ?? 1,
-                    strategyProficiency: trainedChara.properRunningStyles[isOonige ? 1 : strategy] ?? 7,
+                    strategyProficiency,
                     mood: info.motivation ?? 3,
                     isOonige,
                     inLastSpurt,
@@ -369,6 +393,9 @@ export function useCanvasOverlay(
                 startDelay: p.startDelayByIdx[idx] ?? 0,
                 targetSpeedMin,
                 targetSpeedMax,
+                sectionNumber,
+                sectionBaseSpeedAddend,
+                sectionBaseSpeedPercentage,
             });
         });
         horseHoverDataRef.current = hoverEntries;

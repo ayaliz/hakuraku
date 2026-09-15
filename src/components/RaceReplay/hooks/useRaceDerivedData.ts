@@ -5,6 +5,8 @@ import { getPassiveStatModifiers } from "../utils/SkillDataUtils";
 import { useHeuristicEvents } from "./useHeuristicEvents";
 import GameDataLoader from "../../../data/GameDataLoader";
 import { CAREER_RACE_STAT_BONUS } from "../utils/raceConstants";
+import { TEMPTATION_TEXT } from "../RaceReplay.constants";
+import type { DetailedHorseMetrics } from "../../../data/DetailedRaceSimulation";
 
 const HP_EVENT_TIME_EPSILON = 0.001;      // Max time gap (seconds) between frames to merge into one HP-zero event
 const PHASE3_START_RATIO = 2 / 3;        // Fraction of course distance where phase 3 (late race) begins
@@ -22,6 +24,8 @@ export function useRaceDerivedData(
     toggles: { heuristics: boolean },
     raceType?: string,
     groundCondition?: number,
+    authoritativeModeEvents?: Record<number, any[]>,
+    authoritativeHorseMetrics?: Record<number, DetailedHorseMetrics>,
 ) {
     const horseInfoByIdx = useMemo(() => {
         const map: Record<number, any> = {};
@@ -37,8 +41,11 @@ export function useRaceDerivedData(
         (frames[0]?.horseFrame ?? []).forEach((h: any, i: number) => {
             map[i] = h?.hp ?? 0;
         });
+        Object.entries(authoritativeHorseMetrics ?? {}).forEach(([index, metrics]) => {
+            if (metrics.maxHp !== undefined) map[+index] = metrics.maxHp;
+        });
         return map;
-    }, [frames]);
+    }, [frames, authoritativeHorseMetrics]);
 
     const hpZeroEvents = useMemo(() => {
         const events: Record<number, { time: number; duration: number; name: string }[]> = {};
@@ -46,6 +53,18 @@ export function useRaceDerivedData(
 
         const numHorses = frames[0]?.horseFrame?.length ?? 0;
         for (let h = 0; h < numHorses; h++) {
+            const detailedMetrics = authoritativeHorseMetrics?.[h];
+            if (detailedMetrics?.hpExhaustedTime !== undefined) {
+                if (detailedMetrics.hpExhaustedTime !== null) {
+                    const endTime = frames.at(-1)?.time ?? detailedMetrics.hpExhaustedTime;
+                    events[h] = [{
+                        time: detailedMetrics.hpExhaustedTime,
+                        duration: Math.max(0, endTime - detailedMetrics.hpExhaustedTime),
+                        name: "Out of HP",
+                    }];
+                }
+                continue;
+            }
             const horseEvents: { time: number; duration: number; name: string }[] = [];
             let currentStart = -1;
             let currentEnd = -1;
@@ -83,7 +102,20 @@ export function useRaceDerivedData(
             }
         }
         return events;
-    }, [frames]);
+    }, [frames, authoritativeHorseMetrics]);
+
+    const temptationEvents = useMemo(() => {
+        const events: Record<number, { time: number; duration: number; name: string }[]> = {};
+        Object.entries(authoritativeHorseMetrics ?? {}).forEach(([horseIndex, metrics]) => {
+            if (metrics.temptationSpans === undefined) return;
+            events[+horseIndex] = metrics.temptationSpans.map(span => ({
+                time: span.startTime,
+                duration: Math.max(0, span.endTime - span.startTime),
+                name: TEMPTATION_TEXT[span.mode] ?? "Rushed",
+            }));
+        });
+        return events;
+    }, [authoritativeHorseMetrics]);
 
     const spurtDelayEvents = useMemo(() => {
         const events: Record<number, { time: number; duration: number; name: string }[]> = {};
@@ -93,6 +125,32 @@ export function useRaceDerivedData(
         const numHorses = frames[0]?.horseFrame?.length ?? 0;
 
         for (let h = 0; h < numHorses; h++) {
+            const detailedMetrics = authoritativeHorseMetrics?.[h];
+            const detailedDecisions = detailedMetrics?.lastSpurtDecisions
+                ?? (detailedMetrics?.lastSpurtDecision ? [detailedMetrics.lastSpurtDecision] : undefined);
+            if (detailedDecisions !== undefined) {
+                const horseEvents = detailedDecisions.flatMap(decision => {
+                    let name: string | null = null;
+                    if (decision.selectedStartDistance <= 0) {
+                        name = "No spurt";
+                    } else {
+                        const delay = Math.max(0, decision.selectedStartDistance - decision.checkDistance);
+                        if (delay > SPURT_DELAY_THRESHOLD) name = `${delay.toFixed(2)}m spurt delay`;
+                        else if (decision.speedPenalty) name = "Reduced-speed spurt";
+                    }
+                    if (!name || decision.time === undefined) return [];
+                    const suffix = detailedDecisions.length > 1
+                        ? ` (calculation ${decision.calculationCount ?? "?"})`
+                        : "";
+                    return [{
+                        time: decision.time,
+                        duration: SPURT_DELAY_DISPLAY_DURATION,
+                        name: `${name}${suffix}`,
+                    }];
+                });
+                if (horseEvents.length > 0) events[h] = horseEvents;
+                continue;
+            }
             const result = raceData.horseResult?.[h];
             if (!result) continue;
 
@@ -125,7 +183,7 @@ export function useRaceDerivedData(
             }
         }
         return events;
-    }, [frames, raceData.horseResult, goalInX]);
+    }, [frames, raceData.horseResult, goalInX, authoritativeHorseMetrics]);
 
     const trainedCharaByIdx = useMemo(() => {
         const map: Record<number, TrainedCharaData> = {};
@@ -197,6 +255,7 @@ export function useRaceDerivedData(
         selectedTrackId ? +selectedTrackId : undefined,
         groundCondition,
         raceData,
+        !authoritativeModeEvents,
     );
 
     const combinedOtherEvents = useMemo(() => {
@@ -209,9 +268,10 @@ export function useRaceDerivedData(
         };
         merge(hpZeroEvents);
         merge(spurtDelayEvents);
-        if (toggles.heuristics) merge(heuristicEvents);
+        merge(temptationEvents);
+        if (toggles.heuristics) merge(authoritativeModeEvents ?? heuristicEvents);
         return combined;
-    }, [otherEvents, hpZeroEvents, spurtDelayEvents, heuristicEvents, toggles.heuristics]);
+    }, [otherEvents, hpZeroEvents, spurtDelayEvents, temptationEvents, heuristicEvents, authoritativeModeEvents, toggles.heuristics]);
 
     return {
         horseInfoByIdx,

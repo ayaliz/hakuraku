@@ -5,16 +5,9 @@ interface HorseTooltipProps {
     hoveredHorse: { idx: number; x: number; y: number; containerW: number };
     entry: HorseHoverEntry | undefined;
     name: string;
-    worldTransform?: {
-        baseRatio: number;
-        cumulativeLoss: number;
-        laneOffsetMeters: number;
-        laneMaxMeters: number;
-        ratio: number;
-    } | null;
 }
 
-const HorseTooltip: React.FC<HorseTooltipProps> = ({ hoveredHorse, entry, name, worldTransform }) => {
+const HorseTooltip: React.FC<HorseTooltipProps> = ({ hoveredHorse, entry, name }) => {
     if (!entry) return null;
 
     const speed = (entry.speed / 100).toFixed(2);
@@ -36,13 +29,6 @@ const HorseTooltip: React.FC<HorseTooltipProps> = ({ hoveredHorse, entry, name, 
             {name && <div className="replay-horse-tooltip-name">{name}</div>}
             <div>Dist: {entry.distance.toFixed(1)} m &nbsp; Lane: {Math.round(entry.lanePosition)}</div>
             <div>Speed: {speed} m/s &nbsp; Accel: {accelStr} m/s^2</div>
-            {worldTransform && (
-                <>
-                    <div>Rail offset: {worldTransform.laneOffsetMeters.toFixed(2)} / {worldTransform.laneMaxMeters.toFixed(2)} m</div>
-                    <div>WT ratio: {worldTransform.ratio.toFixed(4)} &nbsp; Base: {worldTransform.baseRatio.toFixed(4)}</div>
-                    <div>WT loss: {worldTransform.cumulativeLoss.toFixed(2)} m</div>
-                </>
-            )}
             {entry.targetSpeedMin !== undefined && entry.targetSpeedMax !== undefined && (
                 entry.targetSpeedMin === entry.targetSpeedMax
                     ? <div>Target: {entry.targetSpeedMin.toFixed(2)} m/s</div>
@@ -56,6 +42,11 @@ const HorseTooltip: React.FC<HorseTooltipProps> = ({ hoveredHorse, entry, name, 
                 </div>
             )}
             {hpStr && <div>{hpStr}</div>}
+            {entry.blockedByName && <div>Front blocked by: {entry.blockedByName}</div>}
+            {entry.positionKeepReferenceName && (
+                <div>Position Keep reference: {entry.positionKeepReferenceName}</div>
+            )}
+            {entry.positionKeepDecision && <div>Position Keep check: {entry.positionKeepDecision}</div>}
             {entry.startDelay > 0 && <div>Start delay: {(entry.startDelay * 1000).toFixed(0)} ms</div>}
         </div>
     );

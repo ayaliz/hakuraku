@@ -277,7 +277,7 @@ function readHorseResultJp(view: DataView, offset: number) {
     const finishTimeRaw = view.getFloat32(offset + 27, true);
     const noActivateSkillCount = view.getInt32(offset + 35, true);
     if (noActivateSkillCount < 0 || noActivateSkillCount > 512) {
-        throw new Error("Invalid JP horse result payload");
+        throw new Error("Invalid JP Uma result payload");
     }
     const nextOffset = offset + JP_HORSE_RESULT_CORE_SIZE + noActivateSkillCount * 5;
     ensureReadable(view, offset, nextOffset - offset);
@@ -432,7 +432,7 @@ function deserializeJp(input: Uint8Array) {
         horseResult = findAllHorseResults(view);
     }
     if (horseResult.length === 0) {
-        throw new Error("Failed to parse JP horse results");
+        throw new Error("Failed to parse JP Uma results");
     }
     const event: RaceSimulateData["event"] = [];
     if (resultsEndOffset !== null && resultsEndOffset + 10 <= view.byteLength) {

@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import type { HistogramData } from "./panelData";
+import type { HistogramData } from "../../features/umalogs/model/panelData";
 import "./UmaLogsPage.css";
 
 interface HistogramProps {

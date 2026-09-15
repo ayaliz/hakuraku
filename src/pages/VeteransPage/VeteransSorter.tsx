@@ -42,7 +42,7 @@ const VeteransSorter: React.FC<VeteransSorterProps> = ({
                 <option value="affinity" disabled={!affinityCharaId}>
                     {affinityCharaId
                         ? `Affinity: ${UMDatabaseWrapper.charas[affinityCharaId]?.name ?? affinityCharaId}`
-                        : "Affinity (select a character first)"}
+                        : "Affinity (select an Uma first)"}
                 </option>
             </Form.Control>
             <Button

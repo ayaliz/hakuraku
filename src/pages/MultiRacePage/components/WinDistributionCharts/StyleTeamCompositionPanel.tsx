@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { BAYES_TEAM, STRATEGY_NAMES } from "./constants";
 import type { HorseEntry, SkillStats, TeamCompositionStats } from "../../types";
 import InfoTooltip from "./InfoTooltip";
 import TeamSampleSelect from "./TeamSampleSelect";
 import { TeamMemberCard } from "./TeamMemberCard";
-import type { StyleCompositionSummaryRow } from "../../../UmaLogsPage/panelData";
+import type { StyleCompositionSummaryRow } from "../../../../features/umalogs/model/panelData";
 import {
     type SerializedHorseEntry,
     deserializeHorseEntries,
@@ -41,6 +41,10 @@ export function StyleTeamCompositionPanel({
     skillStats,
     strategyColors,
     onViewReplays,
+    onSelectComposition,
+    headerControls,
+    minimumAppearances = MIN_STYLE_APPEARANCES,
+    useAdjustedRates = true,
 }: {
     cmId?: string | null;
     courseId?: number;
@@ -50,6 +54,10 @@ export function StyleTeamCompositionPanel({
     skillStats?: Map<number, SkillStats>;
     strategyColors: Record<number, string>;
     onViewReplays?: (horse: HorseEntry) => void;
+    onSelectComposition?: (row: StyleCompositionSummaryRow) => void;
+    headerControls?: ReactNode;
+    minimumAppearances?: number;
+    useAdjustedRates?: boolean;
 }) {
     const [selectedKey, setSelectedKey] = useState<string | null>(null);
     const [selectedTeamIdx, setSelectedTeamIdx] = useState(0);
@@ -60,16 +68,18 @@ export function StyleTeamCompositionPanel({
     const [compositionRepLoadingKeys, setCompositionRepLoadingKeys] = useState<string[]>([]);
     const [compositionRepError, setCompositionRepError] = useState<string | null>(null);
 
-    const all = styleCompositionRows.filter(e => e.appearances >= MIN_STYLE_APPEARANCES);
+    const all = styleCompositionRows.filter(e => e.appearances >= minimumAppearances);
     if (all.length === 0) return null;
 
-    const sorted = [...all].sort((a, b) => b.bayesianWinRate - a.bayesianWinRate);
-    const overperformers = sorted.filter(e => e.bayesianWinRate > BAYES_TEAM.PRIOR).slice(0, MAX_STYLE_ITEMS);
-    const underperformers = sorted.filter(e => e.bayesianWinRate < BAYES_TEAM.PRIOR).slice(-MAX_STYLE_ITEMS).reverse();
+    const displayedRate = (row: StyleCompositionSummaryRow) => useAdjustedRates ? row.bayesianWinRate : row.winRate;
+    const sorted = [...all].sort((a, b) => displayedRate(b) - displayedRate(a));
+    const overperformers = sorted.filter(e => displayedRate(e) > BAYES_TEAM.PRIOR).slice(0, MAX_STYLE_ITEMS);
+    const underperformers = sorted.filter(e => displayedRate(e) < BAYES_TEAM.PRIOR).slice(-MAX_STYLE_ITEMS).reverse();
     if (overperformers.length === 0 && underperformers.length === 0) return null;
 
     const canUseApiDrilldown = !!(apiMode && cmId && courseId && skillStats);
     const canDrilldown = !!(skillStats && canUseApiDrilldown);
+    const canSelectComposition = canDrilldown || !!onSelectComposition;
 
     const drilldownTeams = useMemo(() => {
         if (!selectedKey) return [];
@@ -120,10 +130,22 @@ export function StyleTeamCompositionPanel({
         return (
             <div
                 key={e.key}
-                className={`sa-stcp-item${canDrilldown ? " sa-stcp-item--clickable" : ""}${isSelected ? " sa-stcp-item--selected" : ""}`}
-                onClick={canDrilldown ? () => {
-                    setSelectedTeamIdx(0);
-                    setSelectedKey(k => k === e.key ? null : e.key);
+                className={`sa-stcp-item${canSelectComposition ? " sa-stcp-item--clickable" : ""}${isSelected ? " sa-stcp-item--selected" : ""}`}
+                role={canSelectComposition ? "button" : undefined}
+                tabIndex={canSelectComposition ? 0 : undefined}
+                aria-label={canSelectComposition ? `View teams using ${label}` : undefined}
+                onClick={canSelectComposition ? () => {
+                    onSelectComposition?.(e);
+                    if (canDrilldown) {
+                        setSelectedTeamIdx(0);
+                        setSelectedKey(k => k === e.key ? null : e.key);
+                    }
+                } : undefined}
+                onKeyDown={canSelectComposition ? event => {
+                    if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        event.currentTarget.click();
+                    }
                 } : undefined}
             >
                 <div className="sa-stcp-dots">
@@ -133,8 +155,12 @@ export function StyleTeamCompositionPanel({
                 </div>
                 <div className="sa-stcp-name">{label}</div>
                 <div className="sa-stcp-stats">
-                    <span className="sa-adj-pct sa-stcp-stat" style={{ color: valueColor }}>{(e.bayesianWinRate * 100).toFixed(1)}%</span>
-                    <span className="sa-raw-pct sa-stcp-stat">{(e.winRate * 100).toFixed(1)}% ({e.appearances})</span>
+                    <span className="sa-adj-pct sa-stcp-stat" style={{ color: valueColor }}>{(displayedRate(e) * 100).toFixed(1)}%</span>
+                    <span className="sa-raw-pct sa-stcp-stat">
+                        {useAdjustedRates
+                            ? `${(e.winRate * 100).toFixed(1)}% (${e.appearances})`
+                            : `${e.confidenceInterval?.map(value => `${(value * 100).toFixed(1)}%`).join('–') ?? '—'} (${e.appearances.toLocaleString('en-US')})`}
+                    </span>
                 </div>
             </div>
         );
@@ -193,24 +219,25 @@ export function StyleTeamCompositionPanel({
         : new Map<string, HorseEntry>();
 
     return (
-        <div className="sa-stcp-section">
+        <div className={`sa-stcp-section${useAdjustedRates ? '' : ' sa-stcp-section--raw-intervals'}`}>
             <div className="sa-stcp-header">
                 Style Composition Performance
                 <InfoTooltip
                     id="style-composition-performance-info"
                     tip="Win rate of 3-uma teams grouped by running style trio."
                 />
+                {headerControls && <span className="sa-stcp-header-controls">{headerControls}</span>}
             </div>
             <div className="sa-stcp-columns">
                 {overperformers.length > 0 && (
                     <div className="sa-stcp-col">
-                        <div className="sa-stcp-col-label sa-stcp-col-label--over">OVERPERFORMERS<span className="sa-stats-meta sa-stats-meta--bayes"><span className="sa-meta-adj sa-meta-adj--over">Adj. win%</span><span className="sa-meta-raw">Raw win% (samples)</span></span></div>
+                        <div className="sa-stcp-col-label sa-stcp-col-label--over">OVERPERFORMERS<span className="sa-stats-meta sa-stats-meta--bayes"><span className="sa-meta-adj sa-meta-adj--over">{useAdjustedRates ? 'Adj. win%' : 'Team win%'}</span><span className="sa-meta-raw">{useAdjustedRates ? 'Raw win% (samples)' : '95% CI (n)'}</span></span></div>
                         {overperformers.map(e => renderItem(e, true))}
                     </div>
                 )}
                 {underperformers.length > 0 && (
                     <div className="sa-stcp-col">
-                        <div className="sa-stcp-col-label sa-stcp-col-label--under">UNDERPERFORMERS<span className="sa-stats-meta sa-stats-meta--bayes"><span className="sa-meta-adj sa-meta-adj--under">Adj. win%</span><span className="sa-meta-raw">Raw win% (samples)</span></span></div>
+                        <div className="sa-stcp-col-label sa-stcp-col-label--under">UNDERPERFORMERS<span className="sa-stats-meta sa-stats-meta--bayes"><span className="sa-meta-adj sa-meta-adj--under">{useAdjustedRates ? 'Adj. win%' : 'Team win%'}</span><span className="sa-meta-raw">{useAdjustedRates ? 'Raw win% (samples)' : '95% CI (n)'}</span></span></div>
                         {underperformers.map(e => renderItem(e, false))}
                     </div>
                 )}

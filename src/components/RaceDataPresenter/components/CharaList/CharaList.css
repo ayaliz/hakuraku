@@ -629,6 +629,27 @@
     color: #e5e7eb;
 }
 
+.lobby-modified-build-note {
+    margin-top: 16px;
+    padding: 10px 12px;
+    border: 1px solid rgba(245, 158, 11, 0.42);
+    border-radius: 6px;
+    background: rgba(245, 158, 11, 0.08);
+    color: #dbe5f4;
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
+.lobby-modified-build-note strong,
+.lobby-modified-build-note span {
+    display: block;
+}
+
+.lobby-modified-build-note strong {
+    margin-bottom: 3px;
+    color: #fbbf24;
+}
+
 .hp-drain-timing-group {
     margin-top: 3px;
 }

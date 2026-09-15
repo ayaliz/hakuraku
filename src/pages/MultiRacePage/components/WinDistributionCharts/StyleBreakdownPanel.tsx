@@ -2,10 +2,12 @@ import { STRATEGY_NAMES, STYLE_BREAKDOWN_STRATEGY_ORDER } from "./constants";
 import type { StrategyStats } from "../../types";
 import InfoTooltip from "./InfoTooltip";
 
-export function StyleBreakdownPanel({ strategyStats, totalRaces, strategyColors }: {
+export function StyleBreakdownPanel({ strategyStats, totalRaces, strategyColors, shareLabel = "Pop%", shareDescription = "popularity" }: {
     strategyStats: StrategyStats[];
     totalRaces: number;
     strategyColors: Record<number, string>;
+    shareLabel?: string;
+    shareDescription?: string;
 }) {
     const sumEntries = strategyStats.reduce((s, st) => s + st.totalRaces, 0);
     const rows = STYLE_BREAKDOWN_STRATEGY_ORDER.map(sId => {
@@ -23,7 +25,7 @@ export function StyleBreakdownPanel({ strategyStats, totalRaces, strategyColors 
                     Style Breakdown
                     <InfoTooltip
                         id="style-breakdown-info"
-                        tip="A style's win rate exceeding its popularity means its win rate is above average."
+                        tip={`A style's win share exceeding its ${shareDescription} means its win rate is above average.`}
                     />
                 </span>
             </div>
@@ -45,7 +47,7 @@ export function StyleBreakdownPanel({ strategyStats, totalRaces, strategyColors 
                             <div className="sa-sb-value sa-sb-value--win">{winShare.toFixed(1)}%</div>
                         </div>
                         <div className="sa-sb-bar-row">
-                            <div className="sa-sb-bar-label">Pop%</div>
+                            <div className="sa-sb-bar-label">{shareLabel}</div>
                             <div className="sa-sb-track sa-sb-track--pick">
                                 <div className="sa-sb-bar-fill sa-sb-bar-fill--pick" style={{ width: `${pickW}%` }} />
                             </div>

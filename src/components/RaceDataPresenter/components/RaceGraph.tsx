@@ -35,6 +35,7 @@ import {
 } from "../../../data/RaceDataUtils";
 import UMDatabaseWrapper from "../../../data/UMDatabaseWrapper";
 import { otherRaceEventLabels } from "../utils/RacePresenterUtils";
+import type { DetailedHorseMetrics } from "../../../data/DetailedRaceSimulation";
 
 echarts.use([
     LineChart, TooltipComponent, GridComponent, MarkLineComponent, MarkAreaComponent, LegendComponent, SVGRenderer, DataZoomSliderComponent, AxisPointerComponent,
@@ -59,6 +60,7 @@ type RaceGraphProps = {
     showBlocks: boolean;
     showTemptationMode: boolean;
     showOtherRaceEvents: boolean;
+    authoritativeHorseMetrics?: Record<number, DetailedHorseMetrics>;
 };
 
 const RaceGraph: React.FC<RaceGraphProps> = ({
@@ -71,7 +73,9 @@ const RaceGraph: React.FC<RaceGraphProps> = ({
     showBlocks,
     showTemptationMode,
     showOtherRaceEvents,
+    authoritativeHorseMetrics,
 }) => {
+    const detailedMetrics = authoritativeHorseMetrics?.[frameOrder];
     const allOtherRaceEventLabels = React.useMemo(() => {
         const labels = new Map(otherRaceEventLabels);
         for (const wrapper of raceData.event) {
@@ -137,7 +141,7 @@ const RaceGraph: React.FC<RaceGraphProps> = ({
     function makeBlockedPlotArea(from: number, to: number, blockedByIndex: number): MarkArea2DDataItemOption {
         return [
             {
-                name: `Blocked by ${displayNames[blockedByIndex]}`,
+                name: `Blocked by ${displayNames[blockedByIndex] ?? `Uma ${blockedByIndex + 1}`}`,
                 xAxis: from,
                 itemStyle: { color: 'rgba(255, 0, 0, 0.1)' },
             },
@@ -150,7 +154,9 @@ const RaceGraph: React.FC<RaceGraphProps> = ({
     function makeTemptationModePlotArea(from: number, to: number, mode: RaceSimulateHorseFrameData_TemptationMode): MarkArea2DDataItemOption {
         return [
             {
-                name: `Temptation ${RaceSimulateHorseFrameData_TemptationMode[mode] ?? mode}`,
+                name: mode === RaceSimulateHorseFrameData_TemptationMode.NULL
+                    ? "Temptation (no style shift)"
+                    : `Temptation ${RaceSimulateHorseFrameData_TemptationMode[mode] ?? mode}`,
                 xAxis: from,
                 itemStyle: { color: 'rgba(255, 255, 0, 0.1)' },
             },
@@ -180,14 +186,16 @@ const RaceGraph: React.FC<RaceGraphProps> = ({
         const previousTime = i === 0 ? 0 : previousFrame.time!;
         const previousHorseFrame = previousFrame?.horseFrame[frameOrder];
 
-        if (horseFrame.blockFrontHorseIndex !== lastBlockFrontHorseIndex) {
+        if (detailedMetrics?.frontBlockSpans === undefined
+            && horseFrame.blockFrontHorseIndex !== lastBlockFrontHorseIndex) {
             if (lastBlockFrontHorseIndex !== -1) {
                 blockFrontPlotAreas.push(makeBlockedPlotArea(lastBlockFrontHorseIndexChangedTime, previousTime, lastBlockFrontHorseIndex));
             }
             lastBlockFrontHorseIndexChangedTime = previousTime;
             lastBlockFrontHorseIndex = horseFrame.blockFrontHorseIndex!;
         }
-        if (horseFrame.temptationMode !== lastTemptationMode) {
+        if (detailedMetrics?.temptationSpans === undefined
+            && horseFrame.temptationMode !== lastTemptationMode) {
             if (lastTemptationMode !== 0) {
                 temptationModePlotAreas.push(makeTemptationModePlotArea(lastTemptationModeChangedTime, previousTime, lastTemptationMode));
             }
@@ -214,10 +222,22 @@ const RaceGraph: React.FC<RaceGraphProps> = ({
         }
     }
     const lastFrameTime = _.last(raceData.frame)!.time!;
-    if (lastBlockFrontHorseIndex !== -1) {
+    if (detailedMetrics?.frontBlockSpans !== undefined) {
+        detailedMetrics.frontBlockSpans.forEach(span => {
+            blockFrontPlotAreas.push(makeBlockedPlotArea(
+                span.startTime, span.endTime, span.blockerHorseIndex,
+            ));
+        });
+    } else if (lastBlockFrontHorseIndex !== -1) {
         blockFrontPlotAreas.push(makeBlockedPlotArea(lastBlockFrontHorseIndexChangedTime, lastFrameTime, lastBlockFrontHorseIndex));
     }
-    if (lastTemptationMode !== 0) {
+    if (detailedMetrics?.temptationSpans !== undefined) {
+        detailedMetrics.temptationSpans.forEach(span => {
+            temptationModePlotAreas.push(makeTemptationModePlotArea(
+                span.startTime, span.endTime, span.mode,
+            ));
+        });
+    } else if (lastTemptationMode !== 0) {
         temptationModePlotAreas.push(makeTemptationModePlotArea(lastTemptationModeChangedTime, lastFrameTime, lastTemptationMode));
     }
 

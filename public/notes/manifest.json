@@ -61,5 +61,12 @@
     "filename": "light-hello.md",
     "date": "2026-08-21",
     "description": "Observed Light Hello post-training event rates and a revised Specialty Priority placement model."
+  },
+  {
+    "id": "new-age-umamusume-data",
+    "title": "A new age for Umamusume data",
+    "filename": "new-age-umamusume-data.md",
+    "date": "2026-09-13",
+    "description": "Introducing detailed race resimulation, SimData analysis, and the Lobby Builder."
   }
 ]

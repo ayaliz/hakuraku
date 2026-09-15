@@ -237,7 +237,7 @@ const HpSpurtTable: React.FC<HpSpurtTableProps> = ({ stats }) => {
                 <thead>
                     <tr>
                         <th className="hp-col-expand"></th>
-                        <SortableHeader columnKey="charaName">Character</SortableHeader>
+                        <SortableHeader columnKey="charaName">Uma</SortableHeader>
                         <th>Stats <span className="hp-sort-indicator" title="The sixth value is total SP in terms of learned skills, using costs without any hint levels.">ⓘ</span></th>
                         <th className="hp-col-center">Mood</th>
                         <SortableHeader columnKey="rankScore" className="hp-col-center">Score</SortableHeader>

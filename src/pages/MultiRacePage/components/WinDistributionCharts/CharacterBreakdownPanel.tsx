@@ -29,6 +29,9 @@ export interface CharacterBreakdownPanelProps {
     strategyColors: Record<number, string>;
     includeZeroWinEntries?: boolean;
     useBayesianWinRate?: boolean;
+    populationLabel?: string;
+    shareLabel?: string;
+    onSelectCharacter?: (key: string) => void;
 }
 
 export function CharacterBreakdownPanel({
@@ -44,6 +47,9 @@ export function CharacterBreakdownPanel({
     strategyColors,
     includeZeroWinEntries = false,
     useBayesianWinRate = true,
+    populationLabel = "Population",
+    shareLabel = "Pop%",
+    onSelectCharacter,
 }: CharacterBreakdownPanelProps) {
     const [sortMode, setSortMode] = useState<"pop" | "winRate">("pop");
     const [fullDataOpen, setFullDataOpen] = useState(false);
@@ -100,6 +106,7 @@ export function CharacterBreakdownPanel({
 
     const canUseApiDrilldown = !!(apiMode && cmId && courseId && skillStats);
     const canDrilldown = !!(skillStats && canUseApiDrilldown);
+    const canSelectCharacter = canDrilldown || !!onSelectCharacter;
 
     const ensureApiDrilldown = async (charKey: string | null) => {
         if (!canUseApiDrilldown || !charKey || drilldownCache[charKey] || drilldownLoadingKeys.includes(charKey)) return;
@@ -122,7 +129,7 @@ export function CharacterBreakdownPanel({
                 [charKey]: deserializeRepresentativeEntries(payload.teamSamples),
             }));
         } catch (error) {
-            console.error("Failed to load character representative samples", { charKey, error });
+            console.error("Failed to load Uma representative samples", { charKey, error });
             setDrilldownError(error instanceof Error ? error.message : "Failed to load representative samples.");
             setDrilldownCache((cache) => ({ ...cache, [charKey]: [] }));
             setTeamDrilldownCache((cache) => ({ ...cache, [charKey]: [] }));
@@ -194,10 +201,22 @@ export function CharacterBreakdownPanel({
         return (
             <div
                 key={c.key}
-                className={`sa-sb-row${canDrilldown ? " sa-stcp-item--clickable" : ""}${isSelected ? " ca-row--selected" : ""}`}
-                onClick={canDrilldown ? () => {
-                    if (inModal) setSelectedInModal(k => k === c.key ? null : c.key);
-                    else setSelectedCharKey(k => k === c.key ? null : c.key);
+                className={`sa-sb-row${canSelectCharacter ? " sa-stcp-item--clickable" : ""}${isSelected ? " ca-row--selected" : ""}`}
+                role={canSelectCharacter ? "button" : undefined}
+                tabIndex={canSelectCharacter ? 0 : undefined}
+                aria-label={canSelectCharacter ? `View details for ${c.fullLabel ?? c.label}` : undefined}
+                onClick={canSelectCharacter ? () => {
+                    onSelectCharacter?.(c.key);
+                    if (canDrilldown) {
+                        if (inModal) setSelectedInModal(k => k === c.key ? null : c.key);
+                        else setSelectedCharKey(k => k === c.key ? null : c.key);
+                    }
+                } : undefined}
+                onKeyDown={canSelectCharacter ? event => {
+                    if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        event.currentTarget.click();
+                    }
                 } : undefined}
             >
                 <div className="ca-char-label">
@@ -220,7 +239,7 @@ export function CharacterBreakdownPanel({
                     </div>
                 </div>
                 <div className="sa-sb-bar-row">
-                    <div className="sa-sb-bar-label">Pop%</div>
+                    <div className="sa-sb-bar-label">{shareLabel}</div>
                     <div className="sa-sb-track sa-sb-track--pick">
                         <div className="sa-sb-bar-fill sa-sb-bar-fill--pick" style={{ width: `${(c.popPct / maxP) * 100}%` }} />
                     </div>
@@ -268,7 +287,7 @@ export function CharacterBreakdownPanel({
                     <button
                         className={`ca-sort-btn${sortMode === "pop" ? " ca-sort-btn--active" : ""}`}
                         onClick={() => setSortMode("pop")}>
-                        Top Population
+                        Top {populationLabel}
                     </button>
                     <button
                         className={`ca-sort-btn${sortMode === "winRate" ? " ca-sort-btn--active" : ""}`}
@@ -299,7 +318,7 @@ export function CharacterBreakdownPanel({
                                 <button
                                     className={`ca-sort-btn${fullDataSort === "pop" ? " ca-sort-btn--active" : ""}`}
                                     onClick={() => setFullDataSort("pop")}>
-                                    By Population
+                                    By {populationLabel}
                                 </button>
                                 <button
                                     className={`ca-sort-btn${fullDataSort === "winRate" ? " ca-sort-btn--active" : ""}`}

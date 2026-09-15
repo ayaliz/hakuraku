@@ -222,7 +222,7 @@ const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ veterans }) => {
                             <Table striped bordered hover size="sm" className="opt-table">
                                 <thead>
                                     <tr>
-                                        <th>Character</th>
+                                        <th>Uma</th>
                                         <th>Score</th>
                                         <th>Rating</th>
                                         <th>Blues</th>

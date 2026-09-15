@@ -1,4 +1,5 @@
 import { RaceSimulateData } from "../../data/race_data_pb";
+import type { DetailedHorseMetrics } from "../../data/DetailedRaceSimulation";
 
 export type RaceReplayProps = {
     raceData: RaceSimulateData;
@@ -6,6 +7,8 @@ export type RaceReplayProps = {
     displayNames: Record<number, string>;
     skillActivations: Record<number, { time: number; name: string; param: number[] }[]>;
     otherEvents: Record<number, { time: number; duration: number; name: string }[]>;
+    authoritativeModeEvents?: Record<number, { time: number; duration: number; name: string; phase?: number }[]>;
+    authoritativeHorseMetrics?: Record<number, DetailedHorseMetrics>;
     trainerColors?: Record<number, string>;
     detectedCourseId?: number;
     laneDistanceMax?: number;

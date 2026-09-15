@@ -75,6 +75,40 @@
     color: #94a3b8;
 }
 
+.pagination-controls-ellipsis-button {
+    padding: 0;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+}
+
+.pagination-controls-ellipsis-button:hover,
+.pagination-controls-ellipsis-button:focus-visible {
+    border-color: rgba(96, 165, 250, 0.45);
+    background: rgba(30, 41, 59, 0.95);
+    color: #e2e8f0;
+}
+
+.pagination-controls-jump-input {
+    width: 46px;
+    height: 32px;
+    padding: 0 4px;
+    border: 1px solid rgba(96, 165, 250, 0.6);
+    border-radius: 8px;
+    outline: none;
+    background: rgba(15, 23, 42, 0.9);
+    color: #eff6ff;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.pagination-controls--compact .pagination-controls-jump-input {
+    width: 42px;
+    height: 28px;
+    font-size: 11px;
+}
+
 .pagination-controls-summary {
     color: #94a3b8;
     font-size: 12px;

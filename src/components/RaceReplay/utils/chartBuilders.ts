@@ -85,7 +85,7 @@ export function buildMarkLines(goalInX: number, raceData: RaceSimulateData, disp
     );
     (raceData.horseResult ?? []).forEach((hr: any, i: number) => {
         if (hr?.lastSpurtStartDistance != null && hr.lastSpurtStartDistance > 0)
-            lines.push({ xAxis: hr.lastSpurtStartDistance, name: `Last Spurt (${displayNames[i] || `Horse ${i + 1}`})`, lineStyle: { color: "#666", type: [8, 3] } });
+            lines.push({ xAxis: hr.lastSpurtStartDistance, name: `Last Spurt (${displayNames[i] || `Uma ${i + 1}`})`, lineStyle: { color: "#666", type: [8, 3] } });
     });
     lines.push(...segmentMarkers);
     (trackData?.slopes ?? []).forEach((s: any) => {

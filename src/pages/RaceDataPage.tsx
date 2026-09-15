@@ -1,24 +1,51 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./RaceDataPage.css";
-import { Alert, Button } from "react-bootstrap";
-import { useLocation, useParams } from "react-router-dom";
+import { Alert, Button, ButtonGroup, Dropdown, OverlayTrigger, ProgressBar, Tooltip } from "react-bootstrap";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import RaceDataPresenter from "../components/RaceDataPresenter";
 import { RaceSimulateData } from "../data/race_data_pb";
 import { deserializeFromBase64 } from "../data/RaceDataParser";
 import { hydrateCompactRaceHorseData } from "../data/TrainedCharaData";
 import ShareLinkBox from "../components/ShareLinkBox";
+import RaceWinRateResults from "../components/RaceWinRateResults";
 import type { ShareCreateResponse } from "../auth/authShared";
 import { normalizeSeasonValue } from "../utils/season";
-import { buildReplayPresenterInput, type ReplayPayloadResponse } from "./UmaLogsPage/replaysShared";
+import { buildReplayPresenterInput, type ReplayPayloadResponse } from "../features/umalogs/model/replaysShared";
 import UMDatabaseWrapper from "../data/UMDatabaseWrapper";
 import GameDataLoader from "../data/GameDataLoader";
 import {
     hasHorseActVersionKey,
     isTeamTrialRaceJson,
     normalizeRaceJsonInput,
+    parseRaceInstanceIdFromFilename,
     parseStandardRaceJson,
     type TrackDetails,
 } from "../data/RaceJsonParser";
+import {
+    buildAuthoritativeModeEvents,
+    buildDetailedHorseMetrics,
+    buildSharedDetailedRaceSimulation,
+    getDetailedRaceReplacementError,
+    getDetailedRaceWhatIfError,
+    readDetailedRaceSimulationResponse,
+    restoreSharedDetailedRaceSimulation,
+    type DetailedRaceSimulationProgress,
+    type DetailedRaceSimulationResponse,
+    type RaceModeEvent,
+} from "../data/DetailedRaceSimulation";
+import {
+    buildDetailedRaceCaptureFromSharedData,
+    getDetailedRaceCaptureRaceInstanceId,
+    isDetailedRaceEligible,
+    normalizeDetailedRaceCaptureForSimulation,
+    withDetailedRaceCaptureSeed,
+} from "../data/DetailedRaceEligibility";
+import { buildLobbyRaceView, consumeLobbyRace } from "./SimDataPage/lobby";
+import {
+    isActiveRaceWinRateBatch,
+    type RaceWinRateBatch,
+    type RaceWinRateRunner,
+} from "../data/RaceWinRateSimulation";
 
 const RaceDataPresenterAny = RaceDataPresenter as any;
 const HORSEACT_RELEASE_URL = "https://github.com/ayaliz/horseACT/releases/latest";
@@ -26,6 +53,17 @@ const HORSEACT_SETUP_URL = "https://github.com/ayaliz/horseACT#installation";
 const CURRENT_HORSEACT_VERSION = "1.1.7";
 
 type ShareCache = Record<string, string>;
+type SharedRaceData = {
+    shareFormatVersion?: number,
+    raceHorseInfo: string | any[],
+    raceScenario: string,
+    detectedCourseId?: number,
+    laneDistanceMax?: number,
+    randomSeed?: number,
+    raceType?: string,
+    trackDetails?: TrackDetails,
+    detailedSimulation?: unknown,
+};
 type ParsedRaceView = {
     label: string,
     raceHorseInfo: any[],
@@ -42,6 +80,11 @@ type ParsedRaceView = {
     round?: number,
     teamTotalScore?: number,
     winType?: number,
+};
+type DetailedRaceView = {
+    raceData: RaceSimulateData;
+    modeEvents: Record<number, RaceModeEvent[]>;
+    response: DetailedRaceSimulationResponse;
 };
 type PresenterErrorBoundaryProps = {
     children: React.ReactNode,
@@ -119,8 +162,19 @@ const hashPayload = async (payload: string): Promise<string> => {
     }
 };
 
+function createAlternateSeed(originalSeed: number | undefined, currentSeed: number | undefined): number {
+    const values = new Int32Array(1);
+    crypto.getRandomValues(values);
+    let seed = values[0];
+    while (seed === originalSeed || seed === currentSeed) {
+        seed = seed === 2147483647 ? -2147483648 : seed + 1;
+    }
+    return seed;
+}
+
 export default function RaceDataPage() {
     const location = useLocation();
+    const navigate = useNavigate();
     const { raceUid } = useParams<{ raceUid?: string }>();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -146,11 +200,122 @@ export default function RaceDataPage() {
     const [routeReplayLoading, setRouteReplayLoading] = useState(false);
     const [teamTrialRaces, setTeamTrialRaces] = useState<ParsedRaceView[]>([]);
     const [selectedTeamTrialIndex, setSelectedTeamTrialIndex] = useState(0);
+    const [detailedRaceData, setDetailedRaceData] = useState<RaceSimulateData | undefined>(undefined);
+    const [detailedModeEvents, setDetailedModeEvents] = useState<Record<number, RaceModeEvent[]> | undefined>(undefined);
+    const [detailedResponse, setDetailedResponse] = useState<DetailedRaceSimulationResponse | undefined>(undefined);
+    const [recordedDetailedView, setRecordedDetailedView] = useState<DetailedRaceView | undefined>(undefined);
+    const [alternateSeed, setAlternateSeed] = useState<number | undefined>(undefined);
+    const [detailedRequestKind, setDetailedRequestKind] = useState<"recorded" | "alternate" | null>(null);
+    const [detailedErrorContext, setDetailedErrorContext] = useState<"recorded" | "alternate">("recorded");
+    const [detailedStatus, setDetailedStatus] = useState<"idle" | "loading" | "ready">("idle");
+    const [detailedProgress, setDetailedProgress] = useState<DetailedRaceSimulationProgress | undefined>(undefined);
+    const [detailedError, setDetailedError] = useState("");
+    const [useDetailedMode, setUseDetailedMode] = useState(false);
+    const [rawRaceCapture, setRawRaceCapture] = useState<Record<string, unknown> | undefined>(undefined);
+    const [winRateBatch, setWinRateBatch] = useState<RaceWinRateBatch | undefined>(undefined);
+    const [winRateSubmitting, setWinRateSubmitting] = useState(false);
+    const [winRateError, setWinRateError] = useState("");
+    const activeWinRateBatchRef = useRef<{
+        jobId: string;
+        accessToken: string;
+        heartbeat: string;
+        cancel: string;
+    } | null>(null);
+    const winRatePollControllerRef = useRef<AbortController | null>(null);
+    const detailedRequestControllerRef = useRef<AbortController | null>(null);
+    const detailedAutoRequestAttemptedRef = useRef(false);
     const isArchiveReplayRoute = Boolean(raceUid);
+
+    const abandonWinRateBatch = () => {
+        const active = activeWinRateBatchRef.current;
+        activeWinRateBatchRef.current = null;
+        winRatePollControllerRef.current?.abort();
+        winRatePollControllerRef.current = null;
+        if (!active) return;
+        const body = JSON.stringify({ accessToken: active.accessToken });
+        if (typeof navigator.sendBeacon === "function") {
+            navigator.sendBeacon(active.cancel, new Blob([body], { type: "text/plain;charset=UTF-8" }));
+        } else {
+            void fetch(active.cancel, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=UTF-8" },
+                body,
+                keepalive: true,
+            });
+        }
+    };
+
+    const resetWinRateEstimate = () => {
+        abandonWinRateBatch();
+        setWinRateBatch(undefined);
+        setWinRateSubmitting(false);
+        setWinRateError("");
+    };
+
+    useEffect(() => {
+        const handlePageHide = () => abandonWinRateBatch();
+        window.addEventListener("pagehide", handlePageHide);
+        return () => {
+            window.removeEventListener("pagehide", handlePageHide);
+            detailedRequestControllerRef.current?.abort();
+            abandonWinRateBatch();
+        };
+    }, []);
 
     useEffect(() => {
         if (raceUid) return;
         const params = new URLSearchParams(location.search);
+        const routeState = location.state as { simLobbyToken?: unknown } | null;
+        const stateLobbyToken = typeof routeState?.simLobbyToken === 'string'
+            ? routeState.simLobbyToken
+            : null;
+        const lobbyToken = params.get('sim') ?? stateLobbyToken;
+        if (lobbyToken) {
+            // The token resolves only in this browser session. Remove both the
+            // legacy query parameter and navigation state immediately so the
+            // visible URL cannot be mistaken for a shareable race link.
+            params.delete('sim');
+            const remainingSearch = params.toString();
+            navigate({
+                pathname: location.pathname,
+                search: remainingSearch ? `?${remainingSearch}` : '',
+                hash: location.hash,
+            }, { replace: true, state: null });
+            const payload = consumeLobbyRace(lobbyToken);
+            if (!payload) {
+                setError('This one-time SimData lobby race is no longer available. Build a new lobby from SimData.');
+                return;
+            }
+            try {
+                const race = buildLobbyRaceView(payload);
+                const replay = deserializeFromBase64(race.raceScenario);
+                if (!replay) throw new Error('The simulator replay could not be decoded.');
+                finalizeParsing(
+                    race.raceHorseInfo,
+                    race.raceScenario,
+                    race.detectedCourseId,
+                    undefined,
+                    race.raceType,
+                    race.trackDetails,
+                    undefined,
+                    race.randomSeed,
+                    undefined,
+                    false,
+                );
+                const modeEvents = buildAuthoritativeModeEvents(race.detailed);
+                setRawRaceCapture(payload.raceInput);
+                setDetailedRaceData(replay);
+                setDetailedModeEvents(modeEvents);
+                setDetailedResponse(race.detailed);
+                setRecordedDetailedView({ raceData: replay, modeEvents, response: race.detailed });
+                setAlternateSeed(undefined);
+                setDetailedStatus('ready');
+                setUseDetailedMode(true);
+            } catch (reason) {
+                setError(reason instanceof Error ? reason.message : 'The SimData lobby race could not be opened.');
+            }
+            return;
+        }
         const kvKey = params.get('kv');
         if (kvKey) {
             fetch(`/api/share/${encodeURIComponent(kvKey)}`)
@@ -164,7 +329,7 @@ export default function RaceDataPage() {
                     setError(`Failed to load shared data: ${err.message}`);
                 });
         }
-    }, [location.search, raceUid]);
+    }, [location.hash, location.pathname, location.search, location.state, navigate, raceUid]);
 
     useEffect(() => {
         if (!raceUid) return;
@@ -178,6 +343,21 @@ export default function RaceDataPage() {
         setRandomSeed(undefined);
         setTeamTrialRaces([]);
         setSelectedTeamTrialIndex(0);
+        setDetailedRaceData(undefined);
+        setDetailedModeEvents(undefined);
+        setDetailedResponse(undefined);
+        setRecordedDetailedView(undefined);
+        setAlternateSeed(undefined);
+        setDetailedRequestKind(null);
+        setDetailedErrorContext("recorded");
+        setDetailedStatus("idle");
+        setDetailedProgress(undefined);
+        setDetailedError("");
+        setUseDetailedMode(false);
+        setRawRaceCapture(undefined);
+        detailedRequestControllerRef.current?.abort();
+        detailedRequestControllerRef.current = null;
+        detailedAutoRequestAttemptedRef.current = false;
         fetch(`/api/races/${encodeURIComponent(raceUid)}/replay`, { signal: controller.signal })
             .then(async (response) => {
                 if (!response.ok) throw new Error(await response.text() || `HTTP ${response.status}`);
@@ -193,7 +373,7 @@ export default function RaceDataPage() {
                     presenterInput.raceType,
                     presenterInput.trackDetails,
                     presenterInput.laneDistanceMax,
-                    undefined,
+                    presenterInput.randomSeed,
                 );
                 setRouteReplayLoading(false);
             })
@@ -209,6 +389,21 @@ export default function RaceDataPage() {
         race: ParsedRaceView,
         options?: { isShared?: boolean, teamTrialRaces?: ParsedRaceView[], selectedTeamTrialIndex?: number },
     ) {
+        resetWinRateEstimate();
+        detailedRequestControllerRef.current?.abort();
+        detailedRequestControllerRef.current = null;
+        detailedAutoRequestAttemptedRef.current = false;
+        setDetailedRaceData(undefined);
+        setDetailedModeEvents(undefined);
+        setDetailedResponse(undefined);
+        setRecordedDetailedView(undefined);
+        setAlternateSeed(undefined);
+        setDetailedRequestKind(null);
+        setDetailedErrorContext("recorded");
+        setDetailedStatus("idle");
+        setDetailedProgress(undefined);
+        setDetailedError("");
+        setUseDetailedMode(false);
         const raceHorseInfo = normalizeTrainerNamesForDisplay(race.raceHorseInfo);
         setParsedHorseInfo(raceHorseInfo);
         setParsedRaceData(race.raceData);
@@ -240,12 +435,16 @@ export default function RaceDataPage() {
         }
     }
 
-    function loadSharedData(data: { raceHorseInfo: string, raceScenario: string, detectedCourseId?: number, laneDistanceMax?: number, randomSeed?: number, raceType?: string, trackDetails?: TrackDetails }) {
+    function loadSharedData(data: SharedRaceData) {
         try {
             const horseInfo = typeof data.raceHorseInfo === 'string' ? JSON.parse(data.raceHorseInfo) : data.raceHorseInfo;
             const parsed = deserializeFromBase64(data.raceScenario);
             if (!parsed) { setError('Failed to parse race scenario data from shared link'); return; }
             const horseInfoArray = Array.isArray(horseInfo) ? horseInfo : [horseInfo];
+            const sharedDetailedResponse = restoreSharedDetailedRaceSimulation(
+                data.detailedSimulation,
+                data.raceScenario,
+            );
             applyParsedRaceView({
                 label: 'Shared race',
                 raceHorseInfo: horseInfoArray,
@@ -257,6 +456,23 @@ export default function RaceDataPage() {
                 raceType: data.raceType,
                 trackDetails: data.trackDetails,
             }, { isShared: true });
+            const reconstructedCapture = buildDetailedRaceCaptureFromSharedData({
+                ...data,
+                raceHorseInfo: horseInfoArray,
+            }) ?? undefined;
+            if (sharedDetailedResponse) {
+                const modeEvents = buildAuthoritativeModeEvents(sharedDetailedResponse);
+                setRawRaceCapture(reconstructedCapture);
+                setDetailedRaceData(parsed);
+                setDetailedModeEvents(modeEvents);
+                setDetailedResponse(sharedDetailedResponse);
+                setRecordedDetailedView({ raceData: parsed, modeEvents, response: sharedDetailedResponse });
+                setAlternateSeed(undefined);
+                setDetailedStatus('ready');
+                setUseDetailedMode(true);
+            } else {
+                setRawRaceCapture(reconstructedCapture);
+            }
         } catch (err: any) {
             setError(`Failed to parse shared data: ${err.message}`);
         }
@@ -396,19 +612,26 @@ export default function RaceDataPage() {
         applyParsedRaceView(race, { teamTrialRaces, selectedTeamTrialIndex: index });
     }
 
-    function parseRaceJson(json: any) {
+    function parseRaceJson(json: any, fileName?: string) {
         json = normalizeRaceJsonInput(json);
+        const fileRaceInstanceId = parseRaceInstanceIdFromFilename(fileName);
+        if (fileRaceInstanceId !== undefined && getDetailedRaceCaptureRaceInstanceId(json) === null) {
+            json = { ...json, race_instance_id: fileRaceInstanceId };
+        }
 
         if (isTeamTrialRaceJson(json)) {
+            setRawRaceCapture(undefined);
             parseTeamTrialJson(json);
             return;
         }
 
-        const parsed = parseStandardRaceJson(json);
+        const parsed = parseStandardRaceJson(json, { fileName });
         if ("error" in parsed) {
             setError(parsed.error);
             return;
         }
+
+        setRawRaceCapture(json as Record<string, unknown>);
 
         finalizeParsing(
             parsed.horseInfo,
@@ -434,7 +657,7 @@ export default function RaceDataPage() {
         reader.onload = () => {
             try {
                 const text = String(reader.result ?? '');
-                parseRaceJson(JSON.parse(text));
+                parseRaceJson(JSON.parse(text), file.name);
             } catch (err: any) {
                 setError(`Failed to parse JSON: ${err.message}`);
             }
@@ -454,7 +677,7 @@ export default function RaceDataPage() {
         reader.onerror = () => alert('Failed to read the file.');
         reader.onload = () => {
             try {
-                parseRaceJson(JSON.parse(String(reader.result ?? '')));
+                parseRaceJson(JSON.parse(String(reader.result ?? '')), file.name);
             } catch (err: any) {
                 setError(`Failed to parse JSON: ${err.message}`);
             }
@@ -463,6 +686,7 @@ export default function RaceDataPage() {
     };
 
     const resetToUpload = () => {
+        resetWinRateEstimate();
         setParsedHorseInfo(undefined);
         setParsedRaceData(undefined);
         setError('');
@@ -484,6 +708,21 @@ export default function RaceDataPage() {
         setDragOver(false);
         setTeamTrialRaces([]);
         setSelectedTeamTrialIndex(0);
+        setDetailedRaceData(undefined);
+        setDetailedModeEvents(undefined);
+        setDetailedResponse(undefined);
+        setRecordedDetailedView(undefined);
+        setAlternateSeed(undefined);
+        setDetailedRequestKind(null);
+        setDetailedErrorContext("recorded");
+        setDetailedStatus("idle");
+        setDetailedProgress(undefined);
+        setDetailedError("");
+        setUseDetailedMode(false);
+        setRawRaceCapture(undefined);
+        detailedRequestControllerRef.current?.abort();
+        detailedRequestControllerRef.current = null;
+        detailedAutoRequestAttemptedRef.current = false;
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -500,9 +739,26 @@ export default function RaceDataPage() {
             return;
         }
 
-        let content: string | null;
+        const sharedDetailedSimulation = useDetailedMode && detailedResponse
+            ? buildSharedDetailedRaceSimulation(detailedResponse)
+            : undefined;
+        const sharedRaceScenario = sharedDetailedSimulation
+            ? detailedResponse!.replay.data
+            : rawScenario;
+        const sharedRaceFields = {
+            shareFormatVersion: 2,
+            raceScenario: sharedRaceScenario,
+            detectedCourseId,
+            laneDistanceMax,
+            randomSeed: sharedDetailedSimulation?.seed ?? randomSeed,
+            raceType,
+            trackDetails,
+            detailedSimulation: sharedDetailedSimulation,
+        };
+
+        let content: string;
         if (anonymous) {
-            if (!rawHorseInfo) { alert('Failed to anonymize horse data.'); return; }
+            if (!rawHorseInfo) { alert('Failed to anonymize Uma data.'); return; }
             try {
                 const nameMap = new Map<string, string>();
                 let anonCounter = 1;
@@ -519,21 +775,19 @@ export default function RaceDataPage() {
                     return copy;
                 });
                 content = JSON.stringify({
+                    ...sharedRaceFields,
                     raceHorseInfo: JSON.stringify(anonHorseInfo),
-                    raceScenario: rawScenario,
-                    detectedCourseId,
-                    laneDistanceMax,
-                    randomSeed,
-                    raceType,
-                    trackDetails,
                     salt: Date.now()
                 });
             } catch {
-                alert('Failed to anonymize horse data.');
+                alert('Failed to anonymize Uma data.');
                 return;
             }
         } else {
-            content = JSON.stringify({ raceHorseInfo: JSON.stringify(rawHorseInfo), raceScenario: rawScenario, detectedCourseId, laneDistanceMax, randomSeed, raceType, trackDetails });
+            content = JSON.stringify({
+                ...sharedRaceFields,
+                raceHorseInfo: JSON.stringify(rawHorseInfo),
+            });
         }
 
         const hash = await hashPayload(content);
@@ -581,7 +835,269 @@ export default function RaceDataPage() {
         return false;
     };
 
+    const runDetailedSimulation = async (seedOverride?: number) => {
+        const isAlternate = seedOverride !== undefined;
+        const requestedSeed = isAlternate ? seedOverride : Number(randomSeed);
+        if (!rawRaceCapture
+            || detailedStatus === "loading"
+            || !detailedSimulationEligible
+            || (!Number.isInteger(requestedSeed)
+                || requestedSeed < -2147483648
+                || requestedSeed > 2147483647)) return;
+        const controller = new AbortController();
+        detailedRequestControllerRef.current?.abort();
+        detailedRequestControllerRef.current = controller;
+        setDetailedRequestKind(isAlternate ? "alternate" : "recorded");
+        setDetailedStatus("loading");
+        setDetailedProgress({
+            stage: "submitting",
+            message: isAlternate
+                ? "Sending the what-if race to the simulator"
+                : "Sending race to the detailed simulator",
+            percent: 10,
+        });
+        setDetailedError("");
+        setDetailedErrorContext(isAlternate ? "alternate" : "recorded");
+        try {
+            const normalizedCapture = normalizeDetailedRaceCaptureForSimulation(rawRaceCapture);
+            const response = await fetch("/api/races/resimulate", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "text/event-stream",
+                },
+                body: JSON.stringify({
+                    capture: isAlternate
+                        ? withDetailedRaceCaptureSeed(normalizedCapture, requestedSeed)
+                        : normalizedCapture,
+                    courseId: detectedCourseId,
+                    grade: 100,
+                    time: 2,
+                }),
+                signal: controller.signal,
+            });
+            const payload = await readDetailedRaceSimulationResponse(response, setDetailedProgress);
+            if (controller.signal.aborted) return;
+            setDetailedProgress({ stage: "preparing", message: "Preparing detailed race analysis", percent: 96 });
+            const replay = deserializeFromBase64(payload.replay.data);
+            if (!replay) throw new Error("The simulator replay could not be decoded.");
+            const replacementError = isAlternate
+                ? getDetailedRaceWhatIfError(parsedRaceData, replay, payload, requestedSeed)
+                : getDetailedRaceReplacementError(parsedRaceData, replay, payload, requestedSeed);
+            if (replacementError) throw new Error(replacementError);
+            const completePayload = payload;
+            const modeEvents = buildAuthoritativeModeEvents(completePayload);
+            setDetailedRaceData(replay);
+            setDetailedModeEvents(modeEvents);
+            setDetailedResponse(completePayload);
+            if (isAlternate) {
+                setAlternateSeed(completePayload.seed);
+            } else {
+                setRecordedDetailedView({ raceData: replay, modeEvents, response: completePayload });
+                setAlternateSeed(undefined);
+            }
+            setDetailedStatus("ready");
+            setDetailedProgress(undefined);
+            setUseDetailedMode(true);
+        } catch (err: any) {
+            if (controller.signal.aborted || err?.name === "AbortError") return;
+            setDetailedStatus(detailedRaceData ? "ready" : "idle");
+            setDetailedProgress(undefined);
+            if (!detailedRaceData) setUseDetailedMode(false);
+            setDetailedError(err?.message || "Detailed simulation is temporarily unavailable.");
+        } finally {
+            setDetailedRequestKind(null);
+            if (detailedRequestControllerRef.current === controller) {
+                detailedRequestControllerRef.current = null;
+            }
+        }
+    };
+
+    const requestDetailedSimulation = async () => {
+        if (detailedRaceData && detailedModeEvents) {
+            setUseDetailedMode(true);
+            setDetailedError("");
+            return;
+        }
+        await runDetailedSimulation();
+    };
+
+    const runAlternateSeedSimulation = () => {
+        resetWinRateEstimate();
+        const seed = createAlternateSeed(randomSeed, alternateSeed);
+        void runDetailedSimulation(seed);
+    };
+
+    const returnToOriginalRace = () => {
+        detailedRequestControllerRef.current?.abort();
+        detailedRequestControllerRef.current = null;
+        setDetailedRequestKind(null);
+        setDetailedProgress(undefined);
+        setDetailedError("");
+        setDetailedErrorContext("recorded");
+        setAlternateSeed(undefined);
+        if (recordedDetailedView) {
+            setDetailedRaceData(recordedDetailedView.raceData);
+            setDetailedModeEvents(recordedDetailedView.modeEvents);
+            setDetailedResponse(recordedDetailedView.response);
+            setDetailedStatus("ready");
+            setUseDetailedMode(true);
+        } else {
+            setDetailedRaceData(undefined);
+            setDetailedModeEvents(undefined);
+            setDetailedResponse(undefined);
+            setDetailedStatus("idle");
+            setUseDetailedMode(false);
+        }
+    };
+
+    const readWinRateBatchResponse = async (response: Response): Promise<RaceWinRateBatch> => {
+        const payload = await response.json().catch(() => ({})) as Partial<RaceWinRateBatch> & { error?: string };
+        if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+        if (typeof payload.jobId !== "string" || typeof payload.status !== "string"
+            || !payload.links || typeof payload.links.heartbeat !== "string"
+            || typeof payload.links.cancel !== "string") {
+            throw new Error("The simulator returned an incomplete batch response.");
+        }
+        return payload as RaceWinRateBatch;
+    };
+
+    const pollWinRateBatch = async (active: NonNullable<typeof activeWinRateBatchRef.current>) => {
+        let consecutiveErrors = 0;
+        while (activeWinRateBatchRef.current?.jobId === active.jobId) {
+            await new Promise(resolve => window.setTimeout(resolve, 750));
+            if (activeWinRateBatchRef.current?.jobId !== active.jobId) return;
+            const controller = new AbortController();
+            winRatePollControllerRef.current = controller;
+            try {
+                const response = await fetch(active.heartbeat, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ accessToken: active.accessToken }),
+                    signal: controller.signal,
+                });
+                const batch = await readWinRateBatchResponse(response);
+                consecutiveErrors = 0;
+                setWinRateBatch(batch);
+                if (!isActiveRaceWinRateBatch(batch)) {
+                    activeWinRateBatchRef.current = null;
+                    winRatePollControllerRef.current = null;
+                    if (batch.status === "failed") setWinRateError(batch.error || "Batch simulation failed.");
+                    return;
+                }
+            } catch (reason) {
+                if (controller.signal.aborted || activeWinRateBatchRef.current?.jobId !== active.jobId) return;
+                consecutiveErrors += 1;
+                if (consecutiveErrors < 4) continue;
+                abandonWinRateBatch();
+                setWinRateError(reason instanceof Error ? reason.message : "Lost contact with the batch queue.");
+                return;
+            }
+        }
+    };
+
+    const runWinRateEstimate = async () => {
+        if (!rawRaceCapture || !detailedSimulationEligible || winRateSubmitting
+            || isActiveRaceWinRateBatch(winRateBatch)) return;
+        const seedStart = createAlternateSeed(randomSeed, winRateBatch?.seedStart);
+        setWinRateSubmitting(true);
+        setWinRateError("");
+        setWinRateBatch(undefined);
+        try {
+            const body = {
+                capture: normalizeDetailedRaceCaptureForSimulation(rawRaceCapture),
+                courseId: detectedCourseId,
+                grade: 100,
+                time: 2,
+                raceCount: 100,
+                seed: seedStart,
+            };
+            const idempotencyKey = typeof crypto.randomUUID === "function"
+                ? crypto.randomUUID()
+                : `racedata-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            const response = await fetch("/api/races/resimulate/batches", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Idempotency-Key": idempotencyKey,
+                },
+                body: JSON.stringify(body),
+            });
+            const batch = await readWinRateBatchResponse(response);
+            if (!batch.accessToken) throw new Error("The simulator did not return a batch access token.");
+            setWinRateBatch(batch);
+            if (isActiveRaceWinRateBatch(batch)) {
+                const active = {
+                    jobId: batch.jobId,
+                    accessToken: batch.accessToken,
+                    heartbeat: batch.links.heartbeat,
+                    cancel: batch.links.cancel,
+                };
+                activeWinRateBatchRef.current = active;
+                void pollWinRateBatch(active);
+            }
+        } catch (reason) {
+            setWinRateError(reason instanceof Error ? reason.message : "Batch simulation is temporarily unavailable.");
+        } finally {
+            setWinRateSubmitting(false);
+        }
+    };
+
+    const cancelWinRateEstimate = async () => {
+        const active = activeWinRateBatchRef.current;
+        if (!active || winRateSubmitting) return;
+        setWinRateSubmitting(true);
+        setWinRateError("");
+        try {
+            const response = await fetch(active.cancel, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ accessToken: active.accessToken }),
+            });
+            const batch = await readWinRateBatchResponse(response);
+            setWinRateBatch(batch);
+            if (!isActiveRaceWinRateBatch(batch)) activeWinRateBatchRef.current = null;
+        } catch (reason) {
+            setWinRateError(reason instanceof Error ? reason.message : "Could not cancel the estimate.");
+        } finally {
+            setWinRateSubmitting(false);
+        }
+    };
+
     const selectedTeamTrialRace = teamTrialRaces[selectedTeamTrialIndex];
+    const detailedConditionSource = rawRaceCapture ?? {
+        season: trackDetails?.season,
+        weather: trackDetails?.weather,
+        ground_condition: trackDetails?.condition,
+    };
+    const detailedSimulationEligible = Boolean(rawRaceCapture)
+        && isDetailedRaceEligible(
+            detectedCourseId,
+            parsedHorseInfo,
+            detailedConditionSource,
+        )
+        && (Number.isInteger(randomSeed)
+            && Number(randomSeed) >= -2147483648
+            && Number(randomSeed) <= 2147483647);
+
+    useEffect(() => {
+        if (!detailedSimulationEligible
+            || detailedStatus !== "idle"
+            || detailedRaceData
+            || detailedError
+            || detailedAutoRequestAttemptedRef.current
+            || !rawRaceCapture) return;
+        detailedAutoRequestAttemptedRef.current = true;
+        void runDetailedSimulation();
+    }, [detailedSimulationEligible, detailedStatus, detailedRaceData, detailedError,
+        rawRaceCapture]);
+
+    const winRateBatchActive = isActiveRaceWinRateBatch(winRateBatch);
+    const whatIfActive = alternateSeed !== undefined || detailedRequestKind === "alternate";
+    const horseForWinRateRunner = (runner: RaceWinRateRunner) => parsedHorseInfo?.find(horse => {
+        const frameOrder = Number(horse?.frame_order ?? horse?.frameOrder);
+        return frameOrder === runner.frameOrder + 1 || frameOrder === runner.gateNumber;
+    });
 
     return <div className="rdp-root">
         <input
@@ -627,13 +1143,166 @@ export default function RaceDataPage() {
                         Share (anonymous)
                     </Button>
                 ) : null}
+                {rawRaceCapture && detailedSimulationEligible && (
+                    <OverlayTrigger
+                        placement="bottom"
+                        delay={{ show: 150, hide: 120 }}
+                        trigger={["hover", "focus", "click"]}
+                        rootClose
+                        overlay={(
+                            <Tooltip id="rdp-analysis-source-tooltip" className="rdp-analysis-tooltip">
+                                <strong>Detailed</strong> reruns the uploaded race with its recorded seed on our
+                                server-accurate simulator to provide more exact values for metrics like downhill mode
+                                duration, pace up duration and more. <strong>Legacy</strong> estimates those values
+                                using heuristics. You&apos;ll automatically be switched to Legacy if our simulator
+                                should fail to recreate the exact race.
+                            </Tooltip>
+                        )}
+                    >
+                        <div className="rdp-analysis-control" role="group" aria-label="Race analysis source">
+                            <span className="rdp-analysis-label">
+                                Analysis
+                                <button
+                                    type="button"
+                                    className="rdp-analysis-info"
+                                    aria-label="About detailed simulation and legacy heuristics"
+                                >
+                                    ⓘ
+                                </button>
+                            </span>
+                            <ButtonGroup
+                                size="sm"
+                                aria-label="Choose race analysis source"
+                                onClick={event => event.stopPropagation()}
+                            >
+                                <Button
+                                    variant={useDetailedMode ? "success" : "outline-success"}
+                                    onClick={requestDetailedSimulation}
+                                    disabled={detailedStatus === "loading"}
+                                    aria-pressed={useDetailedMode}
+                                >
+                                    {detailedStatus === "loading"
+                                        ? detailedRequestKind === "alternate" ? "Loading new seed results..." : "Loading detailed…"
+                                        : detailedError && !detailedRaceData
+                                            ? "Retry detailed"
+                                            : whatIfActive ? "New seed" : "Detailed"}
+                                </Button>
+                                <Button
+                                    variant={!useDetailedMode && !whatIfActive ? "secondary" : "outline-secondary"}
+                                    onClick={whatIfActive ? returnToOriginalRace : () => setUseDetailedMode(false)}
+                                    aria-pressed={!useDetailedMode && !whatIfActive}
+                                >
+                                    {detailedRequestKind === "alternate"
+                                        ? "Cancel what-if"
+                                        : whatIfActive ? "Original race" : "Legacy"}
+                                </Button>
+                            </ButtonGroup>
+                        </div>
+                    </OverlayTrigger>
+                )}
+                {rawRaceCapture && detailedSimulationEligible && (
+                    <Dropdown className="rdp-simulation-menu">
+                        <Dropdown.Toggle variant="secondary" size="sm" id="rdp-simulation-features">
+                            Simulation features
+                        </Dropdown.Toggle>
+                        <Dropdown.Menu>
+                            <Dropdown.Item
+                                onClick={() => void runWinRateEstimate()}
+                                disabled={winRateSubmitting || winRateBatchActive}
+                            >
+                                <span>Estimate win rate</span>
+                                <small>Run 100 fresh seeds and get win rates.</small>
+                            </Dropdown.Item>
+                            <Dropdown.Item
+                                onClick={runAlternateSeedSimulation}
+                                disabled={detailedStatus === "loading"}
+                            >
+                                <span>Rerun on different seed</span>
+                                <small>Run this race on a different seed.</small>
+                            </Dropdown.Item>
+                            {whatIfActive && (
+                                <>
+                                    <Dropdown.Divider />
+                                    <Dropdown.Item onClick={returnToOriginalRace}>
+                                        <span>Return to original race</span>
+                                        <small>Restore the recorded result and seed.</small>
+                                    </Dropdown.Item>
+                                </>
+                            )}
+                        </Dropdown.Menu>
+                    </Dropdown>
+                )}
+                {winRateBatchActive && (
+                    <Button
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={cancelWinRateEstimate}
+                        disabled={winRateSubmitting || winRateBatch?.status === "cancel_requested"}
+                    >
+                        {winRateBatch?.status === "cancel_requested" ? "Cancelling…" : "Cancel estimate"}
+                    </Button>
+                )}
                 {shareStatus === 'shared' && <ShareLinkBox shareUrl={shareUrl} />}
                 {shareError && <span className="text-danger rdp-share-error">{shareError}</span>}
             </div>
         )}
 
         {error && <div className="text-danger rdp-error">{error}</div>}
-
+        {detailedError && (
+            <Alert variant="warning" className="rdp-detailed-status">
+                {detailedErrorContext === "alternate" ? "What-if rerun" : "Detailed simulation"} failed: {detailedError}{" "}
+                {detailedRaceData
+                    ? "The previously validated race remains available."
+                    : "The recorded race and its normal analysis remain available."}
+            </Alert>
+        )}
+        {alternateSeed !== undefined && useDetailedMode && (
+            <section className="rdp-what-if-status" aria-label="What-if replay active">
+                <div>
+                    <strong>Race result on seed {alternateSeed}</strong>
+                </div>
+                <Button variant="outline-secondary" size="sm" onClick={returnToOriginalRace}>
+                    Return to original race
+                </Button>
+            </section>
+        )}
+        {detailedStatus === "loading" && detailedProgress && (
+            <section className="rdp-detailed-progress" aria-live="polite" aria-label={`${detailedRequestKind === "alternate" ? "What-if" : "Detailed"} simulation progress`}>
+                <div className="rdp-detailed-progress-header">
+                    <strong>{detailedRequestKind === "alternate" ? "What-if simulation" : "Detailed simulation"}</strong>
+                    <span>{detailedProgress.message}</span>
+                </div>
+                <ProgressBar
+                    now={detailedProgress.percent}
+                    min={0}
+                    max={100}
+                    animated
+                    striped
+                    className="rdp-detailed-progress-bar"
+                />
+                <small>{detailedRequestKind === "alternate"
+                    ? "The current race remains visible and will switch to the what-if replay when it is ready."
+                    : "The legacy heuristics remain visible and will switch to detailed data automatically."}</small>
+            </section>
+        )}
+        {winRateError && (
+            <Alert variant="warning" className="rdp-win-rate-alert">
+                Win-rate estimate failed: {winRateError}
+            </Alert>
+        )}
+        {winRateBatch && winRateBatch.status !== "failed" && <RaceWinRateResults
+            batch={winRateBatch}
+            active={winRateBatchActive}
+            onClose={resetWinRateEstimate}
+            getTeamLabel={(_team, teamIndex, runners) => {
+                const teamHorse = runners.map(horseForWinRateRunner).find(Boolean);
+                return teamHorse?.trainer_name || teamHorse?.owner_trainer_name || `Team ${teamIndex + 1}`;
+            }}
+            getRunnerLabel={runner => {
+                const horse = horseForWinRateRunner(runner);
+                return horse ? UMDatabaseWrapper.raceHorseDisplayName(horse) ?? `Gate ${runner.gateNumber}` : `Gate ${runner.gateNumber}`;
+            }}
+        />}
         {teamTrialRaces.length > 1 && (
             <div className="rdp-team-trial-switcher" aria-label="Team Trial race selector">
                 <div className="rdp-team-trial-summary">
@@ -662,13 +1331,17 @@ export default function RaceDataPage() {
                 {(!isArchiveReplayRoute && !isShared && hasHorseActVersion && isHorseActOutdated(horseActVersion)) && <Alert variant="info">
                     The version of horseACT used to generate this file appears to be outdated. The current release is {CURRENT_HORSEACT_VERSION}, available at <a href={HORSEACT_RELEASE_URL} target="_blank" rel="noreferrer">{HORSEACT_RELEASE_URL}</a>. It's recommended to update by replacing your existing horseACT.dll.
                 </Alert>}
-                <PresenterErrorBoundary key={teamTrialRaces.length > 0 ? `team-trial-boundary-${selectedTeamTrialIndex}` : `race-boundary-${rawScenario.slice(0, 24)}`}>
+                <PresenterErrorBoundary key={`${useDetailedMode ? `detailed-${alternateSeed ?? detailedResponse?.seed ?? randomSeed}` : "recorded"}-${teamTrialRaces.length > 0 ? `team-trial-boundary-${selectedTeamTrialIndex}` : `race-boundary-${rawScenario.slice(0, 24)}`}`}>
                     <RaceDataPresenterAny
-                        key={teamTrialRaces.length > 0 ? `team-trial-${selectedTeamTrialIndex}` : rawScenario.slice(0, 24)}
+                        key={`${useDetailedMode ? `detailed-${alternateSeed ?? detailedResponse?.seed ?? randomSeed}` : "recorded"}-${teamTrialRaces.length > 0 ? `team-trial-${selectedTeamTrialIndex}` : rawScenario.slice(0, 24)}`}
                         raceHorseInfo={parsedHorseInfo}
-                        raceData={parsedRaceData}
+                        raceData={useDetailedMode && detailedRaceData ? detailedRaceData : parsedRaceData}
+                        authoritativeModeEvents={useDetailedMode ? detailedModeEvents : undefined}
+                        authoritativeHorseMetrics={useDetailedMode && detailedResponse
+                            ? buildDetailedHorseMetrics(detailedResponse)
+                            : undefined}
                         laneDistanceMax={laneDistanceMax}
-                        randomSeed={randomSeed}
+                        randomSeed={alternateSeed ?? randomSeed}
                         raceType={raceType}
                         playerFrameOrder={playerFrameOrder}
                         trackDetails={trackDetails}

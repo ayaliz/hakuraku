@@ -49,3 +49,182 @@
 .rdp-presenter-error {
     margin-top: 12px;
 }
+
+.rdp-detailed-status {
+    margin: 12px 0;
+}
+
+.rdp-analysis-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 31px;
+    padding: 3px 4px 3px 9px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.035);
+    cursor: help;
+}
+
+.rdp-analysis-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.055em;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.rdp-analysis-info {
+    display: inline-flex;
+    align-items: center;
+    padding: 0;
+    border: 0;
+    color: rgba(255, 255, 255, 0.55);
+    background: transparent;
+    cursor: help;
+    font: inherit;
+    line-height: 1;
+}
+
+.rdp-analysis-info:hover,
+.rdp-analysis-info:focus-visible {
+    color: #73d9aa;
+    outline: none;
+}
+
+.rdp-analysis-control .btn {
+    min-width: 68px;
+    cursor: pointer;
+}
+
+.rdp-analysis-tooltip .tooltip-inner {
+    max-width: 340px;
+    padding: 9px 11px;
+    text-align: left;
+    line-height: 1.42;
+}
+
+.rdp-simulation-menu .dropdown-menu {
+    min-width: 280px;
+    padding: 6px;
+    border-color: rgba(115, 217, 170, 0.3);
+    background: #20252a;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+}
+
+.rdp-simulation-menu .dropdown-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 9px 10px;
+    border-radius: 5px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.rdp-simulation-menu .dropdown-item:hover,
+.rdp-simulation-menu .dropdown-item:focus {
+    color: #fff;
+    background: rgba(66, 185, 131, 0.18);
+}
+
+.rdp-simulation-menu .dropdown-item:disabled {
+    color: rgba(255, 255, 255, 0.38);
+    background: transparent;
+}
+
+.rdp-simulation-menu .dropdown-item small {
+    color: rgba(255, 255, 255, 0.56);
+    font-size: 0.76rem;
+}
+
+.rdp-simulation-menu .dropdown-divider {
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.rdp-what-if-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 12px 0 16px;
+    padding: 11px 12px;
+    border: 1px solid var(--haku-border, rgba(75, 85, 99, 0.35));
+    border-top-color: rgba(115, 217, 170, 0.48);
+    border-radius: 6px;
+    background: var(--haku-bg-1, #212529);
+    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.12);
+}
+
+.rdp-what-if-status > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.rdp-what-if-status strong {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 0.96rem;
+    font-weight: 600;
+}
+
+.rdp-what-if-status strong::before {
+    width: 3px;
+    height: 17px;
+    border-radius: 2px;
+    background: #73d9aa;
+    content: "";
+}
+
+.rdp-what-if-status span {
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 0.82rem;
+}
+
+.rdp-detailed-progress {
+    margin: 12px 0 16px;
+    padding: 12px 14px;
+    border: 1px solid rgba(66, 185, 131, 0.35);
+    border-radius: 8px;
+    background: rgba(31, 75, 58, 0.18);
+}
+
+.rdp-detailed-progress-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.rdp-detailed-progress-header span,
+.rdp-detailed-progress small {
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 0.82rem;
+}
+
+.rdp-detailed-progress-bar {
+    height: 7px;
+    margin: 9px 0 7px;
+}
+
+@media (max-width: 600px) {
+    .rdp-analysis-control {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .rdp-what-if-status {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}
+
+.rdp-win-rate-alert {
+    margin: 12px 0;
+}

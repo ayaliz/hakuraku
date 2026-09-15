@@ -1,12 +1,8 @@
 import { STRATEGY_DISPLAY_ORDER } from "./constants";
-import { UMA_LOGS_API_BASE, deserializeHorseEntry, deserializeHorseEntries } from "../../../UmaLogsPage/umaLogsApi";
+import { UMA_LOGS_API_BASE, buildRaceTeamUrl, deserializeHorseEntry, deserializeHorseEntries } from "../../../../features/umalogs/api/umaLogsApi";
 
-export type { SerializedHorseEntry } from "../../../UmaLogsPage/umaLogsApi";
-export { UMA_LOGS_API_BASE, deserializeHorseEntry, deserializeHorseEntries };
-
-export function buildRaceTeamUrl(raceId: string, teamId: number): string {
-    return `${UMA_LOGS_API_BASE}/api/races/${encodeURIComponent(raceId)}/teams/${teamId}`;
-}
+export type { SerializedHorseEntry } from "../../../../features/umalogs/api/umaLogsApi";
+export { UMA_LOGS_API_BASE, buildRaceTeamUrl, deserializeHorseEntry, deserializeHorseEntries };
 
 export function buildCompositionRepsUrl(cmId: string, courseId: number, compositionKey: string, apiBase = UMA_LOGS_API_BASE, buildKey?: string): string {
     const query = buildKey ? `?buildKey=${encodeURIComponent(buildKey)}` : "";

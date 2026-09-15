@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect, type MutableRefObject, type RefObject } from "react";
 import { bisectFrameIndex, clamp01, lerp, getCharaIcon, formatSigned, mixWithWhite } from "../RaceReplay.utils";
 import { buildPositionKeepSeries, teamColorFor } from "../utils/chartBuilders";
-import { getSkillDurationSecs, getActiveSpeedDebuff, getRushedDebuffDurationSecs, hasTargetDebuffEffect, getActiveSpeedModifier, countGreenSkills } from "../utils/SkillDataUtils";
+import { getSkillDurationSecs, getActiveSpeedDebuff, getRushedDebuffDurationSecs, hasTargetDebuffEffect, getActiveSpeedModifier, countGreenSkills, isAutomaticPassiveSkill } from "../utils/SkillDataUtils";
 import { calculateSectionBaseSpeedWitRoll, calculateTargetSpeed, getDistanceCategory, computeGroundPowerBonus } from "../utils/speedCalculations";
 import GameDataLoader from "../../../data/GameDataLoader";
 import { InterpolatedFrame } from "../RaceReplay.types";
@@ -17,6 +17,17 @@ import { TEMPTATION_MODE_RUSH_BOOST } from "../utils/raceConstants";
 import AssetLoader from "../../../data/AssetLoader";
 import { isSkillEventTargetingFrame } from "../../../data/RaceDataUtils";
 import { RaceSimulateData, RaceSimulateEventData_SimulateEventType } from "../../../data/race_data_pb";
+import {
+    getDetailedSkillActivationDuration,
+    type DetailedHorseMetrics,
+} from "../../../data/DetailedRaceSimulation";
+import {
+    formatRaceStateLabel,
+    formatSkillDurationSuffix,
+    getSkillEffectRemainingSeconds,
+    isSkillLabelVisible,
+    raceStateLabelIdentity,
+} from "../utils/skillLabelTiming";
 
 function dataToPixel(instance: any, x: number, y: number): [number, number] | null {
     const pixel = instance.convertToPixel?.({ xAxisId: "distance-axis", yAxisId: "lane-axis" }, [x, y]);
@@ -75,9 +86,11 @@ function drawOverlayBox(ctx: CanvasRenderingContext2D, x: number, y: number, tex
 function isHeuristicLabel(name: string): boolean {
     return name === "Pace Up"
         || name === "Pace Down"
+        || name === "Pace Up EX"
         || name === "Speed Up"
         || name === "Overtake"
-        || name === "Downhill Mode";
+        || name === "Downhill Mode"
+        || name === "Fully Charged";
 }
 
 interface CanvasOverlayParams {
@@ -113,7 +126,32 @@ interface CanvasOverlayParams {
     yMaxWithHeadroom: number;
     groundCondition?: number;
     sectionWitRollsByFrameOrder?: Map<number, number[]>;
+    authoritativeHorseMetrics?: Record<number, DetailedHorseMetrics>;
 }
+
+function telemetryIndex(times: number[] | undefined, time: number): number {
+    if (!times?.length) return -1;
+    let lo = 0, hi = times.length - 1;
+    while (lo < hi) {
+        const mid = Math.ceil((lo + hi) / 2);
+        if (times[mid] <= time) lo = mid;
+        else hi = mid - 1;
+    }
+    return lo;
+}
+
+function isAuthoritativelyFrontBlocked(metrics: DetailedHorseMetrics | undefined, time: number): boolean | undefined {
+    if (!metrics?.frontBlockSpans) return undefined;
+    return metrics.frontBlockSpans.some(span => time >= span.startTime && time < span.endTime);
+}
+
+function activeSpan<T extends { startTime: number; endTime: number }>(
+    spans: T[] | undefined, time: number,
+): T | undefined {
+    return spans?.find(span => time >= span.startTime && time < span.endTime);
+}
+
+const POSITION_KEEP_MODE_NAMES = ["None", "Speed Up", "Overtake", "Pace Up", "Pace Down", "Pace Up EX"];
 
 function activationTargetsFrame(p: CanvasOverlayParams, activation: { time: number; param: number[] }, frameOrder: number): boolean {
     return isSkillEventTargetingFrame(p.raceData, {
@@ -122,6 +160,20 @@ function activationTargetsFrame(p: CanvasOverlayParams, activation: { time: numb
         param: activation.param,
         paramCount: activation.param.length,
     } as any, frameOrder, p.raceHorseInfo);
+}
+
+function authoritativeActivationDuration(
+    p: CanvasOverlayParams,
+    activation: { time: number; param: number[] },
+): number | undefined {
+    const ownerIndex = activation.param[0];
+    const skillId = activation.param[1];
+    return getDetailedSkillActivationDuration(
+        p.authoritativeHorseMetrics?.[ownerIndex]?.activeSkillSpans,
+        skillId,
+        activation.time,
+        activation.param?.[3],
+    );
 }
 
 type OverlayPopupLabel = {
@@ -141,6 +193,9 @@ export type HorseHoverEntry = {
     sectionNumber?: number;
     sectionBaseSpeedAddend?: number;
     sectionBaseSpeedPercentage?: number;
+    blockedByName?: string;
+    positionKeepReferenceName?: string;
+    positionKeepDecision?: string;
 };
 
 export function useCanvasOverlay(
@@ -203,6 +258,14 @@ export function useCanvasOverlay(
         } else {
             (f0a?.horseFrame ?? []).forEach((_: any, idx: number) => { accByIdx[idx] = 0; });
         }
+        Object.entries(p.authoritativeHorseMetrics ?? {}).forEach(([idxText, metrics]) => {
+            const sampleIndex = telemetryIndex(metrics.sampleTimes, time);
+            const acceleration = sampleIndex >= 0 ? metrics.accelerationRates?.[sampleIndex] : undefined;
+            if (acceleration !== null && acceleration !== undefined) {
+                // Replay overlay values use recorder units (cm/s²); simulator telemetry is m/s².
+                accByIdx[+idxText] = acceleration * 100;
+            }
+        });
 
         const frontRunnerDistance = horseFrame.reduce((m: number, h: any) => Math.max(m, h?.distance ?? 0), 0);
         const lead = p.cameraWindow * 0.1;
@@ -213,8 +276,15 @@ export function useCanvasOverlay(
 
         const seriesUpdate: any[] = [];
         if (p.toggles.positionKeep && p.goalInX) {
-            if (frontRunnerDistance < (10 / 24) * p.goalInX) {
-                seriesUpdate.push(buildPositionKeepSeries(frontRunnerDistance, p.goalInX, p.yMaxWithHeadroom));
+            const paceMakerSpans = Object.values(p.authoritativeHorseMetrics ?? {})[0]?.paceMakerSpans;
+            const paceMakerIndex = activeSpan(paceMakerSpans, time)?.horseIndex;
+            // Simulator annotations select the reference; its displayed distance still
+            // comes exclusively from the normal captured replay frames.
+            const referenceDistance = paceMakerIndex !== undefined
+                ? interpolatedFrame.horseFrame[paceMakerIndex]?.distance ?? frontRunnerDistance
+                : frontRunnerDistance;
+            if (referenceDistance < (10 / 24) * p.goalInX) {
+                seriesUpdate.push(buildPositionKeepSeries(referenceDistance, p.goalInX, p.yMaxWithHeadroom));
             } else {
                 seriesUpdate.push({ id: "position-keep-areas", type: "scatter", markArea: { data: [] } });
             }
@@ -276,7 +346,25 @@ export function useCanvasOverlay(
             let sectionBaseSpeedAddend: number | undefined;
             let sectionBaseSpeedPercentage: number | undefined;
             const trainedChara = p.trainedCharaByIdx[idx];
+            const detailedMetrics = p.authoritativeHorseMetrics?.[idx];
+            const detailedSampleIndex = telemetryIndex(detailedMetrics?.sampleTimes, time);
+            const authoritativeTargetSpeed = detailedSampleIndex >= 0
+                ? detailedMetrics?.targetSpeeds?.[detailedSampleIndex]
+                : undefined;
             if (trainedChara && p.goalInX > 0) {
+                const sectionIndex = Math.max(0, Math.min(23,
+                    Math.floor((hf.distance ?? 0) / (p.goalInX / 24))));
+                const exactSection = detailedMetrics?.baseTargetSpeedSections?.[sectionIndex];
+                if (exactSection) {
+                    sectionNumber = sectionIndex + 1;
+                    sectionBaseSpeedAddend = exactSection.random;
+                    sectionBaseSpeedPercentage = exactSection.randomPercentage;
+                }
+            }
+            if (authoritativeTargetSpeed !== undefined) {
+                targetSpeedMin = authoritativeTargetSpeed;
+                targetSpeedMax = authoritativeTargetSpeed;
+            } else if (trainedChara && p.goalInX > 0) {
                 const runningStyleStr = info.running_style ?? 0;
                 const strategy = +runningStyleStr > 0 ? +runningStyleStr : (trainedChara.rawData?.param?.runningStyle ?? 1);
                 const isOonige = p.oonigeByIdx[idx] ?? false;
@@ -294,7 +382,7 @@ export function useCanvasOverlay(
 
                 const sectionIndex = Math.max(0, Math.min(23, Math.floor(currentDistance / (p.goalInX / 24))));
                 const sectionRoll = p.sectionWitRollsByFrameOrder?.get(idx + 1)?.[sectionIndex];
-                if (sectionRoll !== undefined) {
+                if (sectionBaseSpeedAddend === undefined && sectionRoll !== undefined) {
                     const sectionWitRoll = calculateSectionBaseSpeedWitRoll({
                         courseDistance: p.goalInX,
                         wisdomStat: trainedChara.wiz,
@@ -335,15 +423,19 @@ export function useCanvasOverlay(
 
                 let isSpotStruggle = false, isDueling = false, isRushed = false, rushedType = 0;
                 let isPaceUp = false, isPaceDown = false, isSpeedUp = false, isOvertake = false;
-                const tempMode = hf.temptationMode ?? 0;
-                if (tempMode > 0) { isRushed = true; if (tempMode === TEMPTATION_MODE_RUSH_BOOST) rushedType = 2; }
+                const exactTemptationSpan = activeSpan(detailedMetrics?.temptationSpans, time);
+                const tempMode = exactTemptationSpan?.mode ?? hf.temptationMode ?? 0;
+                if (exactTemptationSpan || tempMode > 0) {
+                    isRushed = true;
+                    if (tempMode === TEMPTATION_MODE_RUSH_BOOST) rushedType = 2;
+                }
                 (p.combinedOtherEvents[idx] ?? []).forEach(evt => {
                     if (time >= evt.time && time < evt.time + evt.duration) {
                         const evtName = evt.name ?? "";
                         if (evtName.includes("Spot Struggle") || evtName.includes("Competes (Pos)")) isSpotStruggle = true;
                         if (evtName.includes("Dueling") || evtName.includes("Competes (Speed)")) isDueling = true;
                         if (evtName.includes("Rushed")) { isRushed = true; if (evtName.includes("Boost")) rushedType = 2; }
-                        if (evtName === "Pace Up") isPaceUp = true;
+                        if (evtName === "Pace Up" || evtName === "Pace Up EX") isPaceUp = true;
                         if (evtName === "Pace Down") isPaceDown = true;
                         if (evtName === "Speed Up") isSpeedUp = true;
                         if (evtName === "Overtake") isOvertake = true;
@@ -382,6 +474,17 @@ export function useCanvasOverlay(
                 targetSpeedMax = res.max;
             }
 
+            const blockingSpan = activeSpan(detailedMetrics?.frontBlockSpans, time);
+            const referenceSpan = activeSpan(detailedMetrics?.positionKeepReferenceSpans, time);
+            const recentDecision = detailedMetrics?.positionKeepDecisions
+                ?.filter(decision => decision.time <= time && time - decision.time < 2)
+                .at(-1);
+            const decisionMode = recentDecision
+                ? POSITION_KEEP_MODE_NAMES[recentDecision.attemptedMode] ?? `Mode ${recentDecision.attemptedMode}`
+                : undefined;
+            const decisionRoll = recentDecision?.roll != null && recentDecision.threshold != null
+                ? ` (${recentDecision.roll.toFixed(3)} vs ${recentDecision.threshold.toFixed(3)})`
+                : "";
             hoverEntries.push({
                 idx, cx, cy,
                 speed: hf.speed ?? 0,
@@ -396,6 +499,16 @@ export function useCanvasOverlay(
                 sectionNumber,
                 sectionBaseSpeedAddend,
                 sectionBaseSpeedPercentage,
+                blockedByName: blockingSpan
+                    ? p.displayNames[blockingSpan.blockerHorseIndex] ?? `Uma ${blockingSpan.blockerHorseIndex + 1}`
+                    : undefined,
+                positionKeepReferenceName: referenceSpan
+                    ? p.displayNames[referenceSpan.referenceHorseIndex]
+                        ?? `Uma ${referenceSpan.referenceHorseIndex + 1}`
+                    : undefined,
+                positionKeepDecision: recentDecision
+                    ? `${decisionMode}: ${recentDecision.outcome}${decisionRoll}`
+                    : undefined,
             });
         });
         horseHoverDataRef.current = hoverEntries;
@@ -427,7 +540,9 @@ export function useCanvasOverlay(
                     ctx.stroke();
                 }
 
-                const isBlocked = p.toggles.blocked && hf.blockFrontHorseIndex != null && hf.blockFrontHorseIndex !== -1;
+                const authoritativeBlocked = isAuthoritativelyFrontBlocked(p.authoritativeHorseMetrics?.[idx], time);
+                const isBlocked = p.toggles.blocked && (authoritativeBlocked
+                    ?? (hf.blockFrontHorseIndex != null && hf.blockFrontHorseIndex !== -1));
                 if (isBlocked) {
                     const blockedUrl = getBlockedIconUrl();
                     if (blockedUrl) {
@@ -484,6 +599,12 @@ export function useCanvasOverlay(
                 const [cx, cy] = pixel;
 
                 const labels: OverlayPopupLabel[] = [];
+                const labelIdentities = new Set<string>();
+                const addUniqueLabel = (identity: string, label: OverlayPopupLabel) => {
+                    if (labelIdentities.has(identity)) return;
+                    labelIdentities.add(identity);
+                    labels.push(label);
+                };
                 const mergedSkillLabels = new Map<string, {
                     name: string;
                     bg: string;
@@ -510,24 +631,41 @@ export function useCanvasOverlay(
                     mergedSkillLabels.set(key, { name, bg, count: 1, remaining, sortOrder, prefix });
                 };
 
-                const mode = hf.temptationMode ?? 0;
-                const hasActiveFrenziedRushedTimer = (p.combinedOtherEvents[idx] ?? []).some(e =>
+                const authoritativeTemptationSpans = p.authoritativeHorseMetrics?.[idx]?.temptationSpans;
+                const hasAuthoritativeTemptationSpans = authoritativeTemptationSpans !== undefined;
+                const exactTemptationSpan = activeSpan(authoritativeTemptationSpans, time);
+                const mode = hasAuthoritativeTemptationSpans
+                    ? exactTemptationSpan?.mode ?? 0
+                    : hf.temptationMode ?? 0;
+                const hasActiveFrenziedRushedTimer = !hasAuthoritativeTemptationSpans && (p.combinedOtherEvents[idx] ?? []).some(e =>
                     e.name === "Rushed (Frenzied)" && time >= e.time && time < e.time + e.duration
                 );
-                if (p.toggles.skills && (mode || hasActiveFrenziedRushedTimer)) {
-                    labels.push({ text: mode ? TEMPTATION_TEXT[mode] ?? "Rushed" : "Rushed", bg: bgColor });
+                if (p.toggles.skills && !hasAuthoritativeTemptationSpans && (mode || hasActiveFrenziedRushedTimer)) {
+                    const text = mode ? TEMPTATION_TEXT[mode] ?? "Rushed" : "Rushed";
+                    addUniqueLabel(`state:${raceStateLabelIdentity(text)}`, { text, bg: bgColor });
                 }
 
                 if (p.toggles.skills) {
+                    const authoritativeSkillSpans = p.authoritativeHorseMetrics?.[idx]?.activeSkillSpans;
                     (p.skillActivations?.[idx] ?? [])
-                        .filter(s => {
-                            const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2], s.param?.[3]);
-                            return time >= s.time && time < s.time + dur && !EXCLUDE_SKILL_RE.test(s.name);
-                        })
-                        .sort((a, b) => a.time - b.time || a.name.localeCompare(b.name))
-                        .forEach(s => {
-                            const dur = getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2], s.param?.[3]);
-                            const remaining = Math.max(0, s.time + dur - time);
+                        .map(s => ({
+                            activation: s,
+                            duration: getDetailedSkillActivationDuration(
+                                authoritativeSkillSpans,
+                                s.param[1],
+                                s.time,
+                                s.param?.[3],
+                            ) ?? getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2], s.param?.[3]),
+                        }))
+                        .filter(({ activation: s, duration }) =>
+                            isSkillLabelVisible(s.time, duration, time)
+                            && !isAutomaticPassiveSkill(s.param[1])
+                            && !EXCLUDE_SKILL_RE.test(s.name)
+                        )
+                        .sort((a, b) => a.activation.time - b.activation.time
+                            || a.activation.name.localeCompare(b.activation.name))
+                        .forEach(({ activation: s, duration }) => {
+                            const remaining = getSkillEffectRemainingSeconds(s.time, duration, time);
                             addMergedSkillLabel(s.name, bgColor, remaining, s.time);
                         });
 
@@ -536,14 +674,22 @@ export function useCanvasOverlay(
                             if (!activationTargetsFrame(p, s, idx)) return false;
                             if ((p.skillActivations?.[idx] ?? []).some((self: any) => self === s)) return false;
                             if (!hasTargetDebuffEffect(s.param[1], s.param?.[3])) return false;
-                            const rushedDuration = getRushedDebuffDurationSecs(s.param[1], s.param?.[3]);
-                            const dur = rushedDuration || getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2], s.param?.[3]);
-                            return time >= s.time && time < s.time + dur && !EXCLUDE_SKILL_RE.test(s.name);
+                            const authoritativeDuration = authoritativeActivationDuration(p, s);
+                            const dur = authoritativeDuration ?? (
+                                getRushedDebuffDurationSecs(s.param[1], s.param?.[3])
+                                || getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2], s.param?.[3])
+                            );
+                            return isSkillLabelVisible(s.time, dur, time)
+                                && !isAutomaticPassiveSkill(s.param[1])
+                                && !EXCLUDE_SKILL_RE.test(s.name);
                         })
                         .forEach(s => {
-                            const rushedDuration = getRushedDebuffDurationSecs(s.param[1], s.param?.[3]);
-                            const dur = rushedDuration || getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2], s.param?.[3]);
-                            const remaining = Math.max(0, s.time + dur - time);
+                            const authoritativeDuration = authoritativeActivationDuration(p, s);
+                            const dur = authoritativeDuration ?? (
+                                getRushedDebuffDurationSecs(s.param[1], s.param?.[3])
+                                || getSkillDurationSecs(s.param[1], p.goalInX, s.time, s.param?.[2], s.param?.[3])
+                            );
+                            const remaining = getSkillEffectRemainingSeconds(s.time, dur, time);
                             addMergedSkillLabel(s.name, "#ffcccb", remaining, s.time, "↓ ");
                         });
 
@@ -551,8 +697,8 @@ export function useCanvasOverlay(
                         .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
                         .forEach(label => {
                             const countSuffix = label.count > 1 ? ` x${label.count}` : "";
-                            const durationSuffix = p.toggles.skillDuration ? ` ${label.remaining.toFixed(1)}s` : "";
-                            labels.push({
+                            const durationSuffix = formatSkillDurationSuffix(label.remaining, p.toggles.skillDuration);
+                            addUniqueLabel(`skill:${label.prefix}${label.name}`, {
                                 text: `${label.prefix}${label.name}${countSuffix}${durationSuffix}`,
                                 bg: label.bg,
                             });
@@ -567,7 +713,16 @@ export function useCanvasOverlay(
                     })
                     .sort((a, b) => a.time - b.time || a.name.localeCompare(b.name))
                     .forEach(e => {
-                        labels.push({ text: e.name, bg: bgColor });
+                        addUniqueLabel(`state:${raceStateLabelIdentity(e.name)}`, {
+                            text: formatRaceStateLabel(
+                                e.name,
+                                e.time,
+                                e.duration,
+                                time,
+                                p.toggles.skillDuration,
+                            ),
+                            bg: bgColor,
+                        });
                     });
 
                 if (labels.length === 0) return;

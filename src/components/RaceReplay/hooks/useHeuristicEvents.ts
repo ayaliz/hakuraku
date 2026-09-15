@@ -17,8 +17,10 @@ export function useHeuristicEvents(
     detectedCourseId?: number,
     groundCondition?: number,
     raceData?: any,
+    enabled = true,
 ): Record<number, HeuristicEvent[]> {
     return useMemo(() => {
+        if (!enabled) return {};
         return computeHeuristicEvents({
             frames,
             goalInX,
@@ -34,6 +36,6 @@ export function useHeuristicEvents(
             groundCondition,
             raceData,
         });
-    }, [frames, goalInX, trainedCharaByIdx, oonigeByIdx, horseInfoByIdx, trackSlopes, passiveStatModifiers, skillActivations, otherEvents, lastSpurtStartDistances, detectedCourseId, groundCondition, raceData]);
+    }, [frames, goalInX, trainedCharaByIdx, oonigeByIdx, horseInfoByIdx, trackSlopes, passiveStatModifiers, skillActivations, otherEvents, lastSpurtStartDistances, detectedCourseId, groundCondition, raceData, enabled]);
 }
 

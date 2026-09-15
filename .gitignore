@@ -42,9 +42,11 @@ umdb/*.pyi
 /docs/*
 !/docs/privacy-policy.md
 /logs
+/services
 /tools
 /worker
 /wrangler.toml
+/wrangler.*.toml
 /search.json
 
 # private site assets and generated datasets

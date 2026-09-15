@@ -7,6 +7,7 @@ import CharaTable from "./CharaCard";
 import { useCharaTableData } from "./useCharaTableData";
 import { useRacePredictions } from "./useRacePredictions";
 import "./CharaList.css";
+import type { DetailedHorseMetrics } from "../../../../data/DetailedRaceSimulation";
 
 type CharaListProps = {
     raceHorseInfo: any[];
@@ -15,6 +16,8 @@ type CharaListProps = {
     laneDistanceMax?: number;
     skillActivations?: Record<number, { time: number; name: string; param: number[] }[]>;
     otherEvents?: Record<number, { time: number; duration: number; name: string }[]>;
+    authoritativeModeEvents?: Record<number, { time: number; duration: number; name: string; phase?: number }[]>;
+    authoritativeHorseMetrics?: Record<number, DetailedHorseMetrics>;
     raceType?: string;
     groundCondition?: number;
     randomSeed?: number;
@@ -45,8 +48,8 @@ function getWorldTransformLossAtTime(
     return loss0 + (loss1 - loss0) * alpha;
 }
 
-const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData, detectedCourseId, laneDistanceMax, skillActivations, otherEvents, raceType, groundCondition, randomSeed }) => {
-    const { tableData, effectiveCourseId } = useCharaTableData(raceHorseInfo, raceData, detectedCourseId, skillActivations, otherEvents, raceType, groundCondition, randomSeed);
+const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData, detectedCourseId, laneDistanceMax, skillActivations, otherEvents, authoritativeModeEvents, authoritativeHorseMetrics, raceType, groundCondition, randomSeed }) => {
+    const { tableData, effectiveCourseId } = useCharaTableData(raceHorseInfo, raceData, detectedCourseId, skillActivations, otherEvents, raceType, groundCondition, randomSeed, authoritativeModeEvents, authoritativeHorseMetrics);
     const predictionState = useRacePredictions(raceHorseInfo, effectiveCourseId);
     const worldTransformEstimate = useWorldTransformEstimate(
         raceData.frame ?? [],
@@ -64,14 +67,15 @@ const CharaList: React.FC<CharaListProps> = ({ raceHorseInfo, raceData, detected
             ...row,
             predictedWinProbability: prediction?.probability,
             predictionRank: prediction?.rank,
-            worldTransformLossTotal: worldTransformEstimate
+            worldTransformLossTotal: authoritativeHorseMetrics?.[row.frameOrder - 1]?.worldTransformDistanceLoss ?? (worldTransformEstimate
                 ? getWorldTransformLossAtTime(
                     raceData,
                     row.frameOrder - 1,
                     row.horseResultData.finishTimeRaw,
                     worldTransformEstimate.cumulativeLossByFrame,
                 )
-                : undefined,
+                : undefined),
+            worldTransformLossIsAuthoritative: Boolean(authoritativeHorseMetrics?.[row.frameOrder - 1]),
         };
     });
 

@@ -8,7 +8,7 @@ import InfoTooltip from "./InfoTooltip";
 import { TeamMemberCard } from "./TeamMemberCard";
 import TeamSampleSelect from "./TeamSampleSelect";
 import { getRankIcon } from "../../../../components/RaceDataPresenter/components/CharaList/rankUtils";
-import type { CharacterTeamRateRow, StyleCompositionSummaryRow } from "../../../UmaLogsPage/panelData";
+import type { CharacterTeamRateRow, StyleCompositionSummaryRow } from "../../../../features/umalogs/model/panelData";
 import SynergyEntitySelect, { type SynergyEntityInfo } from "./SynergyEntitySelect";
 import { CharacterBreakdownPanel } from "./CharacterBreakdownPanel";
 import { BubblePlotPanel } from "./BubblePlotPanel";
@@ -347,7 +347,7 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
             )}
             <div className="sa-top-panels-row">
                 <CharacterBreakdownPanel
-                    title="Character Breakdown"
+                    title="Uma Breakdown"
                     rawWinsSlices={rawWinsAll}
                     rawPopSlices={unfilteredCharacterPop}
                     cmId={cmId}
@@ -389,11 +389,11 @@ const CharacterAnalysis: React.FC<CharacterAnalysisProps> = ({
                     Style Trio Synergy
                     <InfoTooltip
                         id="style-trio-synergy-info"
-                        tip="Highest win rate team compositions for a specific character."
+                        tip="Highest win rate team compositions for a specific Uma."
                     />
                 </div>
                     <div className="syn-entity-row">
-                        <span className="syn-entity-label">Character:</span>
+                        <span className="syn-entity-label">Uma:</span>
                         <SynergyEntitySelect
                             entities={synEntities}
                             value={effectiveEntityKey}

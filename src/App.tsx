@@ -31,6 +31,7 @@ function lazyWithReload<T extends React.ComponentType<any>>(
 const RaceDataPage    = lazyWithReload(() => import("./pages/RaceDataPage"),    "RaceDataPage");
 const MultiRacePage   = lazyWithReload(() => import("./pages/MultiRacePage"),   "MultiRacePage");
 const UmaLogsPage     = lazyWithReload(() => import("./pages/UmaLogsPage"),     "UmaLogsPage");
+const SimDataPage     = lazyWithReload(() => import("./pages/SimDataPage"),     "SimDataPage");
 const MasterDataPage  = lazyWithReload(() => import("./pages/MasterDataPage"),  "MasterDataPage");
 const NotesPage       = lazyWithReload(() => import("./pages/NotesPage"),       "NotesPage");
 const SetupGuidePage  = lazyWithReload(() => import("./pages/SetupGuidePage"),  "SetupGuidePage");
@@ -81,13 +82,17 @@ const PAGE_META: Record<string, { title: string; description?: string; noIndex?:
         title: "UmaLogs",
         description: "Champions Meeting race archives and aggregate statistics from collected Umamusume race data.",
     },
+    simdata: {
+        title: "SimData",
+        description: "Explore simulated Champions Meeting data.",
+    },
     setup: {
         title: "Setup Guide",
         description: "How to capture your own Umamusume race data and load it into Hakuraku for analysis.",
     },
     masterdata: {
         title: "Master Data",
-        description: "Search the Umamusume master database: skills, characters, support cards, races and their raw effect values.",
+        description: "Search the Umamusume master database: skills, Umas, support cards, races and their raw effect values.",
     },
     notes: {
         title: "Research Notes",
@@ -264,6 +269,12 @@ function AppShell() {
                                 <span className="haku-nav-badge">{umaLogsBadgeLabel}</span>
                             </span>
                         </Nav.Link>
+                        <Nav.Link as={NavLink} to="/simdata">
+                            <span className="haku-nav-link-with-badge">
+                                <span>SimData</span>
+                                <span className="haku-nav-badge">Check this out!</span>
+                            </span>
+                        </Nav.Link>
                     </Nav>
                     <Nav className="ms-auto align-items-lg-center">
                         {loading ? (
@@ -289,6 +300,7 @@ function AppShell() {
                     <Route path="/racedata" element={withMeta(PAGE_META.racedata, <RaceDataPage />)} />
                     <Route path="/multirace" element={withMeta(PAGE_META.multirace, <MultiRacePage />)} />
                     <Route path="/umalogs" element={withMeta(PAGE_META.umalogs, <UmaLogsPage />)} />
+                    <Route path="/simdata" element={withMeta(PAGE_META.simdata, <SimDataPage />)} />
                     <Route path="/setup" element={withMeta(PAGE_META.setup, <SetupGuidePage />)} />
                     <Route path="/masterdata" element={withMeta(PAGE_META.masterdata, <MasterDataPage />)} />
                     <Route path="/notes/:noteId" element={withMeta(PAGE_META.notes, <NotesPage />)} />

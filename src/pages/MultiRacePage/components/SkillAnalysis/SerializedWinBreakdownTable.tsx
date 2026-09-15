@@ -1,6 +1,6 @@
 import React from "react";
 import type { SkillActivationBuckets, SkillActivationBucketSeries } from "../../types";
-import type { SerializedSkillWinBreakdownCell, SerializedSkillWinBreakdownRow } from "../../../UmaLogsPage/skillCache";
+import type { SerializedSkillWinBreakdownCell, SerializedSkillWinBreakdownRow } from "../../../../features/umalogs/model/skillCache";
 import { STRATS, STRAT_LABELS } from "./skillUtils";
 
 function formatSerializedWinBreakdownCell(cell: SerializedSkillWinBreakdownCell | undefined | null) {

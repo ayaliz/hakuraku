@@ -1,22 +1,28 @@
 import React, { useState, useMemo, useEffect } from "react";
 import type { HorseEntry, SkillStats } from "../MultiRacePage/types";
-import { STRATEGY_NAMES, STRATEGY_COLORS, STYLE_BREAKDOWN_STRATEGY_ORDER } from "../MultiRacePage/components/WinDistributionCharts/constants";
+import { STRATEGY_NAMES } from "../MultiRacePage/components/WinDistributionCharts/constants";
 import InfoTooltip from "../MultiRacePage/components/WinDistributionCharts/InfoTooltip";
-import { getCharaIcon } from "../MultiRacePage/components/WinDistributionCharts/utils";
-import { RepresentativeDrilldown } from "../MultiRacePage/components/WinDistributionCharts/RepresentativeDrilldown";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
-import { formatTime } from "../../data/UMDatabaseUtils";
 import {
-    defaultStatValueForProperty, sanitizeCharacterFeatures, SUPPORT_CARD_LB_ANY,
+    sanitizeCharacterFeatures,
     type AggRow, type CharaVariant, type SkillVariant, type SupportCardVariant,
-    type CharacterRequirement, type CharacterFeature, type ExplorerBootstrapPayload,
-    type FilterProperty, type SortKey, type SkillFilterMode, type RequirementTruthMode,
+    type CharacterFeature, type ExplorerBootstrapPayload,
+    type SortKey,
 } from "./explorerShared";
-import { SerializedHorseEntry, UMA_LOGS_API_BASE, deserializeHorseEntry } from "./umaLogsApi";
-import { CharaSelect, SkillSelect, SupportCardSelect } from "./ExplorerSelects";
+import { UMA_LOGS_API_BASE } from "./umaLogsApi";
 import { buildExplorerQueryRequest, buildExplorerQuerySpec, serializeUmaLogsQuerySpec } from "./umaLogsQueryShared";
-import type { ReplayRaceFilter, ReplayRaceFilterField } from "./replaysShared";
-import "./UmaLogsPage.css";
+import RaceFilterRows from "../../features/umalogs/components/filters/RaceFilterRows";
+import ExplorerResults, { type ExplorerQueryResponse } from "./ExplorerResults";
+import ExplorerCharacterFilterEditor from "./ExplorerCharacterFilterEditor";
+import {
+    createRaceFilter,
+    removeRaceFilter as removeRaceFilterFromList,
+    sanitizeStoredRaceFilters,
+    updateRaceFilter as updateRaceFilterInList,
+    type ReplayRaceFilter,
+} from "../../features/umalogs/model/raceFilters";
+import { useLatestRequest } from "../../features/umalogs/api/latestRequest";
+import "./UmaLogsControls.css";
 
 interface ExplorerTabProps {
     cmId?: string | null;
@@ -59,8 +65,8 @@ function readSavedExplorerState(cmId?: string | null, courseId?: number): SavedE
             sortDesc: parsed.sortDesc !== false,
             hideLowQuantity: parsed.hideLowQuantity === true,
             minimumEntries: Math.max(0, Number(parsed.minimumEntries) || 200),
-            raceFilters: sanitizeRaceFilters(parsed.raceFilters),
-            appliedRaceFilters: sanitizeRaceFilters(parsed.appliedRaceFilters),
+            raceFilters: sanitizeStoredRaceFilters(parsed.raceFilters),
+            appliedRaceFilters: sanitizeStoredRaceFilters(parsed.appliedRaceFilters),
         };
     } catch {
         return null;
@@ -71,69 +77,6 @@ function formatPercent(value: number): string {
     return value.toFixed(1);
 }
 
-const SUPPORT_CARD_LB_OPTIONS = [
-    { value: SUPPORT_CARD_LB_ANY, label: "Any" },
-    { value: 0, label: "0LB" },
-    { value: 1, label: "1LB" },
-    { value: 2, label: "2LB" },
-    { value: 3, label: "3LB" },
-    { value: 4, label: "MLB" },
-] as const;
-
-type ExplorerFilterProperty = Exclude<FilterProperty, "deckRaceBonus">;
-
-const PROPERTY_LABELS: Record<ExplorerFilterProperty, string> = {
-    none: "—",
-    speed: "Speed",
-    stamina: "Stamina",
-    pow: "Power",
-    guts: "Guts",
-    wiz: "Wit",
-    aptGround: "Aptitude (Ground)",
-    aptDistance: "Aptitude (Distance)",
-    aptStyle: "Aptitude (Style)",
-    totalSkillPoints: "Skill pts",
-    rankScore: "Score",
-    careerWinCount: "Career wins",
-    isDebuffer: "Is Debuffer",
-    skill: "Skill",
-    supportCard: "Support card",
-};
-const PROPERTY_OPTIONS = Object.keys(PROPERTY_LABELS) as ExplorerFilterProperty[];
-const RACE_FILTER_FIELDS: Array<{ value: ReplayRaceFilterField; label: string }> = [
-    { value: "room_runaway_count", label: "Room Runaways" },
-    { value: "room_front_count", label: "Room Front Runners" },
-    { value: "room_pace_count", label: "Room Pace Chasers" },
-    { value: "room_late_count", label: "Room Late Surgers" },
-    { value: "room_end_count", label: "Room End Closers" },
-    { value: "room_debuffer_count", label: "Room Debuffers" },
-];
-const RACE_FILTER_FIELD_SET = new Set<ReplayRaceFilterField>(RACE_FILTER_FIELDS.map(({ value }) => value));
-
-function sanitizeRaceFilters(input: unknown): ReplayRaceFilter[] {
-    if (!Array.isArray(input)) return [];
-    return input.flatMap((value) => {
-        if (!value || typeof value !== "object") return [];
-        const filter = value as Partial<ReplayRaceFilter>;
-        if (!filter.id || !RACE_FILTER_FIELD_SET.has(filter.field as ReplayRaceFilterField) || !["=", "<=", ">="].includes(String(filter.operator))) return [];
-        const numericValue = Number(filter.value);
-        if (!Number.isFinite(numericValue) || numericValue < 0) return [];
-        return [{ ...filter, value: Math.floor(numericValue) } as ReplayRaceFilter];
-    }).slice(0, 10);
-}
-
-const STRATEGIES = STYLE_BREAKDOWN_STRATEGY_ORDER;
-const APTITUDE_GRADE_OPTIONS = [
-    { value: 8, label: "S" },
-    { value: 7, label: "A" },
-    { value: 6, label: "B" },
-    { value: 5, label: "C" },
-    { value: 4, label: "D" },
-    { value: 3, label: "E" },
-    { value: 2, label: "F" },
-    { value: 1, label: "G" },
-] as const;
-
 const ExplorerInfoIcon = ({ id, tip }: { id: string; tip: React.ReactNode }) => (
     <InfoTooltip
         id={id}
@@ -143,27 +86,6 @@ const ExplorerInfoIcon = ({ id, tip }: { id: string; tip: React.ReactNode }) => 
         ariaLabel="Explain filter behavior"
     />
 );
-
-type ExplorerQueryResponse = {
-    totalTeams: number;
-    filteredTeams: number;
-    filteredTeamWins: number;
-    filteredTeamWinPct: number;
-    filteredEntries: number;
-    hasCharacterFilter: boolean;
-    rows: AggRow[];
-    drilldown: Array<{
-        horse: SerializedHorseEntry;
-        bayesianWinRate: number;
-        winRate: number;
-        appearances: number;
-        teamBayesianWinRate?: number;
-        teamWinRate?: number;
-        teamWins?: number;
-        teamAppearances?: number;
-    }>;
-    teamDrilldown?: ExplorerQueryResponse["drilldown"];
-};
 
 function buildExplorerBootstrapUrl(cmId: string, courseId: number, apiBase = UMA_LOGS_API_BASE): string {
     return `${apiBase}/api/umalogs/${encodeURIComponent(cmId)}/groups/${courseId}/explorer/bootstrap`;
@@ -178,7 +100,7 @@ function normalizeCardVariant(variant: CharaVariant): CharaVariant {
         ? ""
         : UMDatabaseWrapper.charas[variant.charaId]?.name ?? variant.charaName ?? `Unknown (${variant.charaId})`;
     const cardName = variant.cardId === 0
-        ? "Any character"
+        ? "Any Uma"
         : UMDatabaseWrapper.cards[variant.cardId]?.name ?? variant.cardName ?? charaName;
     return { ...variant, charaName, cardName };
 }
@@ -226,6 +148,8 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
     const [raceFilters, setRaceFilters] = useState<ReplayRaceFilter[]>(initialSavedState?.raceFilters ?? []);
     const [appliedRaceFilters, setAppliedRaceFilters] = useState<ReplayRaceFilter[]>(initialSavedState?.appliedRaceFilters ?? []);
     const [loadedStateKey, setLoadedStateKey] = useState(explorerStateKey(cmId, courseId));
+    const { runLatest: runLatestBootstrap, cancelLatest: cancelLatestBootstrap } = useLatestRequest();
+    const { runLatest: runLatestQuery, cancelLatest: cancelLatestQuery } = useLatestRequest();
 
     const cardVariants = useMemo(
         () => bootstrap?.cardVariants ?? [],
@@ -234,25 +158,14 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
     const skillVariants = bootstrap?.skillVariants ?? [];
     const supportCardVariants = bootstrap?.supportCardVariants ?? [];
 
-    const createDefaultRequirement = (): CharacterRequirement => ({
-        id: `${Date.now()}-${Math.random()}`,
-        truthMode: "require",
-        property: "none",
-        statOp: ">",
-        statValue: defaultStatValueForProperty("none"),
-        skillId: skillVariants[0]?.skillId ?? null,
-        skillMode: "learned",
-        supportCardId: supportCardVariants[0]?.supportCardId ?? null,
-        supportCardPresent: true,
-        supportCardLb: SUPPORT_CARD_LB_ANY,
-    });
-
     const effectiveCharacterFeatures = useMemo(
         () => sanitizeCharacterFeatures(characterFeatures),
         [characterFeatures],
     );
     useEffect(() => {
         const saved = readSavedExplorerState(cmId, courseId);
+        cancelLatestBootstrap();
+        cancelLatestQuery();
         setBootstrap(null);
         setBootstrapLoading(false);
         setBootstrapError(null);
@@ -270,7 +183,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
         setRaceFilters(saved?.raceFilters ?? []);
         setAppliedRaceFilters(saved?.appliedRaceFilters ?? []);
         setLoadedStateKey(explorerStateKey(cmId, courseId));
-    }, [cmId, courseId]);
+    }, [cancelLatestBootstrap, cancelLatestQuery, cmId, courseId]);
 
     useEffect(() => {
         const key = explorerStateKey(cmId, courseId);
@@ -291,41 +204,39 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
 
     useEffect(() => {
         if (!apiMode || !cmId || !courseId || bootstrap !== null) return;
-        const controller = new AbortController();
         setBootstrapLoading(true);
         setBootstrapError(null);
-        fetch(buildExplorerBootstrapUrl(cmId, courseId, apiBase ?? UMA_LOGS_API_BASE), {
-            signal: controller.signal,
-        })
-            .then((response) => {
-                if (!response.ok) throw new Error(`HTTP ${response.status} - explorer bootstrap not found`);
-                return response.json() as Promise<ExplorerBootstrapPayload>;
-            })
-            .then((json) => {
-                setBootstrap({
-                    ...json,
-                    cardVariants: json.cardVariants.map(normalizeCardVariant),
-                    skillVariants: json.skillVariants.map(normalizeSkillVariant),
-                    supportCardVariants: json.supportCardVariants.map(normalizeSupportCardVariant),
-                });
+        void runLatestBootstrap(async (signal) => {
+            const response = await fetch(buildExplorerBootstrapUrl(cmId, courseId, apiBase ?? UMA_LOGS_API_BASE), { signal });
+            if (!response.ok) throw new Error(`HTTP ${response.status} - explorer bootstrap not found`);
+            return await response.json() as ExplorerBootstrapPayload;
+        }).then((outcome) => {
+            if (outcome.status === "cancelled") return;
+            if (outcome.status === "error") {
+                setBootstrapError(outcome.error.message);
                 setBootstrapLoading(false);
-            })
-            .catch((error: Error) => {
-                if (error.name === "AbortError") return;
-                setBootstrapError(error.message);
-                setBootstrapLoading(false);
+                return;
+            }
+            const json = outcome.value;
+            setBootstrap({
+                ...json,
+                cardVariants: json.cardVariants.map(normalizeCardVariant),
+                skillVariants: json.skillVariants.map(normalizeSkillVariant),
+                supportCardVariants: json.supportCardVariants.map(normalizeSupportCardVariant),
             });
-        return () => controller.abort();
-    }, [apiBase, apiMode, bootstrap, cmId, courseId]);
+            setBootstrapLoading(false);
+        });
+        return cancelLatestBootstrap;
+    }, [apiBase, apiMode, bootstrap, cancelLatestBootstrap, cmId, courseId, runLatestBootstrap]);
 
     useEffect(() => {
         if (!apiMode || !cmId || !courseId || !bootstrap) return;
         if (queryVersion === 0) return;
-        const controller = new AbortController();
         const timeout = window.setTimeout(() => {
             setQueryLoading(true);
             setQueryError(null);
-            fetch(buildExplorerQueryUrl(cmId, courseId, apiBase ?? UMA_LOGS_API_BASE), {
+            void runLatestQuery(async (signal) => {
+                const response = await fetch(buildExplorerQueryUrl(cmId, courseId, apiBase ?? UMA_LOGS_API_BASE), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(buildExplorerQueryRequest(
@@ -335,152 +246,59 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                     selectedRowKey,
                     appliedRaceFilters,
                 )),
-                signal: controller.signal,
-            })
-                .then(async (response) => {
-                    if (!response.ok) {
-                        let message = `HTTP ${response.status} - explorer query failed`;
-                        try {
-                            const errorBody = await response.json() as { error?: string };
-                            if (errorBody?.error) message = errorBody.error;
-                        } catch {
-                            // fall back to the generic HTTP error above
-                        }
-                        throw new Error(message);
-                    }
-                    return response.json() as Promise<ExplorerQueryResponse>;
-                })
-                .then((json) => {
-                    setQueryResult({ ...json, rows: json.rows.map(normalizeAggRow) });
-                    setQueryLoading(false);
-                })
-                .catch((error: Error) => {
-                    if (error.name === "AbortError") return;
-                    setQueryError(error.message);
-                    setQueryLoading(false);
+                    signal,
                 });
+                if (!response.ok) {
+                    let message = `HTTP ${response.status} - explorer query failed`;
+                    try {
+                        const errorBody = await response.json() as { error?: string };
+                        if (errorBody?.error) message = errorBody.error;
+                    } catch {
+                        // fall back to the generic HTTP error above
+                    }
+                    throw new Error(message);
+                }
+                return await response.json() as ExplorerQueryResponse;
+            }).then((outcome) => {
+                if (outcome.status === "cancelled") return;
+                if (outcome.status === "error") {
+                    setQueryError(outcome.error.message);
+                    setQueryLoading(false);
+                    return;
+                }
+                const json = outcome.value;
+                setQueryResult({ ...json, rows: json.rows.map(normalizeAggRow) });
+                setQueryLoading(false);
+            });
         }, 150);
         return () => {
             window.clearTimeout(timeout);
-            controller.abort();
+            cancelLatestQuery();
         };
-    }, [apiBase, apiMode, appliedCharacterFeatures, appliedRaceFilters, bootstrap, cmId, courseId, queryVersion, selectedRowKey, sortDesc, sortKey]);
+    }, [apiBase, apiMode, appliedCharacterFeatures, appliedRaceFilters, bootstrap, cancelLatestQuery, cmId, courseId, queryVersion, runLatestQuery, selectedRowKey, sortDesc, sortKey]);
 
-    const addCharacterFeature = () => setCharacterFeatures(prev => [...prev, {
-        id: `${Date.now()}-${Math.random()}`,
-        characterMatchMode: "is",
-        cardMode: "include",
-        cardId: cardVariants[0]?.cardId ?? null,
-        cardStrategy: null,
-        requirements: [createDefaultRequirement()],
-    }]);
-
-    const removeCharacterFeature = (id: string) => setCharacterFeatures(prev => prev.filter(f => f.id !== id));
-
-    const addCharacterRequirement = (featureId: string) =>
-        setCharacterFeatures(prev => prev.map(feature =>
-            feature.id === featureId
-                ? { ...feature, requirements: [...feature.requirements, createDefaultRequirement()] }
-                : feature
-        ));
-
-    const removeCharacterRequirement = (featureId: string, requirementId: string) =>
-        setCharacterFeatures(prev => prev.map(feature =>
-            feature.id === featureId
-                ? { ...feature, requirements: feature.requirements.filter(req => req.id !== requirementId) }
-                : feature
-        ));
-
-    const updateCharacterFeature = (id: string, patch: Partial<CharacterFeature>) =>
-        setCharacterFeatures(prev => prev.map(feature =>
-            feature.id !== id ? feature : { ...feature, ...patch }
-        ));
-
-    const updateCharacterRequirement = (featureId: string, requirementId: string, patch: Partial<CharacterRequirement>) =>
-        setCharacterFeatures(prev => prev.map(feature => {
-            if (feature.id !== featureId) return feature;
-            return {
-                ...feature,
-                requirements: feature.requirements.map(req => {
-                    if (req.id !== requirementId) return req;
-                    const next = { ...req, ...patch };
-                    if (patch.property === "skill" && next.skillId === null)
-                        next.skillId = skillVariants[0]?.skillId ?? null;
-                    if (patch.property === "supportCard" && next.supportCardId === null)
-                        next.supportCardId = supportCardVariants[0]?.supportCardId ?? null;
-                    if (patch.property === "supportCard")
-                        next.supportCardLb = next.supportCardLb ?? SUPPORT_CARD_LB_ANY;
-                    if (patch.property !== undefined)
-                        next.statValue = defaultStatValueForProperty(patch.property);
-                    return next;
-                }),
-            };
-        }));
-
-    const addRaceFilter = () => setRaceFilters((current) => [...current, {
-        id: `${Date.now()}-${Math.random()}`,
-        field: "room_front_count",
-        operator: "=",
-        value: 0,
-    }]);
+    const addRaceFilter = () => setRaceFilters((current) => [
+        ...current,
+        createRaceFilter(`${Date.now()}-${Math.random()}`),
+    ]);
     const updateRaceFilter = (id: string, patch: Partial<ReplayRaceFilter>) =>
-        setRaceFilters((current) => current.map((filter) => filter.id === id ? { ...filter, ...patch } : filter));
+        setRaceFilters((current) => updateRaceFilterInList(current, id, patch));
     const removeRaceFilter = (id: string) =>
-        setRaceFilters((current) => current.filter((filter) => filter.id !== id));
+        setRaceFilters((current) => removeRaceFilterFromList(current, id));
 
     const handleSort = (key: SortKey) => {
         if (sortKey === key) setSortDesc(d => !d);
         else { setSortKey(key); setSortDesc(true); }
     };
 
-    const SortArrow = ({ col }: { col: SortKey }) =>
-        sortKey === col ? <span className="exp-sort-arrow">{sortDesc ? "v" : "^"}</span> : null;
 
     const hasCharacterFilter = queryResult?.hasCharacterFilter ?? characterFeatures.length > 0;
-    const rows = queryResult?.rows ?? [];
-    const displayedRows = useMemo(
-        () => hideLowQuantity ? rows.filter((row) => row.entries >= minimumEntries) : rows,
-        [hideLowQuantity, minimumEntries, rows],
-    );
-    const showTeamsColumn = !hasCharacterFilter;
-    const drilldownColSpan = 4 + (showTeamsColumn ? 1 : 0) + (hasCharacterFilter ? 2 : 0);
-    const selectedRow = useMemo(
-        () => displayedRows.find(row => row.key === selectedRowKey && row.cardId !== undefined && row.strategy !== undefined) ?? null,
-        [displayedRows, selectedRowKey]
-    );
-    const drilldownHorses = useMemo(
-        () => (queryResult?.drilldown ?? []).map((entry) => ({
-            horse: deserializeHorseEntry(entry.horse),
-            bayesianWinRate: entry.bayesianWinRate,
-            winRate: entry.winRate,
-            appearances: entry.appearances,
-            teamBayesianWinRate: entry.teamBayesianWinRate,
-            teamWinRate: entry.teamWinRate,
-            teamWins: entry.teamWins,
-            teamAppearances: entry.teamAppearances,
-        })),
-        [queryResult],
-    );
-    const teamDrilldownHorses = useMemo(
-        () => (queryResult?.teamDrilldown ?? []).map((entry) => ({
-            horse: deserializeHorseEntry(entry.horse),
-            bayesianWinRate: entry.bayesianWinRate,
-            winRate: entry.winRate,
-            appearances: entry.appearances,
-            teamBayesianWinRate: entry.teamBayesianWinRate,
-            teamWinRate: entry.teamWinRate,
-            teamWins: entry.teamWins,
-            teamAppearances: entry.teamAppearances,
-        })),
-        [queryResult],
-    );
     const totalTeams = queryResult?.totalTeams ?? bootstrap?.totalTeams ?? 0;
     const filteredTeams = queryResult?.filteredTeams ?? 0;
     const filteredTeamWins = queryResult?.filteredTeamWins ?? 0;
     const filteredTeamWinPct = queryResult?.filteredTeamWinPct ?? 0;
     const filteredEntries = queryResult?.filteredEntries ?? 0;
     const isLowTeamWinRate = filteredTeams > 0 && filteredTeamWins * 3 < filteredTeams;
-    const activeStrategyColors = strategyColors ?? STRATEGY_COLORS;
     const effectiveFeatureSignature = useMemo(() => JSON.stringify(effectiveCharacterFeatures), [effectiveCharacterFeatures]);
     const appliedFeatureSignature = useMemo(() => JSON.stringify(appliedCharacterFeatures), [appliedCharacterFeatures]);
     const raceFilterSignature = useMemo(() => JSON.stringify(raceFilters), [raceFilters]);
@@ -510,83 +328,11 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
         setMinimumEntries(200);
     };
 
-    useEffect(() => {
-        if (selectedRowKey && !displayedRows.some(row => row.key === selectedRowKey && row.cardId !== undefined && row.strategy !== undefined)) {
-            setSelectedRowKey(null);
-        }
-    }, [displayedRows, selectedRowKey]);
 
     useEffect(() => {
         if (filtersDirty && selectedRowKey !== null) setSelectedRowKey(null);
     }, [filtersDirty, selectedRowKey]);
 
-    const canDrilldown = !!skillStats;
-    const isAptitudeProperty = (property: FilterProperty) =>
-        property === "aptGround" || property === "aptDistance" || property === "aptStyle";
-
-    const renderRow = (row: AggRow) => {
-        const stratColor = row.strategy !== undefined
-            ? (activeStrategyColors[row.strategy] ?? "#718096")
-            : undefined;
-        const rowCanDrilldown = canDrilldown && row.cardId !== undefined && row.strategy !== undefined;
-        const isSelected = rowCanDrilldown && selectedRowKey === row.key;
-        const iconUrl = row.charaId !== undefined && row.cardId !== undefined
-            ? getCharaIcon(`${row.charaId}_${row.cardId}`)
-            : null;
-        return (
-            <React.Fragment key={row.key}>
-                <tr
-                    className={`exp-row${rowCanDrilldown ? " exp-row--clickable" : ""}${isSelected ? " exp-row--selected" : ""}`}
-                    onClick={rowCanDrilldown ? () => setSelectedRowKey(current => current === row.key ? null : row.key) : undefined}
-                >
-                    <td className="exp-td exp-td--name">
-                        {iconUrl && (
-                            <div className="exp-card-portrait">
-                                <img src={iconUrl} alt=""
-                                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                            </div>
-                        )}
-                        {stratColor && <span className="exp-dot" style={{ background: stratColor }} />}
-                        <span className="exp-name-block">
-                            <span>{row.label}</span>
-                            {(row.sublabel || row.isDebuffer) && (
-                                <span className="exp-sublabel">
-                                    {row.sublabel}
-                                    {row.isDebuffer && <span className="exp-debuffer-badge">Debuffer</span>}
-                                </span>
-                            )}
-                        </span>
-                    </td>
-                    <td className="exp-td exp-td--r">{row.entries}</td>
-                    {showTeamsColumn && <td className="exp-td exp-td--r">{row.teams}</td>}
-                    <td className="exp-td exp-td--r">
-                        {row.wins}
-                        {row.entries > 0 && <span className="exp-wins-pct"> ({formatPercent(row.awPct)}%)</span>}
-                    </td>
-                    <td className="exp-td exp-td--r">
-                        {row.teamWins}
-                        {row.teams > 0 && <span className="exp-wins-pct"> ({formatPercent(row.teamWinPct)}%)</span>}
-                    </td>
-                    {hasCharacterFilter && <td className="exp-td exp-td--r">{row.meanFinishTime ? formatTime(row.meanFinishTime) : "-"}</td>}
-                    {hasCharacterFilter && <td className="exp-td exp-td--r">{row.medianFinishTime ? formatTime(row.medianFinishTime) : "-"}</td>}
-                </tr>
-                {isSelected && selectedRow && (drilldownHorses.length > 0 || teamDrilldownHorses.length > 0) && (
-                    <tr className="exp-drilldown-row">
-                        <td className="exp-drilldown-cell" colSpan={drilldownColSpan}>
-                            <RepresentativeDrilldown
-                                title={`Top performers for ${selectedRow.label} (${STRATEGY_NAMES[selectedRow.strategy!]}${selectedRow.isDebuffer ? ", Debuffer" : ""})`}
-                                individualEntries={drilldownHorses}
-                                teamEntries={teamDrilldownHorses}
-                                skillStats={skillStats!}
-                                strategyColors={activeStrategyColors}
-                                onViewReplays={onViewReplays}
-                            />
-                        </td>
-                    </tr>
-                )}
-            </React.Fragment>
-        );
-    };
 
     if (!apiMode || !cmId || !courseId) {
         return <div className="exp-empty">Explorer requires the UmaLogs API path.</div>;
@@ -621,26 +367,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                             <button type="button" className="exp-add-btn" onClick={addRaceFilter}>+ Add condition</button>
                         </div>
                     </div>
-                    {raceFilters.length === 0 ? (
-                        <div className="rpl-empty-team-filters">No race-wide conditions.</div>
-                    ) : (
-                        <div className="rpl-race-filter-list">
-                            {raceFilters.map((filter) => (
-                                <div key={filter.id} className="rpl-race-filter-row">
-                                    <select className="exp-select" value={filter.field} onChange={(event) => updateRaceFilter(filter.id, { field: event.target.value as ReplayRaceFilterField })}>
-                                        {RACE_FILTER_FIELDS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                                    </select>
-                                    <select className="exp-select rpl-race-filter-operator" value={filter.operator} onChange={(event) => updateRaceFilter(filter.id, { operator: event.target.value as ReplayRaceFilter["operator"] })}>
-                                        <option value="=">=</option>
-                                        <option value="<=">&lt;=</option>
-                                        <option value=">=">&gt;=</option>
-                                    </select>
-                                    <input className="exp-stat-input rpl-race-filter-value" type="number" min={0} value={filter.value} onChange={(event) => updateRaceFilter(filter.id, { value: Math.max(0, Number(event.target.value) || 0) })} />
-                                    <button type="button" className="exp-remove-btn" onClick={() => removeRaceFilter(filter.id)}>x</button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    <RaceFilterRows filters={raceFilters} onUpdate={updateRaceFilter} onRemove={removeRaceFilter} />
                 </div>
 
                 <div className="exp-subsection">
@@ -652,7 +379,7 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                                 id="explorer-filter-types-tooltip"
                                 tip={
                                     <div className="exp-tooltip-copy">
-                                        <div><strong>is / is not</strong>: controls whether the matched uma can be the selected character.</div>
+                                        <div><strong>is / is not</strong>: controls whether the matched Uma can be the selected Uma.</div>
                                         <div><strong>Include / Exclude</strong>: controls whether this full card definition must be present or absent on the team.</div>
                                         <div>Different included cards must be fulfilled by different umas on the same team.</div>
                                     </div>
@@ -687,258 +414,36 @@ const ExplorerTab: React.FC<ExplorerTabProps> = ({ cmId, courseId, apiBase, apiM
                             </button>
                         </div>
                     </div>
-                    <div className="exp-feature-list">
-                        {characterFeatures.map(feature => (
-                            <div key={feature.id} className="exp-feature-card">
-                                <div className="exp-feature-header">
-                                    <span className="exp-feature-label">Character</span>
-                                    <div className="exp-toggle">
-                                        <button
-                                            className={`exp-toggle-btn${feature.characterMatchMode === "is" ? " active" : ""}`}
-                                            onClick={() => updateCharacterFeature(feature.id, { characterMatchMode: "is" })}
-                                        >
-                                            is
-                                        </button>
-                                        <button
-                                            className={`exp-toggle-btn${feature.characterMatchMode === "isNot" ? " active" : ""}`}
-                                            onClick={() => updateCharacterFeature(feature.id, { characterMatchMode: "isNot" })}
-                                        >
-                                            is not
-                                        </button>
-                                    </div>
-                                    <CharaSelect variants={cardVariants} value={feature.cardId} onChange={cardId => updateCharacterFeature(feature.id, { cardId })} />
-                                    <span className="exp-as-label">as</span>
-                                    <select
-                                        className="exp-select"
-                                        value={feature.cardStrategy ?? ""}
-                                        onChange={e => updateCharacterFeature(feature.id, { cardStrategy: e.target.value === "" ? null : Number(e.target.value) })}
-                                    >
-                                        <option value="">any style</option>
-                                        {STRATEGIES.map(s => (
-                                            <option key={s} value={s}>{STRATEGY_NAMES[s] ?? `Strategy ${s}`}</option>
-                                        ))}
-                                    </select>
-                                    <div className="exp-feature-actions">
-                                        <div className="exp-toggle exp-toggle--card-mode">
-                                            <button
-                                                className={`exp-toggle-btn${feature.cardMode === "include" ? " active" : ""}`}
-                                                onClick={() => updateCharacterFeature(feature.id, { cardMode: "include" })}
-                                            >
-                                                Include
-                                            </button>
-                                            <button
-                                                className={`exp-toggle-btn${feature.cardMode === "exclude" ? " active" : ""}`}
-                                                onClick={() => updateCharacterFeature(feature.id, { cardMode: "exclude" })}
-                                            >
-                                                Exclude
-                                            </button>
-                                        </div>
-                                        <button className="exp-remove-btn" onClick={() => removeCharacterFeature(feature.id)}>x</button>
-                                    </div>
-                                </div>
-
-                                <div className="exp-feature-reqs">
-                                    {feature.requirements.map(req => (
-                                        <div key={req.id} className="exp-condition-row exp-condition-row--feature">
-                                            <select
-                                                className="exp-select"
-                                                value={req.truthMode}
-                                                onChange={e => updateCharacterRequirement(feature.id, req.id, { truthMode: e.target.value as RequirementTruthMode })}
-                                            >
-                                                <option value="require">requires</option>
-                                                <option value="requireNot">requires not</option>
-                                            </select>
-                                            <select
-                                                className="exp-select"
-                                                value={req.property}
-                                                onChange={e => updateCharacterRequirement(feature.id, req.id, { property: e.target.value as FilterProperty })}
-                                            >
-                                                {PROPERTY_OPTIONS.map(k => (
-                                                    <option key={k} value={k}>{PROPERTY_LABELS[k]}</option>
-                                                ))}
-                                            </select>
-
-                                            {req.property !== "none" && req.property !== "skill" && req.property !== "supportCard" && req.property !== "isDebuffer" && !isAptitudeProperty(req.property) && (
-                                                <>
-                                                    <div className="exp-toggle">
-                                                        <button
-                                                            className={`exp-toggle-btn${req.statOp === ">" ? " active" : ""}`}
-                                                            onClick={() => updateCharacterRequirement(feature.id, req.id, { statOp: ">" })}
-                                                        >
-                                                            {">"}
-                                                        </button>
-                                                        <button
-                                                            className={`exp-toggle-btn${req.statOp === "=" ? " active" : ""}`}
-                                                            onClick={() => updateCharacterRequirement(feature.id, req.id, { statOp: "=" })}
-                                                        >
-                                                            =
-                                                        </button>
-                                                        <button
-                                                            className={`exp-toggle-btn${req.statOp === "<" ? " active" : ""}`}
-                                                            onClick={() => updateCharacterRequirement(feature.id, req.id, { statOp: "<" })}
-                                                        >
-                                                            &lt;
-                                                        </button>
-                                                    </div>
-                                                    <input
-                                                        type="number"
-                                                        className="exp-stat-input"
-                                                        value={req.statValue}
-                                                        min={0}
-                                                        onChange={e => updateCharacterRequirement(feature.id, req.id, { statValue: Number(e.target.value) })}
-                                                    />
-                                                </>
-                                            )}
-                                            {isAptitudeProperty(req.property) && (
-                                                <>
-                                                    <div className="exp-toggle">
-                                                        <button
-                                                            className={`exp-toggle-btn${req.statOp === ">" ? " active" : ""}`}
-                                                            onClick={() => updateCharacterRequirement(feature.id, req.id, { statOp: ">" })}
-                                                        >
-                                                            {">"}
-                                                        </button>
-                                                        <button
-                                                            className={`exp-toggle-btn${req.statOp === "=" ? " active" : ""}`}
-                                                            onClick={() => updateCharacterRequirement(feature.id, req.id, { statOp: "=" })}
-                                                        >
-                                                            =
-                                                        </button>
-                                                        <button
-                                                            className={`exp-toggle-btn${req.statOp === "<" ? " active" : ""}`}
-                                                            onClick={() => updateCharacterRequirement(feature.id, req.id, { statOp: "<" })}
-                                                        >
-                                                            &lt;
-                                                        </button>
-                                                    </div>
-                                                    <select
-                                                        className="exp-select"
-                                                        value={req.statValue}
-                                                        onChange={e => updateCharacterRequirement(feature.id, req.id, { statValue: Number(e.target.value) })}
-                                                    >
-                                                        {APTITUDE_GRADE_OPTIONS.map((opt) => (
-                                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                                        ))}
-                                                    </select>
-                                                </>
-                                            )}
-
-                                            {req.property === "supportCard" && (
-                                                <>
-                                                    <div className="exp-toggle">
-                                                        <button
-                                                            className={`exp-toggle-btn${req.supportCardPresent ? " active" : ""}`}
-                                                            onClick={() => updateCharacterRequirement(feature.id, req.id, { supportCardPresent: true })}
-                                                        >
-                                                            used
-                                                        </button>
-                                                        <button
-                                                            className={`exp-toggle-btn${!req.supportCardPresent ? " active" : ""}`}
-                                                            onClick={() => updateCharacterRequirement(feature.id, req.id, { supportCardPresent: false })}
-                                                        >
-                                                            not used
-                                                        </button>
-                                                    </div>
-                                                    <SupportCardSelect
-                                                        variants={supportCardVariants}
-                                                        value={req.supportCardId}
-                                                        onChange={supportCardId => updateCharacterRequirement(feature.id, req.id, { supportCardId })}
-                                                    />
-                                                    <select
-                                                        className="exp-select"
-                                                        value={req.supportCardLb}
-                                                        onChange={e => updateCharacterRequirement(feature.id, req.id, { supportCardLb: Number(e.target.value) })}
-                                                    >
-                                                        {SUPPORT_CARD_LB_OPTIONS.map(opt => (
-                                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                                        ))}
-                                                    </select>
-                                                </>
-                                            )}
-
-                                            {req.property === "skill" && (
-                                                <>
-                                                    <select
-                                                        className="exp-select exp-select--wide"
-                                                        value={req.skillMode}
-                                                        onChange={e => updateCharacterRequirement(feature.id, req.id, { skillMode: e.target.value as SkillFilterMode })}
-                                                    >
-                                                        <option value="learned">learned</option>
-                                                        <option value="activated">activated</option>
-                                                    </select>
-                                                    <SkillSelect variants={skillVariants} value={req.skillId} onChange={skillId => updateCharacterRequirement(feature.id, req.id, { skillId })} />
-                                                </>
-                                            )}
-
-                                            <button className="exp-remove-btn" onClick={() => removeCharacterRequirement(feature.id, req.id)}>x</button>
-                                        </div>
-                                    ))}
-                                </div>
-                                <button className="exp-add-btn" onClick={() => addCharacterRequirement(feature.id)}>+ Add requirement</button>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="exp-filter-footer">
-                        <button className="exp-add-btn" onClick={addCharacterFeature}>+ Add character filter</button>
-                        <label className="exp-quantity-filter">
-                            <input
-                                type="checkbox"
-                                checked={hideLowQuantity}
-                                onChange={(event) => setHideLowQuantity(event.target.checked)}
-                            />
-                            <span>Hide entries with quantity less than</span>
-                            <input
-                                type="number"
-                                className="exp-stat-input exp-quantity-input"
-                                min={0}
-                                value={minimumEntries}
-                                onChange={(event) => setMinimumEntries(Math.max(0, Number(event.target.value) || 0))}
-                            />
-                        </label>
-                    </div>
+                    <ExplorerCharacterFilterEditor
+                        features={characterFeatures}
+                        setFeatures={setCharacterFeatures}
+                        cardVariants={cardVariants}
+                        skillVariants={skillVariants}
+                        supportCardVariants={supportCardVariants}
+                        hideLowQuantity={hideLowQuantity}
+                        onHideLowQuantityChange={setHideLowQuantity}
+                        minimumEntries={minimumEntries}
+                        onMinimumEntriesChange={setMinimumEntries}
+                    />
                 </div>
             </div>
 
-            <div className="exp-panel exp-panel--results">
-                {bootstrapLoading || (queryLoading && !queryResult) ? (
-                    <div className="exp-empty">Loading explorer data...</div>
-                ) : !hasRunQuery ? (
-                    <div className="exp-empty">Set your filters, then click Run Query.</div>
-                ) : rows.length === 0 ? (
-                    <div className="exp-empty">No teams match the current filter.</div>
-                ) : displayedRows.length === 0 ? (
-                    <div className="exp-empty">No results meet the minimum entry quantity.</div>
-                ) : (
-                    <table className="exp-table">
-                        <thead>
-                            <tr>
-                                <th className="exp-th" onClick={() => handleSort("label")}>
-                                    {hasCharacterFilter ? "Character / Style" : "Style"} <SortArrow col="label" />
-                                </th>
-                                <th className="exp-th exp-th--r" onClick={() => handleSort("entries")} title="Total horse-race appearances">
-                                    Entries <SortArrow col="entries" />
-                                </th>
-                                {showTeamsColumn && (
-                                    <th className="exp-th exp-th--r" onClick={() => handleSort("teams")} title="Distinct teams that ran this strategy">
-                                        Teams <SortArrow col="teams" />
-                                    </th>
-                                )}
-                                <th className="exp-th exp-th--r" onClick={() => handleSort("wins")} title="1st place finishes">
-                                    Wins <SortArrow col="wins" />
-                                </th>
-                                <th className="exp-th exp-th--r" onClick={() => handleSort("teamWins")} title="Distinct teams containing this row that won the race">
-                                    Team Wins <SortArrow col="teamWins" />
-                                </th>
-                                {hasCharacterFilter && <th className="exp-th exp-th--r">Mean Time</th>}
-                                {hasCharacterFilter && <th className="exp-th exp-th--r">Median Time</th>}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {displayedRows.map(renderRow)}
-                        </tbody>
-                    </table>
-                )}
-            </div>
+            <ExplorerResults
+                result={queryResult}
+                bootstrapLoading={bootstrapLoading}
+                queryLoading={queryLoading}
+                hasRunQuery={hasRunQuery}
+                hideLowQuantity={hideLowQuantity}
+                minimumEntries={minimumEntries}
+                sortKey={sortKey}
+                sortDesc={sortDesc}
+                selectedRowKey={selectedRowKey}
+                onSelectedRowKeyChange={setSelectedRowKey}
+                onSort={handleSort}
+                skillStats={skillStats}
+                strategyColors={strategyColors}
+                onViewReplays={onViewReplays}
+            />
         </div>
     );
 };

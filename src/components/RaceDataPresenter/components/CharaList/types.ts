@@ -3,6 +3,10 @@ import { RaceSimulateHorseResultData } from "../../../../data/race_data_pb";
 import { TrainedCharaData } from "../../../../data/TrainedCharaData";
 import type { MaxAdjustedSpeedDebug } from "../../../RaceReplay/utils/analysisUtils";
 import type { SkillLotteryResult } from "../../utils/witLottery";
+import type {
+    DetailedHpSkillApplication,
+    DetailedLastSpurtDecision,
+} from "../../../../data/DetailedRaceSimulation";
 
 export type SupportCardEntry = {
     position: number;
@@ -80,6 +84,7 @@ export type CharaTableData = {
 
     deck: SupportCardEntry[],
     parents: ParentEntry[],
+    modifiedInLobby: boolean,
 
     totalSkillPoints: number;
 
@@ -93,6 +98,9 @@ export type CharaTableData = {
     hpOutcome?: { type: 'died'; distance: number; deficit: number; startHp: number } | { type: 'survived'; hp: number; startHp: number };
     hpAtPhase3Start?: number;
     requiredSpurtHp?: number;
+    detailedLastSpurtDecision?: DetailedLastSpurtDecision;
+    detailedLastSpurtDecisions?: DetailedLastSpurtDecision[];
+    detailedHpSkillApplications?: DetailedHpSkillApplication[];
     hpDebuffHits?: HpDebuffHit[];
     rushedDuration?: number;
     rushedEvents?: RushedEventData[];
@@ -104,10 +112,12 @@ export type CharaTableData = {
     downhillModeTimeLate?: number;
     paceUpTime?: number;
     paceDownTime?: number;
+    modeTimingsAreAuthoritative?: boolean;
     finishDistanceToPrev?: number;
     predictedWinProbability?: number;
     predictionRank?: number;
     worldTransformLossTotal?: number;
+    worldTransformLossIsAuthoritative?: boolean;
 };
 
 export type AggregatedFactor = {

@@ -4,7 +4,7 @@ import { CharaHpSpurtStats } from "../HpSpurtAnalysis/types";
 import AssetLoader from "../../../../data/AssetLoader";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import PortraitSelect, { PortraitSelectOption } from "../PortraitSelect";
-import type { GroupSkillDetailPayload } from "../../../UmaLogsPage/skillCache";
+import type { GroupSkillDetailPayload } from "../../../../features/umalogs/model/skillCache";
 import { STRATS, DoubleProcBreakdown, LocalDoubleProcSummary, matchesRepresentativeSkillGroup, isGuaranteedSkill } from "./skillUtils";
 import WinBreakdownTable from "./WinBreakdownTable";
 import SerializedWinBreakdownTable, { buildBucketRangeWinBreakdownRows, filterWinBreakdownRows } from "./SerializedWinBreakdownTable";
@@ -93,7 +93,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
             grouped.get(c.charaId)!.push(c);
         });
         const options: PortraitSelectOption[] = [
-            { label: "Own Characters", value: "own" },
+            { label: "Own Umas", value: "own" },
         ];
         grouped.forEach((versions, charaId) => {
             if (versions.length === 1) {
@@ -820,7 +820,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                 {supportsLocalHorseFilters && (
                     <PortraitSelect
                         value={selectedCharaFilter}
-                        defaultLabel="All Characters"
+                        defaultLabel="All Umas"
                         options={allCharaDropdownOptions}
                         onChange={setSelectedCharaFilter}
                     />
@@ -829,7 +829,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                 {supportsLocalHorseFilters && ownCharaDropdownOptions.length > 0 && (
                     <PortraitSelect
                         value={selectedOwnCharaFilter}
-                        defaultLabel="Any Character"
+                        defaultLabel="Any Uma"
                         options={ownCharaDropdownOptions}
                         onChange={v => {
                             setSelectedOwnCharaFilter(v);

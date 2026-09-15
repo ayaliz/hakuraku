@@ -468,7 +468,7 @@ const MultiRacePage: React.FC = () => {
                                     <Tab.Pane key={group.groupKey} eventKey={`track-${group.groupKey}`} transition={false}>
                                         <div className="hp-spurt-analysis-section">
                                             <div className="section-heading-row">
-                                                <h4 className="section-heading">Personal character analysis</h4>
+                                                <h4 className="section-heading">Personal Uma analysis</h4>
                                                 <div className="multirace-analysis-controls">
                                                     <label className="multirace-survival-control">
                                                         <span>Full survival within</span>

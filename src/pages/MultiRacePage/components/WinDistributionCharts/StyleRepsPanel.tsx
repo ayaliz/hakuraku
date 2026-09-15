@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { STRATEGY_NAMES, POP_FILTER_OPTIONS, BAYES_TEAM, BAYES_UMA } from "./constants";
 import type { HorseEntry, SkillStats } from "../../types";
-import type { CharacterTeamRateRow } from "../../../UmaLogsPage/panelData";
+import type { CharacterTeamRateRow } from "../../../../features/umalogs/model/panelData";
 import AssetLoader from "../../../../data/AssetLoader";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import InfoTooltip from "./InfoTooltip";
@@ -40,7 +40,7 @@ type StyleRepSelection = {
 
 type StyleRepMetricMode = "team" | "personal";
 
-export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, characterTeamRates, skillStats, strategyColors, onViewReplays }: {
+export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, characterTeamRates, skillStats, strategyColors, onViewReplays, onSelectRepresentative, useAdjustedRates = true }: {
     cmId?: string | null;
     courseId?: number;
     apiBase?: string;
@@ -50,6 +50,8 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
     skillStats?: Map<number, SkillStats>;
     strategyColors: Record<number, string>;
     onViewReplays?: (horse: HorseEntry) => void;
+    onSelectRepresentative?: (entry: StyleRepEntry, strategy: number) => void;
+    useAdjustedRates?: boolean;
 }) {
     const [selected, setSelected] = useState<StyleRepSelection | null>(null);
     const [selectedInModal, setSelectedInModal] = useState<StyleRepSelection | null>(null);
@@ -62,6 +64,7 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
     const [drilldownError, setDrilldownError] = useState<string | null>(null);
     const canUseApiDrilldown = !!(apiMode && cmId && courseId && skillStats);
     const canDrilldown = !!skillStats && canUseApiDrilldown;
+    const canSelectRepresentative = canDrilldown || !!onSelectRepresentative;
 
     const makeSelectionKey = (selection: StyleRepSelection | null) =>
         selection ? `${selection.strategy}_${selection.cardId}` : null;
@@ -177,18 +180,18 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
                     })
                     .sort((a, b) => {
                         if (metricMode === "personal") {
-                            return (b.bayesianWinRate - a.bayesianWinRate)
+                            return ((useAdjustedRates ? b.bayesianWinRate - a.bayesianWinRate : b.winRate - a.winRate))
                                 || (b.winRate - a.winRate)
                                 || (b.appearances - a.appearances);
                         }
-                        return ((b.teamBayesianWinRate ?? 0) - (a.teamBayesianWinRate ?? 0))
+                        return ((useAdjustedRates ? (b.teamBayesianWinRate ?? 0) - (a.teamBayesianWinRate ?? 0) : (b.teamWinRate ?? 0) - (a.teamWinRate ?? 0)))
                             || ((b.teamWinRate ?? 0) - (a.teamWinRate ?? 0))
                             || ((b.teamAppearances ?? 0) - (a.teamAppearances ?? 0));
                     });
                 return [sId, filteredEntries];
             })
         ) as Record<number, StyleRepEntry[]>
-    ), [styleReps, teamRateByRepKey, characterTeamRates, minPopPct, metricMode]);
+    ), [styleReps, teamRateByRepKey, characterTeamRates, minPopPct, metricMode, useAdjustedRates]);
 
     const totalVisibleEntries = REPRESENTATIVE_STRATEGY_IDS.reduce(
         (sum, sId) => sum + (entriesByStrategy[sId]?.length ?? 0),
@@ -204,15 +207,29 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
         const src = AssetLoader.getCharaThumb(entry.cardId);
         const color = strategyColors[sId];
         const isSelected = selection?.cardId === entry.cardId && selection?.strategy === sId;
+        const displayedTeamRate = useAdjustedRates ? entry.teamBayesianWinRate : entry.teamWinRate;
+        const displayedOwnRate = useAdjustedRates ? entry.bayesianWinRate : entry.winRate;
         return (
             <div
                 key={entry.cardId}
-                className={`sa-reps-entry${canDrilldown ? " sa-stcp-item--clickable" : ""}${isSelected ? " sa-reps-entry--selected" : ""}`}
-                onClick={canDrilldown ? () => {
-                    const nextSelection = isSelected ? null : { cardId: entry.cardId, strategy: sId, charaName: entry.charaName };
-                    setSelection(nextSelection);
-                    if (nextSelection) {
-                        void ensureApiDrilldown(nextSelection);
+                className={`sa-reps-entry${canSelectRepresentative ? " sa-stcp-item--clickable" : ""}${isSelected ? " sa-reps-entry--selected" : ""}`}
+                role={canSelectRepresentative ? "button" : undefined}
+                tabIndex={canSelectRepresentative ? 0 : undefined}
+                aria-label={canSelectRepresentative ? `View details for ${entry.charaName}` : undefined}
+                onClick={canSelectRepresentative ? () => {
+                    onSelectRepresentative?.(entry, sId);
+                    if (canDrilldown) {
+                        const nextSelection = isSelected ? null : { cardId: entry.cardId, strategy: sId, charaName: entry.charaName };
+                        setSelection(nextSelection);
+                        if (nextSelection) {
+                            void ensureApiDrilldown(nextSelection);
+                        }
+                    }
+                } : undefined}
+                onKeyDown={canSelectRepresentative ? event => {
+                    if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        event.currentTarget.click();
                     }
                 } : undefined}
             >
@@ -230,9 +247,11 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
                     <div className="sa-reps-stats sa-reps-stats--team-summary">
                         <span
                             className="sa-adj-pct sa-reps-stat sa-reps-sort-stat"
-                            title={`Adjusted team win rate for teams featuring this character: ${((entry.teamBayesianWinRate ?? 0) * 100).toFixed(1)}%, raw ${((entry.teamWinRate ?? 0) * 100).toFixed(1)}%, team wins ${entry.teamWins ?? 0}, team appearances ${entry.teamAppearances ?? 0}`}
+                            title={useAdjustedRates
+                                ? `Adjusted team win rate for teams featuring this Uma: ${((entry.teamBayesianWinRate ?? 0) * 100).toFixed(1)}%, raw ${((entry.teamWinRate ?? 0) * 100).toFixed(1)}%, team wins ${entry.teamWins ?? 0}, team appearances ${entry.teamAppearances ?? 0}`
+                                : `Team win rate for teams featuring this Uma: ${((entry.teamWinRate ?? 0) * 100).toFixed(1)}%, team wins ${entry.teamWins ?? 0}, team appearances ${entry.teamAppearances ?? 0}`}
                         >
-                            {((entry.teamBayesianWinRate ?? 0) * 100).toFixed(1)}%
+                            {((displayedTeamRate ?? 0) * 100).toFixed(1)}%
                         </span>
                         <span
                             className="sa-adj-pct sa-reps-stat"
@@ -240,32 +259,32 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
                         >
                             {(entry.winRate * 100).toFixed(1)}%
                         </span>
-                        <span
-                            className="sa-raw-pct sa-reps-stat"
-                            title={`Raw team win rate for teams featuring this character: ${((entry.teamWinRate ?? 0) * 100).toFixed(1)}% across ${entry.teamAppearances ?? 0} samples`}
-                        >
-                            {((entry.teamWinRate ?? 0) * 100).toFixed(1)}% ({entry.teamAppearances ?? 0})
+                        <span className="sa-raw-pct sa-reps-stat" title={`${entry.teamAppearances ?? 0} team appearances`}>
+                            {useAdjustedRates
+                                ? `${((entry.teamWinRate ?? 0) * 100).toFixed(1)}% (${entry.teamAppearances ?? 0})`
+                                : (entry.teamAppearances ?? 0).toLocaleString("en-US")}
                         </span>
                     </div>
                 ) : (
                     <div className="sa-reps-stats sa-reps-stats--team-summary">
                         <span
                             className="sa-adj-pct sa-reps-stat sa-reps-sort-stat"
-                            title={`Adjusted personal win rate: ${(entry.bayesianWinRate * 100).toFixed(1)}%, raw ${(entry.winRate * 100).toFixed(1)}%, wins ${entry.wins}, appearances ${entry.appearances}`}
+                            title={useAdjustedRates
+                                ? `Adjusted personal win rate: ${(entry.bayesianWinRate * 100).toFixed(1)}%, raw ${(entry.winRate * 100).toFixed(1)}%, wins ${entry.wins}, appearances ${entry.appearances}`
+                                : `Personal win rate: ${(entry.winRate * 100).toFixed(1)}%, wins ${entry.wins}, appearances ${entry.appearances}`}
                         >
-                            {(entry.bayesianWinRate * 100).toFixed(1)}%
+                            {(displayedOwnRate * 100).toFixed(1)}%
                         </span>
                         <span
                             className="sa-adj-pct sa-reps-stat"
-                            title={`Team win rate for teams featuring this character: ${((entry.teamWinRate ?? 0) * 100).toFixed(1)}%, team wins ${entry.teamWins ?? 0}, team appearances ${entry.teamAppearances ?? 0}`}
+                            title={`Team win rate for teams featuring this Uma: ${((entry.teamWinRate ?? 0) * 100).toFixed(1)}%, team wins ${entry.teamWins ?? 0}, team appearances ${entry.teamAppearances ?? 0}`}
                         >
                             {((entry.teamWinRate ?? 0) * 100).toFixed(1)}%
                         </span>
-                        <span
-                            className="sa-raw-pct sa-reps-stat"
-                            title={`Raw personal win rate: ${(entry.winRate * 100).toFixed(1)}% across ${entry.appearances} samples`}
-                        >
-                            {(entry.winRate * 100).toFixed(1)}% ({entry.appearances})
+                        <span className="sa-raw-pct sa-reps-stat" title={`${entry.appearances} runner appearances`}>
+                            {useAdjustedRates
+                                ? `${(entry.winRate * 100).toFixed(1)}% (${entry.appearances})`
+                                : entry.appearances.toLocaleString("en-US")}
                         </span>
                     </div>
                 )}
@@ -291,15 +310,15 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
                             <span className="sa-stats-meta sa-stats-meta--team-summary">
                                 {metricMode === "team" ? (
                                     <>
-                                        <span className="sa-meta-adj sa-meta-adj--neutral" title="Bayesian-adjusted team win rate">Adj Team win%</span>
+                                        <span className="sa-meta-adj sa-meta-adj--neutral" title={useAdjustedRates ? "Bayesian-adjusted team win rate" : "Observed team win rate"}>{useAdjustedRates ? "Adj Team win%" : "Team win%"}</span>
                                         <span className="sa-meta-adj sa-meta-adj--neutral" title="Own raw win rate">Own win%</span>
-                                        <span className="sa-meta-raw" title="Raw team win rate and samples">Raw Team win%</span>
+                                        <span className="sa-meta-raw" title={useAdjustedRates ? "Raw team win rate and samples" : "Team appearances"}>{useAdjustedRates ? "Raw Team win%" : "Appearances"}</span>
                                     </>
                                 ) : (
                                     <>
-                                        <span className="sa-meta-adj sa-meta-adj--neutral" title="Bayesian-adjusted own win rate">Adj Own win%</span>
+                                        <span className="sa-meta-adj sa-meta-adj--neutral" title={useAdjustedRates ? "Bayesian-adjusted own win rate" : "Observed own win rate"}>{useAdjustedRates ? "Adj Own win%" : "Own win%"}</span>
                                         <span className="sa-meta-adj sa-meta-adj--neutral" title="Raw team win rate">Team win%</span>
-                                        <span className="sa-meta-raw" title="Raw own win rate and samples">Raw Own win%</span>
+                                        <span className="sa-meta-raw" title={useAdjustedRates ? "Raw own win rate and samples" : "Runner appearances"}>{useAdjustedRates ? "Raw Own win%" : "Appearances"}</span>
                                     </>
                                 )}
                             </span>
@@ -335,11 +354,11 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
     };
 
     const renderPopToggle = () => (
-        <div className="histogram-toggle uma-gate-toggle sa-toggle-row">
+        <div className="histogram-toggle uma-gate-toggle sa-toggle-row sa-reps-pop-toggle">
             {POP_FILTER_OPTIONS.map((opt) => (
                 <button
                     key={opt.value}
-                    className={`histogram-toggle-btn uma-gate-toggle-btn${minPopPct === opt.value ? " active" : ""}`}
+                    className={`histogram-toggle-btn uma-gate-toggle-btn sa-reps-pop-btn${minPopPct === opt.value ? " active" : ""}`}
                     onClick={() => setMinPopPct(opt.value as 0 | 0.5 | 1 | 2)}
                 >
                     {opt.label}
@@ -373,8 +392,8 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
                 <InfoTooltip
                     id="style-representatives-info"
                     tip={metricMode === "team"
-                        ? "Top performers per style ranked by adjusted team win rate."
-                        : "Top performers per style ranked by adjusted personal win rate."}
+                        ? `Top performers per style ranked by ${useAdjustedRates ? "adjusted " : ""}team win rate.`
+                        : `Top performers per style ranked by ${useAdjustedRates ? "adjusted " : ""}personal win rate.`}
                 />
                 <div className="sa-reps-mode-toggle" aria-label="Style representative metric mode">
                     <button
@@ -403,7 +422,7 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
                 </div>
             )}
             {fullDataOpen && (
-                <div className="cdt-overlay" onClick={() => setFullDataOpen(false)}>
+                <div className="cdt-overlay sa-reps-overlay" onClick={() => setFullDataOpen(false)}>
                     <div className="cdt-modal sa-reps-full-data-modal" onClick={e => e.stopPropagation()}>
                         <div className="cdt-header">
                             <h3 className="cdt-title">Style Representatives</h3>

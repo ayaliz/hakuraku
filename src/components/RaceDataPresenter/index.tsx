@@ -25,6 +25,7 @@ import {
 } from "./utils/RacePresenterUtils";
 
 import RaceReplay from "../RaceReplay/index";
+import type { DetailedHorseMetrics } from "../../data/DetailedRaceSimulation";
 
 
 const supportedRaceDataVersion = 100000002;
@@ -43,6 +44,8 @@ type RaceDataPresenterProps = {
         season?: string,
     },
     showRawJsonTools?: boolean,
+    authoritativeModeEvents?: Record<number, { time: number; duration: number; name: string; phase?: number }[]>,
+    authoritativeHorseMetrics?: Record<number, DetailedHorseMetrics>,
 };
 
 type RaceDataPresenterState = {
@@ -129,6 +132,19 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
 
     render() {
         const showRawJsonTools = this.props.showRawJsonTools ?? true;
+        const inferredOtherEvents = this.props.authoritativeModeEvents
+            ? {}
+            : this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.state.activeCourseId, this.skillActivations(this.props.raceData), parseGroundCondition(this.props.trackDetails?.condition));
+        const authoritativeNames = new Set(["Dueling", "Spot Struggle", "Competes (Speed)", "Competes (Pos)"]);
+        const displayOtherEvents = this.props.authoritativeModeEvents
+            ? Object.fromEntries(Array.from(new Set([
+                ...Object.keys(inferredOtherEvents).map(Number),
+                ...Object.keys(this.props.authoritativeModeEvents).map(Number),
+            ])).map(horseIndex => [horseIndex, [
+                ...(inferredOtherEvents[horseIndex] ?? []).filter(event => !authoritativeNames.has(event.name)),
+                ...(this.props.authoritativeModeEvents?.[horseIndex] ?? []).filter(event => authoritativeNames.has(event.name)),
+            ]]))
+            : inferredOtherEvents;
         const sectionDividerStyle = {
             height: '1px',
             background: 'linear-gradient(90deg, transparent 0%, rgba(165, 201, 184, 0.4) 20%, rgba(165, 201, 184, 0.4) 80%, transparent 100%)',
@@ -148,7 +164,9 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                 detectedCourseId={this.state.activeCourseId}
                 laneDistanceMax={this.props.laneDistanceMax}
                 skillActivations={this.skillActivations(this.props.raceData)}
-                otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.state.activeCourseId, this.skillActivations(this.props.raceData), parseGroundCondition(this.props.trackDetails?.condition))}
+                otherEvents={displayOtherEvents}
+                authoritativeModeEvents={this.props.authoritativeModeEvents}
+                authoritativeHorseMetrics={this.props.authoritativeHorseMetrics}
                 raceType={this.props.raceType}
                 groundCondition={parseGroundCondition(this.props.trackDetails?.condition)}
                 randomSeed={this.props.randomSeed}
@@ -162,7 +180,9 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                     raceHorseInfo={this.props.raceHorseInfo}
                     displayNames={this.displayNames(this.props.raceHorseInfo, this.props.raceData)}
                     skillActivations={this.skillActivations(this.props.raceData)}
-                    otherEvents={this.otherEvents(this.props.raceData, this.props.raceHorseInfo, this.state.activeCourseId, this.skillActivations(this.props.raceData), parseGroundCondition(this.props.trackDetails?.condition))}
+                    otherEvents={inferredOtherEvents}
+                    authoritativeModeEvents={this.props.authoritativeModeEvents}
+                    authoritativeHorseMetrics={this.props.authoritativeHorseMetrics}
                     detectedCourseId={this.props.detectedCourseId}
                     laneDistanceMax={this.props.laneDistanceMax}
                     raceType={this.props.raceType}
@@ -180,7 +200,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                         <Form.Control as="select"
                             value={this.state.selectedCharaFrameOrder ?? ''}
                             onChange={(e) => this.setState({ selectedCharaFrameOrder: e.target.value ? parseInt(e.target.value) : undefined })}>
-                            <option value="">Select Character</option>
+                            <option value="">Select Uma</option>
                             {Object.entries(this.displayNames(this.props.raceHorseInfo, this.props.raceData))
                                 .sort(([, a], [, b]) => a.localeCompare(b))
                                 .map(([frameOrder, displayName]) => {
@@ -225,6 +245,7 @@ class RaceDataPresenter extends React.PureComponent<RaceDataPresenterProps, Race
                         showBlocks={this.state.showBlocks}
                         showTemptationMode={this.state.showTemptationMode}
                         showOtherRaceEvents={this.state.showOtherRaceEvents}
+                        authoritativeHorseMetrics={this.props.authoritativeHorseMetrics}
                     />
                 }
             </div>

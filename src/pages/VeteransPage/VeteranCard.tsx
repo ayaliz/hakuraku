@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Modal } from "react-bootstrap";
 import "./VeteransPage.css";
-import "../UmaLogsPage/UmaLogsPage.css";
+import "../../features/umalogs/components/HorseProfile.css";
 import { Veteran } from "./types";
 import {
     aggregateFactors,
@@ -15,12 +15,8 @@ import { getCardName, formatCardName, getCharaImageUrl, getFactorColor } from ".
 import { getRankIcon } from "../../components/RaceDataPresenter/components/CharaList/rankUtils";
 import AssetLoader from "../../data/AssetLoader";
 import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
+import { getSkillIconUrl } from "../../data/skillIcons";
 import { STRATEGY_COLORS, STRATEGY_NAMES } from "../MultiRacePage/components/WinDistributionCharts/constants";
-
-function resolveIconSkillId(id: number): number {
-    const s = String(id);
-    return s.startsWith("9") ? parseInt("1" + s.slice(1), 10) : id;
-}
 
 const GRADE_LETTERS: Record<number, string> = { 1: "G", 2: "F", 3: "E", 4: "D", 5: "C", 6: "B", 7: "A", 8: "S" };
 const STYLE_ICON_NAME: Record<number, string> = { 1: "front", 2: "pace", 3: "late", 4: "end", 5: "front" };
@@ -57,14 +53,6 @@ const VeteranCard: React.FC<VeteranCardProps> = ({
     const styleIcon = AssetLoader.getStatIcon(STYLE_ICON_NAME[veteran.running_style] ?? "front");
     const createdAtLabel = veteran.create_time ? new Date(veteran.create_time).toLocaleString() : "Unknown";
     const powerValue = veteran.pow ?? veteran.power ?? 0;
-
-    const skillIconMap = useMemo<Map<number, number>>(() => {
-        const map = new Map<number, number>();
-        for (const [id, skill] of Object.entries(UMDatabaseWrapper.skills)) {
-            if (skill.iconId) map.set(+id, skill.iconId);
-        }
-        return map;
-    }, []);
 
     const supportCards = useMemo(
         () => [...(veteran.support_card_list ?? [])].sort((a, b) => a.position - b.position),
@@ -123,8 +111,7 @@ const VeteranCard: React.FC<VeteranCardProps> = ({
 
     const renderSkillChip = (id: number) => {
         const name = UMDatabaseWrapper.skillNameWithEnglishFallback(id);
-        const iconId = skillIconMap.get(resolveIconSkillId(id));
-        const iconUrl = iconId ? AssetLoader.getSkillIcon(iconId) : null;
+        const iconUrl = getSkillIconUrl(id);
         return (
             <div
                 key={id}

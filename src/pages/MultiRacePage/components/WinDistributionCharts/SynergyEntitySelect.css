@@ -1,0 +1,117 @@
+/* Shared outfit-and-style selector used by UmaLogs and SimData. */
+.syn-select {
+    position: relative;
+    display: inline-block;
+}
+.syn-select-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #2d3748;
+    border: 1px solid #4a5568;
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    color: #e2e8f0;
+    font-size: 14px;
+    min-width: 200px;
+}
+.syn-select-portrait {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+}
+.syn-select-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 31px;
+    height: 31px;
+    border-radius: 50%;
+    opacity: 0.85;
+}
+.syn-select-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+.syn-select-placeholder {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: #d7dee8;
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.syn-select-text {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+}
+.syn-select-name,
+.syn-select-strategy,
+.syn-select-option-name,
+.syn-select-option-strategy { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.syn-select-strategy { font-size: 12px; }
+.syn-select-arrow { color: #a0aec0; }
+.syn-select-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    background: #1a202c;
+    border: 1px solid #4a5568;
+    border-radius: 6px;
+    z-index: 200;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    min-width: 280px;
+    max-height: 360px;
+    display: flex;
+    flex-direction: column;
+}
+.syn-select-search {
+    padding: 8px;
+    border-bottom: 1px solid #2d3748;
+    flex-shrink: 0;
+}
+.syn-select-input {
+    width: 100%;
+    background: #2d3748;
+    border: 1px solid #4a5568;
+    border-radius: 4px;
+    padding: 6px 8px;
+    color: #e2e8f0;
+    font-size: 13px;
+    box-sizing: border-box;
+    outline: none;
+}
+.syn-select-list { overflow-y: auto; flex: 1; }
+.syn-select-no-matches {
+    padding: 12px;
+    color: #718096;
+    font-size: 13px;
+    text-align: center;
+}
+.syn-select-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+}
+.syn-select-option:hover:not(.syn-select-option--active) { background: #253041; }
+.syn-select-option--active { background: #2d3748; }
+.syn-select-option-name { font-size: 14px; color: #e2e8f0; }
+.syn-select-option-strategy { font-size: 12px; }
+@media (max-width: 768px) {
+    .syn-select,
+    .syn-select-btn { width: 100%; }
+    .syn-select-btn,
+    .syn-select-dropdown { min-width: 0; max-width: 100%; }
+}

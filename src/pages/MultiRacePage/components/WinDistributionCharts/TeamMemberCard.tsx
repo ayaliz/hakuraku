@@ -3,24 +3,15 @@ import { STRATEGY_COLORS, STRATEGY_NAMES } from "./constants";
 import type { HorseEntry, SkillStats } from "../../types";
 import AssetLoader from "../../../../data/AssetLoader";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
+import { getSkillIconUrl } from "../../../../data/skillIcons";
+import { useRaceTeam } from "../../../../features/umalogs/api/useRaceTeam";
 import { getRankIcon } from "../../../../components/RaceDataPresenter/components/CharaList/rankUtils";
 import TeamSampleSelect, { type TeamSampleSelectOption } from "./TeamSampleSelect";
-import { type SerializedHorseEntry, deserializeHorseEntries, buildRaceTeamUrl } from "./shared";
-
-function resolveIconSkillId(id: number): number {
-    const s = String(id);
-    return s.startsWith("9") ? parseInt("1" + s.slice(1), 10) : id;
-}
+import "../../../../features/umalogs/components/HorseProfile.css";
 
 const GRADE_LETTERS: Record<number, string> = { 1: "G", 2: "F", 3: "E", 4: "D", 5: "C", 6: "B", 7: "A", 8: "S" };
 const APT_GROUND_LABEL = "Ground";
 const APT_DISTANCE_LABEL = "Distance";
-
-type RaceTeamResponse = {
-    raceUid: string;
-    teamId: number;
-    horses: SerializedHorseEntry[];
-};
 
 function makeHorseIdentityKey(horse: Pick<HorseEntry, "charaId" | "cardId" | "strategy">): string {
     return `${horse.charaId}_${horse.cardId}_${horse.strategy}`;
@@ -65,16 +56,6 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
     const [open, setOpen] = useState(false);
     const [profileHorse, setProfileHorse] = useState(horse);
     const [selectedTeamOptionValue, setSelectedTeamOptionValue] = useState<string>("");
-    const [fetchedTeamHorses, setFetchedTeamHorses] = useState<HorseEntry[] | null>(null);
-    const [isLoadingTeamHorses, setIsLoadingTeamHorses] = useState(false);
-
-    const skillIconMap = useMemo<Map<number, number>>(() => {
-        const map = new Map<number, number>();
-        for (const [id, s] of Object.entries(UMDatabaseWrapper.skills)) {
-            if (s.iconId) map.set(+id, s.iconId);
-        }
-        return map;
-    }, []);
 
     const activeStrategyColors = strategyColors ?? STRATEGY_COLORS;
     const strategyColor = activeStrategyColors[profileHorse.strategy] ?? "#718096";
@@ -113,11 +94,6 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
 
     const getSkillName = (id: number) =>
         skillStats.get(id)?.skillName ?? UMDatabaseWrapper.skillNameWithEnglishFallback(id);
-
-    const getSkillIconUrl = (id: number) => {
-        const iconId = skillIconMap.get(resolveIconSkillId(id));
-        return iconId ? AssetLoader.getSkillIcon(iconId) : null;
-    };
 
     // For profile view we only care about the raw skill list, not whether a skill happened to
     // activate in a specific match. Merge learned + activated IDs into a single set.
@@ -193,46 +169,11 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ horse, skillStat
             .slice(0, 2);
     }, [localTeamHorses, profileHorse]);
 
-    useEffect(() => {
-        if (!open) return;
-        if (localTeammates.length > 0) {
-            setFetchedTeamHorses(null);
-            setIsLoadingTeamHorses(false);
-            return;
-        }
-        if (profileHorse.teamId <= 0 || !profileHorse.raceId) {
-            setFetchedTeamHorses([]);
-            setIsLoadingTeamHorses(false);
-            return;
-        }
-
-        const controller = new AbortController();
-        setIsLoadingTeamHorses(true);
-        fetch(buildRaceTeamUrl(profileHorse.raceId, profileHorse.teamId), { signal: controller.signal })
-            .then(async (response) => {
-                if (!response.ok) {
-                    throw new Error(`Failed to load teammates: HTTP ${response.status}`);
-                }
-                const payload = await response.json() as RaceTeamResponse;
-                setFetchedTeamHorses(deserializeHorseEntries(payload.horses));
-            })
-            .catch((error: unknown) => {
-                if (error instanceof DOMException && error.name === "AbortError") return;
-                setFetchedTeamHorses([]);
-            })
-            .finally(() => {
-                if (!controller.signal.aborted) {
-                    setIsLoadingTeamHorses(false);
-                }
-            });
-
-        return () => controller.abort();
-    }, [
-        open,
-        profileHorse.raceId,
-        profileHorse.teamId,
-        localTeammates.length,
-    ]);
+    const { horses: fetchedTeamHorses, loading: isLoadingTeamHorses } = useRaceTeam({
+        raceId: profileHorse.raceId,
+        teamId: profileHorse.teamId,
+        enabled: open && localTeammates.length === 0,
+    });
 
     const teammates = useMemo(() => {
         if (localTeammates.length > 0) return localTeammates;

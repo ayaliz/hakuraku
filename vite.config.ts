@@ -22,25 +22,37 @@ const serveGzRaw = (): Plugin => ({
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), "");
     const devApiProxyTarget = env.VITE_DEV_API_PROXY_TARGET?.trim().replace(/\/$/, "");
+    const umaMoeApiKey = env.UMAMOE_V3_API_KEY?.trim();
+
+    const apiProxy = devApiProxyTarget
+        ? {
+            ...(umaMoeApiKey ? {
+                "^/api/races/resimulate$": {
+                    target: "https://uma.moe",
+                    changeOrigin: true,
+                    secure: true,
+                    headers: { "X-API-Key": umaMoeApiKey },
+                    rewrite: () => "/api/sim/races/resimulate",
+                },
+            } : {}),
+            "/api": {
+                target: devApiProxyTarget,
+                changeOrigin: true,
+                secure: true,
+            },
+            "/healthz": {
+                target: devApiProxyTarget,
+                changeOrigin: true,
+                secure: true,
+            },
+        }
+        : undefined;
 
     return {
         plugins: [react(), serveGzRaw()],
         base: env.VITE_BASE_PATH ?? '/',
         server: {
-            proxy: devApiProxyTarget
-                ? {
-                    "/api": {
-                        target: devApiProxyTarget,
-                        changeOrigin: true,
-                        secure: true,
-                    },
-                    "/healthz": {
-                        target: devApiProxyTarget,
-                        changeOrigin: true,
-                        secure: true,
-                    },
-                }
-                : undefined,
+            proxy: apiProxy,
             watch: {
                 ignored: [
                     '**/.git/**',

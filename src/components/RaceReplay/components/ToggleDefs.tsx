@@ -34,7 +34,7 @@ export const toggleDefs: ToggleDef[] = [
                     placement="top"
                     overlay={
                         <Tooltip id="skill-duration-info-tooltip">
-                            Shows remaining duration in seconds on skill labels (e.g. "Groundwork 3.0s"). Requires Skill labels to be enabled.
+                            Shows remaining time on skill and timed race-state labels, such as "Groundwork 3.0s", "Pace Up 2.1s", or "Fully Charged 4.2s". Requires Skill labels to be enabled.
                         </Tooltip>
                     }
                 >
@@ -106,7 +106,7 @@ export const toggleDefs: ToggleDef[] = [
                     placement="top"
                     overlay={
                         <Tooltip id="accel-info-tooltip">
-                            Not directly received from the server, derived via the speed change between the current and next race frame.
+                            Detailed simulations use the simulator's acceleration rate; recorded races derive it from the speed change between adjacent frames.
                         </Tooltip>
                     }
                 >
@@ -119,12 +119,12 @@ export const toggleDefs: ToggleDef[] = [
         id: "heuristics",
         label: (
             <span>
-                Mode heuristics
+                Race modes
                 <OverlayTrigger
                     placement="top"
                     overlay={
                         <Tooltip id="heuristics-info-tooltip">
-                            Attempts to display when Umas are in Pace Up, Pace Down, Overtake, or Speed Up mode during Position Keep.
+                            Displays Position Keep and related race modes. Detailed simulations use exact simulator state; recorded races use estimates.
                         </Tooltip>
                     }
                 >

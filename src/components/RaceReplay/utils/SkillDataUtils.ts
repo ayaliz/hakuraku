@@ -13,6 +13,22 @@ export function getSkillDef(skillId: number): Skill | undefined {
     return undefined;
 }
 
+type SkillActivationMetadata = {
+    activateLot: number;
+    conditionGroups: readonly { baseTime: number }[];
+};
+
+export function isAutomaticPassiveSkillDefinition(skill: SkillActivationMetadata | undefined): boolean {
+    return !!skill
+        && skill.activateLot === 0
+        && skill.conditionGroups.length > 0
+        && skill.conditionGroups.every(group => group.baseTime < 0);
+}
+
+export function isAutomaticPassiveSkill(skillId: number): boolean {
+    return isAutomaticPassiveSkillDefinition(getSkillDef(skillId));
+}
+
 function getSkillConditionGroup(skillId: number, conditionGroupIndex?: number) {
     const def = getSkillDef(skillId);
     if (!def || def.conditionGroups.length === 0) return undefined;

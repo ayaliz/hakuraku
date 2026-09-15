@@ -11,6 +11,8 @@ import {
     BASELINE,
 } from "./shared";
 
+type SaturationStats = Pick<StrategyStats, 'strategy' | 'saturation' | 'crossSaturation'>;
+
 function CrossSaturationView({
     strategyStats,
     totalRaces,
@@ -18,7 +20,7 @@ function CrossSaturationView({
     expanded = false,
     compactLegend = false,
 }: {
-    strategyStats: StrategyStats[];
+    strategyStats: SaturationStats[];
     totalRaces: number;
     strategyColors: Record<number, string>;
     expanded?: boolean;
@@ -98,7 +100,7 @@ function CrossSaturationView({
                                             {buckets.length > 1 && <polyline points={ptsStr} fill="none" stroke={lineColor} strokeWidth={1.5} strokeLinejoin="round" />}
                                             {buckets.map(b => (
                                                 <circle key={b.count} cx={toX(b.count)} cy={toY(b.wins / b.subjectCount)} r={3} fill={lineColor} stroke="#1a202c" strokeWidth={1}>
-                                                    <title>{STRATEGY_NAMES[oStrat]}: {b.count} in room to {(b.wins / b.subjectCount * 100).toFixed(1)}% per horse ({b.raceCount} races)</title>
+                                                    <title>{STRATEGY_NAMES[oStrat]}: {b.count} in room to {(b.wins / b.subjectCount * 100).toFixed(1)}% per Uma ({b.raceCount} races)</title>
                                                 </circle>
                                             ))}
                                         </g>
@@ -116,7 +118,7 @@ function CrossSaturationView({
 }
 
 export function SaturationPanel({ strategyStats, totalRaces, strategyColors }: {
-    strategyStats: StrategyStats[];
+    strategyStats: SaturationStats[];
     totalRaces: number;
     strategyColors: Record<number, string>;
 }) {
@@ -206,7 +208,7 @@ export function SaturationPanel({ strategyStats, totalRaces, strategyColors }: {
                                 return (
                                     <circle key={b.count} cx={chartToX(b.count)} cy={toY(wr)}
                                         r={3.5} fill={color} stroke="#1a202c" strokeWidth={1.5}>
-                                        <title>{STRATEGY_NAMES[st.strategy]}: {b.count} in room, {(wr * 100).toFixed(1)}% per horse ({b.raceCount} races)</title>
+                                        <title>{STRATEGY_NAMES[st.strategy]}: {b.count} in room, {(wr * 100).toFixed(1)}% per Uma ({b.raceCount} races)</title>
                                     </circle>
                                 );
                             })}

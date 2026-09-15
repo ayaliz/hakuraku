@@ -1,0 +1,119 @@
+.strategy-palette-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.strategy-palette-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #4a5568;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #e2e8f0;
+    padding: 4px 10px 4px 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--haku-transition), border-color var(--haku-transition), color var(--haku-transition);
+}
+
+.strategy-palette-toggle:hover {
+    border-color: #718096;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.strategy-palette-toggle.is-on {
+    border-color: #56b4e9;
+    background: rgba(86, 180, 233, 0.18);
+    color: #f7fafc;
+}
+
+.strategy-palette-toggle-knob {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #4a5568;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+    transition: background var(--haku-transition), transform var(--haku-transition);
+}
+
+.strategy-palette-toggle.is-on .strategy-palette-toggle-knob {
+    background: #56b4e9;
+}
+
+.strategy-palette-toggle-state {
+    min-width: 26px;
+    text-align: right;
+    color: #aebdd0;
+}
+
+.strategy-palette-toggle.is-on .strategy-palette-toggle-state {
+    color: #bee3f8;
+}
+
+.strategy-palette-legend {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.strategy-palette-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: #cbd5e0;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #2d3748;
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: 11px;
+}
+
+.strategy-palette-legend-item i {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+}
+
+@media (max-width: 768px) {
+    .strategy-palette-controls {
+        width: 100%;
+        min-width: 0;
+        justify-content: flex-start;
+        gap: 10px;
+    }
+
+    .strategy-palette-toggle {
+        max-width: 100%;
+        min-height: 42px;
+        padding: 6px 12px 6px 8px;
+        box-sizing: border-box;
+    }
+
+    .strategy-palette-legend {
+        width: 100%;
+        max-width: 100%;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        scrollbar-width: thin;
+        box-sizing: border-box;
+    }
+
+    .strategy-palette-legend-item {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 480px) {
+    .strategy-palette-toggle {
+        width: 100%;
+        justify-content: space-between;
+    }
+}

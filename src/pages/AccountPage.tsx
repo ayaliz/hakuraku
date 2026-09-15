@@ -924,7 +924,7 @@ export default function AccountPage() {
                                         <li>Set <code>serverUrl</code> to the URL above.</li>
                                         <li>Set <code>apiKey</code> to the key above.</li>
                                         <li>If you changed either value, restart the game or plugin so horseACT fetches the new config.</li>
-                                        <li>Open a screen that refreshes your trained chara roster, such as the support-unit representative screen.</li>
+                                        <li>Open a screen that refreshes your trained Uma roster, such as the support representative screen.</li>
                                         <li>Once horseACT sends that roster, this page will update automatically.</li>
                                     </ol>
                                 ) : null}

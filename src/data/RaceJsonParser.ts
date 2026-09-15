@@ -49,6 +49,7 @@ export function normalizeRaceJsonInput(json: any): any {
             weather: packetData["weather"] ?? roomInfo["weather"],
             season: packetData["season"] ?? roomInfo["season"],
             race_instance_id: packetData["race_instance_id"] ?? packetData["raceInstanceId"] ?? roomInfo["race_instance_id"] ?? roomInfo["raceInstanceId"],
+            start_time_type: packetData["start_time_type"] ?? packetData["startTimeType"] ?? roomInfo["start_time_type"] ?? roomInfo["startTimeType"],
             random_seed: packetData["random_seed"] ?? packetData["randomSeed"] ?? roomInfo["random_seed"] ?? roomInfo["randomSeed"] ?? json["random_seed"] ?? json["randomSeed"],
         };
     }
@@ -276,12 +277,19 @@ function hydrateActCharaIdentity(horseData: any, member: any): any {
     };
 }
 
-function parseCourseIdFromFilename(fileName?: string): number | undefined {
+export function parseRaceInstanceIdFromFilename(fileName?: string): number | undefined {
     if (!fileName) return undefined;
     const match = fileName.match(/^(\d+)_/);
     if (!match) return undefined;
     const raceInstanceId = parseInt(match[1], 10);
-    return UMDatabaseWrapper.raceInstanceCourseSetId[raceInstanceId];
+    return Number.isSafeInteger(raceInstanceId) && raceInstanceId >= 0 && raceInstanceId <= 0xffffffff
+        ? raceInstanceId
+        : undefined;
+}
+
+function parseCourseIdFromFilename(fileName?: string): number | undefined {
+    const raceInstanceId = parseRaceInstanceIdFromFilename(fileName);
+    return raceInstanceId === undefined ? undefined : UMDatabaseWrapper.raceInstanceCourseSetId[raceInstanceId];
 }
 
 function parseCourseIdFromRaceInstance(json: any): number | undefined {
@@ -347,7 +355,7 @@ function parseActFormatRaceJson(json: any): ParsedStandardRaceJson | { error: st
         })
         .filter((data: any) => data !== null);
 
-    if (horseInfo.length === 0) return { error: "No horse data found in _responseHorseData fields" };
+    if (horseInfo.length === 0) return { error: "No Uma data found in _responseHorseData fields" };
 
     const raceScenario = json["<SimDataBase64>k__BackingField"] ?? json.simDataBase64;
     if (typeof raceScenario !== "string" || !raceScenario) {
@@ -421,7 +429,7 @@ function parseApiFormatRaceJson(json: any, options?: { fileName?: string }): Par
             };
         }).filter((horse: any) => horse !== null);
 
-        if (horseInfo.length === 0) return { error: "No horse data found in race_horse_data_array" };
+        if (horseInfo.length === 0) return { error: "No Uma data found in race_horse_data_array" };
 
         const playerMembers = json["player_team_member_array"] ?? json["playerTeamMemberArray"] ?? json["PlayerTeamMemberArray"];
         return {

@@ -435,6 +435,29 @@
     flex: 0 0 72px;
 }
 
+.rr-playback-main {
+    min-width: 0;
+}
+
+.rr-playback-time {
+    display: grid;
+    flex: 0 0 auto;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.rr-playback-time > span {
+    grid-area: 1 / 1;
+}
+
+.rr-playback-time-sizer {
+    visibility: hidden;
+}
+
+.rr-playback-time-value {
+    text-align: right;
+}
+
 .rr-fullscreen-exit {
     position: absolute;
     top: 8px;

@@ -30,6 +30,10 @@ import { calculateRaceDistance } from "../../utils/RacePresenterUtils";
 import { CharaTableData, SkillEventData } from "./types";
 import { RaceSimulateFrameData } from "../../../../data/race_data_pb";
 import { computeRaceSkillLottery } from "../../utils/witLottery";
+import {
+    getDetailedSkillActivationDuration,
+    type DetailedHorseMetrics,
+} from "../../../../data/DetailedRaceSimulation";
 
 function interpolateDistance(frames: RaceSimulateFrameData[], horseIndex: number, time: number): number {
     if (!frames || frames.length === 0) return 0;
@@ -81,7 +85,9 @@ export const computeCharaTableData = (
     otherEvents: Record<number, { time: number; duration: number; name: string }[]> | undefined,
     raceType?: string,
     groundCondition?: number,
-    randomSeed?: number
+    randomSeed?: number,
+    authoritativeModeEvents?: Record<number, { time: number; duration: number; name: string; phase?: number }[]>,
+    authoritativeHorseMetrics?: Record<number, DetailedHorseMetrics>,
 ): CharaTableData[] => {
     const raceDistance = calculateRaceDistance(raceData);
 
@@ -164,7 +170,7 @@ export const computeCharaTableData = (
         if (unityTeamTotals.has(teamId)) unityTeamStatsByIdx[frameOrder] = unityTeamTotals.get(teamId);
     });
 
-    const heuristicEvents = computeHeuristicEvents({
+    const heuristicEvents = authoritativeModeEvents ?? computeHeuristicEvents({
         frames: raceData.frame ?? [],
         goalInX: raceDistance,
         trainedCharaByIdx,
@@ -182,6 +188,7 @@ export const computeCharaTableData = (
 
     const tableData: CharaTableData[] = raceHorseInfo.map(data => {
         const frameOrder = data['frame_order'] - 1;
+        const detailedMetrics = authoritativeHorseMetrics?.[frameOrder];
 
         const horseResult = raceData.horseResult[frameOrder];
 
@@ -250,6 +257,9 @@ export const computeCharaTableData = (
                     }
                 }
             }
+        }
+        if (detailedMetrics?.lostStartAccelerationFrame !== undefined) {
+            isLateStart = detailedMetrics.lostStartAccelerationFrame;
         }
 
         const distProficiency = trainedCharaData.properDistances[distanceCategory] ?? 1;
@@ -372,9 +382,18 @@ export const computeCharaTableData = (
             skillActivations[frameOrder].forEach(act => {
                 const skillId = act.param[1];
                 const reportedDuration = act.param?.[2];
-                let durationSecs = getSkillDurationSecs(skillId, raceDistance, act.time, reportedDuration, act.param?.[3]);
+                const detailedDuration = getDetailedSkillActivationDuration(
+                    detailedMetrics?.activeSkillSpans,
+                    skillId,
+                    act.time,
+                    act.param?.[3],
+                );
+                const durationSecs = detailedDuration
+                    ?? getSkillDurationSecs(skillId, raceDistance, act.time, reportedDuration, act.param?.[3]);
                 const baseTime = getSkillBaseTime(skillId);
-                const isInstant = baseTime <= 0 && (reportedDuration ?? 0) <= 0;
+                const isInstant = detailedDuration !== undefined
+                    ? detailedDuration <= 0
+                    : baseTime <= 0 && (reportedDuration ?? 0) <= 0;
 
                 const startDistance = interpolateDistance(raceData.frame ?? [], frameOrder, act.time);
                 const endDistance = isInstant ? startDistance : interpolateDistance(raceData.frame ?? [], frameOrder, act.time + durationSecs);
@@ -462,12 +481,31 @@ export const computeCharaTableData = (
             });
         }
 
-        // Calculate Downhill Mode Time by iterating frames
+        // Calculate Downhill Mode Time from simulator annotations when available.
         let downhillModeTime = 0;
         let downhillModeTimePreLate = 0;
         let downhillModeTimeLate = 0;
         const downhillSegments: { startDistance: number; endDistance: number }[] = [];
-        if (raceData.frame && raceData.frame.length > 1) {
+        const authoritativeDownhill = authoritativeModeEvents?.[frameOrder]?.filter(evt => evt.name === "Downhill Mode") ?? [];
+        if (authoritativeModeEvents) {
+            authoritativeDownhill.forEach(evt => {
+                const startDistance = interpolateDistance(raceData.frame ?? [], frameOrder, evt.time);
+                const endDistance = interpolateDistance(raceData.frame ?? [], frameOrder, evt.time + evt.duration);
+                downhillModeTime += evt.duration;
+                const lateStart = raceDistance * 2 / 3;
+                if (evt.phase !== undefined) {
+                    if (evt.phase >= 2) downhillModeTimeLate += evt.duration;
+                    else downhillModeTimePreLate += evt.duration;
+                } else if (endDistance <= lateStart) downhillModeTimePreLate += evt.duration;
+                else if (startDistance >= lateStart) downhillModeTimeLate += evt.duration;
+                else {
+                    const preRatio = Math.max(0, Math.min(1, (lateStart - startDistance) / Math.max(1e-9, endDistance - startDistance)));
+                    downhillModeTimePreLate += evt.duration * preRatio;
+                    downhillModeTimeLate += evt.duration * (1 - preRatio);
+                }
+                downhillSegments.push({ startDistance, endDistance });
+            });
+        } else if (raceData.frame && raceData.frame.length > 1) {
             let currentDownhillStart = -1;
             let currentDownhillEnd = -1;
 
@@ -530,12 +568,15 @@ export const computeCharaTableData = (
         // Calculate Pace Up/Down Time from precomputed heuristic events
         let paceUpTime = 0;
         let paceDownTime = 0;
+        let conservePowerTime = 0;
         const paceUpSegments: { startDistance: number; endDistance: number }[] = [];
         const paceDownSegments: { startDistance: number; endDistance: number }[] = [];
-        if (heuristicEvents && heuristicEvents[frameOrder]) {
-            heuristicEvents[frameOrder].forEach(evt => {
+        const conservePowerSegments: { startDistance: number; endDistance: number }[] = [];
+        const positionKeepEvents = heuristicEvents;
+        if (positionKeepEvents && positionKeepEvents[frameOrder]) {
+            positionKeepEvents[frameOrder].forEach(evt => {
                 const name = evt.name || "";
-                if (name === "Pace Up" || name === "Speed Up" || name === "Overtake") {
+                if (name === "Pace Up" || name === "Pace Up EX" || name === "Speed Up" || name === "Overtake") {
                     paceUpTime += evt.duration;
                     paceUpSegments.push({
                         startDistance: interpolateDistance(raceData.frame ?? [], frameOrder, evt.time),
@@ -547,6 +588,12 @@ export const computeCharaTableData = (
                         startDistance: interpolateDistance(raceData.frame ?? [], frameOrder, evt.time),
                         endDistance: interpolateDistance(raceData.frame ?? [], frameOrder, evt.time + evt.duration)
                     });
+                } else if (name === "Fully Charged") {
+                    conservePowerTime += evt.duration;
+                    conservePowerSegments.push({
+                        startDistance: interpolateDistance(raceData.frame ?? [], frameOrder, evt.time),
+                        endDistance: interpolateDistance(raceData.frame ?? [], frameOrder, evt.time + evt.duration),
+                    });
                 }
             });
         }
@@ -556,7 +603,7 @@ export const computeCharaTableData = (
                 skillId: -1,
                 name: "Downhill Mode",
                 time: Infinity,
-                durationSecs: downhillModeTime * (15 / 16),
+                durationSecs: authoritativeModeEvents ? downhillModeTime : downhillModeTime * (15 / 16),
                 startDistance: 0,
                 endDistance: 0,
                 isInstant: false,
@@ -570,7 +617,7 @@ export const computeCharaTableData = (
                 skillId: -1,
                 name: "Pace Up Mode",
                 time: Infinity,
-                durationSecs: paceUpTime * (15 / 16),
+                durationSecs: authoritativeModeEvents ? paceUpTime : paceUpTime * (15 / 16),
                 startDistance: 0,
                 endDistance: 0,
                 isInstant: false,
@@ -584,7 +631,7 @@ export const computeCharaTableData = (
                 skillId: -1,
                 name: "Pace Down Mode",
                 time: Infinity,
-                durationSecs: paceDownTime * (15 / 16),
+                durationSecs: authoritativeModeEvents ? paceDownTime : paceDownTime * (15 / 16),
                 startDistance: 0,
                 endDistance: 0,
                 isInstant: false,
@@ -593,38 +640,62 @@ export const computeCharaTableData = (
                 segments: paceDownSegments
             });
         }
+        if (conservePowerTime > 0) {
+            parsedSkillEvents.push({
+                skillId: -1,
+                name: "Fully Charged",
+                time: Infinity,
+                durationSecs: conservePowerTime,
+                startDistance: 0,
+                endDistance: 0,
+                isInstant: false,
+                iconId: 20011,
+                isMode: true,
+                segments: conservePowerSegments,
+            });
+        }
 
-        // Match the Race Graph's received-frame boundaries for Rushed modes.
+        // Detailed races provide exact simulator spans. Captured races retain their
+        // received-frame boundaries so this never introduces denser position data.
         const rushedEvents: { name: string; time: number; duration: number }[] = [];
-        let activeRushedMode = 0;
-        let activeRushedStartTime = 0;
-        for (let frameIndex = 0; frameIndex < raceData.frame.length; frameIndex++) {
-            const frame = raceData.frame[frameIndex];
-            const previousTime = frameIndex === 0 ? 0 : (raceData.frame[frameIndex - 1].time ?? 0);
-            const mode = frame.horseFrame?.[frameOrder]?.temptationMode ?? 0;
-            if (mode === activeRushedMode) continue;
-            if (activeRushedMode !== 0 && previousTime > activeRushedStartTime) {
+        const authoritativeTemptationSpans = detailedMetrics?.temptationSpans;
+        if (authoritativeTemptationSpans !== undefined) {
+            authoritativeTemptationSpans.forEach(span => rushedEvents.push({
+                name: TEMPTATION_TEXT[span.mode] ?? "Rushed",
+                time: span.startTime,
+                duration: Math.max(0, span.endTime - span.startTime),
+            }));
+        } else {
+            let activeRushedMode = 0;
+            let activeRushedStartTime = 0;
+            for (let frameIndex = 0; frameIndex < raceData.frame.length; frameIndex++) {
+                const frame = raceData.frame[frameIndex];
+                const previousTime = frameIndex === 0 ? 0 : (raceData.frame[frameIndex - 1].time ?? 0);
+                const mode = frame.horseFrame?.[frameOrder]?.temptationMode ?? 0;
+                if (mode === activeRushedMode) continue;
+                if (activeRushedMode !== 0 && previousTime > activeRushedStartTime) {
+                    rushedEvents.push({
+                        name: TEMPTATION_TEXT[activeRushedMode] ?? "Rushed",
+                        time: activeRushedStartTime,
+                        duration: previousTime - activeRushedStartTime,
+                    });
+                }
+                activeRushedStartTime = previousTime;
+                activeRushedMode = mode;
+            }
+            const lastFrameTime = raceData.frame.at(-1)?.time ?? 0;
+            if (activeRushedMode !== 0 && lastFrameTime > activeRushedStartTime) {
                 rushedEvents.push({
                     name: TEMPTATION_TEXT[activeRushedMode] ?? "Rushed",
                     time: activeRushedStartTime,
-                    duration: previousTime - activeRushedStartTime,
+                    duration: lastFrameTime - activeRushedStartTime,
                 });
             }
-            activeRushedStartTime = previousTime;
-            activeRushedMode = mode;
-        }
-        const lastFrameTime = raceData.frame.at(-1)?.time ?? 0;
-        if (activeRushedMode !== 0 && lastFrameTime > activeRushedStartTime) {
-            rushedEvents.push({
-                name: TEMPTATION_TEXT[activeRushedMode] ?? "Rushed",
-                time: activeRushedStartTime,
-                duration: lastFrameTime - activeRushedStartTime,
+            (otherEvents?.[frameOrder] ?? []).forEach(event => {
+                if (!event.name?.includes("Rushed") || event.duration <= 0) return;
+                rushedEvents.push({ name: event.name, time: event.time, duration: event.duration });
             });
         }
-        (otherEvents?.[frameOrder] ?? []).forEach(event => {
-            if (!event.name?.includes("Rushed") || event.duration <= 0) return;
-            rushedEvents.push({ name: event.name, time: event.time, duration: event.duration });
-        });
         const mergedRushedIntervals = rushedEvents
             .map(event => ({ start: event.time, end: event.time + event.duration }))
             .sort((a, b) => a.start - b.start)
@@ -648,15 +719,19 @@ export const computeCharaTableData = (
             (first, event) => Math.min(first, event.time),
             Infinity,
         );
-        const rushedDuration = rushedEvents.length === 0
-            ? 0
-            : Number.isFinite(frenziedActivationTime)
-                ? Math.max(0, frenziedActivationTime - rushedStartTime) + 5
-                : ([3, 6, 9, 12] as const).reduce((nearest, duration) => (
-                    Math.abs(duration - observedRushedDuration) < Math.abs(nearest - observedRushedDuration)
-                        ? duration
-                        : nearest
-                ), 3);
+        const rushedDuration = authoritativeTemptationSpans !== undefined
+            ? observedRushedDuration
+            : Number.isInteger(detailedMetrics?.rushedFrames)
+            ? Math.max(0, detailedMetrics!.rushedFrames!) / 15
+            : rushedEvents.length === 0
+                ? 0
+                : Number.isFinite(frenziedActivationTime)
+                    ? Math.max(0, frenziedActivationTime - rushedStartTime) + 5
+                    : ([3, 6, 9, 12] as const).reduce((nearest, duration) => (
+                        Math.abs(duration - observedRushedDuration) < Math.abs(nearest - observedRushedDuration)
+                            ? duration
+                            : nearest
+                    ), 3);
 
         const totalSkillPoints = trainedCharaData.skills.reduce((sum, cs) => {
             const base = UMDatabaseWrapper.skillNeedPoints[cs.skillId] ?? 0;
@@ -678,10 +753,78 @@ export const computeCharaTableData = (
         const restraintModifier = activatedSkillIds.has(202161)
             ? getRushedChanceModifier(202161, activatedSkillGroups.get(202161))
             : 0;
-        const rushedPreventedByRestraint = restraintModifier < 0
-            && rushedLotteryResult !== undefined
-            && !rushedLotteryResult.enabled
-            && rushedLotteryResult.threshold - restraintModifier > rushedLotteryResult.enableRoll;
+        const rushedPreventedByRestraint = detailedMetrics?.temptationDecision !== undefined
+            ? detailedMetrics.temptationDecision?.preventedByModifier === true && restraintModifier < 0
+            : restraintModifier < 0
+                && rushedLotteryResult !== undefined
+                && !rushedLotteryResult.enabled
+                && rushedLotteryResult.threshold - restraintModifier > rushedLotteryResult.enableRoll;
+
+        const detailedSkillDecisions = detailedMetrics?.skillActivationDecisions;
+        const reconstructedSkillLotteryResults = new Map(
+            skillLottery?.byFrameOrder.get(frameOrder + 1) ?? [],
+        );
+        const skillLotteryResults = new Map(
+            detailedSkillDecisions === undefined
+                ? reconstructedSkillLotteryResults
+                : [],
+        );
+        for (const decision of detailedSkillDecisions ?? []) {
+            // Preserve calculated explanatory metadata, but let only simulator
+            // decisions determine which rows and outcomes exist in detailed mode.
+            const previous = reconstructedSkillLotteryResults.get(decision.skillId);
+            const wonLottery = decision.required ? decision.passed : null;
+            skillLotteryResults.set(decision.skillId, {
+                skillId: decision.skillId,
+                activateLot: decision.required ? 1 : 0,
+                wonLottery,
+                triggered: decision.activated,
+                triggeredBy564: previous?.triggeredBy564 ?? false,
+                retriggered: decision.required && !decision.passed && decision.activated,
+                category: decision.activated
+                    ? (decision.required ? "WON_AND_FIRED" : "GUARANTEED_FIRED")
+                    : decision.required && !decision.passed
+                        ? "LOTTERY_FAILED"
+                        : decision.required
+                            ? "WON_NOT_TRIGGERED"
+                            : "GUARANTEED_NOT_TRIGGERED",
+                roll: decision.roll ?? undefined,
+                perThreshold: decision.threshold ?? previous?.perThreshold ?? 0,
+                margin: decision.roll != null && decision.threshold != null
+                    ? decision.threshold - decision.roll
+                    : previous?.margin,
+                witNeeded: previous?.witNeeded,
+            });
+        }
+
+        const estimatedHpOutcome = calculateHpOutcome(
+            raceData.frame || [], frameOrder, raceDistance, adjustedGuts,
+            maxAdjSpeed, lastSpurtTargetSpeed
+        );
+        const detailedStartHp = detailedMetrics?.startHp ?? detailedMetrics?.maxHp;
+        const detailedExhaustedDistance = detailedMetrics?.hpExhaustedDistance;
+        const hpOutcome = detailedMetrics && detailedStartHp !== undefined && detailedMetrics.finalHp !== undefined
+            ? detailedExhaustedDistance !== null
+                && detailedExhaustedDistance !== undefined
+                && detailedExhaustedDistance < raceDistance - 0.1
+                ? {
+                    type: 'died' as const,
+                    distance: raceDistance - detailedExhaustedDistance,
+                    deficit: detailedMetrics.hpDeficit
+                        ?? (estimatedHpOutcome?.type === 'died' ? estimatedHpOutcome.deficit : 0),
+                    startHp: detailedStartHp,
+                }
+                : { type: 'survived' as const, hp: detailedMetrics.finalHp, startHp: detailedStartHp }
+            : estimatedHpOutcome;
+
+        const detailedLastSpurtDecisions = detailedMetrics?.lastSpurtDecisions?.length
+            ? detailedMetrics.lastSpurtDecisions
+            : detailedMetrics?.lastSpurtDecision
+                ? [detailedMetrics.lastSpurtDecision]
+                : [];
+        const detailedLastSpurtDecision = detailedLastSpurtDecisions[0];
+
+        const modifiedInLobby = data.modified_in_lobby === true || data.modifiedInLobby === true;
 
         return {
             trainedChara: trainedCharaData,
@@ -700,14 +843,15 @@ export const computeCharaTableData = (
 
             activatedSkills: activatedSkillIds,
             activatedSkillCounts: activatedSkillCounts,
-            skillLotteryResults: skillLottery?.byFrameOrder.get(frameOrder + 1),
+            skillLotteryResults,
             skillEvents: parsedSkillEvents,
             positionHistory: positionHistory,
 
             raceDistance: raceDistance,
 
-            deck: data.deck || [],
-            parents: data.parents || [],
+            deck: modifiedInLobby ? [] : data.deck || [],
+            parents: modifiedInLobby ? [] : data.parents || [],
+            modifiedInLobby,
 
             totalSkillPoints,
 
@@ -718,8 +862,11 @@ export const computeCharaTableData = (
             maxAdjustedSpeed: maxAdjSpeed,
             maxAdjustedSpeedTime: maxAdjSpeedTime || undefined,
             maxAdjustedSpeedDebug: maxAdjSpeedDebug,
-            hpAtPhase3Start,
-            requiredSpurtHp,
+            hpAtPhase3Start: detailedLastSpurtDecision?.checkHp ?? hpAtPhase3Start,
+            requiredSpurtHp: detailedLastSpurtDecision?.fullSpurtNeedHp ?? requiredSpurtHp,
+            detailedLastSpurtDecision,
+            detailedLastSpurtDecisions,
+            detailedHpSkillApplications: detailedMetrics?.hpSkillApplications,
             rushedDuration,
             rushedEvents,
             rushedPreventedByRestraint,
@@ -729,14 +876,8 @@ export const computeCharaTableData = (
             downhillModeTimeLate,
             paceUpTime,
             paceDownTime,
-            hpOutcome: calculateHpOutcome(
-                raceData.frame || [],
-                frameOrder,
-                raceDistance,
-                adjustedGuts,
-                maxAdjSpeed,
-                lastSpurtTargetSpeed
-            ),
+            modeTimingsAreAuthoritative: authoritativeModeEvents !== undefined,
+            hpOutcome,
         };
     });
 
@@ -748,10 +889,60 @@ export const computeCharaTableData = (
         const prevTime = prev.horseResultData.finishTimeRaw ?? 0;
         const currDistanceAtPrevFinish = interpolateDistance(raceData.frame ?? [], curr.frameOrder - 1, prevTime);
         curr.finishDistanceToPrev = Math.max(0, raceDistance - currDistanceAtPrevFinish);
+        const authoritativeGap = authoritativeHorseMetrics?.[curr.frameOrder - 1]?.finishDistanceToPrevious;
+        if (authoritativeGap !== null && authoritativeGap !== undefined) {
+            curr.finishDistanceToPrev = authoritativeGap;
+        }
     }
 
     const rowByFrameOrder = new Map(tableData.map(row => [row.frameOrder - 1, row]));
-    raceData.event.forEach(({ event }) => {
+    const hasAuthoritativeHpApplications = Object.values(authoritativeHorseMetrics ?? {})
+        .some(metrics => metrics.hpSkillApplications !== undefined);
+    if (hasAuthoritativeHpApplications) {
+        Object.values(authoritativeHorseMetrics ?? {}).forEach(metrics => {
+            (metrics.hpSkillApplications ?? []).forEach(application => {
+                if (application.appliedHpDelta >= 0) return;
+                const target = rowByFrameOrder.get(application.targetHorseIndex);
+                const caster = rowByFrameOrder.get(application.casterHorseIndex);
+                if (!target || !caster) return;
+
+                const hpDrain = -application.appliedHpDelta;
+                const startHp = target.hpOutcome?.startHp ?? metrics.maxHp ?? 0;
+                const drainDistance = interpolateDistance(
+                    raceData.frame ?? [], application.targetHorseIndex, application.time,
+                );
+                const casterBaseName = caster.displayName ?? caster.trainedChara.viewerName ?? `Uma ${caster.frameOrder}`;
+                const targetBaseName = target.displayName ?? target.trainedChara.viewerName ?? `Uma ${target.frameOrder}`;
+                const casterName = `${casterBaseName}${caster.subLabel ? ` ${caster.subLabel}` : ""}`;
+                const targetName = `${targetBaseName}${target.subLabel ? ` ${target.subLabel}` : ""}`;
+
+                target.hpDebuffHits ??= [];
+                target.hpDebuffHits.push({
+                    skillId: application.skillId,
+                    skillName: UMDatabaseWrapper.skillNameWithEnglishFallback(application.skillId),
+                    casterFrameOrder: caster.frameOrder,
+                    casterName,
+                    time: application.time,
+                    drainRatio: startHp > 0 ? hpDrain / startHp : 0,
+                    estimatedHpDrain: hpDrain,
+                    isSelfCost: application.casterHorseIndex === application.targetHorseIndex,
+                    isLateRace: drainDistance >= raceDistance * 2 / 3,
+                });
+
+                const hadNoSpareHpAtPhase3 = target.hpAtPhase3Start !== undefined
+                    && target.requiredSpurtHp !== undefined
+                    && target.hpAtPhase3Start <= target.requiredSpurtHp;
+                const didNotFinishWithHp = target.hpOutcome?.type === "died"
+                    || (target.hpOutcome?.type === "survived" && target.hpOutcome.hp <= 0);
+                if (!hadNoSpareHpAtPhase3 && !didNotFinishWithHp) return;
+
+                caster.debuffSpurtImpacts ??= new Map();
+                const impacts = caster.debuffSpurtImpacts.get(application.skillId) ?? [];
+                impacts.push({ targetFrameOrder: target.frameOrder, targetName, estimatedHpDrain: hpDrain });
+                caster.debuffSpurtImpacts.set(application.skillId, impacts);
+            });
+        });
+    } else raceData.event.forEach(({ event }) => {
         if (!event || event.type !== RaceSimulateEventData_SimulateEventType.SKILL) return;
 
         const skillId = event.param[1];
@@ -771,7 +962,7 @@ export const computeCharaTableData = (
                 skillId,
                 skillName: UMDatabaseWrapper.skillNameWithEnglishFallback(skillId),
                 casterFrameOrder: caster.frameOrder,
-                casterName: caster.displayName ?? caster.trainedChara.viewerName ?? `Character ${caster.frameOrder}`,
+                casterName: caster.displayName ?? caster.trainedChara.viewerName ?? `Uma ${caster.frameOrder}`,
                 time: event.frameTime ?? 0,
                 drainRatio: selfCost.drainRatio,
                 estimatedHpDrain: selfCost.estimatedHpDrain,
@@ -797,8 +988,8 @@ export const computeCharaTableData = (
                 event.frameTime ?? 0,
             );
             const skillName = UMDatabaseWrapper.skillNameWithEnglishFallback(skillId);
-            const casterBaseName = caster.displayName ?? caster.trainedChara.viewerName ?? `Character ${caster.frameOrder}`;
-            const targetBaseName = target.displayName ?? target.trainedChara.viewerName ?? `Character ${target.frameOrder}`;
+            const casterBaseName = caster.displayName ?? caster.trainedChara.viewerName ?? `Uma ${caster.frameOrder}`;
+            const targetBaseName = target.displayName ?? target.trainedChara.viewerName ?? `Uma ${target.frameOrder}`;
             const casterName = `${casterBaseName}${caster.subLabel ? ` ${caster.subLabel}` : ""}`;
             const targetName = `${targetBaseName}${target.subLabel ? ` ${target.subLabel}` : ""}`;
 
@@ -843,14 +1034,16 @@ export const useCharaTableData = (
     otherEvents: Record<number, { time: number; duration: number; name: string }[]> | undefined,
     raceType?: string,
     groundCondition?: number,
-    randomSeed?: number
+    randomSeed?: number,
+    authoritativeModeEvents?: Record<number, { time: number; duration: number; name: string; phase?: number }[]>,
+    authoritativeHorseMetrics?: Record<number, DetailedHorseMetrics>,
 ) => {
     const raceDistance = calculateRaceDistance(raceData);
     const availableTracks = useAvailableTracks(raceDistance);
     const { selectedTrackId } = useGuessTrack(detectedCourseId, raceDistance, availableTracks);
     const effectiveCourseId = selectedTrackId ? parseInt(selectedTrackId) : undefined;
 
-    const tableData = computeCharaTableData(raceHorseInfo, raceData, effectiveCourseId, skillActivations, otherEvents, raceType, groundCondition, randomSeed);
+    const tableData = computeCharaTableData(raceHorseInfo, raceData, effectiveCourseId, skillActivations, otherEvents, raceType, groundCondition, randomSeed, authoritativeModeEvents, authoritativeHorseMetrics);
 
     return { tableData, effectiveCourseId };
 };

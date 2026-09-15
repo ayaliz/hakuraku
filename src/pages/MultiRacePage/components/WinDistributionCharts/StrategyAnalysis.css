@@ -718,6 +718,54 @@
     color: #e8f4ff;
 }
 
+.sa-stcp-section--raw-intervals .sa-stats-meta--bayes,
+.sa-stcp-section--raw-intervals .sa-stcp-stats {
+    grid-template-columns: 58px 142px;
+}
+
+.sa-stcp-header-controls {
+    margin-left: auto;
+    color: #a0aec0;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.sa-reps-pop-toggle {
+    display: flex;
+    width: 100%;
+    margin-bottom: 10px;
+    border: 1px solid #4a5568;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.sa-reps-pop-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 5px 8px;
+    border: 0;
+    border-right: 1px solid #4a5568;
+    background: rgba(255, 255, 255, 0.02);
+    color: #8ba3c7;
+    font-size: 10px;
+    line-height: 1.2;
+    cursor: pointer;
+}
+
+.sa-reps-pop-btn:last-child {
+    border-right: 0;
+}
+
+.sa-reps-pop-btn:hover {
+    background: rgba(96, 165, 250, 0.12);
+    color: #cfe4ff;
+}
+
+.sa-reps-pop-btn.active {
+    background: rgba(47, 118, 190, 0.32);
+    color: #e8f4ff;
+}
+
 .sa-reps-columns {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -930,6 +978,106 @@
 
 .sa-reps-full-data-modal {
     width: min(1240px, calc(100vw - 24px));
+}
+
+.sa-reps-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.75);
+}
+
+.sa-reps-full-data-modal {
+    max-width: 95vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid #2d3748;
+    border-radius: 8px;
+    background: #1a202c;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.sa-reps-full-data-modal > .cdt-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid #2d3748;
+}
+
+.sa-reps-full-data-modal .cdt-title {
+    margin: 0;
+    color: #e2e8f0;
+    font-size: 18px;
+}
+
+.sa-reps-full-data-modal .cdt-close-btn {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #a0aec0;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+/* Shared analysis dialog shell. Kept here so reusable panels do not depend on a page-level stylesheet. */
+.cdt-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.75);
+}
+
+.cdt-modal {
+    width: 680px;
+    max-width: 95vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid #2d3748;
+    border-radius: 8px;
+    background: #1a202c;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.cdt-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid #2d3748;
+}
+
+.cdt-title {
+    margin: 0;
+    color: #e2e8f0;
+    font-size: 18px;
+}
+
+.cdt-close-btn {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #a0aec0;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.cdt-content {
+    flex: 1;
+    padding: 16px 24px;
+    overflow-y: auto;
 }
 
 .sa-reps-full-data-modal .cdt-content {

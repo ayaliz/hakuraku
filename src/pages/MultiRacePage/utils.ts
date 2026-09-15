@@ -6,6 +6,7 @@ import UMDatabaseWrapper from "../../data/UMDatabaseWrapper";
 import { parseGroundCondition, calculateRaceDistance } from "../../components/RaceDataPresenter/utils/RacePresenterUtils";
 import { normalizeSeasonValue } from "../../utils/season";
 import { parseStandardRaceJson } from "../../data/RaceJsonParser";
+export { getGroundConditionLabel } from "../../data/RaceConditions";
 import {
     AggregatedStats,
     CharacterStats,
@@ -58,12 +59,6 @@ const WEATHER_LABELS: Record<number, string> = {
     3: "Rainy",
     4: "Snowy",
 };
-const GROUND_CONDITION_LABELS: Record<number, string> = {
-    1: "Firm",
-    2: "Good",
-    3: "Soft",
-    4: "Heavy",
-};
 const GROUND_APTITUDE_FIELD: Record<number, string> = {
     1: "proper_ground_turf",
     2: "proper_ground_dirt",
@@ -114,11 +109,6 @@ export function getSeasonLabel(value: string | number | undefined): string {
 
 export function getWeatherLabel(value: string | number | undefined): string {
     return displayEnumish(value, WEATHER_LABELS, "Unknown weather");
-}
-
-export function getGroundConditionLabel(value: number | undefined): string {
-    if (value === undefined || value === null || value === 0) return "Unknown ground";
-    return GROUND_CONDITION_LABELS[value] ?? String(value);
 }
 
 // Get the official track distance from course ID

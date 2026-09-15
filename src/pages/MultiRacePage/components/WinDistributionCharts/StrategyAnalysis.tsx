@@ -1,7 +1,7 @@
 import React from "react";
 import { STRATEGY_COLORS } from "./constants";
 import type { HorseEntry, StrategyStats, RoomCompositionEntry, SkillStats } from "../../types";
-import type { CharacterTeamRateRow, StyleCompositionSummaryRow } from "../../../UmaLogsPage/panelData";
+import type { CharacterTeamRateRow, StyleCompositionSummaryRow } from "../../../../features/umalogs/model/panelData";
 import { StyleBreakdownPanel } from "./StyleBreakdownPanel";
 import { SaturationPanel } from "./SaturationPanel";
 import { CompositionSection } from "./CompositionSection";

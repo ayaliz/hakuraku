@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import './CharaList.css';
-import { CharaTableData, ParentEntry } from "./types";
-import { aggregateFactors, formatFactor, getCharaImageUrl, getFactorColor } from "./utils";
+import { CharaTableData } from "./types";
 import UMDatabaseWrapper from "../../../../data/UMDatabaseWrapper";
 import CharaProperLabels from "../../../CharaProperLabels";
 import { getCharaTableColumns } from "./columns";
@@ -12,6 +11,7 @@ import AssetLoader from "../../../../data/AssetLoader";
 import SkillBreakdownModal from "./SkillBreakdownModal";
 import type { SkillLotteryResult } from "../../utils/witLottery";
 import type { CharaSkill } from "../../../../data/TrainedCharaData";
+import { ParentGroups, SupportDeck } from "../../../BuildTrainingDetails";
 
 const ChevronIcon = () => (
     <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor">
@@ -24,45 +24,6 @@ interface CharaTableProps {
     courseId?: number;
     showPredictionColumn?: boolean;
 }
-
-const ParentGroup = ({ parents }: { parents: ParentEntry[] }) => {
-    const sortedParents = [...parents].sort((a, b) => a.positionId - b.positionId);
-    if (sortedParents.length === 0) return null;
-
-    const aggregatedFactors = aggregateFactors(sortedParents);
-
-    return (
-        <div className="parent-group-container">
-            <div className="parent-images-flex">
-                {sortedParents.map((p, idx) => (
-                    <img
-                        key={idx}
-                        src={getCharaImageUrl(p.cardId)}
-                        alt={String(p.cardId)}
-                        className="parent-img"
-                        title={`ID: ${p.cardId} (Pos: ${p.positionId})`}
-                        onError={(e) => (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iIzU1NSIvPjwvc3ZnPg=='}
-                    />
-                ))}
-            </div>
-            <div className="d-flex flex-wrap">
-                {aggregatedFactors.length === 0 ? <span className="text-muted">No factors</span> : aggregatedFactors.map((f, fIdx) => {
-                    let name = f.nameOverride;
-                    if (!name) {
-                        const formatted = formatFactor(f.id);
-                        name = formatted ? formatted.name : `Factor ${f.id}`;
-                    }
-                    return (
-                        <span key={fIdx} className="factor-badge">
-                            <span style={{ color: getFactorColor(f.id), fontWeight: 600 }}>{name}</span>
-                            <span className="cc-factor-level">{f.level}★</span>
-                        </span>
-                    );
-                })}
-            </div>
-        </div>
-    );
-};
 
 const CharaTable: React.FC<CharaTableProps> = ({ data, courseId, showPredictionColumn = false }) => {
     const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
@@ -273,32 +234,19 @@ const CharaTable: React.FC<CharaTableProps> = ({ data, courseId, showPredictionC
                                                 />
                                             </div>
 
-                                            {row.deck && row.deck.length > 0 && (
+                                            {row.modifiedInLobby && (
+                                                <div className="lobby-modified-build-note">
+                                                    <strong>Modified in Lobby Builder</strong>
+                                                    <span>The original support deck and parents do not describe this edited build, so they are omitted.</span>
+                                                </div>
+                                            )}
+
+                                            {row.deck.length > 0 && (
                                                 <>
                                                     <div className="dashboard-panel-header dashboard-panel-header--footer">
                                                         Support Deck
                                                     </div>
-                                                    <div className="support-deck-grid">
-                                                        {row.deck.map((card) => (
-                                                            <div key={card.position} className="support-card-wrapper" title={`ID: ${card.id}`}>
-                                                                <img
-                                                                    src={AssetLoader.getSupportCardIcon(card.id) ?? ""}
-                                                                    alt={String(card.id)}
-                                                                    className="support-card-img"
-                                                                    onError={(e) => {
-                                                                        const target = e.target as HTMLImageElement;
-                                                                        target.style.display = 'none';
-                                                                        if (target.parentElement) {
-                                                                            target.parentElement.innerText = String(card.id);
-                                                                        }
-                                                                    }}
-                                                                />
-                                                                <div className="support-card-lb">
-                                                                    LB {card.lb}
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
+                                                    <SupportDeck deck={row.deck} />
                                                 </>
                                             )}
                                         </div>
@@ -309,10 +257,7 @@ const CharaTable: React.FC<CharaTableProps> = ({ data, courseId, showPredictionC
                                                 <div className="dashboard-panel-header">
                                                     Parents
                                                 </div>
-                                                <div className="parents-list">
-                                                    <ParentGroup parents={parentGroup1} />
-                                                    <ParentGroup parents={parentGroup2} />
-                                                </div>
+                                                <ParentGroups parents={row.parents} />
                                             </div>
                                         )}
                                     </div>

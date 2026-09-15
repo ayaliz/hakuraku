@@ -2,15 +2,17 @@ import { STRATEGY_NAMES } from "./constants";
 import type { RoomCompositionEntry } from "../../types";
 import { ANALYSIS_STRATEGY_IDS } from "./shared";
 
-export function CompositionSection({ totalRaces, roomCompositions, strategyColors }: {
+export function CompositionSection({ totalRaces, roomCompositions, strategyColors, averageCounts, pacePromotionRate }: {
     totalRaces: number;
     roomCompositions: RoomCompositionEntry[];
     strategyColors: Record<number, string>;
+    averageCounts?: number[];
+    pacePromotionRate?: number;
 }) {
     const topRows = roomCompositions.slice(0, 12);
     const runawayIdx = ANALYSIS_STRATEGY_IDS.indexOf(5);
     const frontIdx = ANALYSIS_STRATEGY_IDS.indexOf(1);
-    const pacePromotionLobbyRate = totalRaces > 0
+    const derivedPacePromotionRate = totalRaces > 0
         ? roomCompositions.reduce((sum, comp) => {
             const hasNoRunaway = runawayIdx < 0 || (comp.counts[runawayIdx] ?? 0) === 0;
             const hasNoFront = frontIdx < 0 || (comp.counts[frontIdx] ?? 0) === 0;
@@ -19,9 +21,9 @@ export function CompositionSection({ totalRaces, roomCompositions, strategyColor
                 : sum;
         }, 0)
         : 0;
-    const avgCounts = ANALYSIS_STRATEGY_IDS.map((_, i) => totalRaces > 0
+    const avgCounts = ANALYSIS_STRATEGY_IDS.map((_, i) => averageCounts?.[i] ?? (totalRaces > 0
         ? roomCompositions.reduce((sum, comp) => sum + ((comp.counts[i] ?? 0) * comp.occurrences), 0) / totalRaces
-        : 0);
+        : 0));
     const colMaxes = ANALYSIS_STRATEGY_IDS.map((_, i) =>
         Math.max(...topRows.map(c => c.counts[i]), avgCounts[i], 1)
     );
@@ -57,7 +59,7 @@ export function CompositionSection({ totalRaces, roomCompositions, strategyColor
             <div className="sa-comp-header">
                 <span>Room Composition</span>
                 <span className="sa-comp-header-stat">
-                    Rooms with pace promotion: {(pacePromotionLobbyRate * 100).toFixed(1)}%
+                    Rooms with pace promotion: {((pacePromotionRate ?? derivedPacePromotionRate) * 100).toFixed(1)}%
                 </span>
             </div>
             <table className="sa-comp-table">

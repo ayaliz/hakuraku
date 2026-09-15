@@ -12,7 +12,7 @@ const HpSpurtAnalysis: React.FC<Props> = ({ stats }) => {
         <div className="hp-analysis-wrapper">
             {stats.length === 0 ? (
                 <div className="text-center text-muted p-4">
-                    No user characters found in the loaded races.
+                    No user Umas found in the loaded races.
                 </div>
             ) : (
                 <HpSpurtTable stats={stats} />

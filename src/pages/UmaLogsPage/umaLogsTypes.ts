@@ -13,11 +13,24 @@ import type {
     TrueSkillTeamEntry,
 } from "../MultiRacePage/types";
 import type { UmaLogsQuerySpec } from "./umaLogsQueryShared";
-import type { PieSlice } from "../MultiRacePage/components/WinDistributionCharts/types";
-import type { StyleRepEntry } from "../MultiRacePage/components/WinDistributionCharts/StyleRepsPanel";
-import type { HistogramData, StyleCompositionSummaryRow, CharacterTeamRateRow, ScenarioWinBreakdownRow } from "./panelData";
+import type {
+    GroupDeckData as SharedGroupDeckData,
+    GroupPanelData as SharedGroupPanelData,
+    OverviewSkillRow as SharedOverviewSkillRow,
+    RaceBonusOverviewRow as SharedRaceBonusOverviewRow,
+    StyleDeckSummaryRow,
+    SupportCardSummaryRow as SharedSupportCardSummaryRow,
+} from "../../features/umalogs/model/panelData";
 import type { GroupSkillDetailPayload, SerializedSkillOverviewStats } from "./skillCache";
 import type { SkillActivationPoint } from "../MultiRacePage/types";
+import type { UmaLogsSection } from "../../features/umalogs/model/sections";
+
+export type { UmaLogsSection as Section } from "../../features/umalogs/model/sections";
+export {
+    UMA_LOGS_PANEL_DATA_SECTIONS as PANEL_DATA_SECTIONS,
+    UMA_LOGS_ROUTE_SECTIONS,
+    UMA_LOGS_SECTIONS,
+} from "../../features/umalogs/model/sections";
 
 export type SerializedSkillStats = Omit<SkillStats, 'learnedByCharaIds' | 'learnedByStrategies'> & {
     learnedByCharaIds: number[];
@@ -94,56 +107,10 @@ export type GroupSkillDetailResponse = {
     skillId: number;
 } & GroupSkillDetailPayload;
 
-export type OverviewSkillRow = {
-    skillId: number;
-    name: string;
-    isInherit: boolean;
-    appearances: number;
-    winAppearances: number;
-    popPct: number;
-    adjWinRate: number;
-};
-
-export type SupportCardSummaryRow = {
-    cardId: number;
-    appearances: number;
-    popPct: number;
-    lbDist: number[];
-    rawWins: number;
-    rawApps: number;
-    adjWinRate: number;
-};
-
-export type GroupPanelData = {
-    cmId: string;
-    courseId: number;
-    uniqueUmaCount: number;
-    winningTimeHistogram: HistogramData | null;
-    scoreHistogramAll: HistogramData | null;
-    scoreHistogramWinners: HistogramData | null;
-    topHorses: {
-        fastestWin?: SerializedHorseEntry;
-        slowestWin?: SerializedHorseEntry;
-        highestWinner?: SerializedHorseEntry;
-        lowestWinner?: SerializedHorseEntry;
-    };
-    skillsByStrategy: Record<number, OverviewSkillRow[]>;
-    supportCardRows: SupportCardSummaryRow[];
-    raceBonusRows: RaceBonusOverviewRow[];
-    scenarioWinBreakdownRows?: ScenarioWinBreakdownRow[];
-    styleReps: Record<number, StyleRepEntry[]>;
-    styleCompositionRows: StyleCompositionSummaryRow[];
-    characterTeamRates: CharacterTeamRateRow[];
-    rawUnifiedCharacterWinsAll: PieSlice[];
-    rawUnifiedCharacterWinsOpp: PieSlice[];
-    rawUnifiedCharacterPop: PieSlice[];
-};
-
-export type GroupDeckData = {
-    cmId: string;
-    courseId: number;
-    styleDeckRowsByStyle: Record<number, StyleDeckRow[]>;
-};
+export type OverviewSkillRow = SharedOverviewSkillRow;
+export type SupportCardSummaryRow = SharedSupportCardSummaryRow;
+export type GroupPanelData = SharedGroupPanelData<SerializedHorseEntry>;
+export type GroupDeckData = SharedGroupDeckData;
 
 export interface TrackGroup {
     courseId: number;
@@ -152,16 +119,12 @@ export interface TrackGroup {
     stats: UmaLogsStats;
 }
 
-export type Section = 'introduction' | 'overview' | 'strategy' | 'character' | 'skill' | 'queries' | 'explorer' | 'replays';
-export const UMA_LOGS_SECTIONS: readonly Section[] = ['introduction', 'overview', 'strategy', 'character', 'skill', 'explorer', 'replays'];
-export const UMA_LOGS_ROUTE_SECTIONS: readonly Section[] = [...UMA_LOGS_SECTIONS, 'queries'];
-
 export interface TrackGroupContentProps {
     group: TrackGroup;
     cmId: string | null;
     cmLabel: string;
-    section: Section;
-    onSectionChange: (section: Section) => void;
+    section: UmaLogsSection;
+    onSectionChange: (section: UmaLogsSection) => void;
     onViewReplaysForHorse: (horse: HorseEntry) => void;
     onFindReplaysForQuery: (querySpec: UmaLogsQuerySpec) => void;
     onEditAsQuery: (query: string) => void;
@@ -172,29 +135,10 @@ export interface TrackGroupContentProps {
     strategyColors: Record<number, string>;
 }
 
-export type StyleDeckRow = {
-    deckKey: string;
-    cardIds: number[];
-    appearances: number;
-    wins: number;
-    popPct: number;
-    adjWinRate: number;
-    raceBonus: number;
-};
-
-export type RaceBonusOverviewRow = {
-    bucketStart: number;
-    bucketEnd: number;
-    appearances: number;
-    wins: number;
-    popPct: number;
-    adjWinRate: number;
-    isOther: boolean;
-};
+export type StyleDeckRow = StyleDeckSummaryRow;
+export type RaceBonusOverviewRow = SharedRaceBonusOverviewRow;
 
 export const RACE_BONUS_OTHER_MIN_POP_PCT = 0.5;
-export const PANEL_DATA_SECTIONS: readonly Section[] = ['overview', 'strategy', 'character'];
-
 export type UmaLogsStats = {
     totalRaces: number;
     totalHorses: number;

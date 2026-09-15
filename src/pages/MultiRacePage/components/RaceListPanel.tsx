@@ -27,7 +27,7 @@ const RaceListPanel: React.FC<RaceListPanelProps> = ({ races, onRemoveRace, onCl
                         <div className="race-item-info">
                             <span className="race-item-name">{race.fileName}</span>
                             <span className="race-item-details">
-                                {race.raceDistance}m • {race.horseInfo.length} horses
+                                {race.raceDistance}m • {race.horseInfo.length} Umas
                             </span>
                         </div>
                         <button

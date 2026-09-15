@@ -27,6 +27,55 @@ function getExpectedObservedSpurtSpeed(speed: number): number {
     return Math.floor((speed + 1e-9) * 100) / 100;
 }
 
+type SpurtMetricContentProps = {
+    delay: number;
+    speed?: number;
+    speedDifference?: number;
+    blockedIconUrl?: string | null;
+    showHelp?: boolean;
+} & Omit<React.HTMLAttributes<HTMLDivElement>, 'children'>;
+
+const SpurtMetricContent = React.forwardRef<HTMLDivElement, SpurtMetricContentProps>(function SpurtMetricContent({
+    delay,
+    speed,
+    speedDifference = 0,
+    blockedIconUrl,
+    showHelp = false,
+    ...triggerProps
+}, ref) {
+    const speedReached = speedDifference >= -0.05;
+    return (
+        <div
+            {...triggerProps}
+            ref={ref}
+            className={`col-spurt-cell${showHelp ? ' col-spurt-help' : ''}${triggerProps.className ? ` ${triggerProps.className}` : ''}`}
+        >
+            <span>
+                Delay:{' '}
+                <span className="col-spurt-delay-val" style={{ color: getColorForSpurtDelay(delay) }}>
+                    {delay.toFixed(1)}m
+                </span>
+            </span>
+            {speed !== undefined && (
+                <>
+                    <br />
+                    <span className="col-spurt-speed">
+                        <span className="col-spurt-speed-label">Speed: </span>
+                        <span className={speedReached ? 'col-speed-ok' : 'col-speed-bad'}>
+                            {speed.toFixed(2)}
+                            {Math.abs(speedDifference) >= 0.05
+                                && ` (${speedDifference > 0 ? '+' : ''}${speedDifference.toFixed(2)})`}
+                        </span>
+                        {blockedIconUrl && (
+                            <img src={blockedIconUrl} alt="Potential spurt issue" className="late-heal-icon" />
+                        )}
+                    </span>
+                </>
+            )}
+        </div>
+    );
+});
+
 function HpDebuffSummary({ row }: { row: CharaTableData }) {
     const hits = row.hpDebuffHits ?? [];
     if (hits.length === 0) return null;
@@ -72,6 +121,94 @@ function RushedSummary({ row }: { row: CharaTableData }) {
                 <strong>Rushed duration: {row.rushedDuration.toFixed(2)}s</strong>
                 {isFrenzied && ' (Frenzied)'}
             </div>
+        </div>
+    );
+}
+
+function isSuccessfulDetailedSpurt(result: string): boolean {
+    return result === 'True' || result === 'TrueExceedNeedMaximumHp';
+}
+
+function hasDetailedLateRecoveryChange(row: CharaTableData): boolean {
+    const decisions = row.detailedLastSpurtDecisions ?? [];
+    const applications = row.detailedHpSkillApplications ?? [];
+    return decisions.slice(1).some((decision, index) => {
+        const previous = decisions[index];
+        if (previous.time === undefined || decision.time === undefined) return false;
+        const hasRecovery = applications.some(application =>
+            application.targetHorseIndex === row.frameOrder - 1
+            && application.appliedHpDelta > 0
+            && application.time > previous.time! + 0.001
+            && application.time <= decision.time! + 0.001
+        );
+        return hasRecovery && (
+            previous.result !== decision.result
+            || Math.abs(previous.selectedStartDistance - decision.selectedStartDistance) >= 0.01
+            || Math.abs(previous.selectedTargetSpeed - decision.selectedTargetSpeed) >= 0.001
+        );
+    });
+}
+
+function DetailedLateRecoverySummary({ row }: { row: CharaTableData }) {
+    const decisions = row.detailedLastSpurtDecisions ?? [];
+    const applications = row.detailedHpSkillApplications ?? [];
+    if (decisions.length < 2 || applications.length === 0) return null;
+
+    const recalculations = decisions.slice(1).map((decision, index) => {
+        const previous = decisions[index];
+        if (previous.time === undefined || decision.time === undefined) return null;
+        const previousTime = previous.time;
+        const decisionTime = decision.time;
+        const heals = applications.filter(application =>
+            application.targetHorseIndex === row.frameOrder - 1
+            && application.appliedHpDelta > 0
+            && application.time > previousTime + 0.001
+            && application.time <= decisionTime + 0.001
+        );
+        if (heals.length === 0) return null;
+
+        const previousSuccessful = isSuccessfulDetailedSpurt(previous.result);
+        const successful = isSuccessfulDetailedSpurt(decision.result);
+        const previousDelay = previousSuccessful
+            ? Math.max(0, previous.selectedStartDistance - previous.checkDistance)
+            : undefined;
+        const delay = successful
+            ? Math.max(0, decision.selectedStartDistance - decision.checkDistance)
+            : undefined;
+        const changed = previous.result !== decision.result
+            || Math.abs(previous.selectedStartDistance - decision.selectedStartDistance) >= 0.01
+            || Math.abs(previous.selectedTargetSpeed - decision.selectedTargetSpeed) >= 0.001;
+        const improved = (!previousSuccessful && successful)
+            || (previousDelay !== undefined && delay !== undefined && delay < previousDelay - 0.01)
+            || (previousSuccessful && successful
+                && decision.selectedTargetSpeed > previous.selectedTargetSpeed + 0.001);
+        const names = [...new Set(heals.map(heal =>
+            UMDatabaseWrapper.skillNameWithEnglishFallback(heal.skillId)))];
+        const hp = heals.reduce((sum, heal) => sum + heal.appliedHpDelta, 0);
+
+        const before = previousSuccessful
+            ? `Delay ${previousDelay!.toFixed(1)}m, Speed ${previous.selectedTargetSpeed.toFixed(2)}`
+            : 'No spurt';
+        const after = successful
+            ? `Delay ${delay!.toFixed(1)}m, Speed ${decision.selectedTargetSpeed.toFixed(2)}`
+            : 'No spurt';
+        return { decision, changed, improved, names, hp, before, after };
+    }).filter((value): value is NonNullable<typeof value> => value !== null && value.changed);
+
+    if (recalculations.length === 0) return null;
+    return (
+        <div className="late-heal-warning">
+            {recalculations.map((recalculation, index) => (
+                <div key={`${recalculation.decision.calculationCount ?? index}-${index}`}>
+                    <strong>
+                        Late HP recovery {recalculation.improved ? 'improved' : 'changed'} last spurt
+                    </strong>
+                    <div className="late-heal-warning-text">
+                        {recalculation.names.join(', ')} restored {recalculation.hp.toFixed(1)} HP: {' '}
+                        {recalculation.before} → {recalculation.after}.
+                    </div>
+                </div>
+            ))}
         </div>
     );
 }
@@ -225,7 +362,7 @@ function createWorldTransformColumn(minLoss: number, maxLoss: number): CharaColu
                 WT{' '}
                 <InfoIcon
                     id="tooltip-world-transform"
-                    tip="Estimated losses from world transform, i.e. distance loss from moving lanes, as well as being on outside lanes on corners."
+                    tip="Distance lost to the world transform from lane changes and outside lanes on corners. Detailed simulations use the simulator's exact accumulated value; recorded races use an estimate."
                 />
             </span>
         ),
@@ -238,6 +375,7 @@ function createWorldTransformColumn(minLoss: number, maxLoss: number): CharaColu
                 <span
                     className="col-downhill-time"
                     style={{ color: getWorldTransformLossColor(row.worldTransformLossTotal, minLoss, maxLoss) }}
+                    title={row.worldTransformLossIsAuthoritative ? "Exact simulator value" : "Estimated from recorded motion"}
                 >
                     -{row.worldTransformLossTotal.toFixed(2)}m
                 </span>
@@ -266,7 +404,7 @@ const baseCharaTableColumns: CharaColumnDef[] = [
     },
     {
         key: 'chara',
-        header: 'Character',
+        header: 'Uma',
         cellClassName: 'chara-name-cell',
         renderCell: (row) => {
             const rankInfo = getRankIcon(row.trainedChara.rankScore);
@@ -379,6 +517,60 @@ const baseCharaTableColumns: CharaColumnDef[] = [
             </span>
         ),
         renderCell: (row) => {
+            const detailedDecision = row.detailedLastSpurtDecision;
+            if (detailedDecision) {
+                const successful = isSuccessfulDetailedSpurt(detailedDecision.result);
+                const changedLater = hasDetailedLateRecoveryChange(row);
+                const changedIconUrl = changedLater ? AssetLoader.getBlockedIcon() : null;
+                const displayedCheckHp = Math.round(detailedDecision.checkHp);
+                const displayedRequiredHp = Math.round(detailedDecision.fullSpurtNeedHp);
+                const hpDifference = displayedCheckHp - displayedRequiredHp;
+                const startHp = row.hpOutcome?.startHp;
+                const hpPct = startHp
+                    ? ` (${((detailedDecision.checkHp / startHp) * 100).toFixed(1)}%)`
+                    : '';
+                const content = successful
+                    ? <SpurtMetricContent
+                        delay={Math.max(0, detailedDecision.selectedStartDistance - detailedDecision.checkDistance)}
+                        speed={detailedDecision.selectedTargetSpeed}
+                        speedDifference={detailedDecision.selectedTargetSpeed - detailedDecision.fullSpurtTargetSpeed}
+                        blockedIconUrl={changedIconUrl}
+                        showHelp
+                    />
+                    : (
+                        <span className="status-bad col-spurt-help">
+                            No spurt
+                            {changedIconUrl && (
+                                <img src={changedIconUrl} alt="Last spurt changed later" className="late-heal-icon" />
+                            )}
+                        </span>
+                    );
+                return (
+                    <OverlayTrigger
+                        placement="auto"
+                        overlay={
+                            <Tooltip id={`spurt-detail-${row.frameOrder}`}>
+                                <div className="col-hp-tooltip">
+                                    {successful && <div>Observed spurt speed: <strong>{detailedDecision.selectedTargetSpeed.toFixed(2)} m/s</strong></div>}
+                                    {successful && <div>Calculated spurt speed: <strong>{detailedDecision.fullSpurtTargetSpeed.toFixed(2)} m/s</strong></div>}
+                                    <div>HP at 2/3: <strong>{displayedCheckHp}</strong>{hpPct}</div>
+                                    <div>
+                                        Required HP: <strong>{displayedRequiredHp}</strong>
+                                        <span className={hpDifference >= 0 ? 'col-diff-pos' : 'col-diff-neg'}>
+                                            {' '}({hpDifference >= 0 ? '+' : ''}{hpDifference})
+                                        </span>
+                                    </div>
+                                    <HpDebuffSummary row={row} />
+                                    <RushedSummary row={row} />
+                                    <DetailedLateRecoverySummary row={row} />
+                                </div>
+                            </Tooltip>
+                        }
+                    >
+                        {content}
+                    </OverlayTrigger>
+                );
+            }
             const spurtDist = row.horseResultData.lastSpurtStartDistance;
             if (spurtDist === -1) {
                 const noSpurtContent = <span className="status-bad">No spurt</span>;
@@ -403,13 +595,11 @@ const baseCharaTableColumns: CharaColumnDef[] = [
             const spurtDelay = spurtDist ? spurtDist - phase3Start : null;
             if (spurtDelay === null) return '-';
 
-            const spurtColor = getColorForSpurtDelay(spurtDelay);
             const expectedObservedSpurtSpeed = row.lastSpurtTargetSpeed !== undefined
                 ? getExpectedObservedSpurtSpeed(row.lastSpurtTargetSpeed)
                 : undefined;
             const speedDiff = (row.maxAdjustedSpeed && expectedObservedSpurtSpeed)
                 ? row.maxAdjustedSpeed - expectedObservedSpurtSpeed : 0;
-            const speedReached = speedDiff >= -0.05;
             const hasLowHpSpurtSuspicion = hasLowHpNegativeSpurtSuspicion(
                 row.hpAtPhase3Start,
                 row.requiredSpurtHp,
@@ -437,25 +627,15 @@ const baseCharaTableColumns: CharaColumnDef[] = [
             const hasPotentialSpurtIssue = hasLateHeal || hasLowHpSpurtSuspicion;
             const blockedIconUrl = hasPotentialSpurtIssue ? AssetLoader.getBlockedIcon() : null;
 
-            const cellContent = (
-                <div className={`col-spurt-cell${hasHpInfo || hasPotentialSpurtIssue || hasHpDebuffs || hasRushed || hasSpurtSpeedInfo ? ' col-spurt-help' : ''}`}>
-                    <span>Delay: <span className="col-spurt-delay-val" style={{ color: spurtColor }}>{spurtDelay.toFixed(1)}m</span></span>
-                    {row.maxAdjustedSpeed && row.lastSpurtTargetSpeed && (
-                        <>
-                            <br />
-                            <span className="col-spurt-speed">
-                                <span className="col-spurt-speed-label">Speed: </span>
-                                <span className={speedReached ? 'col-speed-ok' : 'col-speed-bad'}>
-                                    {getExpectedObservedSpurtSpeed(row.maxAdjustedSpeed).toFixed(2)}{Math.abs(speedDiff) >= 0.05 && ` (${speedDiff > 0 ? '+' : ''}${speedDiff.toFixed(2)})`}
-                                </span>
-                                {blockedIconUrl && (
-                                    <img src={blockedIconUrl} alt="Potential spurt issue" className="late-heal-icon" />
-                                )}
-                            </span>
-                        </>
-                    )}
-                </div>
-            );
+            const cellContent = <SpurtMetricContent
+                delay={spurtDelay}
+                speed={row.maxAdjustedSpeed && row.lastSpurtTargetSpeed
+                    ? getExpectedObservedSpurtSpeed(row.maxAdjustedSpeed)
+                    : undefined}
+                speedDifference={speedDiff}
+                blockedIconUrl={blockedIconUrl}
+                showHelp={hasHpInfo || hasPotentialSpurtIssue || hasHpDebuffs || hasRushed || hasSpurtSpeedInfo}
+            />;
 
             if (!hasHpInfo && !hasPotentialSpurtIssue && !hasHpDebuffs && !hasRushed && !hasSpurtSpeedInfo) return cellContent;
 
@@ -530,7 +710,7 @@ const baseCharaTableColumns: CharaColumnDef[] = [
                 HP Result{' '}
                 <InfoIcon
                     id="tooltip-hp-result"
-                    tip="Shows remaining HP if an Uma made it to the finish without running out of HP, otherwise shows an estimate for missing HP based on observed last spurt speed."
+                    tip="Shows remaining HP if an Uma made it to the finish without running out of HP. Detailed simulations use exact final HP, exhaustion distance, and accumulated HP shortfall; recorded races estimate missing HP from observed last spurt speed."
                 />
             </span>
         ),
@@ -566,7 +746,7 @@ const baseCharaTableColumns: CharaColumnDef[] = [
                 Duel{' '}
                 <InfoIcon
                     id="tooltip-dueling"
-                    tip="Approximate time this Uma spent dueling."
+                    tip="Time this Uma spent dueling. Detailed simulations use exact simulator timings; recorded races use an estimate."
                 />
             </span>
         ),
@@ -583,23 +763,32 @@ const baseCharaTableColumns: CharaColumnDef[] = [
                 Downhill{' '}
                 <InfoIcon
                     id="tooltip-downhill"
-                    tip="Approximate time this Uma spent in downhill mode."
+                    tip="Time this Uma spent in downhill mode. Detailed simulations use exact simulator timings; recorded races use an estimate."
                 />
             </span>
         ),
         cellClassName: 'stat-cell',
         renderCell: (row) => {
             if (!row.downhillModeTime || row.downhillModeTime < 0.01) return '-';
-            const totalSecs = Math.round(row.downhillModeTime * 15 / 16);
-            const preLateSecs = Math.round((row.downhillModeTimePreLate ?? 0) * 15 / 16);
-            const lateSecs = Math.max(0, Math.round((row.downhillModeTimeLate ?? Math.max(0, row.downhillModeTime - (row.downhillModeTimePreLate ?? 0))) * 15 / 16));
-            const hasSplit = preLateSecs > 0 || lateSecs > 0;
+            const exact = row.modeTimingsAreAuthoritative;
+            const formatSeconds = (seconds: number) => exact
+                ? seconds.toFixed(2)
+                : String(Math.round(seconds * 15 / 16));
+            const totalSecs = formatSeconds(row.downhillModeTime);
+            const preLateValue = row.downhillModeTimePreLate ?? 0;
+            const lateValue = Math.max(0, row.downhillModeTimeLate
+                ?? Math.max(0, row.downhillModeTime - preLateValue));
+            const preLateSecs = formatSeconds(preLateValue);
+            const lateSecs = formatSeconds(lateValue);
+            const hasPreLate = preLateValue >= 0.005;
+            const hasLate = lateValue >= 0.005;
+            const hasSplit = hasPreLate || hasLate;
             return (
                 <div className="col-downhill-cell">
                     <div className="col-downhill-time">{totalSecs}s</div>
                     {hasSplit && (
                         <div className="col-downhill-split">
-                            ({preLateSecs}s pre-late{lateSecs > 0 ? ` / ${lateSecs}s late` : ''})
+                            ({preLateSecs}s pre-late{hasLate ? ` / ${lateSecs}s late` : ''})
                         </div>
                     )}
                 </div>
@@ -613,7 +802,7 @@ const baseCharaTableColumns: CharaColumnDef[] = [
                 Pace{' '}
                 <InfoIcon
                     id="tooltip-pace"
-                    tip="Approximate time this Uma spent in Pace Up mode (or Speed up/Overtake modes if front runner) and Pace Down mode."
+                    tip="Time this Uma spent in Pace Up, Pace Up EX, Speed Up, or Overtake modes, and Pace Down mode. Detailed simulations use exact simulator timings; recorded races use an estimate."
                 />
             </span>
         ),
@@ -622,14 +811,17 @@ const baseCharaTableColumns: CharaColumnDef[] = [
             const hasUp = (row.paceUpTime ?? 0) >= 0.01;
             const hasDown = (row.paceDownTime ?? 0) >= 0.01;
             if (!hasUp && !hasDown) return '-';
+            const formatSeconds = (seconds: number) => row.modeTimingsAreAuthoritative
+                ? seconds.toFixed(2)
+                : String(Math.round(seconds * 15 / 16));
             return (
                 <div className="col-pace-cell">
                     {hasUp && (
-                        <span className="col-pace-up">↑{Math.round(row.paceUpTime! * 15 / 16)}s</span>
+                        <span className="col-pace-up">↑{formatSeconds(row.paceUpTime!)}s</span>
                     )}
                     {hasUp && hasDown && <br />}
                     {hasDown && (
-                        <span className="col-pace-down">↓{Math.round(row.paceDownTime! * 15 / 16)}s</span>
+                        <span className="col-pace-down">↓{formatSeconds(row.paceDownTime!)}s</span>
                     )}
                 </div>
             );

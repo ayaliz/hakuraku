@@ -192,7 +192,7 @@ const AffinityCalculatorPanel: React.FC<Props> = ({
                 <Modal.Body>
                     <Form.Control
                         size="sm"
-                        placeholder="Search characters..."
+                        placeholder="Search Umas..."
                         value={mainSearch}
                         onChange={e => setMainSearch(e.target.value)}
                         className="mb-3"

@@ -31,6 +31,8 @@ export interface CharacterBreakdownPanelProps {
     useBayesianWinRate?: boolean;
     populationLabel?: string;
     shareLabel?: string;
+    /** Display distinct-player counts without changing simulation win-rate denominators. */
+    playerCounts?: Record<string, number>;
     onSelectCharacter?: (key: string) => void;
 }
 
@@ -49,6 +51,7 @@ export function CharacterBreakdownPanel({
     useBayesianWinRate = true,
     populationLabel = "Population",
     shareLabel = "Pop%",
+    playerCounts,
     onSelectCharacter,
 }: CharacterBreakdownPanelProps) {
     const [sortMode, setSortMode] = useState<"pop" | "winRate">("pop");
@@ -170,6 +173,7 @@ export function CharacterBreakdownPanel({
     const allPopKeys = rawPopSlices
         .filter(s => s.charaId && (includeZeroWinEntries || (ratingWinsByKey.get(s.charaId as string)?.value ?? 0) > 0))
         .map(s => s.charaId as string);
+    if (playerCounts) allPopKeys.sort((a, b) => (playerCounts[b] ?? 0) - (playerCounts[a] ?? 0) || a.localeCompare(b));
 
     const allWinRateKeys = [...allPopKeys]
         .map(key => {
@@ -193,6 +197,7 @@ export function CharacterBreakdownPanel({
 
     const maxPct = Math.max(...chars.flatMap(c => [c.displayRate * 100, c.popPct]), 1);
     const fullDataMaxPct = Math.max(...fullDataChars.flatMap(c => [c.displayRate * 100, c.popPct]), 1);
+    const maxPlayers = Math.max(...allPopKeys.map(key => playerCounts?.[key] ?? 0), 1);
 
     const renderBarRow = (c: CharRow, maxP: number, inModal: boolean = false) => {
         const icon = getCharaIcon(c.key);
@@ -235,16 +240,16 @@ export function CharacterBreakdownPanel({
                         <div className="sa-sb-bar-fill" style={{ width: `${(c.displayRate * 100 / maxP) * 100}%`, background: color }} />
                     </div>
                     <div className="sa-sb-value sa-sb-value--win ca-bar-value-wide">
-                        {(c.displayRate * 100).toFixed(1)}% <span className="ca-abs-count">({c.winsCount})</span>
+                        {(c.displayRate * 100).toFixed(1)}% {!playerCounts && <span className="ca-abs-count">({c.winsCount})</span>}
                     </div>
                 </div>
                 <div className="sa-sb-bar-row">
-                    <div className="sa-sb-bar-label">{shareLabel}</div>
+                    <div className="sa-sb-bar-label" title={playerCounts ? "Distinct players with at least one simulated team containing this Uma in this style. Each player is counted once." : undefined}>{shareLabel}</div>
                     <div className="sa-sb-track sa-sb-track--pick">
-                        <div className="sa-sb-bar-fill sa-sb-bar-fill--pick" style={{ width: `${(c.popPct / maxP) * 100}%` }} />
+                        <div className="sa-sb-bar-fill sa-sb-bar-fill--pick" style={{ width: `${(playerCounts ? (playerCounts[c.key] ?? 0) / maxPlayers : c.popPct / maxP) * 100}%` }} />
                     </div>
                     <div className="sa-sb-value sa-sb-value--pick ca-bar-value-wide">
-                        {c.popPct.toFixed(1)}% <span className="ca-abs-count">({c.appsCount})</span>
+                        {playerCounts ? `${(playerCounts[c.key] ?? 0).toLocaleString('en-US')} Players` : <>{c.popPct.toFixed(1)}% <span className="ca-abs-count">({c.appsCount})</span></>}
                     </div>
                 </div>
             </div>
@@ -287,7 +292,7 @@ export function CharacterBreakdownPanel({
                     <button
                         className={`ca-sort-btn${sortMode === "pop" ? " ca-sort-btn--active" : ""}`}
                         onClick={() => setSortMode("pop")}>
-                        Top {populationLabel}
+                        {playerCounts ? "Most used" : <>Top {populationLabel}</>}
                     </button>
                     <button
                         className={`ca-sort-btn${sortMode === "winRate" ? " ca-sort-btn--active" : ""}`}

@@ -108,7 +108,7 @@ test('protects a source lower-rarity unique and fixes every learned skill at lev
 test('maps an ephemeral simulator response into RaceData display input', () => {
     const horse = {
         horseIndex: 0, frameOrder: 0, gateNumber: 1, popularity: 1, teamId: 2, teamMemberId: 3,
-        singleModeWinCount: 12, fanCount: 12345,
+        singleModeWinCount: 12, singleModeTeamRank: 4, fanCount: 12345,
         identity: { charaId: 1006, cardId: 100602 }, runningStyle: 3,
         rawStats: { speed: 1500, stamina: 700, power: 1100, guts: 600, wisdom: 1200 },
         motivation: 4, distanceAptitude: 0, surfaceAptitude: 1, strategyAptitude: 2,
@@ -134,6 +134,7 @@ test('maps an ephemeral simulator response into RaceData display input', () => {
     assert.deepEqual(view.raceHorseInfo[0], {
         frame_order: 1, gate_number: 1, team_id: 2, team_member_id: 3, trained_chara_id: 1,
         viewer_id: 0, trainer_name: 'Team 2', chara_id: 1006, card_id: 100602,
+        has_viewer_id: false, popularity: 1, team_rank: 4,
         running_style: 4, motivation: 4, single_mode_win_count: 12, fan_count: 12345,
         speed: 1500, stamina: 700, pow: 1100, guts: 600, wiz: 1200,
         apt_distance: 8, apt_ground: 7, apt_style: 6,
@@ -186,6 +187,14 @@ test('uses the player-facing ground label for internal condition metadata', () =
     assert.deepEqual(
         normalizeRaceConditionMetadata({ snapshotId: 'cm20-future', meta: { conditions: 'Good ground' } }),
         { snapshotId: 'cm20-future', meta: { conditions: 'Good ground' } },
+    );
+    assert.deepEqual(
+        normalizeRaceConditionMetadata({ snapshotId: 'cm17-20260919', cmId: 'cm17', meta: { course: 'CM17 · Teio Sho 2,000 m · Dirt · G1' } }),
+        { snapshotId: 'cm17-20260919', cmId: 'cm17', meta: { course: 'CM17 · Ooi 2,000 m · Dirt' } },
+    );
+    assert.deepEqual(
+        normalizeRaceConditionMetadata({ snapshotId: 'cm20-2026-09-19', cmId: 'cm20', meta: { course: 'CM20 · Nakayama 2,500 m · Turf · G1' } }),
+        { snapshotId: 'cm20-2026-09-19', cmId: 'cm20', meta: { course: 'CM20 · Nakayama 2,500 m · Turf' } },
     );
 });
 

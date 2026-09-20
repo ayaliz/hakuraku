@@ -11,14 +11,19 @@ import { COLORBLIND_STRATEGY_COLORS, STRATEGY_COLORS, STRATEGY_DISPLAY_ORDER, ST
 import StrategyPaletteControls, { useStrategyPalette } from '../../components/StrategyPaletteControls';
 import { normalizeRaceConditionMetadata } from '../../data/RaceConditions';
 import { decodeTeamLinkTarget } from './teamLinks';
+import { newestSimDataSnapshots } from './snapshotOrder';
 import '../MultiRacePage/components/WinDistributionCharts/StrategyAnalysis.css';
 import './SimDataPage.css';
 
 const Character = lazy(() => import('./Character'));
 const Performers = lazy(() => import('./Performers'));
 const LobbyBuilder = lazy(() => import('./LobbyBuilder'));
-const tabs = { introduction: 'Introduction', strategy: 'Strategy Analysis', character: 'Uma Analysis', archetypes: 'Archetype Analysis', lobby: 'Lobby Builder' };
+const CapturedSkillPreview = lazy(() => import('./CapturedSkillPreview'));
+const standardTabs = { introduction: 'Introduction', strategy: 'Strategy Analysis', character: 'Uma Analysis', archetypes: 'Archetype Analysis', lobby: 'Lobby Builder' };
 function Results({ snapshot }: { snapshot: Snapshot }) {
+    const tabs = snapshot.skillAnalysis
+        ? { introduction: 'Introduction', strategy: 'Strategy Analysis', character: 'Uma Analysis', skills: 'Skill Analysis', archetypes: 'Archetype Analysis', lobby: 'Lobby Builder' }
+        : standardTabs;
     const [params, setParams] = useSearchParams();
     const [lobbyTeams, setLobbyTeams] = useState<Performer[]>([]);
     const [lobbyDraft, setLobbyDraft] = useState<LobbyDraft>({ mood: '5', seed: '', gates: {}, runnerEdits: {} });
@@ -107,12 +112,14 @@ function Results({ snapshot }: { snapshot: Snapshot }) {
         <Tab.Container id="simdata-tabs" activeKey={active} onSelect={selectTab} mountOnEnter unmountOnExit>
             <Nav variant="tabs" className="sim-section-nav" aria-label="Simulation analysis">{Object.entries(tabs).map(([key, label]) => <Nav.Item key={key}><Nav.Link className="sim-section-link" eventKey={key}>{key === 'lobby' && lobbyTeams.length ? `${label} (${lobbyTeams.length}/3)` : label}</Nav.Link></Nav.Item>)}</Nav>
             <Tab.Content><Tab.Pane eventKey="introduction"><div className="sim-intro-tab">
-                <p><strong>SimData</strong> uses captured CM teams to build a simulated CM race dataset with equally weighted player appearances. This snapshot contains <strong>{number(data.meta.cumulativeSimulations)}</strong> races across <strong>{number(data.meta.populationOwners)}</strong> captured players and <strong>{number(data.meta.evaluatedTeams)}</strong> evaluated teams.</p>
-                <p><strong>Individual win rate</strong> counts wins by one runner, while <strong>team win rate</strong> counts wins by any teammate. Teams are ranked by the lower bound of their approximate 95% interval.</p>
-                <p><Link to="/notes/new-age-umamusume-data">Read “A new age for Umamusume data”</Link> for why SimData exists, how the current dataset was assembled, and what else is new.</p>
+                <p><strong>SimData</strong> uses captured CM teams to build a simulated CM race dataset with equally weighted player appearances. Every day at 8 am UTC, a job automatically starts building today's dataset of 10 million races featuring teams captured so far (the job may take 1–3 hours to run). The new dataset replaces the previous day's once the run finishes and its results have been verified.</p>
+                <p>Since the per-player simulation budget is equal, we use a team dropout policy to focus that budget on the strongest ideas from players trying lots of teams.</p>
+                <p>This data will replace the UmaLogs page. Additional analysis features are in the works.</p>
+                <p>Read <Link to="/notes/new-age-umamusume-data">“A new age for Umamusume data”</Link> for further information. The simulator used to build the data has reproduced the server's results without floating-point discrepancies in all approximately 500,000 validation races we've collected since the 1.5 anniversary balance patch.</p>
             </div></Tab.Pane>
-                <Tab.Pane eventKey="strategy"><Strategy data={data} onPair={onPair} onTeams={onTeams} /></Tab.Pane>
+                <Tab.Pane eventKey="strategy"><Strategy data={data} onTeams={onTeams} /></Tab.Pane>
                 <Tab.Pane eventKey="character"><Suspense fallback={<Loading retry={() => window.location.reload()} />}><Character data={data} selectedKey={view.pair} onPair={onPair} onTeams={onTeams} /></Suspense></Tab.Pane>
+                {snapshot.skillAnalysis && <Tab.Pane eventKey="skills"><Suspense fallback={<Loading retry={() => window.location.reload()} />}><CapturedSkillPreview snapshot={snapshot} /></Suspense></Tab.Pane>}
                 <Tab.Pane eventKey="archetypes"><Suspense fallback={<Loading retry={() => window.location.reload()} />}><Performers data={data} query={view.query} distinct={view.distinct} sort={view.sort} teamId={sharedTeam?.teamId ?? null} lobbyTeamIds={new Set(lobbyTeams.map(team => team.id))} onToggleLobby={toggleLobbyTeam} onOpenLobby={() => selectTab('lobby')} onChange={change} /></Suspense></Tab.Pane>
                 <Tab.Pane eventKey="lobby"><Suspense fallback={<Loading retry={() => window.location.reload()} />}><LobbyBuilder data={data} teams={lobbyTeams} draft={lobbyDraft} onDraftChange={setLobbyDraft} onBrowse={() => selectTab('archetypes')} onRemove={removeLobbyTeam} onClear={clearLobby} /></Suspense></Tab.Pane>
             </Tab.Content>
@@ -127,13 +134,16 @@ export default function SimDataPage() {
         simDataApiUrl('/api/simdata/manifest'), undefined, `${DATA_ROOT}/manifest.json`,
     );
     const snapshots = manifest.data?.schemaVersion === 1
-        ? manifest.data.snapshots.map(normalizeRaceConditionMetadata)
+        ? newestSimDataSnapshots(manifest.data.snapshots.map(normalizeRaceConditionMetadata))
         : [];
     const snapshot = snapshots.find(s => s.snapshotId === selectedSnapshotId) ?? snapshots[0];
+    const collectionLabel = snapshot?.meta.capturedThrough
+        ? `Teams seen by ${new Date(`${snapshot.meta.capturedThrough}T00:00:00Z`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' })}`
+        : `Teams seen ${snapshot?.meta.window ?? ''}`;
     return <main className="sim-page"><header className="sim-page-header-row">
-        <div className="sim-page-summary">{snapshot ? <><strong>{snapshot.cmId.toUpperCase()}</strong>{' | '}{number(snapshot.meta.cumulativeSimulations)} races{' | '}Teams seen by September 10{' | '}{number(snapshot.meta.evaluatedTeams)} teams</> : <strong>SimData</strong>}</div>
+        <div className="sim-page-summary">{snapshot ? <><strong>{snapshot.cmId.toUpperCase()}</strong>{' | '}{collectionLabel}{' | '}{number(snapshot.meta.evaluatedTeams)} teams</> : <strong>SimData</strong>}</div>
         {snapshot && <div className="sim-dataset-selector"><label className="sim-dataset-label">Dataset:
-            <select className="sim-dataset-select" value={snapshot.snapshotId} onChange={e => setSelectedSnapshotId(e.target.value)}>{snapshots.map(s => <option key={s.snapshotId} value={s.snapshotId}>{s.label} - {s.meta.course.replace(/^CM\d+\s*·\s*/, '')}</option>)}</select>
+            <select className="sim-dataset-select" value={snapshot.snapshotId} onChange={e => setSelectedSnapshotId(e.target.value)}>{snapshots.map(s => <option key={s.snapshotId} value={s.snapshotId}>{s.label.replace(/\s*[·|—-]?\s*10 million races\b/gi, '').trim()} - {s.meta.course.replace(/^CM\d+(?:-[^·]+)?\s*·\s*/i, '')}</option>)}</select>
         </label></div>}
         <StrategyPaletteControls colorblindMode={colorblindMode} onToggle={() => setColorblindMode(value => !value)} strategyColors={strategyColors} strategyOrder={STRATEGY_DISPLAY_ORDER} strategyNames={STRATEGY_NAMES} />
     </header>

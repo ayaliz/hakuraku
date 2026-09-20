@@ -11,9 +11,10 @@ import { compositionQuery, saturationStats } from './query';
 import { useStrategyColors, type FindTeams } from './components';
 import type { Summary } from './types';
 
-export default function Strategy({ data, onPair, onTeams }: { data: Summary; onPair: (key: string) => void; onTeams: FindTeams }) {
+export default function Strategy({ data, onTeams }: { data: Summary; onTeams: FindTeams }) {
     const strategyColors = useStrategyColors();
-    const [rare, setRare] = useState(false);
+    const [minimumPlayerShare, setMinimumPlayerShare] = useState(0.01);
+    const minimumPlayers = Math.ceil(data.meta.populationOwners * minimumPlayerShare);
     const strategyStats = useMemo<StrategyStats[]>(() => saturationStats(data).map(stat => {
         const row = data.styles.find(candidate => candidate.style === stat.strategy)!;
         return {
@@ -30,13 +31,13 @@ export default function Strategy({ data, onPair, onTeams }: { data: Summary; onP
         const grouped: Record<number, StyleRepEntry[]> = {};
         for (const style of STRATEGY_DISPLAY_ORDER) grouped[style] = [];
         for (const pair of data.pairs) {
-            if (pair.owners < 30) continue;
             grouped[pair.style].push({
                 cardId: pair.card,
                 charaId: pair.chara,
                 charaName: pair.name,
                 wins: pair.individualWins,
                 appearances: pair.runnerExposures,
+                players: pair.owners,
                 popPct: pair.stylePop * 100,
                 winRate: pair.individual,
                 bayesianWinRate: pair.individualAdjusted,
@@ -61,7 +62,7 @@ export default function Strategy({ data, onPair, onTeams }: { data: Summary; onP
         [data.rooms.average],
     );
     const compositionRows = useMemo<StyleCompositionSummaryRow[]>(() => data.archetypes
-        .filter(row => rare || row.owners >= 30)
+        .filter(row => row.owners >= minimumPlayers)
         .map(row => ({
             key: row.key,
             strategies: row.key.split('-').map(Number),
@@ -71,7 +72,7 @@ export default function Strategy({ data, onPair, onTeams }: { data: Summary; onP
             winRate: row.team,
             bayesianWinRate: row.teamAdjusted,
             confidenceInterval: row.teamCI,
-        })), [data.archetypes, rare]);
+        })), [data.archetypes, minimumPlayers]);
     return <div className="sa-main sim-strategy-analysis">
         <div className="sa-top-panels-row">
             <StyleBreakdownPanel strategyStats={strategyStats} totalRaces={data.meta.populationRaces} strategyColors={strategyColors} shareLabel="Share%" shareDescription="simulated field share" />
@@ -88,18 +89,27 @@ export default function Strategy({ data, onPair, onTeams }: { data: Summary; onP
             <StyleRepsPanel
                 styleReps={styleReps}
                 strategyColors={strategyColors}
-                onSelectRepresentative={(entry, style) => {
-                    const pair = data.pairs.find(candidate => candidate.card === entry.cardId && candidate.style === style);
-                    if (pair) onPair(pair.key);
-                }}
+                onSelectRepresentative={(entry, style) => onTeams([{ card: entry.cardId, chara: entry.charaId, style }, {}, {}])}
                 useAdjustedRates={false}
+                showPlayers
             />
         </div>
         <StyleTeamCompositionPanel
             styleCompositionRows={compositionRows}
             strategyColors={strategyColors}
             minimumAppearances={0}
-            headerControls={<label className="sim-check"><input type="checkbox" checked={rare} onChange={event => setRare(event.target.checked)} /> Include rare compositions</label>}
+            playerCounts={Object.fromEntries(data.archetypes.map(row => [row.key, row.owners]))}
+            expandToAllOverperformers
+            headerControls={<div className="bp-pop-filter-toggle" role="group" aria-label="Minimum player share">
+                <span className="bp-pop-filter-label" title="Share of distinct simulated players with at least one team using this archetype. Each player counts once per archetype.">Player share:</span>
+                {[0.005, 0.01, 0.02, 0.05, 0].map(share => <button type="button" key={share}
+                    className={`bp-pop-filter-btn${minimumPlayerShare === share ? ' active' : ''}`}
+                    aria-pressed={minimumPlayerShare === share}
+                    title={share === 0 ? 'Show all archetypes' : `At least ${Math.ceil(data.meta.populationOwners * share).toLocaleString('en-US')} distinct players`}
+                    onClick={() => setMinimumPlayerShare(share)}>
+                    {share === 0 ? 'All' : `≥${share * 100}%`}
+                </button>)}
+            </div>}
             onSelectComposition={row => onTeams(compositionQuery(row.key))}
             useAdjustedRates={false}
         />

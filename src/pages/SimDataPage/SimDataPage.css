@@ -37,6 +37,34 @@
 .sim-page input:not([type=checkbox]), .sim-page select { color: #e2e8f0; background: #1d283a; border: 1px solid #546177; border-radius: 5px; padding: 6px 9px; max-width: 100%; min-height: 32px; }
 .sim-page input::placeholder { color: #a3b1c5; }
 .sim-page input[type=checkbox] { accent-color: #92c5ff; width: 15px; height: 15px; flex-shrink: 0; }
+
+/* Keep the shared Skill Analysis controls identical to their UmaLogs presentation. */
+.sim-page .skill-analysis-section .skill-search-input {
+    background: #1a202c;
+    border: 1px solid #4a5568;
+    border-radius: 8px;
+    padding: 12px 15px;
+    color: #e2e8f0;
+    width: 100%;
+    max-width: 400px;
+    min-height: initial;
+    font-size: 14px;
+}
+
+.sim-page .skill-analysis-section .skill-strategy-select {
+    width: auto;
+    padding-right: 30px;
+}
+
+.sim-page .skill-analysis-section .skill-search-input::placeholder {
+    color: #718096;
+}
+
+.sim-page .skill-analysis-section .skill-search-input:focus {
+    outline: none;
+    border-color: #65D283;
+    box-shadow: 0 0 0 3px rgba(101, 210, 131, 0.2);
+}
 .sim-check { display: inline-flex; gap: 7px; align-items: center; font-size: 12px; color: #c2cddd; cursor: pointer; }
 .sim-page :is(button, input, select, summary, a):focus-visible, .sim-team-modal :is(button, summary):focus-visible, .sim-runner-editor :is(button, input, select):focus-visible { outline: 2px solid #93c5fd; outline-offset: 3px; }
 .sim-button, .sim-chip { border: 1px solid #566982; border-radius: 5px; background: #27364b; color: #e2e8f0; padding: 6px 12px; font-size: 13px; }
@@ -460,4 +488,29 @@ button.sim-composition:hover { color: #93c5fd; }
     .sim-compact-filter-kind > span { width: 21px; height: 21px; }
     .sim-filter-summary-token { max-width: 150px; }
     .sim-filter-picker-list { max-height: 300px; }
+}
+/* Match the shared /umalogs synergy rows while using native accessible buttons. */
+.sim-sections button.syn-comp-item {
+    width: 100%;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid #2d3748;
+    text-align: left;
+    font: inherit;
+}
+.sim-sections button.syn-comp-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+.sim-page .sa-reps-columns--full .sa-reps-name {
+    display: none;
+}
+.sim-page .sa-reps-columns--full .sa-reps-portrait {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+}
+.sim-page .sa-reps-columns--full .sa-reps-portrait img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }

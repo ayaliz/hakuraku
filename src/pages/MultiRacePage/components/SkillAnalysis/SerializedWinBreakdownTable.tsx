@@ -109,9 +109,9 @@ const SerializedWinBreakdownTable: React.FC<SerializedWinBreakdownTableProps> = 
                     </tr>
                 </thead>
                 <tbody>
-                    {rows.map(({ label, apps, isTotal, variantId, cohort, cellsByStrategy, total }) => {
+                    {rows.map(({ label, apps, isTotal, variantId, cohort, observationUnit, cellsByStrategy, total }) => {
                         const isNeither = cohort === "activatedNeither";
-                        const countNoun = isNeither ? "entries" : "activations";
+                        const countNoun = observationUnit ?? (isNeither || cohort === 'notLearned' ? "entries" : "activations");
                         return (
                             <tr
                                 key={cohort === "variant" ? `variant-${variantId}` : cohort ?? variantId ?? "all"}
@@ -119,7 +119,9 @@ const SerializedWinBreakdownTable: React.FC<SerializedWinBreakdownTableProps> = 
                             >
                                 <td
                                     className="swb-label"
-                                    title={isNeither
+                                    title={cohort === 'notLearned'
+                                        ? `${label} (${apps} runner entries where no skill variant was learned)`
+                                        : observationUnit ? `${label} (${apps} runner entries; each runner counted once)` : isNeither
                                         ? `${label} (${apps} entries where no skill variant activated)`
                                         : `${label} (${apps} activations)`}
                                 >

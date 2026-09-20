@@ -3,6 +3,7 @@ import { BAYES_TEAM, STRATEGY_NAMES } from "./constants";
 import type { HorseEntry, SkillStats, TeamCompositionStats } from "../../types";
 import InfoTooltip from "./InfoTooltip";
 import TeamSampleSelect from "./TeamSampleSelect";
+import { compositionRowCount } from './compositionRowCount';
 import { TeamMemberCard } from "./TeamMemberCard";
 import type { StyleCompositionSummaryRow } from "../../../../features/umalogs/model/panelData";
 import {
@@ -45,6 +46,8 @@ export function StyleTeamCompositionPanel({
     headerControls,
     minimumAppearances = MIN_STYLE_APPEARANCES,
     useAdjustedRates = true,
+    playerCounts,
+    expandToAllOverperformers = false,
 }: {
     cmId?: string | null;
     courseId?: number;
@@ -58,6 +61,8 @@ export function StyleTeamCompositionPanel({
     headerControls?: ReactNode;
     minimumAppearances?: number;
     useAdjustedRates?: boolean;
+    playerCounts?: Record<string, number>;
+    expandToAllOverperformers?: boolean;
 }) {
     const [selectedKey, setSelectedKey] = useState<string | null>(null);
     const [selectedTeamIdx, setSelectedTeamIdx] = useState(0);
@@ -69,13 +74,16 @@ export function StyleTeamCompositionPanel({
     const [compositionRepError, setCompositionRepError] = useState<string | null>(null);
 
     const all = styleCompositionRows.filter(e => e.appearances >= minimumAppearances);
-    if (all.length === 0) return null;
+    if (all.length === 0 && !headerControls) return null;
 
     const displayedRate = (row: StyleCompositionSummaryRow) => useAdjustedRates ? row.bayesianWinRate : row.winRate;
     const sorted = [...all].sort((a, b) => displayedRate(b) - displayedRate(a));
-    const overperformers = sorted.filter(e => displayedRate(e) > BAYES_TEAM.PRIOR).slice(0, MAX_STYLE_ITEMS);
-    const underperformers = sorted.filter(e => displayedRate(e) < BAYES_TEAM.PRIOR).slice(-MAX_STYLE_ITEMS).reverse();
-    if (overperformers.length === 0 && underperformers.length === 0) return null;
+    const allOverperformers = sorted.filter(e => displayedRate(e) > BAYES_TEAM.PRIOR);
+    const allUnderperformers = sorted.filter(e => displayedRate(e) < BAYES_TEAM.PRIOR).reverse();
+    const rowCount = expandToAllOverperformers ? compositionRowCount(allOverperformers.length, allUnderperformers.length) : MAX_STYLE_ITEMS;
+    const overperformers = allOverperformers.slice(0, rowCount);
+    const underperformers = allUnderperformers.slice(0, rowCount);
+    if (overperformers.length === 0 && underperformers.length === 0 && !headerControls) return null;
 
     const canUseApiDrilldown = !!(apiMode && cmId && courseId && skillStats);
     const canDrilldown = !!(skillStats && canUseApiDrilldown);
@@ -156,8 +164,10 @@ export function StyleTeamCompositionPanel({
                 <div className="sa-stcp-name">{label}</div>
                 <div className="sa-stcp-stats">
                     <span className="sa-adj-pct sa-stcp-stat" style={{ color: valueColor }}>{(displayedRate(e) * 100).toFixed(1)}%</span>
-                    <span className="sa-raw-pct sa-stcp-stat">
-                        {useAdjustedRates
+                    <span className="sa-raw-pct sa-stcp-stat" title={playerCounts ? "Distinct players with at least one simulated team using this composition. Each player is counted once." : undefined}>
+                        {playerCounts
+                            ? (playerCounts[e.key] ?? 0).toLocaleString('en-US')
+                            : useAdjustedRates
                             ? `${(e.winRate * 100).toFixed(1)}% (${e.appearances})`
                             : `${e.confidenceInterval?.map(value => `${(value * 100).toFixed(1)}%`).join('–') ?? '—'} (${e.appearances.toLocaleString('en-US')})`}
                     </span>
@@ -219,7 +229,7 @@ export function StyleTeamCompositionPanel({
         : new Map<string, HorseEntry>();
 
     return (
-        <div className={`sa-stcp-section${useAdjustedRates ? '' : ' sa-stcp-section--raw-intervals'}`}>
+        <div className={`sa-stcp-section${useAdjustedRates || playerCounts ? '' : ' sa-stcp-section--raw-intervals'}`}>
             <div className="sa-stcp-header">
                 Style Composition Performance
                 <InfoTooltip
@@ -229,16 +239,21 @@ export function StyleTeamCompositionPanel({
                 {headerControls && <span className="sa-stcp-header-controls">{headerControls}</span>}
             </div>
             <div className="sa-stcp-columns">
-                {overperformers.length > 0 && (
+                {overperformers.length === 0 && underperformers.length === 0 && <p className="sa-no-data">No compositions meet this filter.</p>}
+                {(overperformers.length > 0 || expandToAllOverperformers) && (
                     <div className="sa-stcp-col">
-                        <div className="sa-stcp-col-label sa-stcp-col-label--over">OVERPERFORMERS<span className="sa-stats-meta sa-stats-meta--bayes"><span className="sa-meta-adj sa-meta-adj--over">{useAdjustedRates ? 'Adj. win%' : 'Team win%'}</span><span className="sa-meta-raw">{useAdjustedRates ? 'Raw win% (samples)' : '95% CI (n)'}</span></span></div>
+                        <div className="sa-stcp-col-label sa-stcp-col-label--over">OVERPERFORMERS<span className="sa-stats-meta sa-stats-meta--bayes"><span className="sa-meta-adj sa-meta-adj--over">{useAdjustedRates ? 'Adj. win%' : 'Team win%'}</span><span className="sa-meta-raw">{playerCounts ? 'Players' : useAdjustedRates ? 'Raw win% (samples)' : '95% CI (n)'}</span></span></div>
                         {overperformers.map(e => renderItem(e, true))}
+                        {expandToAllOverperformers && Array.from({ length: rowCount - overperformers.length }, (_, index) =>
+                            <div key={`empty-${index}`} className="sa-stcp-item" aria-hidden="true" style={{ visibility: 'hidden' }}><span className="sa-stcp-name">&nbsp;</span></div>)}
                     </div>
                 )}
-                {underperformers.length > 0 && (
+                {(underperformers.length > 0 || expandToAllOverperformers) && (
                     <div className="sa-stcp-col">
-                        <div className="sa-stcp-col-label sa-stcp-col-label--under">UNDERPERFORMERS<span className="sa-stats-meta sa-stats-meta--bayes"><span className="sa-meta-adj sa-meta-adj--under">{useAdjustedRates ? 'Adj. win%' : 'Team win%'}</span><span className="sa-meta-raw">{useAdjustedRates ? 'Raw win% (samples)' : '95% CI (n)'}</span></span></div>
+                        <div className="sa-stcp-col-label sa-stcp-col-label--under">UNDERPERFORMERS<span className="sa-stats-meta sa-stats-meta--bayes"><span className="sa-meta-adj sa-meta-adj--under">{useAdjustedRates ? 'Adj. win%' : 'Team win%'}</span><span className="sa-meta-raw">{playerCounts ? 'Players' : useAdjustedRates ? 'Raw win% (samples)' : '95% CI (n)'}</span></span></div>
                         {underperformers.map(e => renderItem(e, false))}
+                        {expandToAllOverperformers && Array.from({ length: rowCount - underperformers.length }, (_, index) =>
+                            <div key={`empty-${index}`} className="sa-stcp-item" aria-hidden="true" style={{ visibility: 'hidden' }}><span className="sa-stcp-name">&nbsp;</span></div>)}
                     </div>
                 )}
             </div>

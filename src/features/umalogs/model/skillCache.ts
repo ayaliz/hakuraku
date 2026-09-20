@@ -37,12 +37,16 @@ export type SerializedSkillWinBreakdownRow = {
     apps: number;
     isTotal: boolean;
     variantId: number | null;
-    cohort?: "variant" | "activatedAny" | "activatedNeither";
+    cohort?: "variant" | "activatedAny" | "activatedNeither" | "notLearned";
+    observationUnit?: "entries";
     cellsByStrategy: Record<string, SerializedSkillWinBreakdownCell | null>;
     total: SerializedSkillWinBreakdownCell | null;
 };
 
 export type GroupSkillDetailPayload = {
+    /** Optional distinct first-proc entry counts for simulation range outcomes. */
+    rangeBuckets?: SkillActivationBuckets;
+    rangeObservationLabel?: string;
     skillDetailVersion?: 2 | 3;
     buckets: SkillActivationBuckets;
     winBreakdown: SerializedSkillWinBreakdownRow[] | null;

@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { Spinner } from 'react-bootstrap';
 import RaceWinRateResults from '../../components/RaceWinRateResults';
+import { computeSkillPoints } from '../../data/skillPoints';
 import {
     isActiveRaceWinRateBatch,
     type RaceWinRateBatch,
+    type RaceWinRateRace,
     type RaceWinRateRunner,
 } from '../../data/RaceWinRateSimulation';
 import { simDataApiUrl, useSimData } from './data';
@@ -44,6 +46,19 @@ const moodOptions: [LobbyMood, string][] = [
 
 const liveTeamId = /^[a-f0-9]{64}$/;
 
+type LobbySimulationRequest = {
+    teamIds: string[];
+    mood: LobbyMood;
+    gates: (number | null)[];
+    runnerOverrides?: (ReturnType<typeof toLobbyRunnerOverride> | null)[];
+    seed?: number;
+};
+
+type BatchReplayContext = {
+    request: LobbySimulationRequest;
+    sourceRunnerMetadata: NonNullable<SimDataLobbyRace['sourceRunnerMetadata']>;
+};
+
 export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear, draft, onDraftChange }: Props) {
     const { mood, seed, gates, runnerEdits } = draft;
     const [status, setStatus] = useState<'idle' | 'running'>('idle');
@@ -58,6 +73,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear,
         cancel: string;
     } | null>(null);
     const batchPollControllerRef = useRef<AbortController | null>(null);
+    const batchReplayContextRef = useRef<BatchReplayContext | null>(null);
     const [editingKey, setEditingKey] = useState<string | null>(null);
     const editorCatalog = useSimData<LobbyEditorCatalog>(
         simDataApiUrl(`/api/simdata/snapshots/${encodeURIComponent(data.snapshotId)}/editor-catalog`),
@@ -104,6 +120,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear,
 
     const dismissBatchResults = () => {
         abandonBatch();
+        batchReplayContextRef.current = null;
         setBatch(undefined);
         setBatchSubmitting(false);
         setBatchError('');
@@ -118,7 +135,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear,
         };
     }, []);
 
-    const lobbyRequest = () => {
+    const lobbyRequest = (): LobbySimulationRequest => {
         const runnerOverrides = runners.map(({ key }) => runnerEdits[key] ? toLobbyRunnerOverride(runnerEdits[key]) : null);
         return {
             teamIds: teams.map(team => team.id),
@@ -128,6 +145,12 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear,
             ...(parsedSeed === undefined ? {} : { seed: parsedSeed }),
         };
     };
+
+    const sourceRunnerMetadata = (): NonNullable<SimDataLobbyRace['sourceRunnerMetadata']> => runners.map(({ key, runner }) => ({
+        deck: runner.deck ?? [],
+        parents: runner.parents ?? [],
+        ...(runnerEdits[key] ? { modifiedInLobby: true } : {}),
+    }));
 
     const readBatchResponse = async (response: Response): Promise<RaceWinRateBatch> => {
         const payload = await response.json().catch(() => ({})) as Partial<RaceWinRateBatch> & { error?: string };
@@ -188,8 +211,11 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear,
         setEditingKey(null);
     };
 
-    const runRace = async () => {
-        if (!ready) return;
+    const openSimulatedRace = async (
+        request: LobbySimulationRequest,
+        metadata: NonNullable<SimDataLobbyRace['sourceRunnerMetadata']>,
+        updatePrimaryStatus = false,
+    ) => {
         const raceTab = window.open('', '_blank');
         if (!raceTab) {
             setError('The race tab was blocked. Allow pop-ups for this site and try again.');
@@ -197,30 +223,48 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear,
         }
         raceTab.document.title = 'Simulating race…';
         raceTab.document.body.textContent = 'Simulating race…';
-        setStatus('running');
+        if (updatePrimaryStatus) setStatus('running');
         setError('');
         try {
             const response = await fetch(simDataApiUrl(`/api/simdata/snapshots/${encodeURIComponent(data.snapshotId)}/simulations`), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(lobbyRequest()),
+                body: JSON.stringify(request),
             });
             const payload = await response.json().catch(() => ({})) as SimDataLobbyRace & { error?: string };
             if (!response.ok) throw new Error(payload.error || `Simulation failed (HTTP ${response.status}).`);
-            payload.sourceRunnerMetadata = runners.map(({ key, runner }) => ({
-                deck: runner.deck ?? [],
-                parents: runner.parents ?? [],
-                ...(runnerEdits[key] ? { modifiedInLobby: true } : {}),
-            }));
+            payload.sourceRunnerMetadata = metadata;
             if (raceTab.closed) throw new Error('The race tab was closed before the simulation finished.');
             const token = stageLobbyRace(payload);
             raceTab.location.replace(`/racedata?sim=${encodeURIComponent(token)}`);
-            setStatus('idle');
         } catch (reason) {
-            raceTab.close();
-            setError(reason instanceof Error ? reason.message : 'The lobby race could not be simulated.');
-            setStatus('idle');
+            const message = reason instanceof Error ? reason.message : 'The lobby race could not be simulated.';
+            if (!raceTab.closed) {
+                raceTab.document.title = 'Race simulation failed';
+                raceTab.document.body.textContent = `Race simulation failed: ${message}`;
+            }
+            setError(message);
+        } finally {
+            if (updatePrimaryStatus) setStatus('idle');
         }
+    };
+
+    const runRace = () => {
+        if (!ready) return;
+        void openSimulatedRace(lobbyRequest(), sourceRunnerMetadata(), true);
+    };
+
+    const viewBatchRace = (race: RaceWinRateRace) => {
+        if (!Number.isInteger(race.seed)) return;
+        const context = batchReplayContextRef.current;
+        if (!context) {
+            setError('The lobby configuration for this batch is no longer available.');
+            return;
+        }
+        void openSimulatedRace(
+            { ...context.request, seed: race.seed },
+            context.sourceRunnerMetadata,
+        );
     };
 
     const runBatch = async () => {
@@ -229,6 +273,11 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear,
         setBatchError('');
         setBatch(undefined);
         try {
+            const request = lobbyRequest();
+            batchReplayContextRef.current = {
+                request,
+                sourceRunnerMetadata: sourceRunnerMetadata(),
+            };
             const idempotencyKey = typeof crypto.randomUUID === 'function'
                 ? crypto.randomUUID()
                 : `simdata-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -238,7 +287,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear,
                     'Content-Type': 'application/json',
                     'Idempotency-Key': idempotencyKey,
                 },
-                body: JSON.stringify({ ...lobbyRequest(), raceCount: 100 }),
+                body: JSON.stringify({ ...request, raceCount: 100 }),
             });
             const next = await readBatchResponse(response);
             if (!next.accessToken) throw new Error('The simulator did not return a batch access token.');
@@ -254,6 +303,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear,
                 void pollBatch(active);
             }
         } catch (reason) {
+            batchReplayContextRef.current = null;
             setBatchError(reason instanceof Error ? reason.message : 'Batch simulation is temporarily unavailable.');
         } finally {
             setBatchSubmitting(false);
@@ -364,10 +414,30 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear,
             batch={batch}
             active={batchActive}
             onClose={dismissBatchResults}
+            onViewRace={viewBatchRace}
             getRunnerLabel={(runner: RaceWinRateRunner) => {
                 const card = data.cards[runner.cardId]
                     ?? data.cards[teams[runner.teamIndex]?.members[runner.memberIndex]?.card];
                 return card?.name ?? `Gate ${runner.gateNumber}`;
+            }}
+            getRunnerBuild={(runner: RaceWinRateRunner) => {
+                const source = runners.find(candidate => candidate.teamIndex === runner.teamIndex
+                    && candidate.memberIndex === runner.memberIndex);
+                if (!source || !source.runner.stats || !source.runner.skills) return undefined;
+                const edit = runnerEdits[source.key];
+                const stats = edit?.stats ?? source.runner.stats;
+                const skillIds = edit
+                    ? [...edit.skills.map(([skillId]) => skillId), edit.uniqueSkillId]
+                    : source.runner.skills.map(([skillId]) => skillId);
+                return {
+                    rankScore: source.runner.score,
+                    stats,
+                    skillPoints: computeSkillPoints(new Set(skillIds)),
+                    skillIds,
+                    rawStamina: stats[1],
+                    motivation: /^\d$/.test(mood) ? Number(mood) : undefined,
+                    runningStyle: (edit?.runningStyle ?? source.runner.racingStyle) - 1,
+                };
             }}
         />}
         {editingRunner && editorCatalog.data && (() => {

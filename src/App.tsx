@@ -45,6 +45,8 @@ const rawUmaLogsApiBase = (import.meta.env.VITE_UMALOGS_API_BASE ?? "").trim();
 const UMA_LOGS_API_BASE = rawUmaLogsApiBase === "same-origin"
     ? ""
     : rawUmaLogsApiBase.replace(/\/$/, "");
+const rawSimDataApiBase = (import.meta.env.VITE_SIMDATA_API_BASE ?? "").trim();
+const SIMDATA_API_BASE = rawSimDataApiBase === "same-origin" ? "" : rawSimDataApiBase.replace(/\/$/, "");
 
 function getLatestCmDatasetLabel(datasets: ManifestEntry[]): string | null {
     const cmDatasets = datasets
@@ -191,7 +193,27 @@ export default function App() {
 function AppShell() {
     const { loading, authenticated, user } = useAuth();
     const [umaLogsBadgeLabel, setUmaLogsBadgeLabel] = useState("CM12 update!");
+    const [simDataBadgeLabel, setSimDataBadgeLabel] = useState("Check this out!");
     const [latestNote, setLatestNote] = useState<NoteEntry | null>(null);
+
+    useEffect(() => {
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), 5000);
+        fetch(`${SIMDATA_API_BASE}/api/simdata/manifest`, { signal: controller.signal })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status} - manifest not found`);
+                return response.json() as Promise<{ schemaVersion: number; snapshots?: { cmId: string }[] }>;
+            })
+            .then(manifest => {
+                if (manifest.schemaVersion === 1 && manifest.snapshots?.some(snapshot => snapshot.cmId.toLowerCase() === 'cm20')) {
+                    setSimDataBadgeLabel('CM20 updated!');
+                }
+            })
+            .catch((error: Error) => {
+                if (error.name !== 'AbortError') console.warn('Failed to load SimData manifest for navbar badge:', error);
+            });
+        return () => { window.clearTimeout(timeoutId); controller.abort(); };
+    }, []);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -272,7 +294,7 @@ function AppShell() {
                         <Nav.Link as={NavLink} to="/simdata">
                             <span className="haku-nav-link-with-badge">
                                 <span>SimData</span>
-                                <span className="haku-nav-badge">Check this out!</span>
+                                <span className="haku-nav-badge">{simDataBadgeLabel}</span>
                             </span>
                         </Nav.Link>
                     </Nav>

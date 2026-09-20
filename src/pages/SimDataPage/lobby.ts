@@ -132,8 +132,9 @@ type LobbyHorseInput = {
     teamId: number;
     teamMemberId: number;
     singleModeWinCount: number;
+    singleModeTeamRank?: number;
     fanCount: number;
-    identity: { charaId: number; cardId: number };
+    identity: { charaId: number; cardId: number; viewerId?: number };
     runningStyle: number;
     rawStats: { speed: number; stamina: number; power: number; guts: number; wisdom: number };
     motivation: number;
@@ -218,6 +219,9 @@ export function buildLobbyRaceView(
             team_member_id: horse.teamMemberId,
             trained_chara_id: index + 1,
             viewer_id: 0,
+            has_viewer_id: Number(horse.identity.viewerId ?? 0) !== 0,
+            popularity: horse.popularity,
+            team_rank: horse.singleModeTeamRank ?? 0,
             trainer_name: `Team ${horse.teamId}`,
             chara_id: horse.identity.charaId,
             card_id: horse.identity.cardId,

@@ -25,6 +25,7 @@ interface SkillAnalysisProps {
     lazySkillDetailLoadingIds?: Set<number>;
     showStrategyProcRates?: boolean;
     enableActivationSortCycle?: boolean;
+    simulationPlayerCounts?: Map<number, { all: number; byStrategy: Record<string, number> }>;
 }
 
 type SortKey = "skillName" | "timesActivated" | "learnedByHorses" | "uniqueRaces" | "winRate" | "avgFinishPosition" | "meanDistance" | "medianDistance";
@@ -52,6 +53,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
     lazySkillDetailLoadingIds,
     showStrategyProcRates = false,
     enableActivationSortCycle = false,
+    simulationPlayerCounts,
 }) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedStrategy, setSelectedStrategy] = useState<string>("all");
@@ -398,7 +400,9 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                     cmp = a.uniqueRaces - b.uniqueRaces;
                     break;
                 case "learnedByHorses":
-                    cmp = a.learnedByHorses - b.learnedByHorses;
+                    cmp = simulationPlayerCounts
+                        ? playerCount(a.skillId) - playerCount(b.skillId)
+                        : a.learnedByHorses - b.learnedByHorses;
                     break;
                 case "winRate":
                     cmp = a.winRate - b.winRate;
@@ -415,7 +419,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
             }
             return sortDir === "asc" ? cmp : -cmp;
         });
-    }, [filteredSkills, sortKey, sortDir, activationSortMode, enableActivationSortCycle]);
+    }, [filteredSkills, sortKey, sortDir, activationSortMode, enableActivationSortCycle, simulationPlayerCounts, selectedStrategy]);
 
 
 
@@ -442,6 +446,10 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
             return next;
         });
     };
+    function playerCount(skillId: number) {
+        const counts = simulationPlayerCounts?.get(skillId);
+        return selectedStrategy === "all" ? counts?.all ?? 0 : counts?.byStrategy[selectedStrategy] ?? 0;
+    }
 
     const bucketIndexFromPointer = (event: React.PointerEvent<HTMLDivElement>, bucketCount: number) => {
         const bounds = event.currentTarget.getBoundingClientRect();
@@ -565,7 +573,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                 };
             const totalActivations = buckets.reduce((s, c) => s + c, 0);
             const selectedBucketRange = bucketRanges[skill.skillId];
-            const canSelectRange = selectedStrategy === "all" || !!bucketData.winByStrategy?.[String(selectedStrategy)];
+            const canSelectRange = selectedStrategy === "all" || !!(detailData.rangeBuckets ?? bucketData).winByStrategy?.[String(selectedStrategy)];
             const rangeStart = selectedBucketRange
                 ? Math.max(0, Math.min(selectedBucketRange.start, buckets.length - 1))
                 : undefined;
@@ -573,11 +581,11 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                 ? Math.max(rangeStart, Math.min(selectedBucketRange.end, buckets.length - 1))
                 : undefined;
             const rangeBreakdown = rangeStart !== undefined && rangeEnd !== undefined
-                ? buildBucketRangeWinBreakdownRows(detailData.winBreakdown, bucketData, rangeStart, rangeEnd)
+                ? buildBucketRangeWinBreakdownRows(detailData.winBreakdown, detailData.rangeBuckets ?? bucketData, rangeStart, rangeEnd)
                 : detailData.winBreakdown;
             const filteredWinBreakdown = filterWinBreakdownRows(rangeBreakdown, selectedStrategy);
             const rangeLabel = rangeStart !== undefined && rangeEnd !== undefined
-                ? `${Math.round((rangeStart / buckets.length) * avgRaceDistance)}–${Math.round(((rangeEnd + 1) / buckets.length) * avgRaceDistance)}m`
+                ? `${Math.round((rangeStart / buckets.length) * avgRaceDistance)}–${Math.round(((rangeEnd + 1) / buckets.length) * avgRaceDistance)}m${detailData.rangeObservationLabel ? ` · ${detailData.rangeObservationLabel}` : ''}`
                 : undefined;
             if (totalActivations === 0) {
                 return (
@@ -873,16 +881,16 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                                 Skill {renderSortIndicator("skillName")}
                             </th>
                             <th className="sortable" onClick={() => handleSort("learnedByHorses")}>
-                                Learned {renderSortIndicator("learnedByHorses")}
+                                {simulationPlayerCounts ? 'Players' : 'Learned'} {renderSortIndicator("learnedByHorses")}
                             </th>
                             <th
                                 className="sortable"
                                 onClick={() => handleSort("timesActivated")}
-                                title={enableActivationSortCycle
-                                    ? "Natural activations; rate excludes observations censored by 110071/910071. Sort by count, rate, or both."
-                                    : "Natural activations; rate excludes observations censored by 110071/910071."}
+                                title={simulationPlayerCounts ? 'Observed procs, including repeats and setup activations. Rate counts each learned runner entry at most once.' : enableActivationSortCycle
+                                    ? "Natural activations; rate excludes observations forced by 564 Escapades. Sort by count, rate, or both."
+                                    : "Natural activations; rate excludes observations forced by 564 Escapades."}
                             >
-                                Natural activations {renderSortIndicator("timesActivated")}
+                                {simulationPlayerCounts ? 'Activations' : 'Natural activations'} {renderSortIndicator("timesActivated")}
                             </th>
                             <th className="sortable" onClick={() => handleSort("meanDistance")}>
                                 Mean Dist {renderSortIndicator("meanDistance")}
@@ -919,12 +927,12 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                                             )}
                                         </div>
                                     </td>
-                                    <td>{skill.learnedByHorses}</td>
+                                    <td title={simulationPlayerCounts ? `${skill.learnedByHorses.toLocaleString()} learned runner entries` : undefined}>{simulationPlayerCounts ? playerCount(skill.skillId).toLocaleString() : skill.learnedByHorses}</td>
                                     <td>
                                         {skill.timesActivated}
                                         <span
                                             className="skill-activation-pct"
-                                            title={`${skill.uniqueHorses} natural proc${skill.uniqueHorses === 1 ? "" : "s"} / ${activationOpportunities} observable learned entr${activationOpportunities === 1 ? "y" : "ies"}${(skill.forcedActivationHorses ?? 0) > 0 ? `; ${skill.forcedActivationHorses} forced-only entr${skill.forcedActivationHorses === 1 ? "y" : "ies"} excluded` : ""}`}
+                                            title={simulationPlayerCounts ? `${skill.uniqueHorses.toLocaleString()} activated runner entries / ${activationOpportunities.toLocaleString()} learned entries` : `${skill.uniqueHorses} natural proc${skill.uniqueHorses === 1 ? "" : "s"} / ${activationOpportunities} observable learned entr${activationOpportunities === 1 ? "y" : "ies"}${(skill.forcedActivationHorses ?? 0) > 0 ? `; ${skill.forcedActivationHorses} forced-only entr${skill.forcedActivationHorses === 1 ? "y" : "ies"} excluded` : ""}`}
                                         >
                                             ({activationPct.toFixed(1)}%)
                                         </span>
@@ -944,7 +952,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                                                         <span
                                                             key={strategy}
                                                             className="skill-style-proc-rate"
-                                                            title={`${styleName}: ${activations} natural activations / ${opportunities} observable learned entries${opportunities !== learned ? ` (${learned - opportunities} forced-only excluded)` : ""}`}
+                                                            title={simulationPlayerCounts ? `${styleName}: ${activations.toLocaleString()} activated runner entries / ${opportunities.toLocaleString()} learned entries` : `${styleName}: ${activations} natural activations / ${opportunities} observable learned entries${opportunities !== learned ? ` (${learned - opportunities} forced-only excluded)` : ""}`}
                                                         >
                                                             <span
                                                                 className="skill-style-proc-dot"
@@ -958,8 +966,8 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                                             </div>
                                         )}
                                     </td>
-                                    <td>{skill.meanDistance.toFixed(0)}m</td>
-                                    <td>{skill.medianDistance.toFixed(0)}m</td>
+                                    <td title={simulationPlayerCounts ? 'Approximate distance from course buckets; available after expanding this skill.' : undefined}>{Number.isFinite(skill.meanDistance) ? `${simulationPlayerCounts ? '~' : ''}${skill.meanDistance.toFixed(0)}m` : '—'}</td>
+                                    <td title={simulationPlayerCounts ? 'Approximate median from course buckets; available after expanding this skill.' : undefined}>{Number.isFinite(skill.medianDistance) ? `${simulationPlayerCounts ? '~' : ''}${skill.medianDistance.toFixed(0)}m` : '—'}</td>
                                     <td>
                                         <span className="expand-icon">
                                             {isExpanded ? "▼" : "▶"}

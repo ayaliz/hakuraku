@@ -16,6 +16,7 @@ export type BubblePlotPoint = {
     stylePopPct: number;
     winRate: number;
     count: number;
+    players?: number;
     teamWinRate: number;
 };
 
@@ -29,9 +30,10 @@ interface BubblePlotPanelProps {
     onMinPopPctChange?: (value: 0 | 1 | 3 | 5) => void;
     populationLabel?: string;
     stylePopulationLabel?: string;
+    onSelectPoint?: (point: BubblePlotPoint) => void;
 }
 
-export function BubblePlotPanel({ rawPopSlices = [], rawWinsSlices = [], strategyColors, characterTeamRates, points: suppliedPoints, minPopPct: controlledMinPopPct, onMinPopPctChange, populationLabel = "population", stylePopulationLabel = "Style pop" }: BubblePlotPanelProps) {
+export function BubblePlotPanel({ rawPopSlices = [], rawWinsSlices = [], strategyColors, characterTeamRates, points: suppliedPoints, minPopPct: controlledMinPopPct, onMinPopPctChange, populationLabel = "population", stylePopulationLabel = "Style pop", onSelectPoint }: BubblePlotPanelProps) {
     const [hovered, setHovered] = useState<string | null>(null);
     const [expanded, setExpanded] = useState(false);
     const [internalMinPopPct, setInternalMinPopPct] = useState<0 | 1 | 3 | 5>(3);
@@ -269,7 +271,20 @@ export function BubblePlotPanel({ rawPopSlices = [], rawWinsSlices = [], strateg
                         <g key={p.key}
                             onMouseEnter={() => setHovered(p.key)}
                             onMouseLeave={() => setHovered(null)}
-                            style={{ cursor: "default" }}>
+                            onFocus={() => setHovered(p.key)}
+                            onBlur={() => setHovered(null)}
+                            role={onSelectPoint ? 'button' : undefined}
+                            tabIndex={onSelectPoint ? 0 : undefined}
+                            aria-label={onSelectPoint ? `View teams containing ${p.label} (${STRATEGY_NAMES[p.strategyId]})` : undefined}
+                            onClick={onSelectPoint ? () => { setExpanded(false); onSelectPoint(p); } : undefined}
+                            onKeyDown={onSelectPoint ? event => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    setExpanded(false);
+                                    onSelectPoint(p);
+                                }
+                            } : undefined}
+                            style={{ cursor: onSelectPoint ? "pointer" : "default" }}>
                             <defs>
                                 <clipPath id={clipId}>
                                     <circle cx={cx} cy={cy} r={r - 1.5} />
@@ -289,25 +304,32 @@ export function BubblePlotPanel({ rawPopSlices = [], rawWinsSlices = [], strateg
                     const cx = xScale(hoveredPoint.winRate);
                     const cy = yScale(hoveredPoint.teamWinRate);
                     const r = rScale(hoveredPoint.popPct);
-                    const TW = 168, TH = 56;
+                    const TW = 220, TH = 112;
                     const aboveFits = cy - r - 8 - TH >= PAD.top;
-                    const ty = aboveFits ? cy - r - 8 - TH : cy + r + 8;
+                    const ty = Math.max(PAD.top, Math.min(aboveFits ? cy - r - 8 - TH : cy + r + 8, H - PAD.bottom - TH));
                     const txRaw = cx - TW / 2;
                     const tx = Math.max(PAD.left, Math.min(txRaw, W - PAD.right - TW));
                     const stratName = (STRATEGY_NAMES[hoveredPoint.strategyId] ?? `Strategy ${hoveredPoint.strategyId}`).split(" ")[0];
                     return (
-                        <g>
-                            <rect x={tx} y={ty} width={TW} height={TH} rx={4}
-                                fill="#1a202c" stroke="#4a5568" strokeWidth={1} opacity={0.95} />
-                            <text x={tx + 8} y={ty + 16} fill="#e2e8f0" fontSize={11} fontWeight="bold">
+                        <g pointerEvents="none">
+                            <rect x={tx} y={ty} width={TW} height={TH} rx={6}
+                                fill="#1a202c" stroke="#4a5568" strokeWidth={1} opacity={0.98} />
+                            <text x={tx + 12} y={ty + 20} fill="#e2e8f0" fontSize={11} fontWeight="bold">
                                 {hoveredPoint.label} [{stratName}]
                             </text>
-                            <text x={tx + 8} y={ty + 31} fill="#a0aec0" fontSize={10}>
-                                Win: {(hoveredPoint.winRate * 100).toFixed(1)}% | Share: {hoveredPoint.popPct.toFixed(1)}% total
-                            </text>
-                            <text x={tx + 8} y={ty + 46} fill="#a0aec0" fontSize={10}>
-                                Team win: {(hoveredPoint.teamWinRate * 100).toFixed(1)}% | Style share: {hoveredPoint.stylePopPct.toFixed(1)}%
-                            </text>
+                            <line x1={tx + 12} x2={tx + TW - 12} y1={ty + 29} y2={ty + 29} stroke="#2d3748" />
+                            {[
+                                ['Individual win', `${(hoveredPoint.winRate * 100).toFixed(1)}%`],
+                                ['Team win', `${(hoveredPoint.teamWinRate * 100).toFixed(1)}%`],
+                                hoveredPoint.players !== undefined
+                                    ? ['Players', hoveredPoint.players.toLocaleString('en-US')]
+                                    : ['Corpus share', `${hoveredPoint.popPct.toFixed(1)}%`],
+                                ['Style share', `${hoveredPoint.stylePopPct.toFixed(1)}%`],
+                            ].map(([label, value], index) => <g key={label}>
+                                <text x={tx + 12} y={ty + 45 + index * 18} fill="#a0aec0" fontSize={10}>{label}</text>
+                                <text x={tx + TW - 12} y={ty + 45 + index * 18} textAnchor="end" fill="#e2e8f0" fontSize={10}
+                                    style={{ fontVariantNumeric: 'tabular-nums' }}>{value}</text>
+                            </g>)}
                         </g>
                     );
                 })()}

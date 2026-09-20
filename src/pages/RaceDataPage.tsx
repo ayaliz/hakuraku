@@ -5,7 +5,8 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import RaceDataPresenter from "../components/RaceDataPresenter";
 import { RaceSimulateData } from "../data/race_data_pb";
 import { deserializeFromBase64 } from "../data/RaceDataParser";
-import { hydrateCompactRaceHorseData } from "../data/TrainedCharaData";
+import { fromRaceHorseData, hydrateCompactRaceHorseData } from "../data/TrainedCharaData";
+import { computeSkillPoints } from "../data/skillPoints";
 import ShareLinkBox from "../components/ShareLinkBox";
 import RaceWinRateResults from "../components/RaceWinRateResults";
 import type { ShareCreateResponse } from "../auth/authShared";
@@ -36,16 +37,22 @@ import {
 import {
     buildDetailedRaceCaptureFromSharedData,
     getDetailedRaceCaptureRaceInstanceId,
+    getDetailedRaceCaptureStartTimeType,
+    getDetailedRaceCaptureRaceType,
+    resolveDetailedRaceInstanceId,
+    anonymizeSharedRaceHorse,
     isDetailedRaceEligible,
     normalizeDetailedRaceCaptureForSimulation,
-    withDetailedRaceCaptureSeed,
+    buildDetailedRaceSimulationRequest,
 } from "../data/DetailedRaceEligibility";
 import { buildLobbyRaceView, consumeLobbyRace } from "./SimDataPage/lobby";
 import {
     isActiveRaceWinRateBatch,
     type RaceWinRateBatch,
+    type RaceWinRateRace,
     type RaceWinRateRunner,
 } from "../data/RaceWinRateSimulation";
+import { consumeStagedRaceData, stageRaceData } from "../data/StagedRaceData";
 
 const RaceDataPresenterAny = RaceDataPresenter as any;
 const HORSEACT_RELEASE_URL = "https://github.com/ayaliz/horseACT/releases/latest";
@@ -60,6 +67,9 @@ type SharedRaceData = {
     detectedCourseId?: number,
     laneDistanceMax?: number,
     randomSeed?: number,
+    raceInstanceId?: number,
+    startTimeType?: number,
+    raceTypeCode?: number,
     raceType?: string,
     trackDetails?: TrackDetails,
     detailedSimulation?: unknown,
@@ -269,6 +279,23 @@ export default function RaceDataPage() {
         const stateLobbyToken = typeof routeState?.simLobbyToken === 'string'
             ? routeState.simLobbyToken
             : null;
+        const stagedToken = params.get('staged');
+        if (stagedToken) {
+            params.delete('staged');
+            const remainingSearch = params.toString();
+            navigate({
+                pathname: location.pathname,
+                search: remainingSearch ? `?${remainingSearch}` : '',
+                hash: location.hash,
+            }, { replace: true, state: null });
+            const staged = consumeStagedRaceData(stagedToken) as SharedRaceData | null;
+            if (!staged) {
+                setError('This one-time simulated race is no longer available. Choose it again from the race history.');
+                return;
+            }
+            loadSharedData(staged);
+            return;
+        }
         const lobbyToken = params.get('sim') ?? stateLobbyToken;
         if (lobbyToken) {
             // The token resolves only in this browser session. Remove both the
@@ -303,7 +330,7 @@ export default function RaceDataPage() {
                     false,
                 );
                 const modeEvents = buildAuthoritativeModeEvents(race.detailed);
-                setRawRaceCapture(payload.raceInput);
+                setRawRaceCapture({ ...payload.raceInput, race_scenario: payload.replay.data });
                 setDetailedRaceData(replay);
                 setDetailedModeEvents(modeEvents);
                 setDetailedResponse(race.detailed);
@@ -459,7 +486,7 @@ export default function RaceDataPage() {
             const reconstructedCapture = buildDetailedRaceCaptureFromSharedData({
                 ...data,
                 raceHorseInfo: horseInfoArray,
-            }) ?? undefined;
+            }, UMDatabaseWrapper.raceInstances) ?? undefined;
             if (sharedDetailedResponse) {
                 const modeEvents = buildAuthoritativeModeEvents(sharedDetailedResponse);
                 setRawRaceCapture(reconstructedCapture);
@@ -751,6 +778,11 @@ export default function RaceDataPage() {
             detectedCourseId,
             laneDistanceMax,
             randomSeed: sharedDetailedSimulation?.seed ?? randomSeed,
+            raceInstanceId: resolveDetailedRaceInstanceId(
+                rawRaceCapture, detectedCourseId, UMDatabaseWrapper.raceInstances,
+            ) ?? undefined,
+            startTimeType: getDetailedRaceCaptureStartTimeType(rawRaceCapture) ?? undefined,
+            raceTypeCode: getDetailedRaceCaptureRaceType(rawRaceCapture) ?? undefined,
             raceType,
             trackDetails,
             detailedSimulation: sharedDetailedSimulation,
@@ -763,9 +795,8 @@ export default function RaceDataPage() {
                 const nameMap = new Map<string, string>();
                 let anonCounter = 1;
                 const anonHorseInfo = rawHorseInfo.map((horse: any) => {
-                    const copy = { ...horse };
-                    copy.viewer_id = 0;
-                    if (copy.trainer_name) {
+                    const copy = anonymizeSharedRaceHorse(horse);
+                    if (typeof copy.trainer_name === "string" && copy.trainer_name) {
                         if (!nameMap.has(copy.trainer_name)) nameMap.set(copy.trainer_name, `Team ${anonCounter++}`);
                         copy.trainer_name = nameMap.get(copy.trainer_name);
                     }
@@ -859,21 +890,15 @@ export default function RaceDataPage() {
         setDetailedError("");
         setDetailedErrorContext(isAlternate ? "alternate" : "recorded");
         try {
-            const normalizedCapture = normalizeDetailedRaceCaptureForSimulation(rawRaceCapture);
             const response = await fetch("/api/races/resimulate", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "Accept": "text/event-stream",
                 },
-                body: JSON.stringify({
-                    capture: isAlternate
-                        ? withDetailedRaceCaptureSeed(normalizedCapture, requestedSeed)
-                        : normalizedCapture,
-                    courseId: detectedCourseId,
-                    grade: 100,
-                    time: 2,
-                }),
+                body: JSON.stringify(buildDetailedRaceSimulationRequest(
+                    rawRaceCapture, detectedCourseId, seedOverride, UMDatabaseWrapper.raceInstances,
+                )),
                 signal: controller.signal,
             });
             const payload = await readDetailedRaceSimulationResponse(response, setDetailedProgress);
@@ -926,6 +951,60 @@ export default function RaceDataPage() {
         resetWinRateEstimate();
         const seed = createAlternateSeed(randomSeed, alternateSeed);
         void runDetailedSimulation(seed);
+    };
+
+    const viewWinRateRace = async (race: RaceWinRateRace) => {
+        if (!Number.isInteger(race.seed)) return;
+        const raceTab = window.open('', '_blank');
+        if (!raceTab) {
+            setWinRateError('The race tab was blocked. Allow pop-ups for this site and try again.');
+            return;
+        }
+        raceTab.document.title = 'Loading race…';
+        raceTab.document.body.textContent = 'Loading race…';
+        try {
+            if (!rawRaceCapture || !detailedSimulationEligible || !parsedRaceData) {
+                throw new Error('This race is not available for detailed simulation.');
+            }
+            const response = await fetch('/api/races/resimulate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'text/event-stream',
+                },
+                body: JSON.stringify(buildDetailedRaceSimulationRequest(
+                    rawRaceCapture, detectedCourseId, race.seed, UMDatabaseWrapper.raceInstances,
+                )),
+            });
+            const payload = await readDetailedRaceSimulationResponse(response, progress => {
+                if (!raceTab.closed) raceTab.document.body.textContent = progress.message;
+            });
+            const replay = deserializeFromBase64(payload.replay.data);
+            if (!replay) throw new Error('The simulator replay could not be decoded.');
+            const replacementError = getDetailedRaceWhatIfError(parsedRaceData, replay, payload, race.seed);
+            if (replacementError) throw new Error(replacementError);
+            const staged: SharedRaceData = {
+                shareFormatVersion: 2,
+                raceHorseInfo: rawHorseInfo ?? parsedHorseInfo ?? [],
+                raceScenario: payload.replay.data,
+                detectedCourseId,
+                laneDistanceMax,
+                randomSeed: payload.seed,
+                raceType,
+                trackDetails,
+                detailedSimulation: buildSharedDetailedRaceSimulation(payload),
+            };
+            const token = stageRaceData(staged);
+            if (raceTab.closed) throw new Error('The race tab was closed before the simulation finished.');
+            raceTab.location.replace(`/racedata?staged=${encodeURIComponent(token)}`);
+        } catch (reason) {
+            const message = reason instanceof Error ? reason.message : 'The selected race could not be simulated.';
+            if (!raceTab.closed) {
+                raceTab.document.title = 'Race simulation failed';
+                raceTab.document.body.textContent = `Race simulation failed: ${message}`;
+            }
+            setWinRateError(message);
+        }
     };
 
     const returnToOriginalRace = () => {
@@ -1004,6 +1083,9 @@ export default function RaceDataPage() {
         setWinRateError("");
         setWinRateBatch(undefined);
         try {
+            const raceInstanceId = resolveDetailedRaceInstanceId(
+                rawRaceCapture, detectedCourseId, UMDatabaseWrapper.raceInstances,
+            );
             const body = {
                 capture: normalizeDetailedRaceCaptureForSimulation(rawRaceCapture),
                 courseId: detectedCourseId,
@@ -1011,6 +1093,7 @@ export default function RaceDataPage() {
                 time: 2,
                 raceCount: 100,
                 seed: seedStart,
+                ...(raceInstanceId === null ? {} : { raceInstanceId }),
             };
             const idempotencyKey = typeof crypto.randomUUID === "function"
                 ? crypto.randomUUID()
@@ -1092,6 +1175,11 @@ export default function RaceDataPage() {
     }, [detailedSimulationEligible, detailedStatus, detailedRaceData, detailedError,
         rawRaceCapture]);
 
+    const simulationUiAvailable = Boolean(
+        rawRaceCapture
+        && detailedSimulationEligible
+        && recordedDetailedView,
+    );
     const winRateBatchActive = isActiveRaceWinRateBatch(winRateBatch);
     const whatIfActive = alternateSeed !== undefined || detailedRequestKind === "alternate";
     const horseForWinRateRunner = (runner: RaceWinRateRunner) => parsedHorseInfo?.find(horse => {
@@ -1143,7 +1231,7 @@ export default function RaceDataPage() {
                         Share (anonymous)
                     </Button>
                 ) : null}
-                {rawRaceCapture && detailedSimulationEligible && (
+                {simulationUiAvailable && (
                     <OverlayTrigger
                         placement="bottom"
                         delay={{ show: 150, hide: 120 }}
@@ -1154,8 +1242,9 @@ export default function RaceDataPage() {
                                 <strong>Detailed</strong> reruns the uploaded race with its recorded seed on our
                                 server-accurate simulator to provide more exact values for metrics like downhill mode
                                 duration, pace up duration and more. <strong>Legacy</strong> estimates those values
-                                using heuristics. You&apos;ll automatically be switched to Legacy if our simulator
-                                should fail to recreate the exact race.
+                                using heuristics. Detailed mode is only made available after our simulator recreates
+                                the exact race; otherwise Legacy remains in use. Detailed mode is currently only
+                                available for matches using the CM19 or CM20 specifications.
                             </Tooltip>
                         )}
                     >
@@ -1200,7 +1289,7 @@ export default function RaceDataPage() {
                         </div>
                     </OverlayTrigger>
                 )}
-                {rawRaceCapture && detailedSimulationEligible && (
+                {simulationUiAvailable && (
                     <Dropdown className="rdp-simulation-menu">
                         <Dropdown.Toggle variant="secondary" size="sm" id="rdp-simulation-features">
                             Simulation features
@@ -1248,7 +1337,7 @@ export default function RaceDataPage() {
         )}
 
         {error && <div className="text-danger rdp-error">{error}</div>}
-        {detailedError && (
+        {detailedError && recordedDetailedView && (
             <Alert variant="warning" className="rdp-detailed-status">
                 {detailedErrorContext === "alternate" ? "What-if rerun" : "Detailed simulation"} failed: {detailedError}{" "}
                 {detailedRaceData
@@ -1266,7 +1355,7 @@ export default function RaceDataPage() {
                 </Button>
             </section>
         )}
-        {detailedStatus === "loading" && detailedProgress && (
+        {detailedStatus === "loading" && detailedProgress && recordedDetailedView && (
             <section className="rdp-detailed-progress" aria-live="polite" aria-label={`${detailedRequestKind === "alternate" ? "What-if" : "Detailed"} simulation progress`}>
                 <div className="rdp-detailed-progress-header">
                     <strong>{detailedRequestKind === "alternate" ? "What-if simulation" : "Detailed simulation"}</strong>
@@ -1294,6 +1383,7 @@ export default function RaceDataPage() {
             batch={winRateBatch}
             active={winRateBatchActive}
             onClose={resetWinRateEstimate}
+            onViewRace={viewWinRateRace}
             getTeamLabel={(_team, teamIndex, runners) => {
                 const teamHorse = runners.map(horseForWinRateRunner).find(Boolean);
                 return teamHorse?.trainer_name || teamHorse?.owner_trainer_name || `Team ${teamIndex + 1}`;
@@ -1301,6 +1391,20 @@ export default function RaceDataPage() {
             getRunnerLabel={runner => {
                 const horse = horseForWinRateRunner(runner);
                 return horse ? UMDatabaseWrapper.raceHorseDisplayName(horse) ?? `Gate ${runner.gateNumber}` : `Gate ${runner.gateNumber}`;
+            }}
+            getRunnerBuild={runner => {
+                const horse = horseForWinRateRunner(runner);
+                if (!horse) return undefined;
+                const build = fromRaceHorseData(horse);
+                return {
+                    rankScore: build.rankScore,
+                    stats: [build.speed, build.stamina, build.pow, build.guts, build.wiz],
+                    skillPoints: computeSkillPoints(new Set(build.skills.map(skill => skill.skillId))),
+                    skillIds: build.skills.map(skill => skill.skillId),
+                    rawStamina: build.stamina,
+                    motivation: Number(horse.motivation),
+                    runningStyle: Number(horse.running_style ?? horse.runningStyle) - 1,
+                };
             }}
         />}
         {teamTrialRaces.length > 1 && (

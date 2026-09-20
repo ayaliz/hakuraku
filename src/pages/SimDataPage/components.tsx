@@ -67,10 +67,10 @@ export function Composition({ name, keyValue, onClick }: { name: string; keyValu
 }
 export function CompositionTable({ rows, onSelect, minOwners = 30 }: { rows: TeamRate[]; onSelect: (key: string) => void; minOwners?: number }) {
     const sorted = rows.filter(r => r.owners >= minOwners).sort((a, b) => (b.team - a.team));
-    return sorted.length ? <div className="sim-table-scroll"><table className="sim-table"><thead><tr><th>Composition</th><th>Team win%</th><th>95% interval</th><th>Owners</th><th>Appearances</th><th>Examples</th></tr></thead><tbody>
+    return sorted.length ? <div className="sim-table-scroll"><table className="sim-table"><thead><tr><th>Composition</th><th>Team win%</th><th>95% interval</th><th><abbr title="Distinct players with at least one simulated team matching this composition. Each player is counted once.">Players</abbr></th><th>Examples</th></tr></thead><tbody>
         {sorted.map(row => <tr key={row.key}><td><Composition keyValue={row.key} name={row.name} onClick={() => onSelect(row.key)} /></td>
             <td><span className={row.team > 1 / 3 ? 'sim-above' : ''}><RateValue value={row.team} ci={row.teamCI} wins={row.teamWins} n={row.teamExposures} /></span></td>
-            <td>{interval(row.teamCI)}</td><td>{number(row.owners)}</td><td>{number(row.teamExposures)}</td><td><button className="sim-link" type="button" onClick={() => onSelect(row.key)}>View teams</button></td></tr>)}
+            <td>{interval(row.teamCI)}</td><td>{number(row.owners)}</td><td><button className="sim-link" type="button" onClick={() => onSelect(row.key)}>View teams</button></td></tr>)}
     </tbody></table></div> : <p className="sim-empty">No compositions meet this owner filter.</p>;
 }
 export function RunnerPortraits({ members, cards }: { members: Runner[]; cards: Record<number, Card> }) {

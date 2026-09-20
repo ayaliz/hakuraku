@@ -22,6 +22,7 @@ export type SaturationBucket = {
 export type SnapshotMeta = {
     populationRaces: number; populationOwners: number; appearancesPerOwner: number;
     populationBlocks: number; window: string; course: string; conditions: string;
+    capturedThrough?: string;
     courseSurface?: 'Turf' | 'Dirt'; courseDistance?: 'Sprint' | 'Mile' | 'Medium' | 'Long';
     cumulativeSimulations: number; evaluatedTeams: number; evaluatedOwners: number; debufferThreshold: number;
     minimumEvaluationPerTeam?: number; screeningRaces?: number; evaluationRaces?: number;
@@ -32,6 +33,7 @@ export type SnapshotMeta = {
 export type Snapshot = {
     schemaVersion: 1; snapshotId: string; cmId: string; label: string;
     raceInstanceId?: number; startTimeType?: number;
+    skillAnalysis?: { schemaVersion: number };
     sourceSha256: string; engineSha256: string; meta: SnapshotMeta;
 };
 export type Summary = {

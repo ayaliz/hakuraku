@@ -132,8 +132,8 @@
 .race-win-rate-runner {
     position: relative;
     display: grid;
-    grid-template-columns: 38px minmax(0, 1fr) auto;
-    min-height: 42px;
+    grid-template-columns: 38px minmax(0, 1fr) auto 42px;
+    min-height: 58px;
     padding: 3px 9px 3px 3px;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.075);
@@ -188,19 +188,515 @@
     white-space: nowrap;
 }
 
-.race-win-rate-runner > strong {
-    color: rgba(255, 255, 255, 0.94);
+.race-win-rate-runner-name-wrap {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 6px;
+}
+
+.race-win-rate-runner-info {
+    display: grid;
+    min-width: 0;
+    gap: 5px;
+}
+
+.race-win-rate-runner-rank {
+    width: 24px;
+    height: 18px;
+    flex: 0 0 auto;
+    object-fit: contain;
+}
+
+.race-win-rate-runner-stats {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 0.68rem;
     font-variant-numeric: tabular-nums;
 }
 
+.race-win-rate-runner-stats > span {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: 2px;
+}
+
+.race-win-rate-runner-stats img {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 auto;
+    object-fit: contain;
+}
+
+.race-win-rate-runner-details {
+    min-height: 32px;
+    padding: 5px 8px;
+    align-self: center;
+    flex: 0 0 auto;
+    border: 1px solid rgba(115, 217, 170, 0.32);
+    border-radius: 4px;
+    color: rgba(154, 231, 193, 0.86);
+    background: rgba(66, 185, 131, 0.075);
+    font-size: 0.66rem;
+    line-height: 1.45;
+}
+
+.race-win-rate-runner-details:hover,
+.race-win-rate-runner-details:focus-visible {
+    border-color: rgba(115, 217, 170, 0.65);
+    color: #b8f2d5;
+    background: rgba(66, 185, 131, 0.16);
+    outline: none;
+}
+
+.race-win-rate-runner > strong {
+    width: 42px;
+    color: rgba(255, 255, 255, 0.94);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
 .race-win-rate-runner-name,
+.race-win-rate-runner-info,
 .race-win-rate-runner > strong {
     align-self: center;
 }
+
+.race-win-rate-history {
+    margin-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.race-win-rate-history > summary {
+    padding: 12px 2px 2px;
+    color: rgba(255, 255, 255, 0.88);
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.race-win-rate-history > summary span {
+    margin-left: 7px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.76rem;
+    font-weight: 400;
+}
+
+.race-win-rate-history-list {
+    display: grid;
+    max-height: 420px;
+    margin-top: 9px;
+    overflow-y: auto;
+    overflow-x: auto;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 5px;
+}
+
+.race-win-rate-history-row {
+    display: grid;
+    grid-template-columns: 38px minmax(390px, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    min-width: 1340px;
+    min-height: 48px;
+    padding: 6px 9px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.065);
+    font-size: 0.8rem;
+}
+
+.race-win-rate-history-row:last-child { border-bottom: 0; }
+.race-win-rate-history-number { color: rgba(255, 255, 255, 0.55); font-variant-numeric: tabular-nums; }
+.race-win-rate-history-teams {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(400px, 1fr));
+    gap: 6px;
+    min-width: 1210px;
+}
+.race-win-rate-history-team {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    padding: 4px 6px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.022);
+}
+.race-win-rate-history-team.is-winner {
+    border-color: rgba(115, 217, 170, 0.62);
+    background: rgba(66, 185, 131, 0.105);
+    box-shadow: inset 0 0 0 1px rgba(115, 217, 170, 0.08);
+}
+.race-win-rate-history-portraits {
+    display: flex;
+    justify-content: center;
+    gap: 7px;
+    min-width: 0;
+}
+.race-win-rate-history-portrait {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px;
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.09);
+}
+.race-win-rate-history-hp {
+    display: grid;
+    gap: 1px;
+    min-width: 90px;
+    font-size: 0.64rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.15;
+    white-space: nowrap;
+}
+.race-win-rate-history-hp > span {
+    display: grid;
+    grid-template-columns: 38px minmax(42px, auto) 8px;
+    align-items: baseline;
+    gap: 2px;
+}
+.race-win-rate-history-hp-label { color: rgba(255, 255, 255, 0.55); }
+.race-win-rate-history-hp .is-positive > span:nth-child(2),
+.race-win-rate-history-hp .is-positive > strong { color: #73d9aa; }
+.race-win-rate-history-hp .is-negative > span:nth-child(2),
+.race-win-rate-history-hp .is-negative > strong { color: #ff8585; }
+.race-win-rate-history-hp strong { font-size: 0.7rem; line-height: 1; }
+.race-win-rate-history-portrait .race-win-rate-portrait { width: 29px; height: 31px; }
+.race-win-rate-history-portrait-image { position: relative; display: inline-flex; }
+.race-win-rate-history-crown {
+    position: absolute;
+    z-index: 2;
+    right: -3px;
+    bottom: -3px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: #10241b;
+    background: #73d9aa;
+    font-size: 0.62rem;
+    font-weight: 800;
+    line-height: 1.25;
+}
+.race-win-rate-history-crown.is-place-2 { background: #cbd5e0; }
+.race-win-rate-history-crown.is-place-3 { background: #d9a16b; }
+.race-win-rate-history-row button {
+    padding: 4px 9px;
+    border: 1px solid rgba(115, 217, 170, 0.42);
+    border-radius: 4px;
+    color: #9ae7c1;
+    background: rgba(66, 185, 131, 0.1);
+}
+.race-win-rate-history-row button:hover { background: rgba(66, 185, 131, 0.2); }
+
+.race-win-rate-details-modal .modal-content {
+    border-color: #53657e !important;
+    background: #202b3d !important;
+    box-shadow: 0 18px 52px rgba(0, 0, 0, 0.44);
+}
+
+.race-win-rate-details-modal .modal-header { border-color: #4a5a72 !important; }
+.race-win-rate-details-modal .modal-body { background: #192434; }
+
+.race-win-rate-details-modal .modal-title {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    font-size: 1rem;
+}
+
+.race-win-rate-details-modal .modal-title .race-win-rate-portrait {
+    width: 43px;
+    height: 46px;
+}
+
+.race-win-rate-details-modal .modal-title > span:last-child {
+    display: grid;
+    gap: 5px;
+}
+
+.race-win-rate-modal-runner-name {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.race-win-rate-modal-runner-name img {
+    width: 30px;
+    height: 22px;
+    object-fit: contain;
+}
+
+.race-win-rate-modal-stats {
+    gap: 11px;
+    font-size: 0.72rem;
+    font-weight: 400;
+}
+
+.race-win-rate-modal-stats img {
+    width: 16px;
+    height: 16px;
+}
+
+.race-win-rate-detail-section {
+    min-width: 0;
+    padding: 12px 16px;
+    border: 1px solid #4a5568;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.race-win-rate-detail-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 29px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid #4a5568;
+}
+
+.race-win-rate-detail-section h4 {
+    margin: 0;
+    color: #dce6f3;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.race-win-rate-detail-empty {
+    margin: 12px 0 2px;
+    color: #8fa0b6;
+    font-size: 0.75rem;
+}
+
+.race-win-rate-detail-section-heading > strong {
+    flex: 0 0 auto;
+    color: #73d9aa;
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.race-win-rate-detail-section-heading > span {
+    color: #8fa0b6;
+    font-size: 0.68rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.race-win-rate-skill-section { margin-top: 12px; }
+
+.race-win-rate-skill-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 9px;
+    margin: 11px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.race-win-rate-skill-grid li {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    padding: 6px 8px;
+    border: 1px solid #35475e;
+    border-radius: 5px;
+    background: #131e2d;
+}
+
+.race-win-rate-skill-grid img,
+.race-win-rate-skill-placeholder {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+}
+
+.race-win-rate-skill-placeholder {
+    display: grid;
+    place-items: center;
+    color: #728399;
+    font-size: 1.1rem;
+}
+
+.race-win-rate-skill-name {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+}
+
+.race-win-rate-skill-name strong {
+    overflow: hidden;
+    color: #dce6f3;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.race-win-rate-skill-grid b {
+    color: #718096;
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.race-win-rate-skill-grid b.is-active { color: #8cdfad; }
+
+.race-win-rate-placement-headlines {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: -12px -16px 13px;
+    border-bottom: 1px solid #344056;
+}
+
+.race-win-rate-placement-headlines > div {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 9px;
+    padding: 12px 16px;
+    border-left: 1px solid #344056;
+}
+
+.race-win-rate-placement-headlines > div:first-child { border-left: 0; }
+
+.race-win-rate-placement-headlines strong { align-self: center; color: #8cdfad; font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.race-win-rate-placement-headlines span { align-self: center; color: #d9e3f0; font-size: 0.9rem; font-weight: 600; }
+
+.race-win-rate-placement-title {
+    margin: 13px 0 7px;
+    color: #9fb0c6;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.race-win-rate-placement-histogram {
+    display: grid;
+    grid-template-columns: repeat(9, minmax(54px, 1fr));
+    gap: 7px;
+    min-width: 570px;
+    padding-top: 6px;
+    overflow-x: auto;
+}
+
+.race-win-rate-placement-histogram > div {
+    display: grid;
+    grid-template-rows: 18px 64px auto auto;
+    gap: 3px;
+    min-width: 0;
+    text-align: center;
+}
+
+.race-win-rate-placement-histogram strong { color: #d7e0ec; font-size: 0.68rem; font-variant-numeric: tabular-nums; }
+.race-win-rate-placement-histogram > div > div { display: flex; align-items: flex-end; justify-content: center; padding: 0 8px; border-bottom: 1px solid #40506a; }
+.race-win-rate-placement-histogram i { display: block; width: 100%; min-height: 1px; border-radius: 2px 2px 0 0; background: #5fa77b; }
+.race-win-rate-placement-histogram span { color: #cbd6e5; font-size: 0.7rem; font-weight: 600; }
+.race-win-rate-placement-histogram small { color: #728399; font-size: 0.59rem; }
+
+.race-win-rate-hp-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.race-win-rate-current-rate {
+    display: grid;
+    justify-items: end;
+    flex: 0 0 auto;
+}
+
+.race-win-rate-current-rate span { color: rgba(255, 255, 255, 0.42); font-size: 0.62rem; text-transform: uppercase; }
+.race-win-rate-current-rate strong { color: #8cdfad; font-size: 1rem; font-variant-numeric: tabular-nums; }
+
+.race-win-rate-hp-rail {
+    position: relative;
+    display: grid;
+    gap: 0;
+    min-width: 0;
+    margin-top: 16px;
+    padding: 0 3px 5px;
+    overflow: hidden;
+}
+
+.race-win-rate-hp-rail > div:not(:last-child)::after {
+    position: absolute;
+    top: 24px;
+    left: 50%;
+    width: 100%;
+    height: 2px;
+    background: #40506a;
+    content: "";
+}
+
+.race-win-rate-hp-rail > div {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-rows: 17px 14px auto auto;
+    align-items: center;
+    justify-items: center;
+    min-width: 0;
+    text-align: center;
+}
+
+.race-win-rate-hp-rail strong { color: #cbd6e5; font-size: 0.68rem; font-variant-numeric: tabular-nums; }
+.race-win-rate-hp-rail i { position: relative; z-index: 1; width: 9px; height: 9px; margin: 0; border: 2px solid #172132; border-radius: 50%; background: #718096; box-shadow: 0 0 0 1px #4a5c73; }
+.race-win-rate-hp-rail span,
+.race-win-rate-hp-rail small { color: #718096; font-size: 0.58rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.race-win-rate-hp-rail small { color: #9aa8ba; line-height: 1.35; }
+.race-win-rate-hp-rail .is-current strong,
+.race-win-rate-hp-rail .is-current span { color: #8cdfad; font-weight: 700; }
+.race-win-rate-hp-rail .is-current i { width: 12px; height: 12px; background: #65bf84; box-shadow: 0 0 0 3px rgba(101, 191, 132, 0.13); }
+
+.race-win-rate-all-passed { margin: 14px 0 0; color: #73d9aa; font-size: 0.74rem; }
 
 @media (max-width: 800px) {
     .race-win-rate-teams { grid-template-columns: 1fr; }
     .race-win-rate-header { align-items: flex-start; flex-direction: column; }
     .race-win-rate-header-actions { width: 100%; justify-content: space-between; }
     .race-win-rate-seed { text-align: left; }
+    .race-win-rate-history-row { grid-template-columns: 30px minmax(0, 1fr) auto; gap: 8px; }
+    .race-win-rate-history-team { padding: 4px 3px; }
+    .race-win-rate-history-portrait .race-win-rate-portrait { width: 24px; height: 27px; }
+    .race-win-rate-history-portraits { justify-content: center; gap: 4px; }
+    .race-win-rate-history-row { min-width: 1210px; }
+    .race-win-rate-history-teams { grid-template-columns: repeat(3, minmax(355px, 1fr)); min-width: 1075px; }
+    .race-win-rate-history-hp { min-width: 79px; font-size: 0.57rem; }
+    .race-win-rate-history-hp > span { grid-template-columns: 33px minmax(37px, auto) 7px; gap: 1px; }
+    .race-win-rate-hp-detail-grid { grid-template-columns: 1fr; }
+    .race-win-rate-skill-grid { grid-template-columns: 1fr; }
+    .race-win-rate-placement-headlines { gap: 6px; }
+    .race-win-rate-placement-headlines > div { padding: 8px; }
+    .race-win-rate-placement-headlines strong { font-size: 1.05rem; }
+    .race-win-rate-placement-histogram {
+        grid-template-columns: repeat(9, minmax(48px, 1fr));
+        width: 100%;
+        min-width: 0;
+        overflow-x: auto;
+    }
+}
+
+@media (max-width: 500px) {
+    .race-win-rate-runner {
+        grid-template-columns: 38px minmax(0, 1fr) auto 42px;
+        min-height: 76px;
+        gap: 5px;
+        padding-right: 5px;
+    }
+    .race-win-rate-runner-details { min-height: 34px; padding: 5px 6px; }
+    .race-win-rate-runner-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 3px 6px;
+        font-size: 0.64rem;
+    }
+    .race-win-rate-runner-stats > span { overflow: hidden; }
+    .race-win-rate-runner-stats img { width: 13px; height: 13px; }
+    .race-win-rate-modal-stats { grid-template-columns: repeat(3, max-content); overflow: visible; }
 }

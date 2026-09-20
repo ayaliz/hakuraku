@@ -25,15 +25,28 @@ export function normalizeRaceConditionMetadata<T>(value: T): T {
     const record = value as Record<string, unknown>;
     const snapshotId = typeof record.snapshotId === 'string' ? record.snapshotId : '';
     const cmId = typeof record.cmId === 'string' ? record.cmId : '';
-    if (cmId.toLowerCase() !== 'cm19' && !/^cm19(?:$|[-_.])/i.test(snapshotId)) return value;
     const meta = record.meta;
     if (!meta || typeof meta !== 'object' || Array.isArray(meta)) return value;
     const metadata = meta as Record<string, unknown>;
-    if (typeof metadata.conditions !== 'string') return value;
-    const conditions = formatInternalGroundConditionSummary(metadata.conditions);
-    if (conditions === metadata.conditions) return value;
+    const isCm19 = cmId.toLowerCase() === 'cm19' || /^cm19(?:$|[-_.])/i.test(snapshotId);
+    const isCm17 = cmId.toLowerCase() === 'cm17' || /^cm17(?:$|[-_.])/i.test(snapshotId);
+    const isCm = /^cm\d+/i.test(cmId) || /^cm\d+/i.test(snapshotId);
+    const conditions = isCm19 && typeof metadata.conditions === 'string'
+        ? formatInternalGroundConditionSummary(metadata.conditions)
+        : metadata.conditions;
+    const sourceCourse = metadata.course;
+    let course = sourceCourse;
+    if (typeof sourceCourse === 'string' && isCm) {
+        let normalizedCourse = sourceCourse;
+        if (isCm17) normalizedCourse = normalizedCourse.replace(/\bTeio Sho\b/g, 'Ooi');
+        course = normalizedCourse.replace(/\s*·\s*G1\s*$/i, '');
+    }
+    if (conditions === metadata.conditions && course === metadata.course) return value;
+    const updates: Record<string, unknown> = {};
+    if (conditions !== metadata.conditions) updates.conditions = conditions;
+    if (course !== metadata.course) updates.course = course;
     return {
         ...record,
-        meta: { ...metadata, conditions },
+        meta: { ...metadata, ...updates },
     } as T;
 }

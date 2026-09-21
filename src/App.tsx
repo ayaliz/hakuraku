@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { Alert, Container, Nav, Navbar, Spinner } from "react-bootstrap";
-import { BrowserRouter, Link, NavLink, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import './App.css';
 import './dark-mode.css';
 import UMDatabaseWrapper from './data/UMDatabaseWrapper';
@@ -9,7 +9,6 @@ import { AuthProvider, useAuth } from "./auth/AuthContext";
 import PageMeta from "./components/PageMeta";
 import { formatNoteDate, sortNotesNewestFirst } from "./notesManifest";
 import type { NoteEntry } from "./notesManifest";
-import type { Manifest, ManifestEntry } from "./pages/UmaLogsPage/umaLogsTypes";
 
 // Wraps lazy() to auto-reload once on chunk load failure (stale deploy hash mismatch).
 function lazyWithReload<T extends React.ComponentType<any>>(
@@ -30,8 +29,7 @@ function lazyWithReload<T extends React.ComponentType<any>>(
 
 const RaceDataPage    = lazyWithReload(() => import("./pages/RaceDataPage"),    "RaceDataPage");
 const MultiRacePage   = lazyWithReload(() => import("./pages/MultiRacePage"),   "MultiRacePage");
-const UmaLogsPage     = lazyWithReload(() => import("./pages/UmaLogsPage"),     "UmaLogsPage");
-const SimDataPage     = lazyWithReload(() => import("./pages/SimDataPage"),     "SimDataPage");
+const UmaLogsPage     = lazyWithReload(() => import("./pages/SimDataPage"),     "UmaLogsPage");
 const MasterDataPage  = lazyWithReload(() => import("./pages/MasterDataPage"),  "MasterDataPage");
 const NotesPage       = lazyWithReload(() => import("./pages/NotesPage"),       "NotesPage");
 const SetupGuidePage  = lazyWithReload(() => import("./pages/SetupGuidePage"),  "SetupGuidePage");
@@ -41,29 +39,8 @@ const InheritanceFactorsPage = lazyWithReload(() => import("./pages/InheritanceF
 const AuthPage        = lazyWithReload(() => import("./pages/AuthPage"),        "AuthPage");
 const AccountPage     = lazyWithReload(() => import("./pages/AccountPage"),     "AccountPage");
 const PrivacyPolicyPage = lazyWithReload(() => import("./pages/PrivacyPolicyPage"), "PrivacyPolicyPage");
-const rawUmaLogsApiBase = (import.meta.env.VITE_UMALOGS_API_BASE ?? "").trim();
-const UMA_LOGS_API_BASE = rawUmaLogsApiBase === "same-origin"
-    ? ""
-    : rawUmaLogsApiBase.replace(/\/$/, "");
 const rawSimDataApiBase = (import.meta.env.VITE_SIMDATA_API_BASE ?? "").trim();
 const SIMDATA_API_BASE = rawSimDataApiBase === "same-origin" ? "" : rawSimDataApiBase.replace(/\/$/, "");
-
-function getLatestCmDatasetLabel(datasets: ManifestEntry[]): string | null {
-    const cmDatasets = datasets
-        .map((dataset, index) => {
-            const label = dataset.cmLabel || dataset.cmId.toUpperCase();
-            const match = label.match(/^CM(\d+)$/i) ?? dataset.cmId.match(/^cm(\d+)$/i);
-            return match ? {
-                index,
-                label: `CM${Number(match[1])}`,
-                number: Number(match[1]),
-            } : null;
-        })
-        .filter((dataset): dataset is { index: number; label: string; number: number } => dataset !== null);
-
-    if (cmDatasets.length === 0) return null;
-    return cmDatasets.sort((a, b) => b.number - a.number || b.index - a.index)[0].label;
-}
 
 // Search-result copy for each route. Kept together so the titles and descriptions can be read
 // side by side; they compete with each other in results, so they need to stay distinct.
@@ -82,11 +59,7 @@ const PAGE_META: Record<string, { title: string; description?: string; noIndex?:
     },
     umalogs: {
         title: "UmaLogs",
-        description: "Champions Meeting race archives and aggregate statistics from collected Umamusume race data.",
-    },
-    simdata: {
-        title: "SimData",
-        description: "Explore simulated Champions Meeting data.",
+        description: "Explore simulated Champions Meeting data built from captured Umamusume teams.",
     },
     setup: {
         title: "Setup Guide",
@@ -115,6 +88,11 @@ const PAGE_META: Record<string, { title: string; description?: string; noIndex?:
 
 function withMeta(meta: { title: string; description?: string; noIndex?: boolean }, element: React.ReactNode) {
     return <><PageMeta {...meta} />{element}</>;
+}
+
+function RedirectToUmaLogs() {
+    const { search, hash } = useLocation();
+    return <Navigate to={{ pathname: "/umalogs", search, hash }} replace />;
 }
 
 function FooterMailIcon() {
@@ -192,8 +170,7 @@ export default function App() {
 
 function AppShell() {
     const { loading, authenticated, user } = useAuth();
-    const [umaLogsBadgeLabel, setUmaLogsBadgeLabel] = useState("CM12 update!");
-    const [simDataBadgeLabel, setSimDataBadgeLabel] = useState("Check this out!");
+    const [umaLogsBadgeLabel, setUmaLogsBadgeLabel] = useState("Check this out!");
     const [latestNote, setLatestNote] = useState<NoteEntry | null>(null);
 
     useEffect(() => {
@@ -206,37 +183,13 @@ function AppShell() {
             })
             .then(manifest => {
                 if (manifest.schemaVersion === 1 && manifest.snapshots?.some(snapshot => snapshot.cmId.toLowerCase() === 'cm20')) {
-                    setSimDataBadgeLabel('CM20 updated!');
+                    setUmaLogsBadgeLabel('CM20 updated!');
                 }
             })
             .catch((error: Error) => {
                 if (error.name !== 'AbortError') console.warn('Failed to load SimData manifest for navbar badge:', error);
             });
         return () => { window.clearTimeout(timeoutId); controller.abort(); };
-    }, []);
-
-    useEffect(() => {
-        const controller = new AbortController();
-        const timeoutId = window.setTimeout(() => controller.abort(), 5000);
-        fetch(`${UMA_LOGS_API_BASE}/api/umalogs/manifest`, { signal: controller.signal })
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status} - manifest not found`);
-                return r.json() as Promise<Manifest>;
-            })
-            .then((manifest) => {
-                const latestLabel = getLatestCmDatasetLabel(manifest.datasets);
-                if (latestLabel) setUmaLogsBadgeLabel(`${latestLabel} update!`);
-            })
-            .catch((error: Error) => {
-                if (error.name !== "AbortError") {
-                    console.warn("Failed to load UmaLogs manifest for navbar badge:", error);
-                }
-            });
-
-        return () => {
-            window.clearTimeout(timeoutId);
-            controller.abort();
-        };
     }, []);
 
     useEffect(() => {
@@ -291,12 +244,6 @@ function AppShell() {
                                 <span className="haku-nav-badge">{umaLogsBadgeLabel}</span>
                             </span>
                         </Nav.Link>
-                        <Nav.Link as={NavLink} to="/simdata">
-                            <span className="haku-nav-link-with-badge">
-                                <span>SimData</span>
-                                <span className="haku-nav-badge">{simDataBadgeLabel}</span>
-                            </span>
-                        </Nav.Link>
                     </Nav>
                     <Nav className="ms-auto align-items-lg-center">
                         {loading ? (
@@ -322,7 +269,7 @@ function AppShell() {
                     <Route path="/racedata" element={withMeta(PAGE_META.racedata, <RaceDataPage />)} />
                     <Route path="/multirace" element={withMeta(PAGE_META.multirace, <MultiRacePage />)} />
                     <Route path="/umalogs" element={withMeta(PAGE_META.umalogs, <UmaLogsPage />)} />
-                    <Route path="/simdata" element={withMeta(PAGE_META.simdata, <SimDataPage />)} />
+                    <Route path="/simdata/*" element={<RedirectToUmaLogs />} />
                     <Route path="/setup" element={withMeta(PAGE_META.setup, <SetupGuidePage />)} />
                     <Route path="/masterdata" element={withMeta(PAGE_META.masterdata, <MasterDataPage />)} />
                     <Route path="/notes/:noteId" element={withMeta(PAGE_META.notes, <NotesPage />)} />

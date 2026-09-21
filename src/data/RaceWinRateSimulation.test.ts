@@ -6,11 +6,34 @@ import {
     firstSpurtHpMargin,
     hpRateMilestones,
     placementHistogram,
+    raceWinRateBatchGates,
     raceWinRatePercent,
     rawStaminaNeededForMaxHp,
     survivalHpMargin,
     type RaceWinRateRace,
+    type RaceWinRateRunner,
 } from "./RaceWinRateSimulation";
+
+test("reconstructs batch gate assignments in lobby slot order", () => {
+    const runners = Array.from({ length: 9 }, (_, slot) => ({
+        slot,
+        teamIndex: Math.floor(slot / 3),
+        memberIndex: slot % 3,
+        teamId: `team-${Math.floor(slot / 3)}`,
+        frameOrder: 8 - slot,
+        gateNumber: 9 - slot,
+        cardId: 100000 + slot,
+        charaId: 1000 + slot,
+        wins: 0,
+        winRate: 0,
+    })) satisfies RaceWinRateRunner[];
+
+    assert.deepEqual(raceWinRateBatchGates(runners), [9, 8, 7, 6, 5, 4, 3, 2, 1]);
+    assert.equal(raceWinRateBatchGates(runners.slice(0, 8)), null);
+    assert.equal(raceWinRateBatchGates(runners.map((runner, index) => index === 8
+        ? { ...runner, gateNumber: 8 }
+        : runner)), null);
+});
 
 test("omits redundant percentage decimals but preserves meaningful ones", () => {
     assert.equal(raceWinRatePercent(0.37), "37%");

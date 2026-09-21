@@ -165,9 +165,8 @@ function Results({ snapshot }: { snapshot: Snapshot }) {
         <Tab.Container id="simdata-tabs" activeKey={active} onSelect={selectTab} mountOnEnter unmountOnExit>
             <Nav variant="tabs" className="sim-section-nav" aria-label="Simulation analysis">{Object.entries(tabs).map(([key, label]) => <Nav.Item key={key}><Nav.Link className="sim-section-link" eventKey={key}>{key === 'lobby' && lobbyRunnerCount ? `${label} (${lobbyRunnerCount}/9)` : label}</Nav.Link></Nav.Item>)}</Nav>
             <Tab.Content><Tab.Pane eventKey="introduction"><div className="sim-intro-tab">
-                <p><strong>SimData</strong> uses captured CM teams to build a simulated CM race dataset with equally weighted player appearances. Every day at 8 am UTC, a job automatically starts building today's dataset of 10 million races featuring teams captured so far (the job may take 1–3 hours to run). The new dataset replaces the previous day's once the run finishes and its results have been verified.</p>
+                <p><strong>UmaLogs</strong> uses captured CM teams to build a simulated CM race dataset with equally weighted player appearances. Every day at 8 am UTC, a job automatically starts building today's dataset of 10 million races featuring teams captured so far (the job may take 1–3 hours to run). The new dataset replaces the previous day's once the run finishes and its results have been verified.</p>
                 <p>Since the per-player simulation budget is equal, we use a team dropout policy to focus that budget on the strongest ideas from players trying lots of teams.</p>
-                <p>This data will replace the UmaLogs page. Additional analysis features are in the works.</p>
                 <p>Read <Link to="/notes/new-age-umamusume-data">“A new age for Umamusume data”</Link> for further information. The simulator used to build the data has reproduced the server's results without floating-point discrepancies in all approximately 500,000 validation races we've collected since the 1.5 anniversary balance patch.</p>
             </div></Tab.Pane>
                 <Tab.Pane eventKey="strategy"><Strategy data={data} onTeams={onTeams} /></Tab.Pane>
@@ -194,7 +193,7 @@ export default function SimDataPage() {
         ? `Teams seen by ${new Date(`${snapshot.meta.capturedThrough}T00:00:00Z`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' })}`
         : `Teams seen ${snapshot?.meta.window ?? ''}`;
     return <main className="sim-page"><header className="sim-page-header-row">
-        <div className="sim-page-summary">{snapshot ? <><strong>{snapshot.cmId === 'cm16-post' ? 'CM16' : snapshot.cmId.toUpperCase()}</strong>{' | '}{collectionLabel}{' | '}{number(snapshot.meta.evaluatedTeams)} teams</> : <strong>SimData</strong>}</div>
+        <div className="sim-page-summary">{snapshot ? <><strong>{snapshot.cmId === 'cm16-post' ? 'CM16' : snapshot.cmId.toUpperCase()}</strong>{' | '}{collectionLabel}{' | '}{number(snapshot.meta.evaluatedTeams)} teams</> : <strong>UmaLogs</strong>}</div>
         {snapshot && <div className="sim-dataset-selector"><label className="sim-dataset-label">Dataset:
             <select className="sim-dataset-select" value={snapshot.snapshotId} onChange={e => setSelectedSnapshotId(e.target.value)}>{snapshots.map(s => <option key={s.snapshotId} value={s.snapshotId}>{s.label.replace(/\s*[·|—-]?\s*10 million races\b/gi, '').trim()} - {s.meta.course.replace(/^CM\d+(?:-[^·]+)?\s*·\s*/i, '')}</option>)}</select>
         </label></div>}

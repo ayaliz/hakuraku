@@ -368,7 +368,7 @@ export function buildLobbyRaceView(
         raceScenario: payload.replay.data,
         detectedCourseId: payload.raceInput.courseId,
         randomSeed: payload.seed,
-        raceType: 'SimData lobby',
+        raceType: 'UmaLogs lobby',
         trackDetails: {
             condition: String(ground),
             weather: String(payload.raceInput.weather),

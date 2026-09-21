@@ -4,6 +4,7 @@ import RaceWinRateResults from '../../components/RaceWinRateResults';
 import { computeSkillPoints } from '../../data/skillPoints';
 import {
     isActiveRaceWinRateBatch,
+    raceWinRateBatchGates,
     type RaceWinRateBatch,
     type RaceWinRateRace,
     type RaceWinRateRunner,
@@ -332,8 +333,13 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
             setError('The lobby configuration for this batch is no longer available.');
             return;
         }
+        const resolvedGates = raceWinRateBatchGates(batch?.results.runners ?? []);
+        if (!resolvedGates) {
+            setError('The simulator did not return the gate assignments needed to reproduce this race.');
+            return;
+        }
         void openSimulatedRace(
-            { ...context.request, seed: race.seed },
+            { ...context.request, seed: race.seed, gates: resolvedGates },
             context.sourceRunnerMetadata,
         );
     };

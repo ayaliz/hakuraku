@@ -86,6 +86,23 @@ export function isActiveRaceWinRateBatch(batch: RaceWinRateBatch | undefined): b
     return batch?.status === "queued" || batch?.status === "running" || batch?.status === "cancel_requested";
 }
 
+/** Reconstruct the fixed lobby gate assignments used for every race in a batch. */
+export function raceWinRateBatchGates(runners: RaceWinRateRunner[]): number[] | null {
+    if (runners.length !== 9) return null;
+    const gates = Array<number | undefined>(9);
+    for (const runner of runners) {
+        const slot = runner.teamIndex * 3 + runner.memberIndex;
+        if (!Number.isInteger(slot) || slot < 0 || slot >= gates.length
+            || gates[slot] !== undefined
+            || !Number.isInteger(runner.gateNumber) || runner.gateNumber < 1 || runner.gateNumber > 9) {
+            return null;
+        }
+        gates[slot] = runner.gateNumber;
+    }
+    if (new Set(gates).size !== 9 || gates.some(gate => gate === undefined)) return null;
+    return gates as number[];
+}
+
 export function raceWinRatePercent(value: number): string {
     return `${(value * 100).toFixed(1).replace(/\.0$/, "")}%`;
 }

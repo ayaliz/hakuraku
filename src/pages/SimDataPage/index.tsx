@@ -5,8 +5,8 @@ import { DATA_ROOT, simDataApiUrl, useSimData } from './data';
 import { Loading, number, StrategyPaletteProvider } from './components';
 import { queryText } from './query';
 import Strategy from './Strategy';
-import type { LobbyDraft } from './lobby';
-import type { Performer, Requirement, Snapshot, Summary } from './types';
+import { createLobbyRunnerEdit, customLobbyRunnerKey, rearrangeLobbyRunners, type LobbyDraft, type LobbyRunnerPosition } from './lobby';
+import type { Performer, Requirement, Runner, Snapshot, Summary } from './types';
 import { COLORBLIND_STRATEGY_COLORS, STRATEGY_COLORS, STRATEGY_DISPLAY_ORDER, STRATEGY_NAMES } from '../MultiRacePage/components/WinDistributionCharts/constants';
 import StrategyPaletteControls, { useStrategyPalette } from '../../components/StrategyPaletteControls';
 import { normalizeRaceConditionMetadata } from '../../data/RaceConditions';
@@ -25,8 +25,8 @@ function Results({ snapshot }: { snapshot: Snapshot }) {
         ? { introduction: 'Introduction', strategy: 'Strategy Analysis', character: 'Uma Analysis', skills: 'Skill Analysis', archetypes: 'Archetype Analysis', lobby: 'Lobby Builder' }
         : standardTabs;
     const [params, setParams] = useSearchParams();
-    const [lobbyTeams, setLobbyTeams] = useState<Performer[]>([]);
-    const [lobbyDraft, setLobbyDraft] = useState<LobbyDraft>({ mood: '5', seed: '', gates: {}, runnerEdits: {} });
+    const [lobbyTeams, setLobbyTeams] = useState<(Performer | null)[]>([null, null, null]);
+    const [lobbyDraft, setLobbyDraft] = useState<LobbyDraft>({ mood: '5', seed: '', gates: {}, runnerEdits: {}, customRunners: {}, customRunnerSourceIds: {}, customRunnerStyles: {}, customRunnerScores: {}, customTeamOrigins: {} });
     const [view, setView] = useState({
         pair: null as string | null,
         query: '',
@@ -92,25 +92,78 @@ function Results({ snapshot }: { snapshot: Snapshot }) {
         setView(previous => ({ ...previous, query: queryText(slots, data.cards) }));
         selectTab('archetypes');
     };
-    const removeLobbyTeam = (teamId: string) => {
-        setLobbyTeams(previous => previous.filter(team => team.id !== teamId));
+    const removeLobbyTeam = (slot: number) => {
+        const teamId = lobbyTeams[slot]?.id;
+        setLobbyTeams(previous => previous.map((team, index) => index === slot ? null : team));
         setLobbyDraft(previous => ({
             ...previous,
-            gates: Object.fromEntries(Object.entries(previous.gates).filter(([key]) => !key.startsWith(`${teamId}:`))),
+            gates: Object.fromEntries(Object.entries(previous.gates).filter(([key]) => !key.startsWith(`${teamId}:`) && !key.startsWith(`custom:${slot}:`))),
             runnerEdits: Object.fromEntries(Object.entries(previous.runnerEdits).filter(([key]) => !key.startsWith(`${teamId}:`))),
+            customRunners: Object.fromEntries(Object.entries(previous.customRunners).filter(([key]) => !key.startsWith(`custom:${slot}:`))),
+            customRunnerSourceIds: Object.fromEntries(Object.entries(previous.customRunnerSourceIds).filter(([key]) => !key.startsWith(`custom:${slot}:`))),
+            customRunnerStyles: Object.fromEntries(Object.entries(previous.customRunnerStyles).filter(([key]) => !key.startsWith(`custom:${slot}:`))),
+            customRunnerScores: Object.fromEntries(Object.entries(previous.customRunnerScores ?? {}).filter(([key]) => !key.startsWith(`custom:${slot}:`))),
+            customTeamOrigins: Object.fromEntries(Object.entries(previous.customTeamOrigins).filter(([key]) => key !== String(slot))),
         }));
     };
     const clearLobby = () => {
-        setLobbyTeams([]);
-        setLobbyDraft(previous => ({ ...previous, gates: {}, runnerEdits: {} }));
+        setLobbyTeams([null, null, null]);
+        setLobbyDraft(previous => ({ ...previous, gates: {}, runnerEdits: {}, customRunners: {}, customRunnerSourceIds: {}, customRunnerStyles: {}, customRunnerScores: {}, customTeamOrigins: {} }));
     };
     const toggleLobbyTeam = (team: Performer) => {
-        if (lobbyTeams.some(selected => selected.id === team.id)) removeLobbyTeam(team.id);
-        else if (lobbyTeams.length < 3) setLobbyTeams(previous => [...previous, team]);
+        const existing = lobbyTeams.findIndex(selected => selected?.id === team.id);
+        if (existing >= 0) removeLobbyTeam(existing);
+        else {
+            const openSlot = lobbyTeams.findIndex((selected, slot) => !selected
+                && !Object.keys(lobbyDraft.customRunners).some(key => key.startsWith(`custom:${slot}:`)));
+            if (openSlot >= 0) {
+                setLobbyTeams(previous => previous.map((selected, slot) => slot === openSlot ? team : selected));
+                setLobbyDraft(previous => {
+                    const customTeamOrigins = { ...previous.customTeamOrigins };
+                    delete customTeamOrigins[openSlot];
+                    return { ...previous, customTeamOrigins };
+                });
+            }
+        }
     };
+    const selectedLobbyTeams = lobbyTeams.filter((team): team is Performer => team !== null);
+    const addLobbyRunner = (runner: Runner) => {
+        const edit = createLobbyRunnerEdit(runner);
+        if (!edit) return;
+        for (let slot = 0; slot < 3; slot++) {
+            if (lobbyTeams[slot]) continue;
+            for (let member = 0; member < 3; member++) {
+                const key = customLobbyRunnerKey(slot, member);
+                if (lobbyDraft.customRunners[key]) continue;
+                setLobbyDraft(previous => ({
+                    ...previous,
+                    customRunners: { ...previous.customRunners, [key]: edit },
+                    customRunnerSourceIds: { ...previous.customRunnerSourceIds, [key]: runner.id },
+                    customRunnerStyles: { ...previous.customRunnerStyles, [key]: runner.style },
+                    customRunnerScores: { ...(previous.customRunnerScores ?? {}), [key]: runner.score },
+                }));
+                return;
+            }
+        }
+    };
+    const rearrangeLobby = (from: LobbyRunnerPosition, to: LobbyRunnerPosition | null) => {
+        const next = rearrangeLobbyRunners(lobbyTeams, lobbyDraft, from, to);
+        if (!next) return;
+        setLobbyTeams(next.teams);
+        setLobbyDraft(next.draft);
+    };
+    const lobbyRunnerCount = selectedLobbyTeams.length * 3 + Object.keys(lobbyDraft.customRunners).length;
+    const lobbyFull = lobbyTeams.every((team, slot) => Boolean(team)
+        || [0, 1, 2].some(member => lobbyDraft.customRunners[`custom:${slot}:${member}`]));
+    const lobbyRunnerFull = lobbyTeams.every((team, slot) => Boolean(team)
+        || [0, 1, 2].every(member => lobbyDraft.customRunners[customLobbyRunnerKey(slot, member)]));
+    const lobbyRunnerIds = new Set([
+        ...selectedLobbyTeams.flatMap(team => team.members.map(runner => runner.id)),
+        ...Object.values(lobbyDraft.customRunnerSourceIds),
+    ]);
     return <>
         <Tab.Container id="simdata-tabs" activeKey={active} onSelect={selectTab} mountOnEnter unmountOnExit>
-            <Nav variant="tabs" className="sim-section-nav" aria-label="Simulation analysis">{Object.entries(tabs).map(([key, label]) => <Nav.Item key={key}><Nav.Link className="sim-section-link" eventKey={key}>{key === 'lobby' && lobbyTeams.length ? `${label} (${lobbyTeams.length}/3)` : label}</Nav.Link></Nav.Item>)}</Nav>
+            <Nav variant="tabs" className="sim-section-nav" aria-label="Simulation analysis">{Object.entries(tabs).map(([key, label]) => <Nav.Item key={key}><Nav.Link className="sim-section-link" eventKey={key}>{key === 'lobby' && lobbyRunnerCount ? `${label} (${lobbyRunnerCount}/9)` : label}</Nav.Link></Nav.Item>)}</Nav>
             <Tab.Content><Tab.Pane eventKey="introduction"><div className="sim-intro-tab">
                 <p><strong>SimData</strong> uses captured CM teams to build a simulated CM race dataset with equally weighted player appearances. Every day at 8 am UTC, a job automatically starts building today's dataset of 10 million races featuring teams captured so far (the job may take 1–3 hours to run). The new dataset replaces the previous day's once the run finishes and its results have been verified.</p>
                 <p>Since the per-player simulation budget is equal, we use a team dropout policy to focus that budget on the strongest ideas from players trying lots of teams.</p>
@@ -120,8 +173,8 @@ function Results({ snapshot }: { snapshot: Snapshot }) {
                 <Tab.Pane eventKey="strategy"><Strategy data={data} onTeams={onTeams} /></Tab.Pane>
                 <Tab.Pane eventKey="character"><Suspense fallback={<Loading retry={() => window.location.reload()} />}><Character data={data} selectedKey={view.pair} onPair={onPair} onTeams={onTeams} /></Suspense></Tab.Pane>
                 {snapshot.skillAnalysis && <Tab.Pane eventKey="skills"><Suspense fallback={<Loading retry={() => window.location.reload()} />}><CapturedSkillPreview snapshot={snapshot} /></Suspense></Tab.Pane>}
-                <Tab.Pane eventKey="archetypes"><Suspense fallback={<Loading retry={() => window.location.reload()} />}><Performers data={data} query={view.query} distinct={view.distinct} sort={view.sort} teamId={sharedTeam?.teamId ?? null} lobbyTeamIds={new Set(lobbyTeams.map(team => team.id))} onToggleLobby={toggleLobbyTeam} onOpenLobby={() => selectTab('lobby')} onChange={change} /></Suspense></Tab.Pane>
-                <Tab.Pane eventKey="lobby"><Suspense fallback={<Loading retry={() => window.location.reload()} />}><LobbyBuilder data={data} teams={lobbyTeams} draft={lobbyDraft} onDraftChange={setLobbyDraft} onBrowse={() => selectTab('archetypes')} onRemove={removeLobbyTeam} onClear={clearLobby} /></Suspense></Tab.Pane>
+                <Tab.Pane eventKey="archetypes"><Suspense fallback={<Loading retry={() => window.location.reload()} />}><Performers data={data} query={view.query} distinct={view.distinct} sort={view.sort} teamId={sharedTeam?.teamId ?? null} lobbyTeamIds={new Set(selectedLobbyTeams.map(team => team.id))} lobbyFull={lobbyFull} lobbyRunnerIds={lobbyRunnerIds} lobbyRunnerFull={lobbyRunnerFull} onToggleLobby={toggleLobbyTeam} onAddLobbyRunner={addLobbyRunner} onOpenLobby={() => selectTab('lobby')} onChange={change} /></Suspense></Tab.Pane>
+                <Tab.Pane eventKey="lobby"><Suspense fallback={<Loading retry={() => window.location.reload()} />}><LobbyBuilder data={data} teams={lobbyTeams} draft={lobbyDraft} onDraftChange={setLobbyDraft} onBrowse={() => selectTab('archetypes')} onRemove={removeLobbyTeam} onRemoveRunner={position => rearrangeLobby(position, null)} onMoveRunner={rearrangeLobby} onClear={clearLobby} /></Suspense></Tab.Pane>
             </Tab.Content>
         </Tab.Container>
     </>;
@@ -141,7 +194,7 @@ export default function SimDataPage() {
         ? `Teams seen by ${new Date(`${snapshot.meta.capturedThrough}T00:00:00Z`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' })}`
         : `Teams seen ${snapshot?.meta.window ?? ''}`;
     return <main className="sim-page"><header className="sim-page-header-row">
-        <div className="sim-page-summary">{snapshot ? <><strong>{snapshot.cmId.toUpperCase()}</strong>{' | '}{collectionLabel}{' | '}{number(snapshot.meta.evaluatedTeams)} teams</> : <strong>SimData</strong>}</div>
+        <div className="sim-page-summary">{snapshot ? <><strong>{snapshot.cmId === 'cm16-post' ? 'CM16' : snapshot.cmId.toUpperCase()}</strong>{' | '}{collectionLabel}{' | '}{number(snapshot.meta.evaluatedTeams)} teams</> : <strong>SimData</strong>}</div>
         {snapshot && <div className="sim-dataset-selector"><label className="sim-dataset-label">Dataset:
             <select className="sim-dataset-select" value={snapshot.snapshotId} onChange={e => setSelectedSnapshotId(e.target.value)}>{snapshots.map(s => <option key={s.snapshotId} value={s.snapshotId}>{s.label.replace(/\s*[·|—-]?\s*10 million races\b/gi, '').trim()} - {s.meta.course.replace(/^CM\d+(?:-[^·]+)?\s*·\s*/i, '')}</option>)}</select>
         </label></div>}

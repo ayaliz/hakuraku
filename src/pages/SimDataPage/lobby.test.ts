@@ -3,18 +3,22 @@ import test from 'node:test';
 import {
     buildLobbyRaceView,
     changeLobbyRunnerIdentity,
+    createBlankLobbyRunnerEdit,
     createLobbyRunnerEdit,
     isLobbyRunnerEditChanged,
     lowerRarityOwnedUniqueSkillId,
     lobbySkillFamilyId,
+    lobbySimulationTeamIds,
     ownedUniqueSkillId,
     replaceLobbySkillFamily,
+    rearrangeLobbyRunners,
     consumeLobbyRace,
     stageLobbyRace,
     toLobbyRunnerOverride,
+    type LobbyDraft,
     type SimDataLobbyRace,
 } from './lobby';
-import type { Build } from './types';
+import type { Build, Performer } from './types';
 import {
     buildSharedDetailedRaceSimulation,
     restoreSharedDetailedRaceSimulation,
@@ -75,6 +79,64 @@ test('creates a protected-unique build edit and serializes it for the simulator'
         distanceAptitude: 'S', surfaceAptitude: 'A', strategyAptitude: 'A',
         uniqueSkillId: 100011, uniqueSkillLevel: 5,
         skills: [{ skillId: 200331, level: 1 }, { skillId: 900011, level: 1 }],
+    });
+});
+
+test('removing or moving an imported runner materializes affected teams without losing analytical styles', () => {
+    const build = (id: string, card: number, style: Build['style'] = 1): Build => ({
+        id, card, chara: Math.floor(card / 100), style, racingStyle: 1, score: 20_000,
+        stats: [1200, 1200, 1200, 1200, 1200], aptitudes: ['A', 'A', 'A'], trainedIds: [], skills: [],
+    });
+    const team = (id: string, start: number): Performer => ({
+        id, owner: { id: `p${start}`, names: [`Player ${start}`] },
+        members: [build(`b${start}`, 100101, start === 1 ? 6 : 1), build(`b${start + 1}`, 100201), build(`b${start + 2}`, 100301)],
+        wins: 1, n: 3, ci: [0, 1], memberWins: [1, 0, 0],
+    });
+    const first = team('a'.repeat(64), 1);
+    const second = team('b'.repeat(64), 4);
+    const draft: LobbyDraft = {
+        mood: '5', seed: '', gates: { [`${first.id}:0`]: 2, [`${second.id}:1`]: 7 },
+        runnerEdits: {}, customRunners: {}, customRunnerSourceIds: {}, customRunnerStyles: {}, customRunnerScores: {}, customTeamOrigins: {},
+    };
+    const removed = rearrangeLobbyRunners([first, second, null], draft, { teamIndex: 0, memberIndex: 1 }, null);
+    assert.ok(removed);
+    assert.equal(removed.teams[0], null);
+    assert.equal(removed.teams[1], second);
+    assert.deepEqual(Object.values(removed.draft.customRunnerSourceIds).sort(), ['b1', 'b3']);
+    assert.equal(removed.draft.customRunnerStyles['custom:0:0'], 6);
+    assert.equal(removed.draft.customRunnerScores['custom:0:0'], 20_000);
+    assert.equal(removed.draft.gates['custom:0:0'], 2);
+
+    const swapped = rearrangeLobbyRunners([first, second, null], draft, { teamIndex: 0, memberIndex: 0 }, { teamIndex: 1, memberIndex: 1 });
+    assert.ok(swapped);
+    assert.deepEqual(swapped.teams, [null, null, null]);
+    assert.equal(swapped.draft.customRunnerSourceIds['custom:0:0'], 'b5');
+    assert.equal(swapped.draft.customRunnerSourceIds['custom:1:1'], 'b1');
+    assert.equal(swapped.draft.customRunnerStyles['custom:1:1'], 6);
+    assert.equal(swapped.draft.customRunnerScores['custom:1:1'], 20_000);
+    assert.equal(swapped.draft.gates['custom:0:0'], 7);
+    assert.equal(swapped.draft.gates['custom:1:1'], 2);
+    assert.deepEqual(lobbySimulationTeamIds(swapped.teams, swapped.draft), [first.id, second.id, null]);
+
+    const restored = rearrangeLobbyRunners(swapped.teams, swapped.draft, { teamIndex: 0, memberIndex: 0 }, { teamIndex: 1, memberIndex: 1 });
+    assert.ok(restored);
+    assert.deepEqual(restored.teams, [first, second, null]);
+    assert.deepEqual(restored.draft.customRunners, {});
+    assert.deepEqual(restored.draft.customRunnerScores, {});
+    assert.deepEqual(restored.draft.customTeamOrigins, {});
+    assert.equal(restored.draft.gates[`${first.id}:0`], 2);
+    assert.equal(restored.draft.gates[`${second.id}:1`], 7);
+});
+
+test('creates a complete default build for a custom lobby Uma', () => {
+    assert.deepEqual(createBlankLobbyRunnerEdit(100602), {
+        cardId: 100602,
+        stats: [1200, 1200, 1200, 1200, 1200],
+        aptitudes: ['A', 'A', 'A'],
+        runningStyle: 1,
+        uniqueSkillId: 110061,
+        uniqueSkillLevel: 6,
+        skills: [],
     });
 });
 

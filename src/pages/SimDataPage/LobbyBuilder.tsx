@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useMemo, useRef, useState, type Dispatch, type DragEvent, type SetStateAction } from 'react';
 import { Spinner } from 'react-bootstrap';
 import RaceWinRateResults from '../../components/RaceWinRateResults';
 import { computeSkillPoints } from '../../data/skillPoints';
@@ -12,23 +12,29 @@ import { simDataApiUrl, useSimData } from './data';
 import { number, Panel, percent, Portrait, StyleLabel } from './components';
 import LobbyRunnerEditor from './LobbyRunnerEditor';
 import {
+    createBlankLobbyRunnerEdit,
     createLobbyRunnerEdit,
+    customLobbyRunnerKey,
     isLobbyRunnerEditChanged,
+    lobbySimulationTeamIds,
     stageLobbyRace,
     toLobbyRunnerOverride,
     type LobbyDraft,
     type LobbyEditorCatalog,
     type LobbyMood,
     type LobbyRunnerEdit,
+    type LobbyRunnerPosition,
     type SimDataLobbyRace,
 } from './lobby';
 import type { Performer, Summary } from './types';
 
 type Props = {
     data: Summary;
-    teams: Performer[];
+    teams: (Performer | null)[];
     onBrowse: () => void;
-    onRemove: (teamId: string) => void;
+    onRemove: (slot: number) => void;
+    onRemoveRunner: (position: LobbyRunnerPosition) => void;
+    onMoveRunner: (from: LobbyRunnerPosition, to: LobbyRunnerPosition) => void;
     onClear: () => void;
     draft: LobbyDraft;
     onDraftChange: Dispatch<SetStateAction<LobbyDraft>>;
@@ -47,7 +53,7 @@ const moodOptions: [LobbyMood, string][] = [
 const liveTeamId = /^[a-f0-9]{64}$/;
 
 type LobbySimulationRequest = {
-    teamIds: string[];
+    teamIds: (string | null)[];
     mood: LobbyMood;
     gates: (number | null)[];
     runnerOverrides?: (ReturnType<typeof toLobbyRunnerOverride> | null)[];
@@ -59,8 +65,8 @@ type BatchReplayContext = {
     sourceRunnerMetadata: NonNullable<SimDataLobbyRace['sourceRunnerMetadata']>;
 };
 
-export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear, draft, onDraftChange }: Props) {
-    const { mood, seed, gates, runnerEdits } = draft;
+export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemoveRunner, onMoveRunner, onClear, draft, onDraftChange }: Props) {
+    const { mood, seed, gates, runnerEdits, customRunners, customRunnerSourceIds, customRunnerStyles, customRunnerScores = {} } = draft;
     const [status, setStatus] = useState<'idle' | 'running'>('idle');
     const [error, setError] = useState('');
     const [batch, setBatch] = useState<RaceWinRateBatch | undefined>(undefined);
@@ -75,28 +81,57 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear,
     const batchPollControllerRef = useRef<AbortController | null>(null);
     const batchReplayContextRef = useRef<BatchReplayContext | null>(null);
     const [editingKey, setEditingKey] = useState<string | null>(null);
+    const [dragging, setDragging] = useState<LobbyRunnerPosition | null>(null);
+    const [dragTarget, setDragTarget] = useState<LobbyRunnerPosition | null>(null);
     const editorCatalog = useSimData<LobbyEditorCatalog>(
         simDataApiUrl(`/api/simdata/snapshots/${encodeURIComponent(data.snapshotId)}/editor-catalog`),
         data.snapshotId,
     );
-    const runners = useMemo(() => teams.flatMap((team, teamIndex) => team.members.map((runner, memberIndex) => ({
-        key: `${team.id}:${memberIndex}`,
-        team,
-        teamIndex,
-        memberIndex,
-        runner,
-        card: data.cards[runner.card],
-    }))), [teams, data.cards]);
+    const runnerSlots = useMemo(() => teams.flatMap((team, teamIndex) => [0, 1, 2].map(memberIndex => {
+        const customKey = customLobbyRunnerKey(teamIndex, memberIndex);
+        const runner = team?.members[memberIndex];
+        return {
+            key: runner ? `${team.id}:${memberIndex}` : customKey,
+            team,
+            teamIndex,
+            memberIndex,
+            runner,
+            custom: runner ? undefined : customRunners[customKey],
+        };
+    })), [teams, customRunners]);
+    const runners = runnerSlots.filter(slot => slot.runner || slot.custom);
     const assignedGates = new Set(runners.map(({ key }) => gates[key]).filter((value): value is number => value !== undefined && value !== null));
-    const invalidTeam = teams.some(team => !liveTeamId.test(team.id));
+    const invalidTeam = teams.some(team => team !== null && !liveTeamId.test(team.id));
     const parsedSeed = seed.trim() === '' ? undefined : Number(seed);
     const invalidSeed = parsedSeed !== undefined && (!Number.isInteger(parsedSeed) || parsedSeed < -2147483648 || parsedSeed > 2147483647);
-    const ready = teams.length === 3 && !invalidTeam && !invalidSeed && status !== 'running';
+    const ready = runners.length === 9 && !invalidTeam && !invalidSeed && status !== 'running';
     const batchActive = isActiveRaceWinRateBatch(batch);
     const batchReady = ready && !batchSubmitting && !batchActive;
+    const filledCount = runners.length;
+    const occupiedTeamCount = teams.filter(Boolean).length + teams.filter((team, teamIndex) => !team
+        && [0, 1, 2].some(memberIndex => customRunners[customLobbyRunnerKey(teamIndex, memberIndex)])).length;
     const assignedCount = runners.filter(({ key }) => gates[key] !== undefined && gates[key] !== null).length;
-    const modifiedCount = runners.filter(({ key, runner }) => runnerEdits[key] && isLobbyRunnerEditChanged(runner, runnerEdits[key])).length;
-    const editingRunner = editingKey ? runners.find(runner => runner.key === editingKey) : undefined;
+    const capturedEditCount = runners.filter(({ key, runner }) => runner && runnerEdits[key] && isLobbyRunnerEditChanged(runner, runnerEdits[key])).length;
+    const modifiedCount = capturedEditCount + Object.keys(customRunners).length;
+    const editingRunner = editingKey ? runnerSlots.find(runner => runner.key === editingKey) : undefined;
+    const displayedBatch = batch ? {
+        ...batch,
+        results: {
+            ...batch.results,
+            runners: batch.results.runners.map(runner => {
+                const source = runnerSlots.find(candidate => candidate.teamIndex === runner.teamIndex
+                    && candidate.memberIndex === runner.memberIndex);
+                const edit = source?.custom ?? (source ? runnerEdits[source.key] : undefined);
+                const cardId = edit?.cardId ?? source?.runner?.card;
+                return cardId ? {
+                    ...runner,
+                    cardId,
+                    charaId: Math.floor(cardId / 100),
+                    ...(edit ? { rawStamina: edit.stats[1], runningStyle: edit.runningStyle - 1 } : {}),
+                } : runner;
+            }),
+        },
+    } : undefined;
 
     const abandonBatch = () => {
         const active = activeBatchRef.current;
@@ -136,20 +171,23 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear,
     }, []);
 
     const lobbyRequest = (): LobbySimulationRequest => {
-        const runnerOverrides = runners.map(({ key }) => runnerEdits[key] ? toLobbyRunnerOverride(runnerEdits[key]) : null);
+        const runnerOverrides = runnerSlots.map(({ key, custom }) => {
+            const edit = custom ?? runnerEdits[key];
+            return edit ? toLobbyRunnerOverride(edit) : null;
+        });
         return {
-            teamIds: teams.map(team => team.id),
+            teamIds: lobbySimulationTeamIds(teams, draft),
             mood,
-            gates: runners.map(({ key }) => gates[key] ?? null),
+            gates: runnerSlots.map(({ key }) => gates[key] ?? null),
             ...(runnerOverrides.some(Boolean) ? { runnerOverrides } : {}),
             ...(parsedSeed === undefined ? {} : { seed: parsedSeed }),
         };
     };
 
-    const sourceRunnerMetadata = (): NonNullable<SimDataLobbyRace['sourceRunnerMetadata']> => runners.map(({ key, runner }) => ({
-        deck: runner.deck ?? [],
-        parents: runner.parents ?? [],
-        ...(runnerEdits[key] ? { modifiedInLobby: true } : {}),
+    const sourceRunnerMetadata = (): NonNullable<SimDataLobbyRace['sourceRunnerMetadata']> => runnerSlots.map(({ key, runner, custom }) => ({
+        deck: runner?.deck ?? [],
+        parents: runner?.parents ?? [],
+        ...((runnerEdits[key] || custom && !customRunnerSourceIds[key]) ? { modifiedInLobby: true } : {}),
     }));
 
     const readBatchResponse = async (response: Response): Promise<RaceWinRateBatch> => {
@@ -201,8 +239,12 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear,
         onDraftChange(previous => ({ ...previous, gates: { ...previous.gates, [key]: value ? Number(value) : null } }));
     };
 
-    const saveRunnerEdit = (key: string, runner: Performer['members'][number], edit: LobbyRunnerEdit) => {
+    const saveRunnerEdit = (key: string, runner: Performer['members'][number] | undefined, edit: LobbyRunnerEdit) => {
         onDraftChange(previous => {
+            if (!runner) return {
+                ...previous,
+                customRunners: { ...previous.customRunners, [key]: edit },
+            };
             const next = { ...previous.runnerEdits };
             if (isLobbyRunnerEditChanged(runner, edit)) next[key] = edit;
             else delete next[key];
@@ -210,6 +252,35 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear,
         });
         setEditingKey(null);
     };
+
+    const samePosition = (left: LobbyRunnerPosition | null, right: LobbyRunnerPosition) => Boolean(left
+        && left.teamIndex === right.teamIndex && left.memberIndex === right.memberIndex);
+    const dropHandlers = (position: LobbyRunnerPosition) => ({
+        onDragOver: (event: DragEvent<HTMLLIElement>) => {
+            if (!dragging || samePosition(dragging, position)) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            setDragTarget(position);
+        },
+        onDragLeave: () => { if (samePosition(dragTarget, position)) setDragTarget(null); },
+        onDrop: (event: DragEvent<HTMLLIElement>) => {
+            event.preventDefault();
+            if (dragging && !samePosition(dragging, position)) onMoveRunner(dragging, position);
+            setDragging(null);
+            setDragTarget(null);
+        },
+    });
+    const dragHandlers = (position: LobbyRunnerPosition, enabled: boolean) => ({
+        draggable: enabled,
+        onDragStart: (event: DragEvent<HTMLLIElement>) => {
+            if (!enabled) { event.preventDefault(); return; }
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', `${position.teamIndex}:${position.memberIndex}`);
+            setDragging(position);
+        },
+        onDragEnd: () => { setDragging(null); setDragTarget(null); },
+    });
+
 
     const openSimulatedRace = async (
         request: LobbySimulationRequest,
@@ -332,7 +403,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear,
     };
 
     return <div className="sim-sections sim-lobby">
-        <Panel title={`Teams · ${teams.length}/3`} controls={
+        <Panel title={`Lobby · ${filledCount}/9 Umas`} controls={
             <div className="sim-lobby-panel-actions">
                 <label>Mood
                     <select value={mood} onChange={event => onDraftChange(previous => ({ ...previous, mood: event.target.value as LobbyMood }))}>{moodOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
@@ -341,15 +412,22 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear,
                     <input type="number" value={seed} onChange={event => onDraftChange(previous => ({ ...previous, seed: event.target.value }))} placeholder="Random" min={-2147483648} max={2147483647} />
                 </label>
                 <button type="button" className="sim-button" onClick={onBrowse}>Browse teams</button>
-                {modifiedCount > 0 && <button type="button" className="sim-link" onClick={() => onDraftChange(previous => ({ ...previous, runnerEdits: {} }))}>Reset edits</button>}
-                {teams.length > 0 && <button type="button" className="sim-link" onClick={onClear}>Clear</button>}
+                {capturedEditCount > 0 && <button type="button" className="sim-link" onClick={() => onDraftChange(previous => ({ ...previous, runnerEdits: {} }))}>Reset edits</button>}
+                {filledCount > 0 && <button type="button" className="sim-link" onClick={onClear}>Clear</button>}
             </div>
         }>
+            <p className="sim-lobby-arrange-hint">Drag an Uma onto another slot to move or swap it. Changing an imported team converts it to a custom team.</p>
             <div className="sim-lobby-team-grid">
                 {[0, 1, 2].map(slot => {
                     const team = teams[slot];
+                    const customMembers = [0, 1, 2].map(memberIndex => ({
+                        memberIndex,
+                        key: customLobbyRunnerKey(slot, memberIndex),
+                        edit: customRunners[customLobbyRunnerKey(slot, memberIndex)],
+                    }));
+                    const hasCustomMembers = customMembers.some(({ edit }) => Boolean(edit));
                     return team ? <article className="sim-lobby-team" key={team.id}>
-                        <header><span>Team {slot + 1}</span><button type="button" className="sim-link" onClick={() => onRemove(team.id)}>Remove</button></header>
+                        <header><span>Team {slot + 1}</span><button type="button" className="sim-link" onClick={() => onRemove(slot)}>Remove</button></header>
                         <div className="sim-lobby-team-rate"><strong>{percent(team.wins / team.n)}</strong><span>{number(team.wins)} wins in {number(team.n)} races</span></div>
                         <ul>{team.members.map((runner, memberIndex) => {
                             const key = `${team.id}:${memberIndex}`;
@@ -358,13 +436,33 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear,
                             const card = data.cards[cardId] ?? data.cards[runner.card];
                             const runningStyle = edit?.runningStyle ?? runner.racingStyle;
                             const displayStyle = runner.style === 6 ? 6 : runningStyle;
-                            const editable = Boolean(createLobbyRunnerEdit(runner) && editorCatalog.data);
-                            return <li key={`${runner.id}-${memberIndex}`}><button type="button" className="sim-lobby-runner-edit" disabled={!editable} onClick={() => setEditingKey(key)} title={editable ? `Edit ${card.name}` : editorCatalog.error ? 'Build editor data is unavailable' : 'Loading build editor'}>
-                                <Portrait card={cardId} name={card.name} /><span><strong>{card.name}</strong><StyleLabel style={displayStyle} racingStyle={runningStyle} short /></span>
+                            const movable = Boolean(createLobbyRunnerEdit(runner));
+                            const editable = Boolean(movable && editorCatalog.data);
+                            const position = { teamIndex: slot, memberIndex };
+                            return <li key={`${runner.id}-${memberIndex}`} className={`sim-lobby-runner-slot${samePosition(dragging, position) ? ' is-dragging' : ''}${samePosition(dragTarget, position) ? ' is-drop-target' : ''}`} {...dragHandlers(position, movable)} {...dropHandlers(position)}><button type="button" className="sim-lobby-runner-edit" disabled={!editable} onClick={() => setEditingKey(key)} title={editable ? `Edit ${card.name}` : editorCatalog.error ? 'Build editor data is unavailable' : 'Loading build editor'}>
+                                <span className="sim-lobby-drag-handle" aria-hidden="true">⋮⋮</span><Portrait card={cardId} name={card.name} /><span className="sim-lobby-runner-identity"><strong>{card.name}</strong><StyleLabel style={displayStyle} racingStyle={runningStyle} short /></span>
                                 {edit && <span className="sim-lobby-modified">Modified</span>}<span className="sim-lobby-edit-cue">Edit</span>
-                            </button></li>;
+                            </button><button type="button" className="sim-link sim-lobby-remove-uma" disabled={!movable} onClick={() => onRemoveRunner(position)} aria-label={`Remove ${card.name}`}>Remove</button></li>;
                         })}</ul>
-                    </article> : <button type="button" className="sim-lobby-empty-slot" key={slot} onClick={onBrowse}><span>Team {slot + 1}</span><strong>+ Select a team</strong></button>;
+                    </article> : <article className="sim-lobby-team sim-lobby-custom-team" key={slot}>
+                        <header><span>Team {slot + 1}</span>{hasCustomMembers
+                            ? <button type="button" className="sim-link" onClick={() => onRemove(slot)}>Remove</button>
+                            : <button type="button" className="sim-link" onClick={onBrowse}>Select team</button>}
+                        </header>
+                        <div className={`sim-lobby-team-rate${hasCustomMembers ? ' sim-lobby-custom-team-label' : ' sim-lobby-team-rate-spacer'}`} aria-hidden={!hasCustomMembers}><strong>{hasCustomMembers ? 'Custom team' : '\u00a0'}</strong></div>
+                        <ul>{customMembers.map(({ memberIndex, key, edit }) => {
+                            const position = { teamIndex: slot, memberIndex };
+                            const dropClass = samePosition(dragTarget, position) ? ' is-drop-target' : '';
+                            if (!edit) return <li key={key} className={`sim-lobby-runner-slot sim-lobby-empty-runner-slot${dropClass}`} {...dropHandlers(position)}><button type="button" className="sim-lobby-add-uma" disabled={!editorCatalog.data} title={editorCatalog.data ? 'Add a custom Uma' : 'Loading editor…'} onClick={() => setEditingKey(key)}>
+                                <span aria-hidden="true">+</span><strong>Add Uma</strong>
+                            </button></li>;
+                            const card = data.cards[edit.cardId];
+                            return <li key={key} className={`sim-lobby-runner-slot sim-lobby-custom-runner${samePosition(dragging, position) ? ' is-dragging' : ''}${dropClass}`} {...dragHandlers(position, true)} {...dropHandlers(position)}><button type="button" className="sim-lobby-runner-edit" onClick={() => setEditingKey(key)}>
+                                <span className="sim-lobby-drag-handle" aria-hidden="true">⋮⋮</span><Portrait card={edit.cardId} name={card?.name ?? 'Custom Uma'} /><span className="sim-lobby-runner-identity"><strong>{card?.name ?? `Uma ${edit.cardId}`}</strong><StyleLabel style={customRunnerStyles[key] ?? edit.runningStyle} racingStyle={edit.runningStyle} short /></span>
+                                <span className="sim-lobby-modified">{customRunnerSourceIds[key] ? 'Imported' : 'Custom'}</span><span className="sim-lobby-edit-cue">Edit</span>
+                            </button><button type="button" className="sim-link sim-lobby-remove-uma" onClick={() => onRemoveRunner(position)} aria-label={`Remove custom Uma ${memberIndex + 1}`}>Remove</button></li>;
+                        })}</ul>
+                    </article>;
                 })}
             </div>
             {invalidTeam && <p className="sim-query-error" role="alert">One of these teams came from the offline archive and cannot be simulated. Remove it and select the live result instead.</p>}
@@ -372,15 +470,16 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear,
         </Panel>
 
         <Panel title={`Gate assignments · ${assignedCount}/9 fixed`}>
-            {runners.length ? <div className="sim-lobby-gates">{teams.map((team, teamIndex) => (
-                <div className="sim-lobby-gate-team" key={team.id}>
-                    {runners.filter(runner => runner.teamIndex === teamIndex).map(({ key, runner, card: originalCard }) => {
+            {runners.length ? <div className="sim-lobby-gates">{[0, 1, 2].map(teamIndex => (
+                <div className="sim-lobby-gate-team" key={teamIndex}>
+                    {runners.filter(runner => runner.teamIndex === teamIndex).map(({ key, runner, custom }) => {
                         const selected = gates[key] ?? null;
-                        const edit = runnerEdits[key];
-                        const cardId = edit?.cardId ?? runner.card;
-                        const card = data.cards[cardId] ?? originalCard;
-                        const runningStyle = edit?.runningStyle ?? runner.racingStyle;
-                        const displayStyle = runner.style === 6 ? 6 : runningStyle;
+                        const edit = custom ?? runnerEdits[key];
+                        const cardId = edit?.cardId ?? runner!.card;
+                        const card = data.cards[cardId] ?? data.cards[runner!.card];
+                        const runningStyle = edit?.runningStyle ?? runner!.racingStyle;
+                        const analyticalStyle = runner?.style ?? customRunnerStyles[key];
+                        const displayStyle = analyticalStyle === 6 ? 6 : runningStyle;
                         return <label key={key}>
                             <span className="sim-lobby-gate-runner"><span className="sim-lobby-team-number">{teamIndex + 1}</span><Portrait card={cardId} name={card.name} /><span><strong>{card.name}</strong><StyleLabel style={displayStyle} racingStyle={runningStyle} short />{edit && <small>Modified build</small>}</span></span>
                             <select value={selected ?? ''} onChange={event => chooseGate(key, event.target.value)} aria-label={`${card.name} gate`}>
@@ -394,7 +493,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear,
         </Panel>
 
         <div className="sim-lobby-run">
-            <div><strong>{teams.length === 3 ? 'Lobby ready' : `${3 - teams.length} more team${teams.length === 2 ? '' : 's'} needed`}</strong>{modifiedCount > 0 && <span>{modifiedCount} runner{modifiedCount === 1 ? '' : 's'} modified.</span>}</div>
+            <div><strong>{filledCount === 9 ? 'Lobby ready' : `${9 - filledCount} more Uma${filledCount === 8 ? '' : 's'} needed`}</strong>{modifiedCount > 0 && <span>{modifiedCount} runner{modifiedCount === 1 ? '' : 's'} custom or modified across {occupiedTeamCount} team{occupiedTeamCount === 1 ? '' : 's'}.</span>}</div>
             <div className="sim-lobby-run-actions">
                 <button type="button" className="sim-button sim-lobby-run-button" disabled={!ready} onClick={runRace}>{status === 'running' ? <><Spinner animation="border" size="sm" /> Simulating…</> : 'Run race'}</button>
                 <button type="button" className="sim-button sim-lobby-batch-button" disabled={!batchReady} onClick={runBatch}>
@@ -410,39 +509,44 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onClear,
         {invalidSeed && <p className="sim-query-error" role="alert">Seed must be a whole 32-bit number.</p>}
         {error && <p className="sim-query-error" role="alert">{error}</p>}
         {batchError && <p className="sim-query-error" role="alert">Win-rate estimate failed: {batchError}</p>}
-        {batch && batch.status !== 'failed' && <RaceWinRateResults
-            batch={batch}
+        {displayedBatch && displayedBatch.status !== 'failed' && <RaceWinRateResults
+            batch={displayedBatch}
             active={batchActive}
             onClose={dismissBatchResults}
             onViewRace={viewBatchRace}
             getRunnerLabel={(runner: RaceWinRateRunner) => {
                 const card = data.cards[runner.cardId]
-                    ?? data.cards[teams[runner.teamIndex]?.members[runner.memberIndex]?.card];
+                    ?? data.cards[teams[runner.teamIndex]?.members[runner.memberIndex]?.card ?? 0];
                 return card?.name ?? `Gate ${runner.gateNumber}`;
             }}
             getRunnerBuild={(runner: RaceWinRateRunner) => {
                 const source = runners.find(candidate => candidate.teamIndex === runner.teamIndex
                     && candidate.memberIndex === runner.memberIndex);
-                if (!source || !source.runner.stats || !source.runner.skills) return undefined;
-                const edit = runnerEdits[source.key];
-                const stats = edit?.stats ?? source.runner.stats;
+                if (!source) return undefined;
+                const edit = source.custom ?? runnerEdits[source.key];
+                if (!edit && (!source.runner?.stats || !source.runner.skills)) return undefined;
+                const stats = edit?.stats ?? source.runner!.stats!;
                 const skillIds = edit
                     ? [...edit.skills.map(([skillId]) => skillId), edit.uniqueSkillId]
-                    : source.runner.skills.map(([skillId]) => skillId);
+                    : source.runner!.skills!.map(([skillId]) => skillId);
                 return {
-                    rankScore: source.runner.score,
+                    rankScore: source.runner?.score ?? customRunnerScores[source.key] ?? 0,
                     stats,
                     skillPoints: computeSkillPoints(new Set(skillIds)),
                     skillIds,
                     rawStamina: stats[1],
                     motivation: /^\d$/.test(mood) ? Number(mood) : undefined,
-                    runningStyle: (edit?.runningStyle ?? source.runner.racingStyle) - 1,
+                    runningStyle: (edit?.runningStyle ?? source.runner!.racingStyle) - 1,
                 };
             }}
         />}
         {editingRunner && editorCatalog.data && (() => {
-            const initial = runnerEdits[editingRunner.key] ?? createLobbyRunnerEdit(editingRunner.runner);
+            const firstCard = editorCatalog.data.cards.find(cardId => data.cards[cardId]);
+            const initial = editingRunner.custom
+                ?? runnerEdits[editingRunner.key]
+                ?? (editingRunner.runner ? createLobbyRunnerEdit(editingRunner.runner) : firstCard ? createBlankLobbyRunnerEdit(firstCard) : null);
             return initial ? <LobbyRunnerEditor key={editingRunner.key} data={data} initial={initial} catalog={editorCatalog.data}
+                createMode={!editingRunner.runner && !editingRunner.custom}
                 onSave={edit => saveRunnerEdit(editingRunner.key, editingRunner.runner, edit)} onClose={() => setEditingKey(null)} /> : null;
         })()}
     </div>;

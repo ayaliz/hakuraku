@@ -67,6 +67,35 @@ echarts.use([
     GraphicComponent,
 ]);
 
+const CAMERA_WINDOW_STORAGE_KEY = "hakuraku:race-replay-camera-window";
+const DEFAULT_CAMERA_WINDOW = 80;
+const MIN_CAMERA_WINDOW = 20;
+const MAX_CAMERA_WINDOW = 400;
+
+function readStoredCameraWindow(): number {
+    try {
+        const storedValue = window.localStorage.getItem(CAMERA_WINDOW_STORAGE_KEY);
+        if (storedValue === null) return DEFAULT_CAMERA_WINDOW;
+
+        const cameraWindow = Number(storedValue);
+        return Number.isInteger(cameraWindow)
+            && cameraWindow >= MIN_CAMERA_WINDOW
+            && cameraWindow <= MAX_CAMERA_WINDOW
+            ? cameraWindow
+            : DEFAULT_CAMERA_WINDOW;
+    } catch {
+        return DEFAULT_CAMERA_WINDOW;
+    }
+}
+
+function writeStoredCameraWindow(cameraWindow: number) {
+    try {
+        window.localStorage.setItem(CAMERA_WINDOW_STORAGE_KEY, String(cameraWindow));
+    } catch {
+        // The preference remains available for this page view.
+    }
+}
+
 const RaceReplay: React.FC<RaceReplayProps> = ({
     raceData,
     raceHorseInfo,
@@ -154,7 +183,12 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
     // Used only for frame counter display and keyboard handler — throttled to ~15fps via React state
     const interpolatedFrame = useInterpolatedFrame(frames, renderTime);
 
-    const [cameraWindow, setCameraWindow] = useState(80);
+    const [cameraWindow, setCameraWindow] = useState(readStoredCameraWindow);
+
+    const updateCameraWindow = useCallback((cameraWindow: number) => {
+        setCameraWindow(cameraWindow);
+        writeStoredCameraWindow(cameraWindow);
+    }, []);
 
     const horseInfoByIdx = useMemo(() => { const map: Record<number, any> = {}; (raceHorseInfo ?? []).forEach((h: any) => { const idx = (h.frame_order ?? h.frameOrder) - 1; if (idx >= 0) map[idx] = h; }); return map; }, [raceHorseInfo]);
 
@@ -564,7 +598,9 @@ const RaceReplay: React.FC<RaceReplayProps> = ({
                                 value={cameraWindow}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                     const v = parseInt(e.target.value, 10);
-                                    if (!isNaN(v) && v >= 20 && v <= 400) setCameraWindow(v);
+                                    if (!isNaN(v) && v >= MIN_CAMERA_WINDOW && v <= MAX_CAMERA_WINDOW) {
+                                        updateCameraWindow(v);
+                                    }
                                 }}
                                 className="rr-window-input"
                             />

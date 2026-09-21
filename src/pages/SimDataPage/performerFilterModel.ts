@@ -1,5 +1,5 @@
 import { STRATEGY_DISPLAY_ORDER, STRATEGY_NAMES } from "../MultiRacePage/components/WinDistributionCharts/constants";
-import type { Card, Pair, Requirement, TeamMatcher } from "./types";
+import type { BuildDetailFilter, Card, Pair, Requirement, TeamMatcher } from "./types";
 
 export type FilterOption = {
     key: string;
@@ -32,9 +32,9 @@ export function matchersFromRequirement(value: Requirement): TeamMatcher[] {
     return hasMatcher(matcher) ? [matcher] : [];
 }
 
-export function requirementFromMatchers(values: TeamMatcher[], exclude = false): Requirement {
+export function requirementFromMatchers(values: TeamMatcher[], exclude = false, details: BuildDetailFilter[] = []): Requirement {
     const base = values.length > 1 ? { anyOf: values } : values[0] ?? {};
-    return exclude && values.length ? { ...base, exclude: true } : base;
+    return { ...base, ...(exclude && values.length ? { exclude: true } : {}), ...(details.length ? { details } : {}) };
 }
 
 export function legacyFilterOption(value: TeamMatcher, cards: Record<number, Card>): FilterOption | undefined {

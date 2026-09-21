@@ -1,7 +1,7 @@
 import type { DetailedRaceSimulationResponse } from '../../data/DetailedRaceSimulation';
 import { hydrateCompactRaceHorseData } from '../../data/TrainedCharaData';
 import { getCourseAptitudeFilters } from '../MultiRacePage/utils';
-import type { Build, Runner } from './types';
+import type { Build, Performer, Runner, Style } from './types';
 
 export type LobbyMood = 'random' | 'random-no-awful' | 'preserve' | '1' | '2' | '3' | '4' | '5';
 export type LobbyAptitude = 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
@@ -22,6 +22,11 @@ export type LobbyDraft = {
     seed: string;
     gates: Record<string, number | null>;
     runnerEdits: Record<string, LobbyRunnerEdit>;
+    customRunners: Record<string, LobbyRunnerEdit>;
+    customRunnerSourceIds: Record<string, string>;
+    customRunnerStyles: Record<string, Style>;
+    customRunnerScores: Record<string, number>;
+    customTeamOrigins: Record<string, Performer>;
 };
 
 export const LOBBY_STAT_MIN = 1;
@@ -101,6 +106,118 @@ export function createLobbyRunnerEdit(runner: Runner): LobbyRunnerEdit | null {
     };
 }
 
+export function createBlankLobbyRunnerEdit(cardId: number): LobbyRunnerEdit {
+    return {
+        cardId,
+        stats: [1200, 1200, 1200, 1200, 1200],
+        aptitudes: ['A', 'A', 'A'],
+        runningStyle: 1,
+        uniqueSkillId: ownedUniqueSkillId(cardId),
+        uniqueSkillLevel: 6,
+        skills: [],
+    };
+}
+
+export function customLobbyRunnerKey(teamIndex: number, memberIndex: number): string {
+    return `custom:${teamIndex}:${memberIndex}`;
+}
+
+export type LobbyRunnerPosition = { teamIndex: number; memberIndex: number };
+
+export function lobbySimulationTeamIds(
+    teams: (Performer | null)[],
+    draft: Pick<LobbyDraft, 'customTeamOrigins'>,
+): (string | null)[] {
+    return teams.map((team, teamIndex) => team?.id ?? draft.customTeamOrigins[teamIndex]?.id ?? null);
+}
+
+export function rearrangeLobbyRunners(
+    teams: (Performer | null)[],
+    draft: LobbyDraft,
+    from: LobbyRunnerPosition,
+    to: LobbyRunnerPosition | null,
+): { teams: (Performer | null)[]; draft: LobbyDraft } | null {
+    type Item = { edit: LobbyRunnerEdit; sourceId?: string; style?: Style; score?: number; gate?: number | null };
+    const affected = new Set([from.teamIndex, ...(to ? [to.teamIndex] : [])]);
+    const grid: (Item | null)[][] = teams.map((team, teamIndex) => [0, 1, 2].map(memberIndex => {
+        if (team) {
+            const runner = team.members[memberIndex];
+            const originalKey = `${team.id}:${memberIndex}`;
+            const edit = draft.runnerEdits[originalKey] ?? createLobbyRunnerEdit(runner);
+            if (!edit) return null;
+            return { edit, sourceId: runner.id, style: runner.style, score: runner.score, gate: draft.gates[originalKey] };
+        }
+        const key = customLobbyRunnerKey(teamIndex, memberIndex);
+        const edit = draft.customRunners[key];
+        return edit ? { edit, sourceId: draft.customRunnerSourceIds[key], style: draft.customRunnerStyles[key], score: draft.customRunnerScores?.[key], gate: draft.gates[key] } : null;
+    }));
+    if (!grid[from.teamIndex]?.[from.memberIndex]) return null;
+    for (const teamIndex of affected) {
+        if (teams[teamIndex] && grid[teamIndex].some(item => !item)) return null;
+    }
+    if (to) [grid[from.teamIndex][from.memberIndex], grid[to.teamIndex][to.memberIndex]] = [grid[to.teamIndex][to.memberIndex], grid[from.teamIndex][from.memberIndex]];
+    else grid[from.teamIndex][from.memberIndex] = null;
+
+    const nextDraft: LobbyDraft = {
+        ...draft,
+        gates: { ...draft.gates },
+        runnerEdits: { ...draft.runnerEdits },
+        customRunners: { ...draft.customRunners },
+        customRunnerSourceIds: { ...draft.customRunnerSourceIds },
+        customRunnerStyles: { ...draft.customRunnerStyles },
+        customRunnerScores: { ...(draft.customRunnerScores ?? {}) },
+        customTeamOrigins: { ...draft.customTeamOrigins },
+    };
+    for (const teamIndex of affected) {
+        const team = teams[teamIndex];
+        if (team && !nextDraft.customTeamOrigins[teamIndex]) nextDraft.customTeamOrigins[teamIndex] = team;
+        for (let memberIndex = 0; memberIndex < 3; memberIndex++) {
+            const customKey = customLobbyRunnerKey(teamIndex, memberIndex);
+            delete nextDraft.customRunners[customKey];
+            delete nextDraft.customRunnerSourceIds[customKey];
+            delete nextDraft.customRunnerStyles[customKey];
+            delete nextDraft.customRunnerScores[customKey];
+            delete nextDraft.gates[customKey];
+            if (team) {
+                const originalKey = `${team.id}:${memberIndex}`;
+                delete nextDraft.runnerEdits[originalKey];
+                delete nextDraft.gates[originalKey];
+            }
+            const item = grid[teamIndex][memberIndex];
+            if (!item) continue;
+            nextDraft.customRunners[customKey] = item.edit;
+            if (item.sourceId) nextDraft.customRunnerSourceIds[customKey] = item.sourceId;
+            if (item.style) nextDraft.customRunnerStyles[customKey] = item.style;
+            if (item.score !== undefined) nextDraft.customRunnerScores[customKey] = item.score;
+            if (item.gate !== undefined) nextDraft.gates[customKey] = item.gate;
+        }
+    }
+    const nextTeams = teams.map((team, teamIndex) => affected.has(teamIndex) ? null : team);
+    for (const teamIndex of affected) {
+        const origin = nextDraft.customTeamOrigins[teamIndex];
+        if (!origin || !grid[teamIndex].every((item, memberIndex) => item?.sourceId === origin.members[memberIndex]?.id)) continue;
+        nextTeams[teamIndex] = origin;
+        for (let memberIndex = 0; memberIndex < 3; memberIndex++) {
+            const customKey = customLobbyRunnerKey(teamIndex, memberIndex);
+            const originalKey = `${origin.id}:${memberIndex}`;
+            const item = grid[teamIndex][memberIndex]!;
+            delete nextDraft.customRunners[customKey];
+            delete nextDraft.customRunnerSourceIds[customKey];
+            delete nextDraft.customRunnerStyles[customKey];
+            delete nextDraft.customRunnerScores[customKey];
+            delete nextDraft.gates[customKey];
+            if (isLobbyRunnerEditChanged(origin.members[memberIndex], item.edit)) nextDraft.runnerEdits[originalKey] = item.edit;
+            else delete nextDraft.runnerEdits[originalKey];
+            if (item.gate !== undefined) nextDraft.gates[originalKey] = item.gate;
+        }
+        delete nextDraft.customTeamOrigins[teamIndex];
+    }
+    return {
+        teams: nextTeams,
+        draft: nextDraft,
+    };
+}
+
 export function isLobbyRunnerEditChanged(runner: Runner, edit: LobbyRunnerEdit): boolean {
     const original = createLobbyRunnerEdit(runner);
     return original === null || JSON.stringify(original) !== JSON.stringify(edit);
@@ -148,7 +265,7 @@ export type SimDataLobbyRace = {
     snapshotId: string;
     engineBuild: string;
     seed: number;
-    teamIds: string[];
+    teamIds: (string | null)[];
     runnerOrder: number[];
     sourceRunnerMetadata?: (Pick<Build, 'deck' | 'parents'> & { modifiedInLobby?: boolean })[];
     raceInput: {

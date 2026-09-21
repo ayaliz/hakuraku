@@ -9,6 +9,7 @@ import {
     matchersFromRequirement,
     requirementFromMatchers,
 } from "./performerFilterModel";
+import { matchesTeam, parseQuery, queryText } from "./query";
 
 test("performer filter requirements round-trip alternatives and exclusions", () => {
     const alternatives = [{ card: 100101, style: 1 }, { chara: 1002, style: 2 }];
@@ -53,4 +54,23 @@ test("performer filter options include styles, costume-wide choices, and exact p
     assert.equal(anyStyle?.detail, "Any style");
     assert.equal(exact?.detail, "Front Runner");
     assert.match(exact?.search ?? "", /default/);
+});
+
+test("detailed performer requirements serialize and match the same team member", () => {
+    const slots = [{ style: 1, details: [
+        { kind: "number" as const, field: "speed" as const, min: 1500 },
+        { kind: "aptitude" as const, field: "distance" as const, mode: "atLeast" as const, grade: 7 },
+        { kind: "skill" as const, id: 200331 },
+        { kind: "support" as const, id: 30028, exclude: true },
+    ] }, {}, {}];
+    const text = queryText(slots, {});
+    assert.match(text, /^v2:/);
+    assert.deepEqual(parseQuery(text, {}), slots);
+    const members = [
+        { id: "a", card: 1, chara: 1, style: 1 as const, racingStyle: 1, score: 1, stats: [1500, 1000, 1000, 1000, 1000] as [number, number, number, number, number], skillPoints: 3000, aptitudes: ['A', 'A', 'A'] as [string, string, string], skills: [[200331, 1]] as [number, number][], deck: [] },
+        { id: "b", card: 2, chara: 2, style: 2 as const, racingStyle: 2, score: 1 },
+        { id: "c", card: 3, chara: 3, style: 3 as const, racingStyle: 3, score: 1 },
+    ];
+    assert.equal(matchesTeam(members, slots), true);
+    assert.equal(matchesTeam([{ ...members[0], deck: [{ position: 1, id: 30028, lb: 4, exp: 0 }] }, members[1], members[2]], slots), false);
 });

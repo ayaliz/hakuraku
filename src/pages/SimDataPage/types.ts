@@ -1,7 +1,14 @@
 export type Interval = [number, number];
 export type Style = 1 | 2 | 3 | 4 | 5 | 6;
 export type TeamMatcher = { card?: number; chara?: number; style?: number };
-export type Requirement = TeamMatcher & { exclude?: boolean; anyOf?: TeamMatcher[] };
+export type BuildNumberField = 'speed' | 'stamina' | 'power' | 'guts' | 'wit';
+export type BuildAptitudeField = 'surface' | 'distance' | 'style';
+export type BuildDetailFilter =
+    | { kind: 'number'; field: BuildNumberField; min?: number; max?: number }
+    | { kind: 'aptitude'; field: BuildAptitudeField; mode: 'exact' | 'not' | 'atLeast' | 'atMost'; grade: number }
+    | { kind: 'skill'; id: number; exclude?: boolean }
+    | { kind: 'support'; id: number; exclude?: boolean; lb?: number };
+export type Requirement = TeamMatcher & { exclude?: boolean; anyOf?: TeamMatcher[]; details?: BuildDetailFilter[] };
 export type Card = { chara: number; name: string; outfit: string };
 export type TeamRate = {
     key: string; name: string; owners: number; teamExposures: number; teamWins: number;
@@ -47,6 +54,7 @@ export type Summary = {
 export type Runner = {
     id: string; card: number; chara: number; style: Style; racingStyle: number; score: number;
     stats?: [number, number, number, number, number]; skills?: [number, number][];
+    aptitudes?: [string, string, string];
     deck?: { position: number; id: number; lb: number; exp: number }[];
     parents?: { positionId: number; cardId: number; rank: number; factors: { id: number; level: number }[] }[];
 };
@@ -62,11 +70,12 @@ export type PerformerIndex = { snapshotId: string; teams: Performer[] };
 export type TeamSearchResponse = {
     snapshotId: string; totalTeams: number; totalOwners: number; teams: Performer[];
 };
+export type OtherTeamsResponse = { snapshotId: string; sourceTeamId: string; teams: Performer[] };
 export type TeamDistributionResponse = {
     snapshotId: string; totalTeams: number; median: number | null; topDecile: number | null;
     bins: { index: number; count: number; observedMin: number; observedMax: number }[];
 };
-export type LobbyEditorCatalog = { snapshotId: string; cards: number[]; skills: number[] };
+export type LobbyEditorCatalog = { snapshotId: string; cards: number[]; skills: number[]; supportCards?: number[] };
 export type CompactPerformerIndex = {
     snapshotId: string; format: 2 | 3; builds: [number, number, number, number, number][];
     // Format 3 carries the simulator-resolvable team IDs while retaining the

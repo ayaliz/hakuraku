@@ -24,6 +24,7 @@ type Props = {
     data: Summary;
     initial: LobbyRunnerEdit;
     catalog: LobbyEditorCatalog;
+    createMode?: boolean;
     onSave: (value: LobbyRunnerEdit) => void;
     onClose: () => void;
 };
@@ -57,7 +58,7 @@ function SkillIcon({ skillId }: { skillId: number }) {
     return url ? <img src={url} alt="" loading="lazy" /> : <span className="sim-lobby-skill-placeholder" aria-hidden="true">◇</span>;
 }
 
-export default function LobbyRunnerEditor({ data, initial, catalog, onSave, onClose }: Props) {
+export default function LobbyRunnerEditor({ data, initial, catalog, createMode = false, onSave, onClose }: Props) {
     const [edit, setEdit] = useState<LobbyRunnerEdit>(() => structuredClone(initial));
     const [skillSearch, setSkillSearch] = useState('');
     const selectedIds = useMemo(() => new Set(edit.skills.map(([skillId]) => skillId)), [edit.skills]);
@@ -108,7 +109,7 @@ export default function LobbyRunnerEditor({ data, initial, catalog, onSave, onCl
         <Modal.Header closeButton closeVariant="white">
             <div className="sim-runner-editor-heading">
                 <Portrait card={edit.cardId} name={selectedCard?.name ?? 'Selected Uma'} />
-                <Modal.Title id="sim-runner-editor-title">Edit race build</Modal.Title>
+                <Modal.Title id="sim-runner-editor-title">{createMode ? 'Add custom Uma' : 'Edit race build'}</Modal.Title>
             </div>
         </Modal.Header>
         <Modal.Body>
@@ -185,7 +186,7 @@ export default function LobbyRunnerEditor({ data, initial, catalog, onSave, onCl
         </Modal.Body>
         <Modal.Footer>
             <button type="button" className="sim-link" onClick={() => setEdit(structuredClone(initial))}>Reset this editor</button>
-            <div><button type="button" className="sim-button sim-button-secondary" onClick={onClose}>Cancel</button><button type="button" className="sim-button" disabled={!validStats} onClick={() => onSave(edit)}>Save changes</button></div>
+            <div><button type="button" className="sim-button sim-button-secondary" onClick={onClose}>Cancel</button><button type="button" className="sim-button" disabled={!validStats} onClick={() => onSave(edit)}>{createMode ? 'Add Uma' : 'Save changes'}</button></div>
         </Modal.Footer>
     </Modal>;
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Dropdown, Modal } from 'react-bootstrap';
 import AssetLoader from '../../data/AssetLoader';
 import { getSkillIconUrl } from '../../data/skillIcons';
@@ -43,8 +43,12 @@ const aptitudeFields = [
     ['Strategy', 2],
 ] as const;
 
+function cardCharacterName(cardId: number, card?: Card): string {
+    return card?.name ?? UMDatabaseWrapper.charas[Math.floor(cardId / 100)]?.name ?? `Uma ${Math.floor(cardId / 100)}`;
+}
+
 function cardLabel(cardId: number, card?: Card): string {
-    const character = card?.name ?? UMDatabaseWrapper.charas[Math.floor(cardId / 100)]?.name ?? `Uma ${Math.floor(cardId / 100)}`;
+    const character = cardCharacterName(cardId, card);
     const outfit = card?.outfit || UMDatabaseWrapper.cards[cardId]?.name;
     return outfit ? `${character} · ${outfit}` : `${character} · ${cardId}`;
 }
@@ -60,13 +64,25 @@ function SkillIcon({ skillId }: { skillId: number }) {
 
 export default function LobbyRunnerEditor({ data, initial, catalog, createMode = false, onSave, onClose }: Props) {
     const [edit, setEdit] = useState<LobbyRunnerEdit>(() => structuredClone(initial));
+    const [umaOpen, setUmaOpen] = useState(false);
+    const [umaSearch, setUmaSearch] = useState('');
     const [skillSearch, setSkillSearch] = useState('');
+    const umaToggleRef = useRef<HTMLButtonElement>(null);
+    const umaSearchRef = useRef<HTMLInputElement>(null);
+    const umaMenuRef = useRef<HTMLDivElement>(null);
+    const skillSearchRef = useRef<HTMLInputElement>(null);
+    const skillResultsRef = useRef<HTMLDivElement>(null);
     const selectedIds = useMemo(() => new Set(edit.skills.map(([skillId]) => skillId)), [edit.skills]);
     const selectedFamilies = useMemo(() => new Set(edit.skills.map(([skillId]) => lobbySkillFamilyId(skillId))), [edit.skills]);
     const cards = useMemo(() => [...new Set([...catalog.cards, edit.cardId])]
         .filter(cardId => data.cards[cardId])
         .sort((a, b) => cardLabel(a, data.cards[a]).localeCompare(cardLabel(b, data.cards[b]))),
     [catalog.cards, data.cards, edit.cardId]);
+    const filteredCards = useMemo(() => {
+        const query = umaSearch.trim().toLocaleLowerCase();
+        if (!query) return cards;
+        return cards.filter(cardId => `${cardLabel(cardId, data.cards[cardId])} ${cardId}`.toLocaleLowerCase().includes(query));
+    }, [cards, data.cards, umaSearch]);
     const availableSkills = useMemo(() => {
         const query = skillSearch.trim().toLocaleLowerCase();
         if (!query) return [];
@@ -81,6 +97,24 @@ export default function LobbyRunnerEditor({ data, initial, catalog, createMode =
     const uniqueId = edit.uniqueSkillId;
     const selectedCard = data.cards[edit.cardId];
     const validStats = edit.stats.every(value => Number.isInteger(value) && value >= LOBBY_STAT_MIN && value <= LOBBY_STAT_MAX);
+
+    const toggleUmaMenu = (show: boolean) => {
+        setUmaOpen(show);
+        if (show) requestAnimationFrame(() => umaSearchRef.current?.focus());
+        else setUmaSearch('');
+    };
+    const handleUmaSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+        event.stopPropagation();
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            umaMenuRef.current?.querySelector<HTMLButtonElement>('.dropdown-item')?.focus();
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            setUmaOpen(false);
+            setUmaSearch('');
+            requestAnimationFrame(() => umaToggleRef.current?.focus());
+        }
+    };
 
     const setStat = (index: number, value: string) => {
         const next = [...edit.stats] as LobbyRunnerEdit['stats'];
@@ -99,11 +133,34 @@ export default function LobbyRunnerEditor({ data, initial, catalog, createMode =
             return skills.length <= LOBBY_MAX_EDITABLE_SKILLS ? { ...previous, skills } : previous;
         });
         setSkillSearch('');
+        requestAnimationFrame(() => skillSearchRef.current?.focus());
     };
     const removeSkill = (skillId: number) => setEdit(previous => ({
         ...previous,
         skills: previous.skills.filter(([candidate]) => candidate !== skillId),
     }));
+    const focusSkillResult = (index: number) => {
+        const buttons = skillResultsRef.current?.querySelectorAll<HTMLButtonElement>('button');
+        buttons?.[Math.max(0, Math.min(index, buttons.length - 1))]?.focus();
+    };
+    const handleSkillSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+        if (event.key !== 'ArrowDown' || availableSkills.length === 0) return;
+        event.preventDefault();
+        focusSkillResult(0);
+    };
+    const handleSkillResultKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            focusSkillResult(index + 1);
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            if (index === 0) skillSearchRef.current?.focus();
+            else focusSkillResult(index - 1);
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            skillSearchRef.current?.focus();
+        }
+    };
 
     return <Modal show onHide={onClose} size="xl" centered scrollable className="sim-runner-editor" aria-labelledby="sim-runner-editor-title">
         <Modal.Header closeButton closeVariant="white">
@@ -116,9 +173,40 @@ export default function LobbyRunnerEditor({ data, initial, catalog, createMode =
             <div className="sim-runner-editor-layout">
                 <section className="sim-runner-editor-section">
                     <label className="sim-runner-editor-field">Uma
-                        <select value={edit.cardId} onChange={event => setEdit(previous => changeLobbyRunnerIdentity(previous, Number(event.target.value)))}>
-                            {cards.map(cardId => <option key={cardId} value={cardId}>{cardLabel(cardId, data.cards[cardId])}</option>)}
-                        </select>
+                        <Dropdown className="sim-lobby-uma-select" show={umaOpen} onToggle={toggleUmaMenu}>
+                            <Dropdown.Toggle ref={umaToggleRef} id="sim-lobby-uma-select" title={cardLabel(edit.cardId, selectedCard)}>
+                                <Portrait card={edit.cardId} name="" />
+                                <span>{cardCharacterName(edit.cardId, selectedCard)}</span>
+                            </Dropdown.Toggle>
+                            <Dropdown.Menu ref={umaMenuRef} aria-label="Uma">
+                                <div className="sim-lobby-uma-search">
+                                    <input
+                                        ref={umaSearchRef}
+                                        type="search"
+                                        value={umaSearch}
+                                        aria-label="Search Umas"
+                                        placeholder="Search uma"
+                                        onChange={event => setUmaSearch(event.target.value)}
+                                        onKeyDown={handleUmaSearchKeyDown}
+                                    />
+                                </div>
+                                {filteredCards.map(cardId => {
+                                    const card = data.cards[cardId];
+                                    const label = cardLabel(cardId, card);
+                                    return <Dropdown.Item
+                                        key={cardId}
+                                        active={cardId === edit.cardId}
+                                        aria-label={label}
+                                        title={label}
+                                        onClick={() => setEdit(previous => changeLobbyRunnerIdentity(previous, cardId))}
+                                    >
+                                        <Portrait card={cardId} name="" />
+                                        <span>{cardCharacterName(cardId, card)}</span>
+                                    </Dropdown.Item>;
+                                })}
+                                {filteredCards.length === 0 && <span className="sim-lobby-uma-empty" role="status">No matching Uma.</span>}
+                            </Dropdown.Menu>
+                        </Dropdown>
                     </label>
                     <div className="sim-lobby-unique-skill">
                         <SkillIcon skillId={uniqueId} />
@@ -172,15 +260,15 @@ export default function LobbyRunnerEditor({ data, initial, catalog, createMode =
                     <header><h3>Learned skills · {edit.skills.length}/{LOBBY_MAX_EDITABLE_SKILLS}</h3></header>
                     <div className="sim-lobby-skill-search">
                         <label htmlFor="sim-lobby-skill-search">Add a skill</label>
-                        <input id="sim-lobby-skill-search" type="search" value={skillSearch} onChange={event => setSkillSearch(event.target.value)} placeholder="Search by skill name or ID" />
-                        {skillSearch.trim() && <div className="sim-lobby-skill-results">{availableSkills.length ? availableSkills.map(skill => <button key={skill.skillId} type="button" onClick={() => addSkill(skill.skillId)}>
+                        <input ref={skillSearchRef} id="sim-lobby-skill-search" type="search" value={skillSearch} onChange={event => setSkillSearch(event.target.value)} onKeyDown={handleSkillSearchKeyDown} aria-controls="sim-lobby-skill-results" aria-expanded={Boolean(skillSearch.trim())} placeholder="Search by skill name or ID" />
+                        {skillSearch.trim() && <div ref={skillResultsRef} id="sim-lobby-skill-results" className="sim-lobby-skill-results">{availableSkills.length ? availableSkills.map((skill, index) => <button key={skill.skillId} type="button" onKeyDown={event => handleSkillResultKeyDown(event, index)} onClick={() => addSkill(skill.skillId)}>
                             <SkillIcon skillId={skill.skillId} /><span><strong>{skill.name}</strong><small>{skill.skillId}</small></span><b aria-hidden="true">+</b>
                         </button>) : <span>No other matching skill in this dataset.</span>}</div>}
                     </div>
-                    <div className="sim-lobby-selected-skills">{edit.skills.length ? edit.skills.map(([skillId]) => <div key={skillId}>
+                    <div className="sim-lobby-selected-skills">{edit.skills.map(([skillId]) => <div key={skillId}>
                         <SkillIcon skillId={skillId} /><span><strong>{skillName(skillId)}</strong><small>ID {skillId}</small></span>
                         <button type="button" className="sim-link" onClick={() => removeSkill(skillId)} aria-label={`Remove ${skillName(skillId)}`}>Remove</button>
-                    </div>) : <p className="sim-empty">No learned skills. The protected unique skill will still be equipped.</p>}</div>
+                    </div>)}</div>
                 </section>
             </div>
         </Modal.Body>

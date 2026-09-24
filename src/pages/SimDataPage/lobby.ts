@@ -32,8 +32,21 @@ export type LobbyDraft = {
 export const LOBBY_STAT_MIN = 1;
 export const LOBBY_STAT_MAX = 2000;
 export const LOBBY_MAX_EDITABLE_SKILLS = 100;
+export const LOBBY_SEED_MIN = 1;
+export const LOBBY_SEED_MAX = 2_147_483_647;
 export const LOBBY_APTITUDES: LobbyAptitude[] = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'G'];
 export const LOBBY_RUNNING_STYLES: LobbyRunningStyle[] = [1, 2, 3, 4];
+
+export function lobbySeedFromUint32(value: number): number {
+    if (!Number.isInteger(value) || value < 0 || value > 0xffff_ffff) {
+        throw new RangeError('A random lobby seed source must be an unsigned 32-bit integer.');
+    }
+    return value % LOBBY_SEED_MAX + LOBBY_SEED_MIN;
+}
+
+export function generateLobbySeed(): number {
+    return lobbySeedFromUint32(crypto.getRandomValues(new Uint32Array(1))[0]);
+}
 
 export function ownedUniqueSkillId(cardId: number): number {
     const text = String(cardId);
@@ -236,7 +249,9 @@ export function toLobbyRunnerOverride(edit: LobbyRunnerEdit) {
         runningStyle: edit.runningStyle - 1,
         uniqueSkillId: edit.uniqueSkillId,
         uniqueSkillLevel: edit.uniqueSkillLevel,
-        skills: edit.skills.map(([skillId]) => ({ skillId, level: 1 })),
+        skills: [...edit.skills]
+            .sort(([left], [right]) => left - right)
+            .map(([skillId]) => ({ skillId, level: 1 })),
     };
 }
 

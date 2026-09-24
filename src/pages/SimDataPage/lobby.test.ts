@@ -5,7 +5,9 @@ import {
     changeLobbyRunnerIdentity,
     createBlankLobbyRunnerEdit,
     createLobbyRunnerEdit,
+    generateLobbySeed,
     isLobbyRunnerEditChanged,
+    lobbySeedFromUint32,
     lowerRarityOwnedUniqueSkillId,
     lobbySkillFamilyId,
     lobbySimulationTeamIds,
@@ -37,6 +39,14 @@ test('replaces an existing learned skill from the same family', () => {
         replaceLobbySkillFamily([[200462, 1], [200331, 1]], 200461),
         [[200331, 1], [200461, 1]],
     );
+});
+
+test('maps generated lobby seeds into the positive System.Random range', () => {
+    assert.equal(lobbySeedFromUint32(0), 1);
+    assert.equal(lobbySeedFromUint32(2_147_483_646), 2_147_483_647);
+    assert.equal(lobbySeedFromUint32(2_147_483_647), 1);
+    assert.throws(() => lobbySeedFromUint32(-1), /unsigned 32-bit/);
+    assert.ok(generateLobbySeed() >= 1 && generateLobbySeed() <= 2_147_483_647);
 });
 
 test('adds native running style context only to individual Debuffer labels', () => {
@@ -71,6 +81,7 @@ test('creates a protected-unique build edit and serializes it for the simulator'
     assert.equal(isLobbyRunnerEditChanged(runner, { ...edit, runningStyle: 1 }), true);
     const changed = changeLobbyRunnerIdentity(edit, 100101);
     changed.stats[0] = 1999;
+    changed.skills = [[900011, 1], [200331, 1]];
     assert.equal(isLobbyRunnerEditChanged(runner, changed), true);
     assert.deepEqual(toLobbyRunnerOverride(changed), {
         identity: { cardId: 100101, charaId: 1001 },
@@ -80,6 +91,7 @@ test('creates a protected-unique build edit and serializes it for the simulator'
         uniqueSkillId: 100011, uniqueSkillLevel: 5,
         skills: [{ skillId: 200331, level: 1 }, { skillId: 900011, level: 1 }],
     });
+    assert.deepEqual(changed.skills, [[900011, 1], [200331, 1]]);
 });
 
 test('removing or moving an imported runner materializes affected teams without losing analytical styles', () => {

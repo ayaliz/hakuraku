@@ -65,6 +65,7 @@ export type Build = Runner & {
 export type Performer = {
     id: string; owner: { id: string; names: string[] }; members: Runner[];
     wins: number; n: number; ci: Interval; memberWins: number[]; archiveIndex?: number;
+    benched?: boolean; benchReason?: string; evaluatedSnapshotId?: string; newToday?: boolean;
 };
 export type PerformerIndex = { snapshotId: string; teams: Performer[] };
 export type TeamSearchResponse = {

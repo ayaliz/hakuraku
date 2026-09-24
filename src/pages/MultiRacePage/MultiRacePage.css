@@ -615,9 +615,14 @@
 }
 
 .skill-analysis-section .analysis-table-container {
-    border: 1px solid rgba(101, 210, 131, 0.5);
     max-height: 720px;
     overflow-y: auto;
+    padding-top: 0;
+}
+
+.skill-analysis-section .analysis-table thead th {
+    background: var(--haku-bg-1);
+    z-index: 1;
 }
 
 /* Expandable skill table */

@@ -396,6 +396,7 @@ export function buildDetailedRaceSimulationRequest(
     courseId: number | undefined,
     seedOverride?: number,
     knownRaceInstances: Readonly<Record<number, KnownRaceInstance>> = {},
+    isCareer = false,
 ) {
     const raceInstanceId = resolveDetailedRaceInstanceId(capture, courseId, knownRaceInstances);
     return {
@@ -403,6 +404,7 @@ export function buildDetailedRaceSimulationRequest(
         courseId,
         grade: 100,
         time: 2,
+        isCareer,
         recordedSeed: getDetailedRaceCaptureSeed(capture),
         ...(raceInstanceId === null ? {} : { raceInstanceId }),
         ...(seedOverride === undefined ? {} : { seed: seedOverride }),

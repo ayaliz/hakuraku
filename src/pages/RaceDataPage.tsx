@@ -898,6 +898,7 @@ export default function RaceDataPage() {
                 },
                 body: JSON.stringify(buildDetailedRaceSimulationRequest(
                     rawRaceCapture, detectedCourseId, seedOverride, UMDatabaseWrapper.raceInstances,
+                    false,
                 )),
                 signal: controller.signal,
             });
@@ -974,6 +975,7 @@ export default function RaceDataPage() {
                 },
                 body: JSON.stringify(buildDetailedRaceSimulationRequest(
                     rawRaceCapture, detectedCourseId, race.seed, UMDatabaseWrapper.raceInstances,
+                    false,
                 )),
             });
             const payload = await readDetailedRaceSimulationResponse(response, progress => {
@@ -1091,6 +1093,7 @@ export default function RaceDataPage() {
                 courseId: detectedCourseId,
                 grade: 100,
                 time: 2,
+                isCareer: false,
                 raceCount: 100,
                 seed: seedStart,
                 ...(raceInstanceId === null ? {} : { raceInstanceId }),

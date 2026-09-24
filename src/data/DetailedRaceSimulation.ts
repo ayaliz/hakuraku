@@ -288,13 +288,17 @@ function getReplayStructureError(
     return null;
 }
 
-function validTimeSpan(value: unknown, horizon: number): value is { startTime: number; endTime: number } {
+function validTimeSpan(
+    value: unknown,
+    horizon: number,
+    allowZeroDuration = false,
+): value is { startTime: number; endTime: number } {
     if (!value || typeof value !== "object" || Array.isArray(value)) return false;
     const span = value as Record<string, unknown>;
     return isFiniteNumber(span.startTime)
         && isFiniteNumber(span.endTime)
         && span.startTime >= 0
-        && span.startTime < span.endTime
+        && (allowZeroDuration ? span.startTime <= span.endTime : span.startTime < span.endTime)
         && span.endTime <= horizon;
 }
 
@@ -411,7 +415,10 @@ function getDetailedAnnotationsError(
             || !isFiniteNumber(section.baseTargetSpeed)
             || !isFiniteNumber(section.random)
             || !isFiniteNumber(section.randomPercentage))) return invalid("base target-speed sections");
-        if (horse.activeSkillSpans!.some(span => !validTimeSpan(span, horizon)
+        // A skill can activate on the final simulator tick, producing an
+        // intentional zero-duration span at the replay horizon. It carries no
+        // display interval, but the activation itself is still valid telemetry.
+        if (horse.activeSkillSpans!.some(span => !validTimeSpan(span, horizon, true)
             || !Number.isInteger(span.skillId) || span.skillId <= 0
             || !Number.isInteger(span.detailIndex) || span.detailIndex < 0)) return invalid("active-skill spans");
         if (horse.skillActivationDecisions!.some((decision, index) => !Number.isInteger(decision.skillId)

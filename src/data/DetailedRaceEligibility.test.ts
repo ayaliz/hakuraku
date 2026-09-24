@@ -76,11 +76,13 @@ test("shared races remain readable when no known course association is available
 test("what-if requests preserve recorded seed and send the requested seed separately", () => {
     const capture = { random_seed: 42, season: 4, weather: 2, ground_condition: 2 };
     const request = buildDetailedRaceSimulationRequest(capture, 10506, 99);
+    assert.equal(request.isCareer, false);
     assert.equal(request.recordedSeed, 42);
     assert.equal(request.seed, 99);
     assert.equal((request.capture as any).random_seed, 42);
     assert.equal(capture.random_seed, 42);
     assert.equal(buildDetailedRaceSimulationRequest(capture, 10506).seed, undefined);
+    assert.equal(buildDetailedRaceSimulationRequest(capture, 10506, undefined, {}, true).isCareer, true);
 });
 
 test("copies legacy trained fan counts into simulator runner data without mutation", () => {

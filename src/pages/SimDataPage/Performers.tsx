@@ -89,18 +89,15 @@ function BuildDetails({ data, teamId, archiveIndex, inLobby, lobbyFull, onToggle
                         <div><dt>Rank score</dt><dd className="sim-build-rank"><img src={rank.icon} alt={rank.name} />{number(runner.score)}</dd></div>
                         <div><dt>Skill points</dt><dd className="sim-build-skill-points"><img src={AssetLoader.getStatIcon('hint')} alt="" />{number(computeSkillPoints(new Set(runner.skills.map(([id]) => id))))} <span>({number(runner.skills.length)} skills)</span></dd></div>
                     </dl>
-                    {(runner.deck?.length || runner.parents?.length) ? <details className="sim-training-details">
-                        <summary>Training setup</summary>
-                        <div className="sim-training-content">
-                            {runner.deck?.length ? <section><h4>Support deck</h4><SupportDeck deck={runner.deck} compact /></section> : null}
-                            {runner.parents?.length ? <section><h4>Parents</h4><ParentGroups parents={runner.parents} compact /></section> : null}
-                        </div>
-                    </details> : null}
-                    <div className="sim-skills"><ul>{runner.skills.map(([id, level]) => {
-                        const baseId = id >= 900000 && id < 1000000 ? id - 800000 : id;
-                        const icon = result.data!.skillIcons?.[id] ?? UMDatabaseWrapper.skills[baseId]?.iconId;
-                        return <li key={id} title={`Skill ID: ${id}`}><span className="sim-skill-name">{icon ? <img src={AssetLoader.getSkillIcon(icon)} alt="" loading="lazy" /> : null}{result.data!.skills[id] ?? UMDatabaseWrapper.skillNameWithEnglishFallback(id)}</span>{level > 1 && <span className="sim-skill-level">Lv. {level}</span>}</li>;
-                    })}</ul></div>
+                    <div className="sim-build-details">
+                        <section className="sim-skills"><h4>Skills</h4><ul>{runner.skills.map(([id, level]) => {
+                            const baseId = id >= 900000 && id < 1000000 ? id - 800000 : id;
+                            const icon = result.data!.skillIcons?.[id] ?? UMDatabaseWrapper.skills[baseId]?.iconId;
+                            return <li key={id} title={`Skill ID: ${id}`}><span className="sim-skill-name">{icon ? <img src={AssetLoader.getSkillIcon(icon)} alt="" loading="lazy" /> : null}{result.data!.skills[id] ?? UMDatabaseWrapper.skillNameWithEnglishFallback(id)}</span>{level > 1 && <span className="sim-skill-level">Lv. {level}</span>}</li>;
+                        })}</ul></section>
+                        {runner.deck?.length ? <section className="sim-training-section"><h4>Support deck</h4><SupportDeck deck={runner.deck} compact /></section> : null}
+                        {runner.parents?.length ? <section className="sim-training-section"><h4>Parents</h4><ParentGroups parents={runner.parents} compact /></section> : null}
+                    </div>
                 </article>;
             })}</div>
         </> : <Loading error={result.error} retry={result.retry} />}</Modal.Body>
@@ -178,14 +175,22 @@ function OtherTeamsModal({ data, sourceTeam, close, onOpenTeam, lobbyRunnerIds, 
         data.snapshotId,
     );
     const otherTeams = result.data?.teams.filter(team => team.id !== sourceTeam.id) ?? [];
+    const benchMessage = (team: Performer) => {
+        const date = team.evaluatedSnapshotId?.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? team.evaluatedSnapshotId;
+        return `Removed from future simulations after ${date} due to performance gap to player's best team`;
+    };
     return <Modal show onHide={close} size="xl" centered className="sim-team-modal sim-other-teams-modal" aria-label="Other teams">
         <Modal.Header closeButton closeVariant="white" />
         <Modal.Body>
-            <p className="sim-other-teams-note">Each player's simulation budget is split across all their teams. Weaker teams may be dropped automatically.</p>
-            {!result.data ? <Loading error={result.error} retry={result.retry} /> : otherTeams.length ? <div className="sim-other-teams-list">{otherTeams.map(team => <article className="sim-other-team" key={team.id}>
-                <PerformerTeam team={team} data={data} lobbyRunnerIds={lobbyRunnerIds} lobbyRunnerFull={lobbyRunnerFull} onAddLobbyRunner={onAddLobbyRunner} onOpen={() => onOpenTeam(team.id)} />
-                <div className="sim-other-team-metrics"><span><strong>{percent(team.wins / team.n)}</strong> win rate</span><span>{interval(team.ci)} · 95% interval</span><span>{number(team.n)} races</span><button type="button" className="sim-other-team-details" onClick={() => onOpenTeam(team.id)}>View details</button></div>
-            </article>)}</div> : <p className="sim-empty">This player has no other teams in the current snapshot.</p>}
+            <p className="sim-other-teams-note">Active teams split this player's daily simulation budget. Benched teams remain listed with results from their last evaluated snapshot.</p>
+            {!result.data ? <Loading error={result.error} retry={result.retry} /> : otherTeams.length ? <div className="sim-other-teams-list">{otherTeams.map(team =>
+                <article className={`sim-other-team${team.benched ? ' is-benched' : ''}`} key={team.id}>
+                    {team.newToday && <div className="sim-new-team-message">Team newly added today</div>}
+                    {team.benched && <div className="sim-benched-team-message">{benchMessage(team)}</div>}
+                    <PerformerTeam team={team} data={data} lobbyRunnerIds={lobbyRunnerIds} lobbyRunnerFull={lobbyRunnerFull} onAddLobbyRunner={onAddLobbyRunner} onOpen={() => onOpenTeam(team.id)} />
+                    <div className="sim-other-team-metrics"><span><strong>{percent(team.wins / team.n)}</strong> {team.benched ? 'last win rate' : 'win rate'}</span><span>{interval(team.ci)} · 95% interval</span><span>{number(team.n)} races{team.benched && team.evaluatedSnapshotId ? ` · ${team.evaluatedSnapshotId}` : ''}</span><button type="button" className="sim-other-team-details" onClick={() => onOpenTeam(team.id)}>View details</button></div>
+                </article>
+            )}</div> : <p className="sim-empty">This player has no other teams in the current snapshot.</p>}
         </Modal.Body>
     </Modal>;
 }

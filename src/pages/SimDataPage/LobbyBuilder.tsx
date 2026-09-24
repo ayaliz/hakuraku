@@ -16,7 +16,10 @@ import {
     createBlankLobbyRunnerEdit,
     createLobbyRunnerEdit,
     customLobbyRunnerKey,
+    generateLobbySeed,
     isLobbyRunnerEditChanged,
+    LOBBY_SEED_MAX,
+    LOBBY_SEED_MIN,
     lobbySimulationTeamIds,
     stageLobbyRace,
     toLobbyRunnerOverride,
@@ -56,6 +59,7 @@ const liveTeamId = /^[a-f0-9]{64}$/;
 type LobbySimulationRequest = {
     teamIds: (string | null)[];
     mood: LobbyMood;
+    isCareer: boolean;
     gates: (number | null)[];
     runnerOverrides?: (ReturnType<typeof toLobbyRunnerOverride> | null)[];
     seed?: number;
@@ -73,6 +77,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
     const [batch, setBatch] = useState<RaceWinRateBatch | undefined>(undefined);
     const [batchSubmitting, setBatchSubmitting] = useState(false);
     const [batchError, setBatchError] = useState('');
+    const [seedCopyStatus, setSeedCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
     const activeBatchRef = useRef<{
         jobId: string;
         accessToken: string;
@@ -85,7 +90,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
     const [dragging, setDragging] = useState<LobbyRunnerPosition | null>(null);
     const [dragTarget, setDragTarget] = useState<LobbyRunnerPosition | null>(null);
     const editorCatalog = useSimData<LobbyEditorCatalog>(
-        simDataApiUrl(`/api/simdata/snapshots/${encodeURIComponent(data.snapshotId)}/editor-catalog`),
+        simDataApiUrl(`/api/simdata/snapshots/${encodeURIComponent(data.snapshotId)}/editor-catalog?source=master-v1`),
         data.snapshotId,
     );
     const runnerSlots = useMemo(() => teams.flatMap((team, teamIndex) => [0, 1, 2].map(memberIndex => {
@@ -104,7 +109,8 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
     const assignedGates = new Set(runners.map(({ key }) => gates[key]).filter((value): value is number => value !== undefined && value !== null));
     const invalidTeam = teams.some(team => team !== null && !liveTeamId.test(team.id));
     const parsedSeed = seed.trim() === '' ? undefined : Number(seed);
-    const invalidSeed = parsedSeed !== undefined && (!Number.isInteger(parsedSeed) || parsedSeed < -2147483648 || parsedSeed > 2147483647);
+    const invalidSeed = parsedSeed !== undefined && (!Number.isInteger(parsedSeed)
+        || parsedSeed < LOBBY_SEED_MIN || parsedSeed > LOBBY_SEED_MAX);
     const ready = runners.length === 9 && !invalidTeam && !invalidSeed && status !== 'running';
     const batchActive = isActiveRaceWinRateBatch(batch);
     const batchReady = ready && !batchSubmitting && !batchActive;
@@ -179,6 +185,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
         return {
             teamIds: lobbySimulationTeamIds(teams, draft),
             mood,
+            isCareer: false,
             gates: runnerSlots.map(({ key }) => gates[key] ?? null),
             ...(runnerOverrides.some(Boolean) ? { runnerOverrides } : {}),
             ...(parsedSeed === undefined ? {} : { seed: parsedSeed }),
@@ -238,6 +245,21 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
 
     const chooseGate = (key: string, value: string) => {
         onDraftChange(previous => ({ ...previous, gates: { ...previous.gates, [key]: value ? Number(value) : null } }));
+    };
+
+    const randomizeSeed = () => {
+        onDraftChange(previous => ({ ...previous, seed: String(generateLobbySeed()) }));
+        setSeedCopyStatus('idle');
+    };
+
+    const copySeed = async () => {
+        if (parsedSeed === undefined || invalidSeed) return;
+        try {
+            await navigator.clipboard.writeText(String(parsedSeed));
+            setSeedCopyStatus('copied');
+        } catch {
+            setSeedCopyStatus('failed');
+        }
     };
 
     const saveRunnerEdit = (key: string, runner: Performer['members'][number] | undefined, edit: LobbyRunnerEdit) => {
@@ -414,15 +436,22 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
                 <label>Mood
                     <select value={mood} onChange={event => onDraftChange(previous => ({ ...previous, mood: event.target.value as LobbyMood }))}>{moodOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
                 </label>
-                <label>Seed
-                    <input type="number" value={seed} onChange={event => onDraftChange(previous => ({ ...previous, seed: event.target.value }))} placeholder="Random" min={-2147483648} max={2147483647} />
-                </label>
+                <div className="sim-lobby-seed-field">
+                    <label htmlFor="sim-lobby-seed">Seed</label>
+                    <div className="sim-lobby-seed-control">
+                        <input id="sim-lobby-seed" type="number" value={seed} onChange={event => {
+                            onDraftChange(previous => ({ ...previous, seed: event.target.value }));
+                            setSeedCopyStatus('idle');
+                        }} placeholder="Random" min={LOBBY_SEED_MIN} max={LOBBY_SEED_MAX} step={1} aria-invalid={invalidSeed || undefined} />
+                        <button type="button" className="sim-button sim-button-secondary" onClick={randomizeSeed}>Generate</button>
+                        <button type="button" className="sim-button sim-button-secondary" onClick={() => void copySeed()} disabled={parsedSeed === undefined || invalidSeed}>{seedCopyStatus === 'copied' ? 'Copied' : seedCopyStatus === 'failed' ? 'Copy failed' : 'Copy'}</button>
+                    </div>
+                </div>
                 <button type="button" className="sim-button" onClick={onBrowse}>Browse teams</button>
                 {capturedEditCount > 0 && <button type="button" className="sim-link" onClick={() => onDraftChange(previous => ({ ...previous, runnerEdits: {} }))}>Reset edits</button>}
                 {filledCount > 0 && <button type="button" className="sim-link" onClick={onClear}>Clear</button>}
             </div>
         }>
-            <p className="sim-lobby-arrange-hint">Drag an Uma onto another slot to move or swap it. Changing an imported team converts it to a custom team.</p>
             <div className="sim-lobby-team-grid">
                 {[0, 1, 2].map(slot => {
                     const team = teams[slot];
@@ -512,7 +541,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
                 </button>}
             </div>
         </div>
-        {invalidSeed && <p className="sim-query-error" role="alert">Seed must be a whole 32-bit number.</p>}
+        {invalidSeed && <p className="sim-query-error" role="alert">Seed must be a whole number from {LOBBY_SEED_MIN.toLocaleString()} to {LOBBY_SEED_MAX.toLocaleString()}.</p>}
         {error && <p className="sim-query-error" role="alert">{error}</p>}
         {batchError && <p className="sim-query-error" role="alert">Win-rate estimate failed: {batchError}</p>}
         {displayedBatch && displayedBatch.status !== 'failed' && <RaceWinRateResults

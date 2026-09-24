@@ -171,6 +171,18 @@ test("accepts a detailed replay with the recorded deterministic fingerprint", ()
     ), null);
 });
 
+test("accepts an active skill that starts on the final simulator tick", () => {
+    const response = detailedResponse();
+    response.annotations.horses[0].activeSkillSpans = [{
+        skillId: 100171,
+        detailIndex: 0,
+        startTime: 123,
+        endTime: 123,
+    }];
+
+    assert.equal(getDetailedRaceReplacementError(replay(), replay(), response, 42), null);
+});
+
 test("rejects a detailed replay produced from a different race", () => {
     const recorded = replay();
     assert.match(getDetailedRaceReplacementError(recorded, replay(), detailedResponse(43), 42) ?? "", /seed 43/);
@@ -219,6 +231,15 @@ test("rejects incomplete or internally inconsistent schema 7 annotations", () =>
     const badExhaustionPair = detailedResponse();
     badExhaustionPair.annotations.horses[0].hpExhaustedTime = 12;
     assert.match(getDetailedRaceReplacementError(replay(), replay(), badExhaustionPair, 42) ?? "", /HP exhaustion/);
+
+    const reversedSkillSpan = detailedResponse();
+    reversedSkillSpan.annotations.horses[0].activeSkillSpans = [{
+        skillId: 100171,
+        detailIndex: 0,
+        startTime: 12,
+        endTime: 11,
+    }];
+    assert.match(getDetailedRaceReplacementError(replay(), replay(), reversedSkillSpan, 42) ?? "", /active-skill spans/);
 
     const badLastSpurtSummary = detailedResponse();
     badLastSpurtSummary.annotations.horses[0].lastSpurtDecision = {

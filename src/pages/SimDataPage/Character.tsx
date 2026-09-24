@@ -70,7 +70,7 @@ export default function Character({ data, selectedKey, onPair, onTeams }: { data
                 onSelectCharacter={key => {
                     const [, card, style] = key.split('_').map(Number);
                     const pair = data.pairs.find(candidate => candidate.card === card && candidate.style === style);
-                    if (pair) onPair(pair.key);
+                    if (pair) onTeams([{ card: pair.card, chara: pair.chara, style: pair.style }, {}, {}]);
                 }}
             />
             <BubblePlotPanel points={bubblePoints} strategyColors={strategyColors} minPopPct={(minPop * 100) as 0 | 1 | 3} onMinPopPctChange={value => setMinPop(value / 100)} populationLabel="simulated corpus share" stylePopulationLabel="Style share"

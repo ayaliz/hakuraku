@@ -205,6 +205,11 @@ button.sim-composition:hover { color: #93c5fd; }
 .sim-performance-line-neutral { border-color: #9aa8ba; border-top-style: dashed; }
 .sim-performance-swatch { width: 10px; height: 10px; border-radius: 2px; background: #65c18c; }
 .sim-performance-chart { min-width: 0; border-radius: 6px; background: linear-gradient(180deg, #17213280, #11192340); }
+.sim-performance-count { color: #9fb0c6; font-size: 11px; font-variant-numeric: tabular-nums; }
+.sim-performance-summary { display: flex; flex-wrap: wrap; gap: 6px 24px; margin: 10px 0 0; font-size: 12px; }
+.sim-performance-summary > div { display: flex; align-items: baseline; gap: 6px; }
+.sim-performance-summary dt { color: #9fb0c6; font-weight: 400; }
+.sim-performance-summary dd { margin: 0; color: #eef5ff; font-size: inherit; font-weight: 600; font-variant-numeric: tabular-nums; }
 .sim-performer-table td:nth-child(2), .sim-performer-table th:nth-child(2) { text-align: left; }
 .sim-performer-table td:nth-child(2) { min-width: 680px; white-space: normal; }
 .sim-performer-team { display: grid; grid-template-columns: repeat(3, minmax(205px, 1fr)); overflow: hidden; border: 1px solid #344256; border-radius: 5px; background: #121a25; }
@@ -265,8 +270,10 @@ button.sim-composition:hover { color: #93c5fd; }
 .sim-other-teams-list { display: grid; gap: 12px; }
 .sim-other-team { padding: 10px; border: 1px solid #405069; border-radius: 7px; background: #172131; }
 .sim-other-team.is-benched { border-color: #725b55; background: #211d22; }
+.sim-other-team.is-historical { border-color: #53647c; background: #192230; }
 .sim-new-team-message { margin: -2px 0 9px; padding: 0 2px 9px; border-bottom: 1px solid #405b64; color: #91d7e5; font-size: 11px; font-weight: 600; }
 .sim-benched-team-message { margin: -2px 0 9px; padding: 0 2px 9px; border-bottom: 1px solid #5e4d4c; color: #e8b7a6; font-size: 11px; font-weight: 600; }
+.sim-historical-team-message { margin: -2px 0 9px; padding: 0 2px 9px; border-bottom: 1px solid #46566c; color: #b9cbe3; font-size: 11px; font-weight: 600; }
 .sim-other-team-metrics { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 18px; padding: 9px 2px 0; color: #aebdd0; font-size: 11px; }
 .sim-other-team-metrics strong { color: #e7edf5; font-size: 13px; }
 .sim-other-team-details { margin-left: auto; }

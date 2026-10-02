@@ -75,7 +75,7 @@ export default function Strategy({ data, onTeams }: { data: Summary; onTeams: Fi
         })), [data.archetypes, minimumPlayers]);
     return <div className="sa-main sim-strategy-analysis">
         <div className="sa-top-panels-row">
-            <StyleBreakdownPanel strategyStats={strategyStats} totalRaces={data.meta.populationRaces} strategyColors={strategyColors} shareLabel="Share%" shareDescription="simulated field share" />
+            <StyleBreakdownPanel strategyStats={strategyStats} totalRaces={data.meta.populationRaces} strategyColors={strategyColors} shareLabel="Share%" shareDescription="simulated field share" usageCounts={data.playerUsage?.schemaVersion === 1 ? Object.fromEntries(STRATEGY_DISPLAY_ORDER.map(style => [style, data.pairs.filter(pair => pair.style === style).reduce((n, pair) => n + pair.owners, 0)])) : undefined} />
             <SaturationPanel strategyStats={strategyStats} totalRaces={data.meta.populationRaces} strategyColors={strategyColors} />
         </div>
         <div className="sa-comp-row">
@@ -92,6 +92,7 @@ export default function Strategy({ data, onTeams }: { data: Summary; onTeams: Fi
                 onSelectRepresentative={(entry, style) => onTeams([{ card: entry.cardId, chara: entry.charaId, style }, {}, {}])}
                 useAdjustedRates={false}
                 showPlayers
+                playerCountDescription={data.playerUsage ? "Players whose best active team contains this Uma in this style." : undefined}
             />
         </div>
         <StyleTeamCompositionPanel
@@ -101,7 +102,7 @@ export default function Strategy({ data, onTeams }: { data: Summary; onTeams: Fi
             playerCounts={Object.fromEntries(data.archetypes.map(row => [row.key, row.owners]))}
             expandToAllOverperformers
             headerControls={<div className="bp-pop-filter-toggle" role="group" aria-label="Minimum player share">
-                <span className="bp-pop-filter-label" title="Share of distinct simulated players with at least one team using this archetype. Each player counts once per archetype.">Player share:</span>
+                <span className="bp-pop-filter-label" title={data.playerUsage ? "Share of players whose best active team uses this archetype." : "Share of distinct simulated players with at least one team using this archetype. Each player counts once per archetype."}>Player share:</span>
                 {[0.005, 0.01, 0.02, 0.05, 0].map(share => <button type="button" key={share}
                     className={`bp-pop-filter-btn${minimumPlayerShare === share ? ' active' : ''}`}
                     aria-pressed={minimumPlayerShare === share}

@@ -138,7 +138,9 @@ export default function PerformanceDistribution({ distribution, population, dist
         };
     }, [bins, distribution?.totalTeams, population, stats]);
 
-    return <Panel title="Team performance distribution" className="sim-performance-panel">
+    return <Panel title="Team performance distribution" className="sim-performance-panel" controls={
+        <span className="sim-performance-count">{distribution ? `${number(distribution.totalTeams)} matching teams` : loading ? 'Loading teams…' : 'Team count unavailable'}</span>
+    }>
         {loading ? <Loading error={error} retry={retry} /> : error ? <Loading error={error} retry={retry} /> : !stats ?
             <p className="sim-empty">No evaluated teams match these requirements.</p> : <>
                 <p className={`sim-performance-scope${distinct ? ' is-showcase' : ''}`}>
@@ -158,6 +160,20 @@ export default function PerformanceDistribution({ distribution, population, dist
                         <EChartsReactCore echarts={echarts} option={option} opts={{ renderer: 'svg' }} style={{ height: '310px' }} />
                     </div>
                 </figure>
+                <dl className="sim-performance-summary" aria-label="Filtered team performance summary">
+                    <div>
+                        <dt>Average win rate</dt>
+                        <dd>{distribution?.averageWinRate == null ? 'Unavailable' : percent(distribution.averageWinRate)}</dd>
+                    </div>
+                    <div>
+                        <dt>Median lower bound</dt>
+                        <dd>{percent(stats.median)}</dd>
+                    </div>
+                    <div>
+                        <dt>Top 10% lower bound</dt>
+                        <dd>{percent(stats.topDecile)}</dd>
+                    </div>
+                </dl>
             </>}
     </Panel>;
 }

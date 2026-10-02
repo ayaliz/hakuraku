@@ -15658,6 +15658,77 @@
       "activateLot": 0
     },
     {
+      "id": 110081,
+      "name": "Into High Gear!",
+      "gradeValue": 340,
+      "tagId": [
+        "401",
+        "403"
+      ],
+      "rarity": 5,
+      "conditionGroups": [
+        {
+          "condition": "slope==0@slope==1",
+          "baseTime": 50000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 3500
+            },
+            {
+              "type": 31,
+              "value": 1000
+            }
+          ]
+        },
+        {
+          "condition": "slope==0@slope==1",
+          "baseTime": 40000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 3500
+            }
+          ]
+        }
+      ],
+      "iconId": 20013,
+      "activateLot": 0
+    },
+    {
+      "id": 110091,
+      "name": "Queen's Lumination",
+      "gradeValue": 340,
+      "tagId": [
+        "401"
+      ],
+      "rarity": 5,
+      "conditionGroups": [
+        {
+          "condition": "distance_rate>=50&corner==0&order==1&bashin_diff_behind<=1",
+          "baseTime": 60000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 3500
+            }
+          ]
+        },
+        {
+          "condition": "distance_rate>=50&corner==0&order<=2",
+          "baseTime": 60000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 2500
+            }
+          ]
+        }
+      ],
+      "iconId": 20013,
+      "activateLot": 0
+    },
+    {
       "id": 110101,
       "name": "Joyful Voyage!",
       "gradeValue": 340,
@@ -30842,6 +30913,77 @@
       "activateLot": 1
     },
     {
+      "id": 910081,
+      "name": "Into High Gear!",
+      "gradeValue": 180,
+      "tagId": [
+        "401",
+        "403"
+      ],
+      "rarity": 1,
+      "conditionGroups": [
+        {
+          "condition": "slope==0@slope==1",
+          "baseTime": 30000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 1500
+            },
+            {
+              "type": 31,
+              "value": 500
+            }
+          ]
+        },
+        {
+          "condition": "slope==0@slope==1",
+          "baseTime": 24000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 1500
+            }
+          ]
+        }
+      ],
+      "iconId": 20011,
+      "activateLot": 1
+    },
+    {
+      "id": 910091,
+      "name": "Queen's Lumination",
+      "gradeValue": 180,
+      "tagId": [
+        "401"
+      ],
+      "rarity": 1,
+      "conditionGroups": [
+        {
+          "condition": "distance_rate>=50&corner==0&order==1&bashin_diff_behind<=1",
+          "baseTime": 36000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 1500
+            }
+          ]
+        },
+        {
+          "condition": "distance_rate>=50&corner==0&order<=2",
+          "baseTime": 36000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 500
+            }
+          ]
+        }
+      ],
+      "iconId": 20011,
+      "activateLot": 1
+    },
+    {
       "id": 910101,
       "name": "Joyful Voyage!",
       "gradeValue": 180,
@@ -33559,6 +33701,19 @@
       ]
     },
     {
+      "id": 10085,
+      "name": "[Tracen Academy] Sakura Laurel",
+      "charaId": 1076,
+      "raceBonus": 5,
+      "raceBonusByLimitBreak": [
+        1,
+        1,
+        1,
+        5,
+        5
+      ]
+    },
+    {
       "id": 20001,
       "name": "[Well, Look Who's Home] Fuji Kiseki",
       "charaId": 1005,
@@ -35753,6 +35908,45 @@
         0,
         0,
         0
+      ]
+    },
+    {
+      "id": 30123,
+      "name": "[Glad Tidings] Narita Brian",
+      "charaId": 1016,
+      "raceBonus": 5,
+      "raceBonusByLimitBreak": [
+        1,
+        1,
+        1,
+        5,
+        5
+      ]
+    },
+    {
+      "id": 30124,
+      "name": "[Are You Merry?] Air Groove",
+      "charaId": 1018,
+      "raceBonus": 5,
+      "raceBonusByLimitBreak": [
+        1,
+        1,
+        1,
+        5,
+        5
+      ]
+    },
+    {
+      "id": 30125,
+      "name": "[Don't Stop Anymore!] Sakura Laurel",
+      "charaId": 1076,
+      "raceBonus": 5,
+      "raceBonusByLimitBreak": [
+        1,
+        1,
+        1,
+        5,
+        5
       ]
     },
     {
@@ -54588,6 +54782,20 @@
     },
     {
       "id": 910071,
+      "needSkillPoint": 200,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
+      "id": 910081,
+      "needSkillPoint": 200,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
+      "id": 910091,
       "needSkillPoint": 200,
       "statusType": 0,
       "statusValue": 0,

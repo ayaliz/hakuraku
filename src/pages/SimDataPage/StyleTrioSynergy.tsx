@@ -5,8 +5,8 @@ import { compositionQuery } from './query';
 import { Loading, number, percent, useStrategyColors, type FindTeams } from './components';
 import type { Pair, TeamRate } from './types';
 
-export default function StyleTrioSynergy({ pairs, selected, rows, error, retry, onPair, onTeams }: {
-    pairs: Pair[]; selected: Pair; rows?: TeamRate[]; error?: string; retry: () => void;
+export default function StyleTrioSynergy({ pairs, selected, rows, bestTeamPlayerCounts, error, retry, onPair, onTeams }: {
+    bestTeamPlayerCounts?: boolean; pairs: Pair[]; selected: Pair; rows?: TeamRate[]; error?: string; retry: () => void;
     onPair: (key: string) => void; onTeams: FindTeams;
 }) {
     const strategyColors = useStrategyColors();
@@ -38,7 +38,7 @@ export default function StyleTrioSynergy({ pairs, selected, rows, error, retry, 
                             <span key={index} className="syn-comp-dot" style={{ background: strategyColors[Number(style)] }} />)}</div>
                         <div className="syn-comp-name">{row.key.split('-').map(style => STRATEGY_NAMES[Number(style)]?.split(' ')[0] ?? style).join(' / ')}</div>
                         <div className="syn-comp-stats"><span className="sa-adj-pct syn-comp-stat" style={{ color: group.positive ? '#68d391' : '#fc8181' }}>{percent(row.team)}</span>
-                            <span className="sa-raw-pct syn-comp-stat" title="Distinct players with at least one matching simulated team">{number(row.owners)}</span></div>
+                            <span className="sa-raw-pct syn-comp-stat" title={bestTeamPlayerCounts ? "Players whose best active team matches this composition" : "Distinct players with at least one matching simulated team"}>{number(row.owners)}</span></div>
                     </button>)}
                 </div>)}</div>}
     </div>;

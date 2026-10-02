@@ -4,9 +4,12 @@ import type { SkillDoubleProcStats } from "../../types";
 export type LocalDoubleProcSummary = {
     doubleProcHorseCount: number;
     estimatedDoubleOpportunityRate?: number;
+    observedDoubleProcRate?: number;
+    doubleProcEntries?: number;
+    learnedEntries?: number;
 };
 
-export type DoubleProcRateSummary = Pick<SkillDoubleProcStats, "estimatedDoubleOpportunityRate"> | LocalDoubleProcSummary | null;
+export type DoubleProcRateSummary = SkillDoubleProcStats | LocalDoubleProcSummary | null;
 
 export type DoubleProcBreakdown = {
     overall?: DoubleProcRateSummary;

@@ -2,18 +2,19 @@ import { STRATEGY_NAMES, STYLE_BREAKDOWN_STRATEGY_ORDER } from "./constants";
 import type { StrategyStats } from "../../types";
 import InfoTooltip from "./InfoTooltip";
 
-export function StyleBreakdownPanel({ strategyStats, totalRaces, strategyColors, shareLabel = "Pop%", shareDescription = "popularity" }: {
+export function StyleBreakdownPanel({ strategyStats, totalRaces, strategyColors, shareLabel = "Pop%", shareDescription = "popularity", usageCounts }: {
     strategyStats: StrategyStats[];
     totalRaces: number;
     strategyColors: Record<number, string>;
     shareLabel?: string;
     shareDescription?: string;
+    usageCounts?: Record<number, number>;
 }) {
-    const sumEntries = strategyStats.reduce((s, st) => s + st.totalRaces, 0);
+    const sumEntries = usageCounts ? Object.values(usageCounts).reduce((a, b) => a + b, 0) : strategyStats.reduce((s, st) => s + st.totalRaces, 0);
     const rows = STYLE_BREAKDOWN_STRATEGY_ORDER.map(sId => {
         const stat = strategyStats.find(s => s.strategy === sId);
         const winShare = stat && totalRaces > 0 ? (stat.wins / totalRaces) * 100 : 0;
-        const pickRate = stat && sumEntries > 0 ? (stat.totalRaces / sumEntries) * 100 : 0;
+        const pickRate = sumEntries > 0 ? ((usageCounts?.[sId] ?? (usageCounts ? 0 : stat?.totalRaces ?? 0)) / sumEntries) * 100 : 0;
         return { sId, winShare, pickRate };
     });
     const globalMax = Math.max(...rows.flatMap(r => [r.winShare, r.pickRate]), 1);
@@ -25,7 +26,7 @@ export function StyleBreakdownPanel({ strategyStats, totalRaces, strategyColors,
                     Style Breakdown
                     <InfoTooltip
                         id="style-breakdown-info"
-                        tip={`A style's win share exceeding its ${shareDescription} means its win rate is above average.`}
+                        tip={usageCounts ? "Win% is the style's share of wins in the full simulation. Share% is its share of Uma slots across each player's best active team." : `A style's win share exceeding its ${shareDescription} means its win rate is above average.`}
                     />
                 </span>
             </div>

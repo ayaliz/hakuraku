@@ -33,7 +33,9 @@ export interface CharacterBreakdownPanelProps {
     shareLabel?: string;
     /** Display distinct-player counts without changing simulation win-rate denominators. */
     playerCounts?: Record<string, number>;
+    playerCountDescription?: string;
     onSelectCharacter?: (key: string) => void;
+    umaUsageView?: React.ReactNode;
 }
 
 export function CharacterBreakdownPanel({
@@ -52,11 +54,13 @@ export function CharacterBreakdownPanel({
     populationLabel = "Population",
     shareLabel = "Pop%",
     playerCounts,
+    playerCountDescription = "Distinct players with at least one simulated team containing this Uma in this style. Each player is counted once.",
     onSelectCharacter,
+    umaUsageView,
 }: CharacterBreakdownPanelProps) {
     const [sortMode, setSortMode] = useState<"pop" | "winRate">("pop");
     const [fullDataOpen, setFullDataOpen] = useState(false);
-    const [fullDataSort, setFullDataSort] = useState<"pop" | "winRate">("pop");
+    const [fullDataSort, setFullDataSort] = useState<"pop" | "winRate" | "uma">("pop");
     const [selectedCharKey, setSelectedCharKey] = useState<string | null>(null);
     const [selectedInModal, setSelectedInModal] = useState<string | null>(null);
     const [drilldownCache, setDrilldownCache] = useState<Record<string, RepresentativeDrilldownEntry[]>>({});
@@ -244,7 +248,7 @@ export function CharacterBreakdownPanel({
                     </div>
                 </div>
                 <div className="sa-sb-bar-row">
-                    <div className="sa-sb-bar-label" title={playerCounts ? "Distinct players with at least one simulated team containing this Uma in this style. Each player is counted once." : undefined}>{shareLabel}</div>
+                    <div className="sa-sb-bar-label" title={playerCounts ? playerCountDescription : undefined}>{shareLabel}</div>
                     <div className="sa-sb-track sa-sb-track--pick">
                         <div className="sa-sb-bar-fill sa-sb-bar-fill--pick" style={{ width: `${(playerCounts ? (playerCounts[c.key] ?? 0) / maxPlayers : c.popPct / maxP) * 100}%` }} />
                     </div>
@@ -330,11 +334,17 @@ export function CharacterBreakdownPanel({
                                     onClick={() => setFullDataSort("winRate")}>
                                     {useBayesianWinRate ? "By Adj. Win%" : "By Win%"}
                                 </button>
+                                {umaUsageView && <button type="button"
+                                    className={`ca-sort-btn${fullDataSort === "uma" ? " ca-sort-btn--active" : ""}`}
+                                    aria-pressed={fullDataSort === "uma"}
+                                    onClick={() => setFullDataSort("uma")}>
+                                    By uma
+                                </button>}
                             </div>
                             <button className="cdt-close-btn" onClick={() => setFullDataOpen(false)}>&times;</button>
                         </div>
                         <div className="cdt-content">
-                            {fullDataChars.map(c => (
+                            {fullDataSort === "uma" ? umaUsageView : fullDataChars.map(c => (
                                 <React.Fragment key={c.key}>
                                     {renderBarRow(c, fullDataMaxPct, true)}
                                     {selectedInModal === c.key && renderDrilldown(

@@ -19,10 +19,19 @@ test('range outcomes use distinct first procs, with setup at the start of the co
     assert.equal(result.rangeBuckets?.win[20], 8);
     assert.equal(result.buckets.all[0], 10);
     assert.equal(result.rangeBuckets?.winByStrategy?.['5'][30], 5);
+    assert.deepEqual(result.buckets.doubleProc, { observedDoubleProcRate: 20 / 150, doubleProcEntries: 20, learnedEntries: 150 });
+    assert.deepEqual(result.buckets.doubleProcByStrategy?.['1'], { observedDoubleProcRate: .2, doubleProcEntries: 20, learnedEntries: 100 });
+    assert.equal(result.buckets.doubleProcByStrategy?.['5'], undefined);
     assert.deepEqual(result.winBreakdown?.[0].total, { apps: 60, wins: 15 });
     assert.deepEqual(result.winBreakdown?.[1].total, { apps: 90, wins: 7 });
     const stats = adaptOverview(overview, new Map([[123, result]]), () => 'Test').stats.get(123)!;
     assert.ok(Number.isFinite(stats.meanDistance));
+});
+test('double-proc data is omitted when no learned runner activated twice', () => {
+    const noRepeats: Overview = { ...overview, rows: overview.rows.map(row => [...row.slice(0, 6), 0, ...row.slice(7)] as typeof row) };
+    const result = adaptDetail(detail, noRepeats, 123);
+    assert.equal(result.buckets.doubleProc, undefined);
+    assert.equal(result.buckets.doubleProcByStrategy, undefined);
 });
 test('wrong snapshots and invalid outcome counts are rejected', () => {
     assert.throws(() => adaptDetail({ ...detail, snapshotId: 'other' }, overview, 123));

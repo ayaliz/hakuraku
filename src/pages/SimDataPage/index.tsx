@@ -1,3 +1,4 @@
+import { applyPlayerUsage, supportsPlayerUsage, type UmaUsage } from './umaUsage';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Nav, Tab } from 'react-bootstrap';
@@ -24,13 +25,14 @@ function Results({ snapshot }: { snapshot: Snapshot }) {
     const tabs = snapshot.skillAnalysis
         ? { introduction: 'Introduction', strategy: 'Strategy Analysis', character: 'Uma Analysis', skills: 'Skill Analysis', archetypes: 'Archetype Analysis', lobby: 'Lobby Builder' }
         : standardTabs;
+    const usesBestTeamUsage = supportsPlayerUsage(snapshot);
     const [params, setParams] = useSearchParams();
     const [lobbyTeams, setLobbyTeams] = useState<(Performer | null)[]>([null, null, null]);
     const [lobbyDraft, setLobbyDraft] = useState<LobbyDraft>({ mood: '5', seed: '', gates: {}, runnerEdits: {}, customRunners: {}, customRunnerSourceIds: {}, customRunnerStyles: {}, customRunnerScores: {}, customTeamOrigins: {} });
     const [view, setView] = useState({
         pair: null as string | null,
         query: '',
-        distinct: false,
+        distinct: usesBestTeamUsage,
         sort: 'lower' as 'rate' | 'lower',
     });
     const result = useSimData<Summary>(
@@ -38,6 +40,7 @@ function Results({ snapshot }: { snapshot: Snapshot }) {
         snapshot.snapshotId,
         `${DATA_ROOT}/${snapshot.snapshotId}/summary.json`,
     );
+    const usage = useSimData<UmaUsage>(usesBestTeamUsage ? simDataApiUrl(`/api/simdata/snapshots/${encodeURIComponent(snapshot.snapshotId)}/uma-usage`) : null, snapshot.snapshotId);
     const requestedTab = params.get('tab') ?? 'introduction';
     const tab = requestedTab === 'performers' ? 'archetypes' : requestedTab;
     const sharedTeam = decodeTeamLinkTarget(params.get('team'), params.get('member'));
@@ -83,13 +86,15 @@ function Results({ snapshot }: { snapshot: Snapshot }) {
         }
     };
     if (!result.data) return <Loading error={result.error} retry={result.retry} />;
-    const data = normalizeRaceConditionMetadata(result.data);
+    if (usesBestTeamUsage && !usage.data) return <Loading error={usage.error} retry={usage.retry} />;
+    const summary = normalizeRaceConditionMetadata(result.data);
+    const data = usage.data ? applyPlayerUsage(summary, usage.data) : summary;
     const onPair = (key: string) => {
         setView(previous => ({ ...previous, pair: key }));
         selectTab('character');
     };
     const onTeams = (slots: Requirement[]) => {
-        setView(previous => ({ ...previous, query: queryText(slots, data.cards) }));
+        setView(previous => ({ ...previous, query: queryText(slots, data.cards), distinct: usesBestTeamUsage ? true : previous.distinct }));
         selectTab('archetypes');
     };
     const removeLobbyTeam = (slot: number) => {
@@ -170,8 +175,8 @@ function Results({ snapshot }: { snapshot: Snapshot }) {
                 <p>Read <Link to="/notes/new-age-umamusume-data">“A new age for Umamusume data”</Link> for further information. The simulator used to build the data has reproduced the server's results without floating-point discrepancies in all approximately 500,000 validation races we've collected since the 1.5 anniversary balance patch.</p>
             </div></Tab.Pane>
                 <Tab.Pane eventKey="strategy"><Strategy data={data} onTeams={onTeams} /></Tab.Pane>
-                <Tab.Pane eventKey="character"><Suspense fallback={<Loading retry={() => window.location.reload()} />}><Character data={data} selectedKey={view.pair} onPair={onPair} onTeams={onTeams} /></Suspense></Tab.Pane>
-                {snapshot.skillAnalysis && <Tab.Pane eventKey="skills"><Suspense fallback={<Loading retry={() => window.location.reload()} />}><CapturedSkillPreview snapshot={snapshot} /></Suspense></Tab.Pane>}
+                <Tab.Pane eventKey="character"><Suspense fallback={<Loading retry={() => window.location.reload()} />}><Character usage={usage.data} data={data} selectedKey={view.pair} onPair={onPair} onTeams={onTeams} /></Suspense></Tab.Pane>
+                {snapshot.skillAnalysis && <Tab.Pane eventKey="skills"><Suspense fallback={<Loading retry={() => window.location.reload()} />}><CapturedSkillPreview usage={usage.data} snapshot={snapshot} /></Suspense></Tab.Pane>}
                 <Tab.Pane eventKey="archetypes"><Suspense fallback={<Loading retry={() => window.location.reload()} />}><Performers data={data} query={view.query} distinct={view.distinct} sort={view.sort} teamId={sharedTeam?.teamId ?? null} lobbyTeamIds={new Set(selectedLobbyTeams.map(team => team.id))} lobbyFull={lobbyFull} lobbyRunnerIds={lobbyRunnerIds} lobbyRunnerFull={lobbyRunnerFull} onToggleLobby={toggleLobbyTeam} onAddLobbyRunner={addLobbyRunner} onOpenLobby={() => selectTab('lobby')} onChange={change} /></Suspense></Tab.Pane>
                 <Tab.Pane eventKey="lobby"><Suspense fallback={<Loading retry={() => window.location.reload()} />}><LobbyBuilder data={data} teams={lobbyTeams} draft={lobbyDraft} onDraftChange={setLobbyDraft} onBrowse={() => selectTab('archetypes')} onRemove={removeLobbyTeam} onRemoveRunner={position => rearrangeLobby(position, null)} onMoveRunner={rearrangeLobby} onClear={clearLobby} /></Suspense></Tab.Pane>
             </Tab.Content>
@@ -181,7 +186,7 @@ function Results({ snapshot }: { snapshot: Snapshot }) {
 
 export default function SimDataPage() {
     const [selectedSnapshotId, setSelectedSnapshotId] = useState<string | null>(null);
-    const { colorblindMode, setColorblindMode, strategyColors } = useStrategyPalette(STRATEGY_COLORS, COLORBLIND_STRATEGY_COLORS);
+    const { colorblindMode, setColorblindMode, strategyColors, setStrategyColor, resetStrategyColors, hasCustomColors } = useStrategyPalette(STRATEGY_COLORS, COLORBLIND_STRATEGY_COLORS);
     const manifest = useSimData<{ schemaVersion: number; snapshots: Snapshot[] }>(
         simDataApiUrl('/api/simdata/manifest'), undefined, `${DATA_ROOT}/manifest.json`,
     );
@@ -197,7 +202,7 @@ export default function SimDataPage() {
         {snapshot && <div className="sim-dataset-selector"><label className="sim-dataset-label">Dataset:
             <select className="sim-dataset-select" value={snapshot.snapshotId} onChange={e => setSelectedSnapshotId(e.target.value)}>{snapshots.map(s => <option key={s.snapshotId} value={s.snapshotId}>{s.label.replace(/\s*[·|—-]?\s*10 million races\b/gi, '').trim()} - {s.meta.course.replace(/^CM\d+(?:-[^·]+)?\s*·\s*/i, '')}</option>)}</select>
         </label></div>}
-        <StrategyPaletteControls colorblindMode={colorblindMode} onToggle={() => setColorblindMode(value => !value)} strategyColors={strategyColors} strategyOrder={STRATEGY_DISPLAY_ORDER} strategyNames={STRATEGY_NAMES} />
+        <StrategyPaletteControls onColorChange={setStrategyColor} onResetColors={resetStrategyColors} hasCustomColors={hasCustomColors} colorblindMode={colorblindMode} onToggle={() => setColorblindMode(value => !value)} strategyColors={strategyColors} strategyOrder={STRATEGY_DISPLAY_ORDER} strategyNames={STRATEGY_NAMES} />
     </header>
         <StrategyPaletteProvider colors={strategyColors}>
             {!manifest.data ? <Loading error={manifest.error} retry={manifest.retry} /> : !snapshot ? <div className="sim-empty" role="alert">No simulation results have been published yet.</div> : <Results key={snapshot.snapshotId} snapshot={snapshot} />}

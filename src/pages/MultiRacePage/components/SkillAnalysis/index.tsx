@@ -25,6 +25,7 @@ interface SkillAnalysisProps {
     lazySkillDetailLoadingIds?: Set<number>;
     showStrategyProcRates?: boolean;
     enableActivationSortCycle?: boolean;
+    bestTeamPlayerCounts?: boolean;
     simulationPlayerCounts?: Map<number, { all: number; byStrategy: Record<string, number> }>;
 }
 
@@ -54,6 +55,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
     showStrategyProcRates = false,
     enableActivationSortCycle = false,
     simulationPlayerCounts,
+    bestTeamPlayerCounts = false,
 }) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedStrategy, setSelectedStrategy] = useState<string>("all");
@@ -497,6 +499,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                 : (b.byStrategy[String(selectedStrategy)] ?? b.all);
             const doubleProcBreakdown: DoubleProcBreakdown = selectedStrategy === "all"
                 ? {
+                    overall: b.doubleProc,
                     byStrategy: b.doubleProcByStrategy,
                 }
                 : {
@@ -564,6 +567,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                 : (bucketData.byStrategy[String(selectedStrategy)] ?? bucketData.all);
             const doubleProcBreakdown: DoubleProcBreakdown = selectedStrategy === "all"
                 ? {
+                    overall: bucketData.doubleProc,
                     byStrategy: bucketData.doubleProcByStrategy,
                 }
                 : {
@@ -927,7 +931,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                                             )}
                                         </div>
                                     </td>
-                                    <td title={simulationPlayerCounts ? `${skill.learnedByHorses.toLocaleString()} learned runner entries` : undefined}>{simulationPlayerCounts ? playerCount(skill.skillId).toLocaleString() : skill.learnedByHorses}</td>
+                                    <td title={simulationPlayerCounts ? bestTeamPlayerCounts ? `Players whose best active team has this skill. Performance statistics use ${skill.learnedByHorses.toLocaleString()} learned runner entries from the full simulation.` : `${skill.learnedByHorses.toLocaleString()} learned runner entries` : undefined}>{simulationPlayerCounts ? playerCount(skill.skillId).toLocaleString() : skill.learnedByHorses}</td>
                                     <td>
                                         {skill.timesActivated}
                                         <span

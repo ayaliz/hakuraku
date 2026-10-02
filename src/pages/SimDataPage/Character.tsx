@@ -5,10 +5,12 @@ import type { PieSlice } from '../MultiRacePage/components/WinDistributionCharts
 import { DATA_ROOT, simDataApiUrl, useSimData } from './data';
 import { rate, useStrategyColors, type FindTeams } from './components';
 import StyleTrioSynergy from './StyleTrioSynergy';
+import { UmaUsageRows } from './UmaUsageView';
+import type { UmaUsage } from './umaUsage';
 import type { Contexts, Summary } from './types';
 import '../MultiRacePage/components/WinDistributionCharts/CharacterAnalysis.css';
 
-export default function Character({ data, selectedKey, onPair, onTeams }: { data: Summary; selectedKey: string | null; onPair: (key: string) => void; onTeams: FindTeams }) {
+export default function Character({ data, usage, selectedKey, onPair, onTeams }: { data: Summary; usage?: UmaUsage; selectedKey: string | null; onPair: (key: string) => void; onTeams: FindTeams }) {
     const strategyColors = useStrategyColors();
     const [minPop, setMinPop] = useState(.03);
     const selected = data.pairs.find(p => p.key === selectedKey) ?? [...data.pairs].sort((a, b) => b.pop - a.pop)[0];
@@ -64,19 +66,21 @@ export default function Character({ data, selectedKey, onPair, onTeams }: { data
                 strategyColors={strategyColors}
                 includeZeroWinEntries
                 useBayesianWinRate={false}
+                playerCountDescription={usage ? "Players whose best active team contains this Uma in this style." : undefined}
                 populationLabel="Players"
                 shareLabel="Players"
                 playerCounts={Object.fromEntries(data.pairs.map(pair => [`${pair.chara}_${pair.card}_${pair.style}`, pair.owners]))}
+                umaUsageView={usage && <UmaUsageRows usage={usage} data={data} strategyColors={strategyColors} onTeams={onTeams} />}
                 onSelectCharacter={key => {
                     const [, card, style] = key.split('_').map(Number);
                     const pair = data.pairs.find(candidate => candidate.card === card && candidate.style === style);
                     if (pair) onTeams([{ card: pair.card, chara: pair.chara, style: pair.style }, {}, {}]);
                 }}
             />
-            <BubblePlotPanel points={bubblePoints} strategyColors={strategyColors} minPopPct={(minPop * 100) as 0 | 1 | 3} onMinPopPctChange={value => setMinPop(value / 100)} populationLabel="simulated corpus share" stylePopulationLabel="Style share"
+            <BubblePlotPanel points={bubblePoints} strategyColors={strategyColors} minPopPct={(minPop * 100) as 0 | 1 | 3} onMinPopPctChange={value => setMinPop(value / 100)} populationLabel={usage ? "Best-team field share" : "simulated corpus share"} stylePopulationLabel="Style share"
                 onSelectPoint={point => onTeams([{ card: point.cardId, chara: point.charaId, style: point.strategyId }, {}, {}])} />
         </div>
-        <StyleTrioSynergy pairs={data.pairs} selected={selected} rows={context.data?.rows}
+        <StyleTrioSynergy bestTeamPlayerCounts={Boolean(usage)} pairs={data.pairs} selected={selected} rows={usage ? context.data?.rows.map(row => ({ ...row, owners: usage.contexts?.[`${selected.key}/${row.key}`] ?? 0 })) : context.data?.rows}
             error={context.error} retry={context.retry} onPair={onPair} onTeams={onTeams} />
     </div>;
 }

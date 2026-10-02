@@ -179,16 +179,21 @@ function OtherTeamsModal({ data, sourceTeam, close, onOpenTeam, lobbyRunnerIds, 
         const date = team.evaluatedSnapshotId?.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? team.evaluatedSnapshotId;
         return `Removed from future simulations after ${date} due to performance gap to player's best team`;
     };
+    const historicalMessage = (team: Performer) => {
+        const date = team.evaluatedSnapshotId?.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? team.evaluatedSnapshotId;
+        return `Not selected for this snapshot's full simulation; showing the last evaluated result${date ? ` from ${date}` : ''}`;
+    };
     return <Modal show onHide={close} size="xl" centered className="sim-team-modal sim-other-teams-modal" aria-label="Other teams">
         <Modal.Header closeButton closeVariant="white" />
         <Modal.Body>
-            <p className="sim-other-teams-note">Active teams split this player's daily simulation budget. Benched teams remain listed with results from their last evaluated snapshot.</p>
+            <p className="sim-other-teams-note">Active teams split this player's daily simulation budget. Earlier evaluated variants and benched teams remain listed with their latest results.</p>
             {!result.data ? <Loading error={result.error} retry={result.retry} /> : otherTeams.length ? <div className="sim-other-teams-list">{otherTeams.map(team =>
-                <article className={`sim-other-team${team.benched ? ' is-benched' : ''}`} key={team.id}>
+                <article className={`sim-other-team${team.benched ? ' is-benched' : team.historical ? ' is-historical' : ''}`} key={team.id}>
                     {team.newToday && <div className="sim-new-team-message">Team newly added today</div>}
                     {team.benched && <div className="sim-benched-team-message">{benchMessage(team)}</div>}
+                    {team.historical && !team.benched && <div className="sim-historical-team-message">{historicalMessage(team)}</div>}
                     <PerformerTeam team={team} data={data} lobbyRunnerIds={lobbyRunnerIds} lobbyRunnerFull={lobbyRunnerFull} onAddLobbyRunner={onAddLobbyRunner} onOpen={() => onOpenTeam(team.id)} />
-                    <div className="sim-other-team-metrics"><span><strong>{percent(team.wins / team.n)}</strong> {team.benched ? 'last win rate' : 'win rate'}</span><span>{interval(team.ci)} · 95% interval</span><span>{number(team.n)} races{team.benched && team.evaluatedSnapshotId ? ` · ${team.evaluatedSnapshotId}` : ''}</span><button type="button" className="sim-other-team-details" onClick={() => onOpenTeam(team.id)}>View details</button></div>
+                    <div className="sim-other-team-metrics"><span><strong>{percent(team.wins / team.n)}</strong> {team.benched || team.historical ? 'last win rate' : 'win rate'}</span><span>{interval(team.ci)} · 95% interval</span><span>{number(team.n)} races{(team.benched || team.historical) && team.evaluatedSnapshotId ? ` · ${team.evaluatedSnapshotId}` : ''}</span><button type="button" className="sim-other-team-details" onClick={() => onOpenTeam(team.id)}>View details</button></div>
                 </article>
             )}</div> : <p className="sim-empty">This player has no other teams in the current snapshot.</p>}
         </Modal.Body>
@@ -222,16 +227,8 @@ export default function Performers({ data, query, distinct, sort, teamId, lobbyT
     const useStaticFallback = Boolean(server.error) && !hasDetailedFilters;
     const index = useSimData<PerformerIndex>(useStaticFallback && parsed.slots
         ? `${DATA_ROOT}/${data.snapshotId}/${data.storage?.performerIndex ?? 'performers.json'}` : null, data.snapshotId);
-    const allMatching = useMemo(() => index.data && parsed.slots
-        ? rankTeams(index.data.teams, parsed.slots, false, sort) : [],
-    [index.data, parsed.slots, sort]);
-    const matching = server.data?.teams ?? allMatching;
-    const rows = useMemo(() => {
-        if (server.data) return server.data.teams;
-        if (!distinct) return matching;
-        const seen = new Set<string>();
-        return matching.filter(team => { if (seen.has(team.owner.id)) return false; seen.add(team.owner.id); return true; });
-    }, [server.data, matching, distinct]);
+    const rows = useMemo(() => server.data?.teams ?? (index.data && parsed.slots
+        ? rankTeams(index.data.teams, parsed.slots, distinct, sort, data.playerUsage?.schemaVersion === 1) : []), [server.data, index.data, parsed.slots, distinct, sort, data.playerUsage]);
     const visibleRows = server.data ? rows : rows.slice((page - 1) * teamsPerPage, page * teamsPerPage);
     const totalRows = server.data ? (distinct ? server.data.totalOwners : server.data.totalTeams) : rows.length;
     const population = useMemo(() => {
@@ -265,7 +262,7 @@ export default function Performers({ data, query, distinct, sort, teamId, lobbyT
             error={distribution.error}
             retry={distribution.retry}
         />}
-        <Panel title="Archetype Analysis" controls={<div className="sim-performer-controls">{lobbyTeamIds.size > 0 && <button type="button" className="sim-lobby-shortcut" onClick={onOpenLobby}>Lobby <strong>{lobbyTeamIds.size}/3</strong></button>}<div className="sim-performer-mode-control"><span>Show</span><div className="sim-segmented" role="group" aria-label="How matching teams are represented"><button type="button" title="Show every matching evaluated team" className={!distinct ? 'is-active' : ''} aria-pressed={!distinct} onClick={() => onChange({ players: 'all' })}>All teams</button><button type="button" title="Keep each player’s highest-ranked matching team" className={distinct ? 'is-active' : ''} aria-pressed={distinct} onClick={() => onChange({ players: 'unique' })}>Best per player</button></div></div></div>}>
+        <Panel title="Archetype Analysis" controls={<div className="sim-performer-controls">{lobbyTeamIds.size > 0 && <button type="button" className="sim-lobby-shortcut" onClick={onOpenLobby}>Lobby <strong>{lobbyTeamIds.size}/3</strong></button>}<div className="sim-performer-mode-control"><span>Show</span><div className="sim-segmented" role="group" aria-label="How matching teams are represented"><button type="button" title="Show every matching evaluated team" className={!distinct ? 'is-active' : ''} aria-pressed={!distinct} onClick={() => onChange({ players: 'all' })}>All teams</button><button type="button" title={data.playerUsage ? "Select each player’s best active team by win rate, then apply the filters" : "Keep each player’s highest-ranked matching team"} className={distinct ? 'is-active' : ''} aria-pressed={distinct} onClick={() => onChange({ players: 'unique' })}>Best per player</button></div></div></div>}>
             {loading ? <Loading error={loadError} retry={() => { server.retry(); index.retry(); }} /> : parsed.error ? <p className="sim-empty">The selected team filters could not be read.</p> : visibleRows.length ? <>
                 <div className="sim-table-scroll"><table className="sim-table sim-performer-table"><thead><tr><th>#</th><th>Team · select an Uma for details</th><th>Team win%</th><th className={sort === 'lower' ? 'sim-sorted-column' : undefined} title={sort === 'lower' ? 'Sorted by the lower bound of the 95% interval, descending' : undefined}>95% interval{sort === 'lower' && <span className="sim-sort-arrow" aria-label="sorted descending">↓</span>}</th><th>Races</th><th>Player</th><th>Lobby</th></tr></thead><tbody>{visibleRows.map((team, i) => {
                     const inLobby = lobbyTeamIds.has(team.id);

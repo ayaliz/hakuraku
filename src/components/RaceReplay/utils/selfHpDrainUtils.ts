@@ -15,6 +15,7 @@ export const FIXED_SELF_HP_DRAIN_SKILL_IDS = new Set([
     202152,
     202391,
     202392,
+    202421,
     210101,
 ]);
 

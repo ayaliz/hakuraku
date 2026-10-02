@@ -76,19 +76,29 @@ interface DoubleProcTableProps {
 
 const DoubleProcTable: React.FC<DoubleProcTableProps> = ({ breakdown }) => {
     const byStrategy = breakdown?.byStrategy ?? {};
-    const hasAny = STRATS.some((strategy) => breakdown?.byStrategy?.[String(strategy)]?.estimatedDoubleOpportunityRate !== undefined);
+    const summaries = [breakdown?.overall, ...STRATS.map(strategy => byStrategy[String(strategy)])];
+    const observed = summaries.some(summary => summary?.observedDoubleProcRate !== undefined);
+    const hasAny = summaries.some(summary => observed
+        ? summary?.observedDoubleProcRate !== undefined
+        : summary?.estimatedDoubleOpportunityRate !== undefined);
     if (!hasAny) return null;
 
     const fmt = (summary: DoubleProcRateSummary | undefined) => {
-        if (!summary || summary.estimatedDoubleOpportunityRate === undefined) {
+        const rate = observed ? summary?.observedDoubleProcRate : summary?.estimatedDoubleOpportunityRate;
+        if (rate === undefined) {
             return <span className="swb-empty">-</span>;
         }
-        return <strong className="swb-double-proc-rate">{(summary.estimatedDoubleOpportunityRate * 100).toFixed(1)}%</strong>;
+        const title = observed && summary?.doubleProcEntries !== undefined && summary.learnedEntries !== undefined
+            ? `${summary.doubleProcEntries.toLocaleString()} of ${summary.learnedEntries.toLocaleString()} learned runner entries activated at least twice`
+            : undefined;
+        return <strong className="swb-double-proc-rate" title={title}>{(rate * 100).toFixed(1)}%</strong>;
     };
 
     return (
         <div className="swb-container">
-            <div className="swb-header">Estimated frequency for two proc opportunities during a race</div>
+            <div className="swb-header">{observed
+                ? 'Observed double-proc rate'
+                : 'Estimated frequency for two proc opportunities during a race'}</div>
             <table className="swb-table">
                 <thead>
                     <tr>

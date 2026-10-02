@@ -107,7 +107,7 @@ export function queryText(slots: Requirement[], cards: Record<number, Card>): st
     const matcherText = (slot: TeamMatcher): string => {
         const card = slot.card ? cards[slot.card] : Object.values(cards).find(c => c.chara === slot.chara);
         const role = slot.style ? SHORT_STYLE[slot.style] : null;
-        return card ? card.name + (slot.card ? ' ' + card.outfit : '') + (role ? ` (${role})` : '') : role ?? 'Any';
+        return card ? card.name + (slot.card ? ` [${card.outfit}]` : '') + (role ? ` (${role})` : '') : role ?? 'Any';
     };
     const requirementText = (slot: Requirement) => slot.anyOf?.length
         ? slot.anyOf.map(matcherText).join(' | ')
@@ -124,11 +124,19 @@ export function compositionQuery(key: string, pair?: { card: number; chara: numb
     return slots;
 }
 
-export function rankTeams(teams: Performer[], slots: Requirement[], distinct: boolean, sort: 'rate' | 'lower'): Performer[] {
-    const ranked = teams.filter(team => matchesTeam(team.members, slots)).sort((a, b) =>
-        (sort === 'lower' ? b.ci[0] - a.ci[0] : b.wins / b.n - a.wins / a.n) || b.wins / b.n - a.wins / a.n || b.n - a.n || a.id.localeCompare(b.id));
+export function rankTeams(teams: Performer[], slots: Requirement[], distinct: boolean, sort: 'rate' | 'lower', bestBeforeFilter = false): Performer[] {
+    if (!bestBeforeFilter) {
+        const seen = new Set<string>();
+        return teams.filter(team => matchesTeam(team.members, slots)).sort((a, b) =>
+            (sort === 'lower' ? b.ci[0] - a.ci[0] : b.wins / b.n - a.wins / a.n) || b.wins / b.n - a.wins / a.n || b.n - a.n || a.id.localeCompare(b.id))
+            .filter(team => { if (!distinct) return true; if (seen.has(team.owner.id)) return false; seen.add(team.owner.id); return true; });
+    }
+    const active = teams.filter(team => !team.benched && !team.historical);
     const seen = new Set<string>();
-    return ranked.filter(team => { if (!distinct) return true; if (seen.has(team.owner.id)) return false; seen.add(team.owner.id); return true; });
+    const cohort = distinct ? [...active].sort((a, b) => b.wins / b.n - a.wins / a.n || b.n - a.n || a.id.localeCompare(b.id))
+        .filter(team => { if (seen.has(team.owner.id)) return false; seen.add(team.owner.id); return true; }) : active;
+    return cohort.filter(team => matchesTeam(team.members, slots)).sort((a, b) =>
+        (sort === 'lower' ? b.ci[0] - a.ci[0] : b.wins / b.n - a.wins / a.n) || b.wins / b.n - a.wins / a.n || b.n - a.n || a.id.localeCompare(b.id));
 }
 
 export function capturedCoverage(coverage: Coverage, cards: Record<number, Card>, slots: Requirement[]) {

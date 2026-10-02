@@ -38,12 +38,14 @@ export type SnapshotMeta = {
     analysisCorpus?: 'owner-weighted-competitive-mixture'; sharedAnalysisCorpus?: boolean;
 };
 export type Snapshot = {
+    playerUsage?: { schemaVersion: 1 };
     schemaVersion: 1; snapshotId: string; cmId: string; label: string;
     raceInstanceId?: number; startTimeType?: number;
     skillAnalysis?: { schemaVersion: number };
     sourceSha256: string; engineSha256: string; meta: SnapshotMeta;
 };
 export type Summary = {
+    playerUsage?: { schemaVersion: 1 };
     snapshotId: string; meta: SnapshotMeta; cards: Record<number, Card>;
     styles: (RunnerRate & { style: Style })[]; pairs: Pair[]; archetypes: TeamRate[];
     saturation: Record<number, SaturationBucket[]>;
@@ -65,7 +67,7 @@ export type Build = Runner & {
 export type Performer = {
     id: string; owner: { id: string; names: string[] }; members: Runner[];
     wins: number; n: number; ci: Interval; memberWins: number[]; archiveIndex?: number;
-    benched?: boolean; benchReason?: string; evaluatedSnapshotId?: string; newToday?: boolean;
+    benched?: boolean; benchReason?: string; evaluatedSnapshotId?: string; newToday?: boolean; historical?: boolean;
 };
 export type PerformerIndex = { snapshotId: string; teams: Performer[] };
 export type TeamSearchResponse = {
@@ -74,6 +76,7 @@ export type TeamSearchResponse = {
 export type OtherTeamsResponse = { snapshotId: string; sourceTeamId: string; teams: Performer[] };
 export type TeamDistributionResponse = {
     snapshotId: string; totalTeams: number; median: number | null; topDecile: number | null;
+    averageWinRate?: number | null;
     bins: { index: number; count: number; observedMin: number; observedMax: number }[];
 };
 export type LobbyEditorCatalog = { snapshotId: string; cards: number[]; skills: number[]; supportCards?: number[] };

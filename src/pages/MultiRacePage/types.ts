@@ -119,7 +119,10 @@ export type SkillActivationPoint = {
 };
 
 export type SkillDoubleProcStats = {
-    estimatedDoubleOpportunityRate: number; // estimated P(two valid proc windows were present | learned)
+    estimatedDoubleOpportunityRate?: number; // estimated P(two valid proc windows were present | learned)
+    observedDoubleProcRate?: number; // observed P(2+ activations | learned runner entry)
+    doubleProcEntries?: number;
+    learnedEntries?: number;
 };
 
 export type SkillActivationBucketSeries = {

@@ -48,6 +48,27 @@ export function adaptDetail(detail: Detail, overview: Overview, skillId: number,
     if (detail.snapshotId !== overview.snapshotId || detail.skillId !== skillId || detail.bucketCount !== 100 || detail.courseDistance !== overview.courseDistance) throw new Error('Skill detail does not match this snapshot.');
     const series = (): SkillActivationBuckets => ({ all: Array(100).fill(0), win: Array(100).fill(0), byStrategy: {}, winByStrategy: {} });
     const buckets = series(), first = series();
+    let learnedEntries = 0, doubleProcEntries = 0;
+    for (const row of overview.rows.filter(row => row[0] === skillId)) {
+        const style = styles.find(candidate => candidate.native === row[1]);
+        if (!style) throw new Error(`Unsupported running style: ${row[1]}`);
+        const owned = row[3], active = row[4], repeat = row[6];
+        if (repeat > active || active > owned) throw new Error('Invalid repeated activation counts.');
+        learnedEntries += owned; doubleProcEntries += repeat;
+        if (repeat > 0) {
+            buckets.doubleProcByStrategy ??= {};
+            buckets.doubleProcByStrategy[style.id] = {
+                observedDoubleProcRate: repeat / owned,
+                doubleProcEntries: repeat,
+                learnedEntries: owned,
+            };
+        }
+    }
+    if (doubleProcEntries > 0) buckets.doubleProc = {
+        observedDoubleProcRate: doubleProcEntries / learnedEntries,
+        doubleProcEntries,
+        learnedEntries,
+    };
     for (const [native, rows] of Object.entries(detail.styles)) {
         const style = styles.find(s => s.native === native);
         if (!style) throw new Error(`Unsupported running style: ${native}`);

@@ -297,7 +297,7 @@ const UmaLogsPage: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const { manifest, selectedCmId, selectCm, data, loading, error } = useUmaLogsDataset();
     const [scoreWinnersOnly, setScoreWinnersOnly] = useState(false);
-    const { colorblindMode, setColorblindMode, strategyColors } = useStrategyPalette(
+    const { colorblindMode, setColorblindMode, strategyColors, setStrategyColor, resetStrategyColors, hasCustomColors } = useStrategyPalette(
         STRATEGY_COLORS,
         COLORBLIND_STRATEGY_COLORS,
     );
@@ -416,6 +416,9 @@ const UmaLogsPage: React.FC = () => {
                     </label>
                 </div>
                 <StrategyPaletteControls
+                    onColorChange={setStrategyColor}
+                    onResetColors={resetStrategyColors}
+                    hasCustomColors={hasCustomColors}
                     colorblindMode={colorblindMode}
                     onToggle={() => setColorblindMode((value) => !value)}
                     strategyColors={strategyColors}

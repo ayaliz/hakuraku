@@ -9,7 +9,7 @@ import {
     matchersFromRequirement,
     requirementFromMatchers,
 } from "./performerFilterModel";
-import { matchesTeam, parseQuery, queryText } from "./query";
+import { matchesTeam, parseQuery, queryText, rankTeams } from "./query";
 
 test("performer filter requirements round-trip alternatives and exclusions", () => {
     const alternatives = [{ card: 100101, style: 1 }, { chara: 1002, style: 2 }];
@@ -73,4 +73,27 @@ test("detailed performer requirements serialize and match the same team member",
     ];
     assert.equal(matchesTeam(members, slots), true);
     assert.equal(matchesTeam([{ ...members[0], deck: [{ position: 1, id: 30028, lb: 4, exp: 0 }] }, members[1], members[2]], slots), false);
+});
+
+test("performer requirements round-trip outfit names containing the team separator", () => {
+    const cards = {
+        104001: { chara: 1040, name: "Gold City", outfit: "Authentic / 1928" },
+    };
+    const slots = [{ card: 104001, chara: 1040 }, {}, {}];
+
+    const text = queryText(slots, cards);
+
+    assert.equal(text, "Gold City [Authentic / 1928] / Any / Any");
+    assert.deepEqual(parseQuery(text, cards), slots);
+});
+
+test('best per player selects globally before filtering and stays independent of display sort', () => {
+    const team = (id: string, owner: string, card: number, wins: number, lower: number) => ({
+        id, owner: { id: owner, names: [] }, members: [{ card, chara: card, style: 1 }, { card: 30, chara: 30, style: 2 }, { card: 40, chara: 40, style: 3 }],
+        wins, n: 100, ci: [lower, .9], memberWins: [],
+    });
+    const teams = [team('a', 'one', 10, 60, .3), team('b', 'one', 20, 50, .4), team('c', 'two', 20, 40, .2)];
+    assert.deepEqual(rankTeams(teams as any, [{ card: 20 }, {}, {}], true, 'lower', true).map(t => t.id), ['c']);
+    assert.deepEqual(rankTeams(teams as any, [{}, {}, {}], true, 'lower', true).map(t => t.id), ['a', 'c']);
+    assert.deepEqual(rankTeams(teams as any, [{ card: 20 }, {}, {}], false, 'lower', true).map(t => t.id), ['b', 'c']);
 });

@@ -1,3 +1,4 @@
+import type { UmaUsage } from './umaUsage';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ungzip } from 'pako';
 import UMDatabaseWrapper from '../../data/UMDatabaseWrapper';
@@ -10,12 +11,12 @@ import type { Snapshot } from './types';
 import { adaptDetail, adaptOverview, styles, type Overview, type Detail } from './capturedSkillAdapter';
 const emptyActivations = new Map();
 const strategyStats = styles.map(s => ({ strategy: s.id, strategyName: s.name, totalRaces: NaN, wins: NaN, top3Finishes: NaN, avgFinishPosition: NaN, winningCharacters: [], saturation: [] }));
-export default function CapturedSkillPreview({ snapshot }: { snapshot: Snapshot }) {
+export default function CapturedSkillPreview({ snapshot, usage }: { snapshot: Snapshot; usage?: UmaUsage }) {
     const base = `/api/simdata/snapshots/${encodeURIComponent(snapshot.snapshotId)}/skills`;
     const result = useSimData<Overview>(simDataApiUrl(`${base}/overview`), snapshot.snapshotId, `${DATA_ROOT}/${snapshot.snapshotId}/skills/overview.json.gz`);
-    return result.data ? <SkillData key={snapshot.snapshotId} data={result.data} base={base} snapshotId={snapshot.snapshotId} /> : <Loading error={result.error} retry={result.retry} />;
+    return result.data ? <SkillData usage={usage} key={snapshot.snapshotId} data={result.data} base={base} snapshotId={snapshot.snapshotId} /> : <Loading error={result.error} retry={result.retry} />;
 }
-function SkillData({ data, base, snapshotId }: { data: Overview; base: string; snapshotId: string }) {
+function SkillData({ data, base, snapshotId, usage }: { usage?: UmaUsage; data: Overview; base: string; snapshotId: string }) {
     const [details, setDetails] = useState(new Map<number, GroupSkillDetailPayload>());
     const [loading, setLoading] = useState(new Set<number>());
     const [errors, setErrors] = useState(new Map<number, string>());
@@ -42,10 +43,18 @@ function SkillData({ data, base, snapshotId }: { data: Overview; base: string; s
             if (!controller.signal.aborted) setLoading(previous => { const next = new Set(previous); next.delete(id); return next; });
         });
     }, [base, data, snapshotId]);
-    const adapted = useMemo(() => adaptOverview(data, details, id => UMDatabaseWrapper.skillNameWithEnglishFallback(id)), [data, details]);
+    const adapted = useMemo(() => {
+        const result = adaptOverview(data, details, id => UMDatabaseWrapper.skillNameWithEnglishFallback(id));
+        if (usage) for (const [id, count] of result.players) {
+            const rows = (usage.skills ?? []).filter(row => row.id === id);
+            count.all = rows.find(row => row.style === 0)?.players ?? 0;
+            count.byStrategy = Object.fromEntries(rows.filter(row => row.style !== 0).map(row => [row.style, row.players]));
+        }
+        return result;
+    }, [data, details, usage]);
     return <section className="skill-analysis-section">
         <h4 className="section-heading">Skill Analysis</h4>
         {[...errors].map(([id, message]) => <p key={id} className="text-warning">{message} <button className="btn btn-sm btn-secondary" onClick={() => { attempted.current.delete(id); setErrors(previous => { const next = new Map(previous); next.delete(id); return next; }); load(id); }}>Retry skill details</button></p>)}
-        <SkillAnalysis skillStats={adapted.stats} skillActivations={emptyActivations} avgRaceDistance={data.courseDistance} characterStats={[]} strategyStats={strategyStats} ownCharas={[]} lazySkillDetails={details} onLoadLazySkillDetail={load} lazySkillDetailLoadingIds={loading} simulationPlayerCounts={adapted.players} showStrategyProcRates enableActivationSortCycle />
+        <SkillAnalysis bestTeamPlayerCounts={Boolean(usage)} skillStats={adapted.stats} skillActivations={emptyActivations} avgRaceDistance={data.courseDistance} characterStats={[]} strategyStats={strategyStats} ownCharas={[]} lazySkillDetails={details} onLoadLazySkillDetail={load} lazySkillDetailLoadingIds={loading} simulationPlayerCounts={adapted.players} showStrategyProcRates enableActivationSortCycle />
     </section>;
 }

@@ -6,6 +6,47 @@
     gap: 8px;
 }
 
+.strategy-palette-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.strategy-palette-settings {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    padding: 4px;
+    border: 1px solid #4a5568;
+    border-radius: 50%;
+    color: #cbd5e0;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.strategy-palette-settings svg { width: 18px; height: 18px; }
+.strategy-palette-settings:hover { color: #fff; border-color: #718096; background: rgba(255, 255, 255, 0.12); }
+.strategy-palette-settings:focus-visible { outline: 2px solid #90cdf4; outline-offset: 2px; }
+
+.strategy-color-modal .modal-dialog { max-width: 420px; }
+.strategy-color-modal .modal-content { background: #1b222e; color: #e2e8f0; border: 1px solid #4a5568; }
+.strategy-color-modal .modal-header,
+.strategy-color-modal .modal-footer { border-color: #364152; }
+.strategy-color-modal .modal-title { font-size: 18px; }
+.strategy-color-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; font-size: 13px; }
+.strategy-color-row > span { flex: 1; }
+.strategy-color-row input[type="color"] { width: 42px; height: 32px; padding: 2px; border: 1px solid #4a5568; border-radius: 5px; background: #252e3c; cursor: pointer; }
+.strategy-color-hex { width: 84px; padding: 6px 8px; border: 1px solid #4a5568; border-radius: 5px; background: #121923; color: #e2e8f0; font: 12px monospace; }
+.strategy-color-hex:focus { outline: 2px solid #90cdf4; outline-offset: 1px; }
+.strategy-color-reset,
+.strategy-color-done { padding: 6px 12px; border: 1px solid #4a5568; border-radius: 5px; font-size: 12px; color: #e2e8f0; background: #2d3748; }
+.strategy-color-reset { margin-right: auto; }
+.strategy-color-reset:disabled { opacity: .45; cursor: default; }
+.strategy-color-done { background: #345a80; border-color: #547da6; }
+.strategy-color-reset:not(:disabled):hover,
+.strategy-color-done:hover { filter: brightness(1.15); }
+
 .strategy-palette-toggle {
     display: inline-flex;
     align-items: center;
@@ -81,6 +122,8 @@
 }
 
 @media (max-width: 768px) {
+    .strategy-palette-actions { width: 100%; }
+    .strategy-palette-settings { width: 42px; height: 42px; }
     .strategy-palette-controls {
         width: 100%;
         min-width: 0;
@@ -113,7 +156,8 @@
 
 @media (max-width: 480px) {
     .strategy-palette-toggle {
-        width: 100%;
+        flex: 1;
+        min-width: 0;
         justify-content: space-between;
     }
 }

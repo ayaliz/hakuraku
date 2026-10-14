@@ -47,6 +47,7 @@ const HorseTooltip: React.FC<HorseTooltipProps> = ({ hoveredHorse, entry, name }
                 <div>Position Keep reference: {entry.positionKeepReferenceName}</div>
             )}
             {entry.positionKeepDecision && <div>Position Keep check: {entry.positionKeepDecision}</div>}
+            {entry.speedUpCheckRange !== undefined && <div>Speed Up rear check range: {entry.speedUpCheckRange} m</div>}
             {entry.startDelay > 0 && <div>Start delay: {(entry.startDelay * 1000).toFixed(0)} ms</div>}
         </div>
     );

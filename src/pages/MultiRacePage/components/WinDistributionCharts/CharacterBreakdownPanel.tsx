@@ -36,6 +36,7 @@ export interface CharacterBreakdownPanelProps {
     playerCountDescription?: string;
     onSelectCharacter?: (key: string) => void;
     umaUsageView?: React.ReactNode;
+    umaUsagePreview?: React.ReactNode;
 }
 
 export function CharacterBreakdownPanel({
@@ -57,8 +58,9 @@ export function CharacterBreakdownPanel({
     playerCountDescription = "Distinct players with at least one simulated team containing this Uma in this style. Each player is counted once.",
     onSelectCharacter,
     umaUsageView,
+    umaUsagePreview,
 }: CharacterBreakdownPanelProps) {
-    const [sortMode, setSortMode] = useState<"pop" | "winRate">("pop");
+    const [sortMode, setSortMode] = useState<"pop" | "winRate" | "uma">("pop");
     const [fullDataOpen, setFullDataOpen] = useState(false);
     const [fullDataSort, setFullDataSort] = useState<"pop" | "winRate" | "uma">("pop");
     const [selectedCharKey, setSelectedCharKey] = useState<string | null>(null);
@@ -303,6 +305,12 @@ export function CharacterBreakdownPanel({
                         onClick={() => setSortMode("winRate")}>
                         {useBayesianWinRate ? "Top Adj. Win%" : "Top Win%"}
                     </button>
+                    {umaUsagePreview && <button type="button"
+                        className={`ca-sort-btn${sortMode === "uma" ? " ca-sort-btn--active" : ""}`}
+                        aria-pressed={sortMode === "uma"}
+                        onClick={() => setSortMode("uma")}>
+                        By Uma
+                    </button>}
                 </div>
             </div>
 
@@ -310,9 +318,11 @@ export function CharacterBreakdownPanel({
                 <span className="sa-no-data">No data</span>
             ) : (
                 <>
-                    {chars.map(c => renderBarRow(c, maxPct, false))}
-                    {renderDrilldown(drilldownHorses, teamDrilldownHorses, selectedCharKey)}
-                    <button className="ca-view-all-btn" onClick={() => setFullDataOpen(true)}>
+                    {sortMode === "uma" ? umaUsagePreview : <>
+                        {chars.map(c => renderBarRow(c, maxPct, false))}
+                        {renderDrilldown(drilldownHorses, teamDrilldownHorses, selectedCharKey)}
+                    </>}
+                    <button className="ca-view-all-btn" onClick={() => { setFullDataSort(sortMode); setFullDataOpen(true); }}>
                         View full data
                     </button>
                 </>
@@ -338,7 +348,7 @@ export function CharacterBreakdownPanel({
                                     className={`ca-sort-btn${fullDataSort === "uma" ? " ca-sort-btn--active" : ""}`}
                                     aria-pressed={fullDataSort === "uma"}
                                     onClick={() => setFullDataSort("uma")}>
-                                    By uma
+                                    By Uma
                                 </button>}
                             </div>
                             <button className="cdt-close-btn" onClick={() => setFullDataOpen(false)}>&times;</button>

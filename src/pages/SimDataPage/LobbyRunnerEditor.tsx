@@ -3,6 +3,8 @@ import { Dropdown, Modal } from 'react-bootstrap';
 import AssetLoader from '../../data/AssetLoader';
 import { getSkillIconUrl } from '../../data/skillIcons';
 import UMDatabaseWrapper from '../../data/UMDatabaseWrapper';
+import { calculateRankScore } from '../../data/TrainedCharaData';
+import { createLobbyUmaFile, lobbyUmaFilename } from './lobbyUmaFile';
 import { STRATEGY_NAMES } from '../MultiRacePage/components/WinDistributionCharts/constants';
 import { Portrait } from './components';
 import {
@@ -50,7 +52,7 @@ function cardCharacterName(cardId: number, card?: Card): string {
 function cardLabel(cardId: number, card?: Card): string {
     const character = cardCharacterName(cardId, card);
     const outfit = card?.outfit || UMDatabaseWrapper.cards[cardId]?.name;
-    return outfit ? `${character} · ${outfit}` : `${character} · ${cardId}`;
+    return outfit ? `${character} - ${outfit}` : `${character} - ${cardId}`;
 }
 
 function skillName(skillId: number): string {
@@ -97,6 +99,23 @@ export default function LobbyRunnerEditor({ data, initial, catalog, createMode =
     const uniqueId = edit.uniqueSkillId;
     const selectedCard = data.cards[edit.cardId];
     const validStats = edit.stats.every(value => Number.isInteger(value) && value >= LOBBY_STAT_MIN && value <= LOBBY_STAT_MAX);
+    const [exportError, setExportError] = useState('');
+    const exportUma = () => {
+        try {
+            const rankScore = calculateRankScore(edit.stats,
+                [{ skillId: edit.uniqueSkillId, level: edit.uniqueSkillLevel }, ...edit.skills.map(([skillId, level]) => ({ skillId, level }))],
+                Object.fromEntries([1, 2, 3, 4].map(id => [id, 8 - 'SABCDEFG'.indexOf(edit.aptitudes[0])])),
+                Object.fromEntries([1, 2, 3, 4].map(id => [id, 8 - 'SABCDEFG'.indexOf(edit.aptitudes[2])])));
+            const exported = createLobbyUmaFile(edit, data.meta, rankScore);
+            const url = URL.createObjectURL(new Blob([JSON.stringify(exported, null, 2) + '\n'], { type: 'application/json' }));
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = lobbyUmaFilename(cardCharacterName(edit.cardId, selectedCard), edit);
+            document.body.appendChild(link); link.click(); link.remove();
+            window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+            setExportError('');
+        } catch (cause) { setExportError(cause instanceof Error ? cause.message : 'Could not export Uma.'); }
+    };
 
     const toggleUmaMenu = (show: boolean) => {
         setUmaOpen(show);
@@ -257,7 +276,7 @@ export default function LobbyRunnerEditor({ data, initial, catalog, createMode =
                 </section>
 
                 <section className="sim-runner-editor-section sim-runner-editor-skills">
-                    <header><h3>Learned skills · {edit.skills.length}/{LOBBY_MAX_EDITABLE_SKILLS}</h3></header>
+                    <header><h3>Learned skills - {edit.skills.length}/{LOBBY_MAX_EDITABLE_SKILLS}</h3></header>
                     <div className="sim-lobby-skill-search">
                         <label htmlFor="sim-lobby-skill-search">Add a skill</label>
                         <input ref={skillSearchRef} id="sim-lobby-skill-search" type="search" value={skillSearch} onChange={event => setSkillSearch(event.target.value)} onKeyDown={handleSkillSearchKeyDown} aria-controls="sim-lobby-skill-results" aria-expanded={Boolean(skillSearch.trim())} placeholder="Search by skill name or ID" />
@@ -273,8 +292,9 @@ export default function LobbyRunnerEditor({ data, initial, catalog, createMode =
             </div>
         </Modal.Body>
         <Modal.Footer>
+            {exportError && <p className="sim-query-error" role="alert">{exportError}</p>}
             <button type="button" className="sim-link" onClick={() => setEdit(structuredClone(initial))}>Reset this editor</button>
-            <div><button type="button" className="sim-button sim-button-secondary" onClick={onClose}>Cancel</button><button type="button" className="sim-button" disabled={!validStats} onClick={() => onSave(edit)}>{createMode ? 'Add Uma' : 'Save changes'}</button></div>
+            <div><button type="button" className="sim-button sim-button-secondary" disabled={!validStats} onClick={exportUma}>Export Uma</button><button type="button" className="sim-button sim-button-secondary" onClick={onClose}>Cancel</button><button type="button" className="sim-button" disabled={!validStats} onClick={() => onSave(edit)}>{createMode ? 'Add Uma' : 'Save changes'}</button></div>
         </Modal.Footer>
     </Modal>;
 }

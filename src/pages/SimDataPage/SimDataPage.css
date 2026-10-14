@@ -618,3 +618,48 @@ button.sim-composition:hover { color: #93c5fd; }
     height: 100%;
     object-fit: cover;
 }
+
+.sim-benched-team-label { display: inline-block; margin-bottom: 4px; padding: 2px 6px; border: 1px solid #5e4d4c; border-radius: 4px; color: #e8b7a6; font-size: 10px; font-weight: 600; }
+.sim-team-evaluation-label { margin-bottom: 6px; color: #aebdd0; font-size: 11px; }
+.sim-team-evaluation-label.is-benched { color: #e8b7a6; font-weight: 600; }
+.sim-benched-search-row .sim-performer-team { border-color: #725b55; background: #211d22; }
+.sim-historical-team-label { display: inline-block; margin: 0 4px 4px; padding: 2px 6px; border: 1px solid #46566c; border-radius: 4px; color: #b9cbe3; font-size: 10px; font-weight: 600; }
+.sim-snapshot-update {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .75rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid #c9a65a;
+    border-radius: .4rem;
+    background: #302b20;
+    color: #ffe4a0;
+}
+.sim-snapshot-update small { flex-basis: 100%; }
+.sim-lobby-import .modal-content { background: #172131; color: #dce9f8; border-color: #46566c; }
+.sim-lobby-import .modal-header, .sim-lobby-import .modal-footer { border-color: #46566c; }
+.sim-lobby-import .btn-close { filter: invert(1); }
+.sim-import-runners { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.sim-import-runner { display: block; min-width: 0; overflow: hidden; background: #121a25; }
+.sim-import-runners > .sim-import-runner { border: 1px solid #344256; border-radius: 5px; }
+.sim-import-runner:focus-within { outline: 2px solid #93c5fd; outline-offset: 2px; }
+.sim-import-card-content { padding: 8px 10px; }
+.sim-import-team { margin: 12px 0 18px; }
+.sim-import-team > header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+.sim-import-capacity { margin-right: auto; color: #aebdd0; font-size: 12px; }
+.sim-import-aptitudes { display: flex; flex-wrap: wrap; gap: 4px 12px; border-top: 1px solid #344256; padding-top: 7px; margin-top: 8px; font-size: 10px; color: #aebdd0; }
+.sim-import-aptitudes strong { color: #e5edf8; }
+.sim-import-aptitudes > span { display: inline-flex; align-items: center; gap: 4px; }
+.sim-import-aptitudes img { width: 18px; height: 18px; object-fit: contain; }
+.sim-lobby-import .modal-body > input[type="file"] { max-width: 100%; margin-bottom: 16px; }
+@media (max-width: 991px) {
+    .sim-import-runners { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sim-lobby-import .sim-performer-team { grid-template-columns: 1fr; }
+    .sim-lobby-import .sim-performer-member { border-left: 0; border-top: 1px solid #344256; }
+    .sim-lobby-import .sim-performer-member:first-child { border-top: 0; }
+}
+@media (max-width: 575px) {
+    .sim-import-runners { grid-template-columns: 1fr; }
+}
+.sim-lobby-import .sim-error { color: #ffb7a8; margin-top: 12px; }

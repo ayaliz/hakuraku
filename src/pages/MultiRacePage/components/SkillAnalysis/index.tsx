@@ -589,7 +589,7 @@ const SkillAnalysis: React.FC<SkillAnalysisProps> = ({
                 : detailData.winBreakdown;
             const filteredWinBreakdown = filterWinBreakdownRows(rangeBreakdown, selectedStrategy);
             const rangeLabel = rangeStart !== undefined && rangeEnd !== undefined
-                ? `${Math.round((rangeStart / buckets.length) * avgRaceDistance)}–${Math.round(((rangeEnd + 1) / buckets.length) * avgRaceDistance)}m${detailData.rangeObservationLabel ? ` · ${detailData.rangeObservationLabel}` : ''}`
+                ? `${Math.round((rangeStart / buckets.length) * avgRaceDistance)}–${Math.round(((rangeEnd + 1) / buckets.length) * avgRaceDistance)}m${detailData.rangeObservationLabel ? ` - ${detailData.rangeObservationLabel}` : ''}`
                 : undefined;
             if (totalActivations === 0) {
                 return (

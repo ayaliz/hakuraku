@@ -53,7 +53,7 @@ export function Portrait({ card, name, large = false }: { card: number; name: st
         onError={event => { const fallback = AssetLoader.getCharaIcon(Math.floor(card / 100)); if (event.currentTarget.getAttribute('src') !== fallback) event.currentTarget.src = fallback; }} />;
 }
 export function PairButton({ pair, onClick }: { pair: Pair; onClick: () => void }) {
-    return <button type="button" className="sim-pair-button" onClick={onClick} title={`${pair.name} · ${STRATEGY_NAMES[pair.style]}`}>
+    return <button type="button" className="sim-pair-button" onClick={onClick} title={`${pair.name} - ${STRATEGY_NAMES[pair.style]}`}>
         <Portrait card={pair.card} name={pair.name} /><span>{pair.name}</span><StyleLabel style={pair.style} short />
     </button>;
 }

@@ -41,7 +41,7 @@ type StyleRepSelection = {
 
 type StyleRepMetricMode = "team" | "personal";
 
-export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, characterTeamRates, skillStats, strategyColors, onViewReplays, onSelectRepresentative, useAdjustedRates = true, showPlayers = false, playerCountDescription = "Distinct players with at least one simulated team containing this Uma in this style. Each player is counted once." }: {
+export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, characterTeamRates, skillStats, strategyColors, onViewReplays, onSelectRepresentative, useAdjustedRates = true, showPlayers = false, playerCountLabel = "Players", playerCountDescription = "Distinct players with at least one simulated team containing this Uma in this style. Each player is counted once." }: {
     cmId?: string | null;
     courseId?: number;
     apiBase?: string;
@@ -54,6 +54,7 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
     onSelectRepresentative?: (entry: StyleRepEntry, strategy: number) => void;
     useAdjustedRates?: boolean;
     showPlayers?: boolean;
+    playerCountLabel?: string;
     playerCountDescription?: string;
 }) {
     const [selected, setSelected] = useState<StyleRepSelection | null>(null);
@@ -315,13 +316,13 @@ export function StyleRepsPanel({ cmId, courseId, apiBase, apiMode, styleReps, ch
                                     <>
                                         <span className="sa-meta-adj sa-meta-adj--neutral" title={useAdjustedRates ? "Bayesian-adjusted team win rate" : "Observed team win rate"}>{useAdjustedRates ? "Adj Team win%" : "Team win%"}</span>
                                         <span className="sa-meta-adj sa-meta-adj--neutral" title="Own raw win rate">Own win%</span>
-                                        <span className="sa-meta-raw" title={showPlayers ? playerCountDescription : useAdjustedRates ? "Raw team win rate and samples" : "Team appearances"}>{showPlayers ? "Players" : useAdjustedRates ? "Raw Team win%" : "Appearances"}</span>
+                                        <span className="sa-meta-raw" title={showPlayers ? playerCountDescription : useAdjustedRates ? "Raw team win rate and samples" : "Team appearances"}>{showPlayers ? playerCountLabel : useAdjustedRates ? "Raw Team win%" : "Appearances"}</span>
                                     </>
                                 ) : (
                                     <>
                                         <span className="sa-meta-adj sa-meta-adj--neutral" title={useAdjustedRates ? "Bayesian-adjusted own win rate" : "Observed own win rate"}>{useAdjustedRates ? "Adj Own win%" : "Own win%"}</span>
                                         <span className="sa-meta-adj sa-meta-adj--neutral" title="Raw team win rate">Team win%</span>
-                                        <span className="sa-meta-raw" title={showPlayers ? playerCountDescription : useAdjustedRates ? "Raw own win rate and samples" : "Runner appearances"}>{showPlayers ? "Players" : useAdjustedRates ? "Raw Own win%" : "Appearances"}</span>
+                                        <span className="sa-meta-raw" title={showPlayers ? playerCountDescription : useAdjustedRates ? "Raw own win rate and samples" : "Runner appearances"}>{showPlayers ? playerCountLabel : useAdjustedRates ? "Raw Own win%" : "Appearances"}</span>
                                     </>
                                 )}
                             </span>

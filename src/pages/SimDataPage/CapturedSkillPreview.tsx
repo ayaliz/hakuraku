@@ -1,6 +1,6 @@
 import type { UmaUsage } from './umaUsage';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ungzip } from 'pako';
+import { readSimDataResponse, SNAPSHOT_CHECK_EVENT, SNAPSHOT_UPDATE_MESSAGE } from './snapshotRefresh';
 import UMDatabaseWrapper from '../../data/UMDatabaseWrapper';
 import SkillAnalysis from '../MultiRacePage/components/SkillAnalysis';
 import '../MultiRacePage/MultiRacePage.css';
@@ -30,11 +30,18 @@ function SkillData({ data, base, snapshotId, usage }: { usage?: UmaUsage; data: 
         setLoading(previous => new Set(previous).add(id));
         (async () => {
             let response = await fetch(simDataApiUrl(`${base}/details/${id}`), { signal: controller.signal });
+            const missing = response.status === 404;
             if (!response.ok) response = await fetch(`${DATA_ROOT}/${snapshotId}/skills/details/${id}.json.gz`, { signal: controller.signal });
-            if (!response.ok) throw new Error(`Could not load skill details (HTTP ${response.status}).`);
-            const bytes = new Uint8Array(await response.arrayBuffer());
-            const json = bytes[0] === 0x1f && bytes[1] === 0x8b ? ungzip(bytes, { to: 'string' }) : new TextDecoder().decode(bytes);
-            const detail = adaptDetail(JSON.parse(json) as Detail, data, id, id => UMDatabaseWrapper.skillNameWithEnglishFallback(id));
+            let payload: unknown;
+            try { payload = await readSimDataResponse(response); }
+            catch (error) {
+                if (missing && !controller.signal.aborted) {
+                    window.dispatchEvent(new Event(SNAPSHOT_CHECK_EVENT));
+                    throw new Error(SNAPSHOT_UPDATE_MESSAGE);
+                }
+                throw error;
+            }
+            const detail = adaptDetail(payload as Detail, data, id, id => UMDatabaseWrapper.skillNameWithEnglishFallback(id));
             if (!controller.signal.aborted) setDetails(previous => new Map(previous).set(id, detail));
         })().catch(error => {
             if (!controller.signal.aborted) setErrors(previous => new Map(previous).set(id, String(error.message ?? error)));

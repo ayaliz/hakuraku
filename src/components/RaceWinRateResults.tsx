@@ -56,7 +56,7 @@ const runnerStatIcons = [
 function statusText(batch: RaceWinRateBatch): string {
     if (batch.status === "queued") {
         return `Queued at position ${batch.queue?.position ?? "…"}${batch.queue?.racesAhead
-            ? ` · ${batch.queue.racesAhead} races ahead`
+            ? ` - ${batch.queue.racesAhead} races ahead`
             : ""}`;
     }
     if (batch.status === "running") return `Running ${batch.completedRaces} of ${batch.totalRaces} races`;
@@ -388,11 +388,6 @@ export default function RaceWinRateResults({
                                     const build = getRunnerBuild?.(runner);
                                     const rank = build ? getRankIcon(build.rankScore) : undefined;
                                     return <div className="race-win-rate-runner" key={runner.slot}>
-                                        <span
-                                            className="race-win-rate-runner-fill"
-                                            style={{ width: `${Math.max(0, Math.min(100, runner.winRate * 100))}%` }}
-                                            aria-hidden="true"
-                                        />
                                         <RunnerPortrait runner={runner} label={label} />
                                         <span className="race-win-rate-runner-info">
                                             <span className="race-win-rate-runner-name-wrap">

@@ -15,7 +15,7 @@ export function buildCompositionTeamsUrl(cmId: string, courseId: number, composi
 
 export const ANALYSIS_STRATEGY_IDS = STRATEGY_DISPLAY_ORDER;
 export const REPRESENTATIVE_STRATEGY_IDS = [1, 2, 3, 4, 5, 6] as const;
-export const FIELD_VIEW_SUBJECT_STRATEGY_IDS: number[] = ANALYSIS_STRATEGY_IDS.filter((sid) => sid !== 5);
+export const FIELD_VIEW_SUBJECT_STRATEGY_IDS = ANALYSIS_STRATEGY_IDS;
 export const MOBILE_FIELD_LEGEND_NAMES: Record<number, string> = {
     1: "Front",
     2: "Pace",

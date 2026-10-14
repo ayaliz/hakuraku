@@ -26,6 +26,11 @@ export function hasHorseActVersionKey(json: any): boolean {
 }
 
 export function normalizeRaceJsonInput(json: any): any {
+    if (json?.schema === "room_match_race_raw/v1" && json.race && json.room_info) {
+        return { ...json.race, room_info: json.room_info,
+            race_instance_id: json.race.race_instance_id ?? json.room_info.race_instance_id,
+            race_type: json.race.race_type ?? json.room_info.race_type ?? 8 };
+    }
     const packetData = json?.data;
     if (
         packetData
@@ -126,7 +131,7 @@ function parseParentFactorArray(factorArray: any): { id: number, level: number }
         .filter((factor): factor is { id: number, level: number } => factor !== null);
 }
 
-function parseParentEntries(successionList: any): { positionId: number, cardId: number, rank: number, factors: { id: number, level: number }[] }[] {
+export function parseParentEntries(successionList: any): { positionId: number, cardId: number, rank: number, factors: { id: number, level: number }[] }[] {
     if (!Array.isArray(successionList)) return [];
     return successionList
         .filter((parent: any) => {
@@ -211,7 +216,7 @@ function parseActDeck(trainedChara: any): { position: number, id: number, lb: nu
     })).sort((a, b) => a.position - b.position);
 }
 
-function parseApiDeck(trainedChara: any): { position: number, id: number, lb: number, exp: number }[] {
+export function parseApiDeck(trainedChara: any): { position: number, id: number, lb: number, exp: number }[] {
     const supportCards = trainedChara?.["support_card_array"] || trainedChara?.["support_card_list"] || trainedChara?.["supportCardArray"] || trainedChara?.["supportCardList"] || trainedChara?.["SupportCardArray"];
     if (!Array.isArray(supportCards)) return [];
     return supportCards.map((card: any, cardIndex: number) => ({
@@ -393,7 +398,7 @@ function parseApiFormatRaceJson(json: any, options?: { fileName?: string }): Par
 
         const trainedCharas = json["trained_chara_array"] || json["trainedCharaArray"] || [];
         const courseSet = json["race_course_set"] || json["raceCourseSet"] || json["RaceCourseSet"];
-        let detectedCourseId = courseSet?.id ?? courseSet?.Id;
+        let detectedCourseId = courseSet?.id ?? courseSet?.Id ?? json.course_id ?? json.courseId;
         if (!detectedCourseId) detectedCourseId = parseCourseIdFromRaceInstance(json) ?? parseCourseIdFromFilename(options?.fileName);
         const laneDistanceMax = courseSet?.lane_distance_max ?? courseSet?.LaneDistanceMax ?? json.lane_distance_max ?? json.LaneDistanceMax;
         const courseAptitudeFilters = getCourseAptitudeFilters(detectedCourseId);

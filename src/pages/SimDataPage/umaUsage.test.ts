@@ -51,10 +51,11 @@ test('usage rows render combined player usage and the within-uma style percentag
 
 test('best-team usage leaves simulation performance denominators unchanged', () => {
     const data = { meta: { populationOwners: 500 }, pairs: [
-        { key: '100101:2', style: 2, owners: 99, pop: .1, stylePop: .2, runnerExposures: 900, individualWins: 270, individual: .3 },
+        { key: '100101:2', style: 2, owners: 99, evaluatedOwners: 99, pop: .1, stylePop: .2, runnerExposures: 900, individualWins: 270, individual: .3 },
     ], archetypes: [{ key: '1-2-3', owners: 200, teamExposures: 1000, teamWins: 500, team: .5 }] };
     const result = applyPlayerUsage(data as any, { ...usage, archetypes: { '1-2-3': 20 } });
     assert.equal(result.pairs[0].owners, 30);
+    assert.equal(result.pairs[0].evaluatedOwners, 99);
     assert.equal(result.archetypes[0].owners, 20);
     assert.equal(result.meta.populationOwners, 100);
     assert.equal(result.pairs[0].runnerExposures, 900);

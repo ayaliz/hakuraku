@@ -467,6 +467,12 @@ function deserializeJp(input: Uint8Array) {
     });
 }
 
+/** Strict Global decoding: never falls back to the JP replay layout. */
+export function deserializeGlobalFromBase64(input: string) {
+    const decoded = pako.inflate(Uint8Array.from(atob(input), c => c.charCodeAt(0)));
+    return deserialize(decoded);
+}
+
 function deserializeFromBase64(input: string) {
     const decoded = pako.inflate(Uint8Array.from(atob(input), c => c.charCodeAt(0)));
     try {

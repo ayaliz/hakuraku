@@ -13,6 +13,7 @@ import StrategyPaletteControls, { useStrategyPalette } from '../../components/St
 import { normalizeRaceConditionMetadata } from '../../data/RaceConditions';
 import { decodeTeamLinkTarget } from './teamLinks';
 import { newestSimDataSnapshots } from './snapshotOrder';
+import { readSimDataResponse, replacementSnapshot, SNAPSHOT_CHECK_EVENT } from './snapshotRefresh';
 import '../MultiRacePage/components/WinDistributionCharts/StrategyAnalysis.css';
 import './SimDataPage.css';
 
@@ -94,7 +95,7 @@ function Results({ snapshot }: { snapshot: Snapshot }) {
         selectTab('character');
     };
     const onTeams = (slots: Requirement[]) => {
-        setView(previous => ({ ...previous, query: queryText(slots, data.cards), distinct: usesBestTeamUsage ? true : previous.distinct }));
+        setView(previous => ({ ...previous, query: queryText(slots, data.cards), distinct: false }));
         selectTab('archetypes');
     };
     const removeLobbyTeam = (slot: number) => {
@@ -106,6 +107,8 @@ function Results({ snapshot }: { snapshot: Snapshot }) {
             runnerEdits: Object.fromEntries(Object.entries(previous.runnerEdits).filter(([key]) => !key.startsWith(`${teamId}:`))),
             customRunners: Object.fromEntries(Object.entries(previous.customRunners).filter(([key]) => !key.startsWith(`custom:${slot}:`))),
             customRunnerSourceIds: Object.fromEntries(Object.entries(previous.customRunnerSourceIds).filter(([key]) => !key.startsWith(`custom:${slot}:`))),
+            customRunnerOrigins: Object.fromEntries(Object.entries(previous.customRunnerOrigins ?? {}).filter(([key]) => !key.startsWith(`custom:${slot}:`))),
+            customRunnerSourceKinds: Object.fromEntries(Object.entries(previous.customRunnerSourceKinds ?? {}).filter(([key]) => !key.startsWith(`custom:${slot}:`))),
             customRunnerStyles: Object.fromEntries(Object.entries(previous.customRunnerStyles).filter(([key]) => !key.startsWith(`custom:${slot}:`))),
             customRunnerScores: Object.fromEntries(Object.entries(previous.customRunnerScores ?? {}).filter(([key]) => !key.startsWith(`custom:${slot}:`))),
             customTeamOrigins: Object.fromEntries(Object.entries(previous.customTeamOrigins).filter(([key]) => key !== String(slot))),
@@ -113,7 +116,7 @@ function Results({ snapshot }: { snapshot: Snapshot }) {
     };
     const clearLobby = () => {
         setLobbyTeams([null, null, null]);
-        setLobbyDraft(previous => ({ ...previous, gates: {}, runnerEdits: {}, customRunners: {}, customRunnerSourceIds: {}, customRunnerStyles: {}, customRunnerScores: {}, customTeamOrigins: {} }));
+        setLobbyDraft(previous => ({ ...previous, gates: {}, runnerEdits: {}, customRunners: {}, customRunnerOrigins: {}, customRunnerSourceKinds: {}, customRunnerSourceIds: {}, customRunnerStyles: {}, customRunnerScores: {}, customTeamOrigins: {} }));
     };
     const toggleLobbyTeam = (team: Performer) => {
         const existing = lobbyTeams.findIndex(selected => selected?.id === team.id);
@@ -144,6 +147,8 @@ function Results({ snapshot }: { snapshot: Snapshot }) {
                     ...previous,
                     customRunners: { ...previous.customRunners, [key]: edit },
                     customRunnerSourceIds: { ...previous.customRunnerSourceIds, [key]: runner.id },
+                    customRunnerOrigins: { ...previous.customRunnerOrigins, [key]: structuredClone(runner) },
+                    customRunnerSourceKinds: { ...previous.customRunnerSourceKinds, [key]: 'archetype' },
                     customRunnerStyles: { ...previous.customRunnerStyles, [key]: runner.style },
                     customRunnerScores: { ...(previous.customRunnerScores ?? {}), [key]: runner.score },
                 }));
@@ -185,27 +190,65 @@ function Results({ snapshot }: { snapshot: Snapshot }) {
 }
 
 export default function SimDataPage() {
-    const [selectedSnapshotId, setSelectedSnapshotId] = useState<string | null>(null);
+    const [selectedSnapshot, setSelectedSnapshot] = useState<Snapshot>();
+    const [latestSnapshots, setLatestSnapshots] = useState<Snapshot[]>();
     const { colorblindMode, setColorblindMode, strategyColors, setStrategyColor, resetStrategyColors, hasCustomColors } = useStrategyPalette(STRATEGY_COLORS, COLORBLIND_STRATEGY_COLORS);
     const manifest = useSimData<{ schemaVersion: number; snapshots: Snapshot[] }>(
         simDataApiUrl('/api/simdata/manifest'), undefined, `${DATA_ROOT}/manifest.json`,
     );
-    const snapshots = manifest.data?.schemaVersion === 1
+    const snapshots = latestSnapshots ?? (manifest.data?.schemaVersion === 1
         ? newestSimDataSnapshots(manifest.data.snapshots.map(normalizeRaceConditionMetadata))
-        : [];
-    const snapshot = snapshots.find(s => s.snapshotId === selectedSnapshotId) ?? snapshots[0];
+        : []);
+    const snapshot = selectedSnapshot ?? snapshots[0];
+    useEffect(() => { if (!selectedSnapshot && snapshot) setSelectedSnapshot(snapshot); }, [selectedSnapshot, snapshot]);
+    useEffect(() => {
+        const controller = new AbortController();
+        let checking = false;
+        const check = async () => {
+            if (checking || controller.signal.aborted) return;
+            checking = true;
+            try {
+                // Bypass both the in-memory result cache and the manifest's CDN TTL.
+                const response = await fetch(simDataApiUrl(`/api/simdata/manifest?check=${Date.now()}`), { cache: 'no-store', signal: controller.signal });
+                const fresh = await readSimDataResponse(response) as { schemaVersion: number; snapshots: Snapshot[] };
+                if (!controller.signal.aborted && fresh.schemaVersion === 1 && Array.isArray(fresh.snapshots)) {
+                    setLatestSnapshots(newestSimDataSnapshots(fresh.snapshots.map(normalizeRaceConditionMetadata)));
+                }
+            } catch { /* A failed background check must not disrupt the loaded page. */ }
+            finally { checking = false; }
+        };
+        const onReturn = () => { if (document.visibilityState === 'visible') void check(); };
+        const onFailure = () => { void check(); };
+        const timer = window.setInterval(onReturn, 3 * 60_000);
+        window.addEventListener('focus', onReturn);
+        document.addEventListener('visibilitychange', onReturn);
+        window.addEventListener(SNAPSHOT_CHECK_EVENT, onFailure);
+        return () => {
+            controller.abort(); window.clearInterval(timer);
+            window.removeEventListener('focus', onReturn);
+            document.removeEventListener('visibilitychange', onReturn);
+            window.removeEventListener(SNAPSHOT_CHECK_EVENT, onFailure);
+        };
+    }, []);
+    const replacement = replacementSnapshot(snapshot, snapshots);
+    const selectorSnapshots = snapshot && !snapshots.some(item => item.snapshotId === snapshot.snapshotId) ? [snapshot, ...snapshots] : snapshots;
     const collectionLabel = snapshot?.meta.capturedThrough
         ? `Teams seen by ${new Date(`${snapshot.meta.capturedThrough}T00:00:00Z`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' })}`
         : `Teams seen ${snapshot?.meta.window ?? ''}`;
     return <main className="sim-page"><header className="sim-page-header-row">
         <div className="sim-page-summary">{snapshot ? <><strong>{snapshot.cmId === 'cm16-post' ? 'CM16' : snapshot.cmId.toUpperCase()}</strong>{' | '}{collectionLabel}{' | '}{number(snapshot.meta.evaluatedTeams)} teams</> : <strong>UmaLogs</strong>}</div>
         {snapshot && <div className="sim-dataset-selector"><label className="sim-dataset-label">Dataset:
-            <select className="sim-dataset-select" value={snapshot.snapshotId} onChange={e => setSelectedSnapshotId(e.target.value)}>{snapshots.map(s => <option key={s.snapshotId} value={s.snapshotId}>{s.label.replace(/\s*[·|—-]?\s*10 million races\b/gi, '').trim()} - {s.meta.course.replace(/^CM\d+(?:-[^·]+)?\s*·\s*/i, '')}</option>)}</select>
+            <select className="sim-dataset-select" value={snapshot.snapshotId} onChange={e => setSelectedSnapshot(selectorSnapshots.find(item => item.snapshotId === e.target.value))}>{selectorSnapshots.map(s => <option key={s.snapshotId} value={s.snapshotId}>{s.label.replace(/\s*[\u00b7|—-]?\s*10 million races\b/gi, '').trim()} - {s.meta.course.replace(/^CM\d+(?:-[^\s]+)?\s*[\u00b7-]\s*/i, '')}</option>)}</select>
         </label></div>}
         <StrategyPaletteControls onColorChange={setStrategyColor} onResetColors={resetStrategyColors} hasCustomColors={hasCustomColors} colorblindMode={colorblindMode} onToggle={() => setColorblindMode(value => !value)} strategyColors={strategyColors} strategyOrder={STRATEGY_DISPLAY_ORDER} strategyNames={STRATEGY_NAMES} />
     </header>
+        {replacement && <div className="sim-snapshot-update" role="status">
+            <span>New {snapshot!.cmId.toUpperCase()} results are available. You are still viewing the previous snapshot.</span>
+            <button type="button" className="sim-other-teams-button" onClick={() => setSelectedSnapshot(replacement)}>Update to latest snapshot</button>
+            <small>Your current tab, team filters, and Lobby Builder draft will be kept.</small>
+        </div>}
         <StrategyPaletteProvider colors={strategyColors}>
-            {!manifest.data ? <Loading error={manifest.error} retry={manifest.retry} /> : !snapshot ? <div className="sim-empty" role="alert">No simulation results have been published yet.</div> : <Results key={snapshot.snapshotId} snapshot={snapshot} />}
+            {!manifest.data ? <Loading error={manifest.error} retry={manifest.retry} /> : !snapshot ? <div className="sim-empty" role="alert">No simulation results have been published yet.</div> : <Results key={snapshot.cmId} snapshot={snapshot} />}
         </StrategyPaletteProvider>
     </main>;
 }

@@ -45,7 +45,7 @@ export function legacyFilterOption(value: TeamMatcher, cards: Record<number, Car
     const detail = value.card !== undefined
         ? "Any style"
         : value.chara !== undefined && value.style !== undefined
-            ? `${STRATEGY_NAMES[value.style]} · any outfit`
+            ? `${STRATEGY_NAMES[value.style]} - any outfit`
             : value.chara !== undefined
                 ? "Any outfit / style"
                 : STRATEGY_NAMES[value.style!];

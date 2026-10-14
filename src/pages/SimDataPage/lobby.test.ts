@@ -246,6 +246,19 @@ test('round-trips detailed share annotations without duplicating the replay', ()
     assert.equal(restoreSharedDetailedRaceSimulation({ ...shared, schemaVersion: 99 }, 'replay'), null);
 });
 
+test('uses plain dashes for incoming dataset labels without mutating stored metadata', () => {
+    const original = {
+        cmId: 'cm21', snapshotId: 'cm21-2026-10-12', label: 'CM21 · 2026-10-12 · 10 million races',
+        meta: { course: 'CM21 · Chukyo 1,200 m · Turf · G1', conditions: 'Firm ground · Sunny · Winter' },
+    };
+    assert.deepEqual(normalizeRaceConditionMetadata(original), {
+        ...original, label: 'CM21 - 2026-10-12 - 10 million races',
+        meta: { course: 'CM21 - Chukyo 1,200 m - Turf', conditions: 'Firm ground - Sunny - Winter' },
+    });
+    assert.equal(original.label, 'CM21 · 2026-10-12 · 10 million races');
+    assert.equal(normalizeRaceConditionMetadata({ ...original, meta: { ...original.meta, course: 'CM21 - Chukyo 1,200 m - Turf - G1' } }).meta.course, 'CM21 - Chukyo 1,200 m - Turf');
+});
+
 test('uses the player-facing ground label for internal condition metadata', () => {
     assert.equal(getGroundConditionLabel(1), 'Firm');
     assert.equal(
@@ -255,7 +268,7 @@ test('uses the player-facing ground label for internal condition metadata', () =
     const original = { snapshotId: 'cm19', meta: { conditions: 'Good ground · Great motivation' } };
     assert.deepEqual(normalizeRaceConditionMetadata(original), {
         snapshotId: 'cm19',
-        meta: { conditions: 'Firm ground · Great mood' },
+        meta: { conditions: 'Firm ground - Great mood' },
     });
     assert.equal(original.meta.conditions, 'Good ground · Great motivation');
     assert.deepEqual(
@@ -264,11 +277,11 @@ test('uses the player-facing ground label for internal condition metadata', () =
     );
     assert.deepEqual(
         normalizeRaceConditionMetadata({ snapshotId: 'cm17-20260919', cmId: 'cm17', meta: { course: 'CM17 · Teio Sho 2,000 m · Dirt · G1' } }),
-        { snapshotId: 'cm17-20260919', cmId: 'cm17', meta: { course: 'CM17 · Ooi 2,000 m · Dirt' } },
+        { snapshotId: 'cm17-20260919', cmId: 'cm17', meta: { course: 'CM17 - Ooi 2,000 m - Dirt' } },
     );
     assert.deepEqual(
         normalizeRaceConditionMetadata({ snapshotId: 'cm20-2026-09-19', cmId: 'cm20', meta: { course: 'CM20 · Nakayama 2,500 m · Turf · G1' } }),
-        { snapshotId: 'cm20-2026-09-19', cmId: 'cm20', meta: { course: 'CM20 · Nakayama 2,500 m · Turf' } },
+        { snapshotId: 'cm20-2026-09-19', cmId: 'cm20', meta: { course: 'CM20 - Nakayama 2,500 m - Turf' } },
     );
 });
 

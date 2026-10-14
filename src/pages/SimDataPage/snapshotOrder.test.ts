@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { newestSimDataSnapshots } from './snapshotOrder';
+import { newestCmBadgeLabel, newestSimDataSnapshots } from './snapshotOrder';
 import type { Snapshot } from './types';
 
 function snapshot(cmId: string, snapshotId: string, capturedThrough?: string): Snapshot {
@@ -14,6 +14,15 @@ function snapshot(cmId: string, snapshotId: string, capturedThrough?: string): S
         meta: { capturedThrough } as Snapshot['meta'],
     };
 }
+
+test('navbar badge names the newest CM, regardless of manifest order', () => {
+    assert.equal(newestCmBadgeLabel([{ cmId: 'cm20' }, { cmId: 'cm21' }, { cmId: 'cm19' }]), 'CM21 updated!');
+    assert.equal(newestCmBadgeLabel([{ cmId: 'cm21' }, { cmId: 'cm20' }]), 'CM21 updated!');
+    assert.equal(newestCmBadgeLabel([{ cmId: 'cm20' }]), 'CM20 updated!');
+    assert.equal(newestCmBadgeLabel([{ cmId: 'cm9' }, { cmId: ' CM16-post ' }]), 'CM16 updated!');
+    assert.equal(newestCmBadgeLabel([{ cmId: 'local-preview' }]), 'Check this out!');
+    assert.equal(newestCmBadgeLabel([]), 'Check this out!');
+});
 
 test('defaults to the newest CM regardless of manifest publication order', () => {
     const ordered = newestSimDataSnapshots([

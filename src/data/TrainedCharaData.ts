@@ -1,4 +1,3 @@
-import _ from "lodash";
 import UMDatabaseWrapper from "./UMDatabaseWrapper";
 
 export type CharaSkill = {
@@ -136,51 +135,62 @@ type StatusPoints = {
     wiz: number,
 }
 
-function calcRankScore(raceHorseData: any, statusPoints: StatusPoints, charaSkills: CharaSkill[], properRunningStyles: Record<number, number>, properDistances: Record<number, number>, properGrounds: Record<number, number>): number {
-    if (raceHorseData['rank_score']) {
-        return raceHorseData['rank_score'];
-    }
-
-    let rankScore = _.sumBy([statusPoints.speed, statusPoints.stamina, statusPoints.pow, statusPoints.guts, statusPoints.wiz],
-        value => statusPoint(value));
-    for (let charaSkill of charaSkills) {
-        const skillId = charaSkill.skillId;
-        const skill = UMDatabaseWrapper.skills[skillId];
-        if (skill === undefined) {
+/** Icarus-compatible rating; integer tenths avoid floating-point half-rounding errors. */
+export function calculateRankScore(
+    stats: number[],
+    skills: CharaSkill[],
+    distances: Record<number, number>,
+    styles: Record<number, number>,
+    rarity?: number,
+): number {
+    let score = stats.reduce((sum, value) => sum + statusPoint(value), 0);
+    let uniqueLevel = 0;
+    let uniqueId = 0;
+    for (const learned of skills) {
+        const id = learned.skillId;
+        if ((id >= 10000 && id < 20000) || (id >= 100000 && id < 200000)) {
+            if (learned.level > uniqueLevel) {
+                uniqueLevel = learned.level;
+                uniqueId = id;
+            }
             continue;
         }
-
-        if (skillId < 200000) {
-            // 固有スキル
-            rankScore += skill.gradeValue! / 2 * charaSkill.level;
-        } else {
-            const tagIds = new Set(skill.tagId);
-            let runningStyleMultiplier = 0;
-            [1, 2, 3, 4].forEach(runningStyleTag => {
-                if (tagIds.has('10' + runningStyleTag.toString())) {
-                    runningStyleMultiplier = _.max([runningStyleMultiplier, properSkillMultiplier[properRunningStyles[runningStyleTag]]])!;
-                }
-            });
-            if (runningStyleMultiplier === 0) runningStyleMultiplier = 1;
-            let distanceMultiplier = 0;
-            [1, 2, 3, 4].forEach(distanceTag => {
-                if (tagIds.has('20' + distanceTag.toString())) {
-                    distanceMultiplier = _.max([distanceMultiplier, properSkillMultiplier[properDistances[distanceTag]]])!;
-                }
-            });
-            if (distanceMultiplier === 0) distanceMultiplier = 1;
-            let groundMultiplier = 0;
-            [1, 2].forEach(groundTag => {
-                if (tagIds.has('50' + groundTag.toString())) {
-                    groundMultiplier = _.max([groundMultiplier, properSkillMultiplier[properGrounds[groundTag]]])!;
-                }
-            });
-            if (groundMultiplier === 0) groundMultiplier = 1;
-            rankScore += Math.round(skill.gradeValue! * runningStyleMultiplier * distanceMultiplier * groundMultiplier);
+        const skill = UMDatabaseWrapper.skills[id];
+        if (!skill) continue;
+        // Inherited uniques retain their listed grade, regardless of aptitude.
+        if (id >= 900000 && id < 1000000) {
+            score += skill.gradeValue;
+            continue;
         }
+        const conditions = skill.conditionGroups.map(group => group.condition).join('@');
+        const multiplier = (field: string, aptitudes: Record<number, number>) => {
+            const roles = [...conditions.matchAll(new RegExp(`${field}\\s*==\\s*(\\d+)`, 'g'))];
+            return roles.length ? Math.max(...roles.map(match => {
+                const apt = aptitudes[Number(match[1])] ?? 0;
+                return apt >= 7 ? 11 : apt >= 5 ? 9 : apt >= 2 ? 8 : 7;
+            })) : 10;
+        };
+        // Surface conditions do not scale rating. Round each skill independently.
+        const weighted = skill.gradeValue * multiplier('distance_type', distances) * multiplier('running_style', styles);
+        score += Math.floor((weighted + 50) / 100);
     }
+    const lowerRarity = rarity === 1 || rarity === 2 || (!rarity && uniqueId > 0 && uniqueId < 20000);
+    return Math.max(0, score + uniqueLevel * (lowerRarity ? 120 : 170));
+}
 
-    return rankScore;
+function calcRankScore(raceHorseData: any, statusPoints: StatusPoints, charaSkills: CharaSkill[], properRunningStyles: Record<number, number>, properDistances: Record<number, number>): number {
+    const supplied = Number(raceHorseData['rank_score'] ?? raceHorseData['rankScore']);
+    if (Number.isFinite(supplied) && supplied > 0) return supplied;
+    // Compact simulator builds carry one aptitude per category.
+    const withCompact = (values: Record<number, number>, compact: unknown) =>
+        Object.fromEntries([1, 2, 3, 4].map(id => [id, values[id] ?? (Number(compact) || 0)]));
+    return calculateRankScore(
+        [statusPoints.speed, statusPoints.stamina, statusPoints.pow, statusPoints.guts, statusPoints.wiz],
+        charaSkills,
+        withCompact(properDistances, raceHorseData['apt_distance']),
+        withCompact(properRunningStyles, raceHorseData['apt_style']),
+        Number(raceHorseData['rarity']),
+    );
 }
 
 function toFiniteNumber(value: any): number | undefined {
@@ -234,7 +244,7 @@ export function fromRaceHorseData(raceHorseData: any): TrainedCharaData {
         properGroundDirt: dirt,
 
         rankScore: calcRankScore(
-            normalizedRaceHorseData, statusPoints, charaSkills, properRunningStyles, properDistances, {1: turf, 2: dirt}),
+            normalizedRaceHorseData, statusPoints, charaSkills, properRunningStyles, properDistances),
 
         fanCount: toFiniteNumber(normalizedRaceHorseData['fan_count'] ?? normalizedRaceHorseData['fanCount'] ?? normalizedRaceHorseData['fans']),
 
@@ -297,5 +307,3 @@ const statusPointToRankPoint: number[] = (() => {
 
     return scores;
 })();
-
-const properSkillMultiplier: Record<number, number> = {1: 0.7, 2: 0.8, 3: 0.8, 4: 0.8, 5: 0.9, 6: 0.9, 7: 1.1, 8: 1.1};

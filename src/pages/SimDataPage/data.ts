@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ungzip } from 'pako';
+import { readSimDataResponse, SNAPSHOT_CHECK_EVENT, SNAPSHOT_UPDATE_MESSAGE } from './snapshotRefresh';
 import { expandPerformerIndex } from './serialization';
 
 export const DATA_ROOT = `${import.meta.env.BASE_URL}data/simdata`;
@@ -18,13 +18,12 @@ export function useSimData<T>(url: string | null, snapshotId?: string, fallbackU
         setResult({ url });
         const load = async () => {
             let lastError: unknown;
+            let snapshotMissing = false;
             for (const candidate of [url, fallbackUrl].filter((value): value is string => Boolean(value))) {
                 try {
                     const response = await fetch(candidate, { signal: controller.signal });
-                    if (!response.ok) throw new Error(`Data is unavailable (HTTP ${response.status}).`);
-                    const bytes = new Uint8Array(await response.arrayBuffer());
-                    const json = bytes[0] === 0x1f && bytes[1] === 0x8b ? ungzip(bytes, { to: 'string' }) : new TextDecoder().decode(bytes);
-                    let data = JSON.parse(json);
+                    if (candidate === url && snapshotId && response.status === 404) snapshotMissing = true;
+                    let data = await readSimDataResponse(response) as any;
                     if (snapshotId && data.snapshotId !== snapshotId) throw new Error('These results belong to a different snapshot. Reload the page.');
                     if ((data.format === 2 || data.format === 3) && Array.isArray(data.builds) && Array.isArray(data.teams)) data = expandPerformerIndex(data);
                     if (!controller.signal.aborted) { cache.set(url, data); setResult({ url, data }); }
@@ -33,6 +32,10 @@ export function useSimData<T>(url: string | null, snapshotId?: string, fallbackU
                     if (controller.signal.aborted) return;
                     lastError = error;
                 }
+            }
+            if (snapshotMissing) {
+                window.dispatchEvent(new Event(SNAPSHOT_CHECK_EVENT));
+                throw new Error(SNAPSHOT_UPDATE_MESSAGE);
             }
             throw lastError;
         };

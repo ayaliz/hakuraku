@@ -70,6 +70,7 @@ export default function Character({ data, usage, selectedKey, onPair, onTeams }:
                 populationLabel="Players"
                 shareLabel="Players"
                 playerCounts={Object.fromEntries(data.pairs.map(pair => [`${pair.chara}_${pair.card}_${pair.style}`, pair.owners]))}
+                umaUsagePreview={usage && <UmaUsageRows usage={usage} data={data} strategyColors={strategyColors} onTeams={onTeams} limit={6} />}
                 umaUsageView={usage && <UmaUsageRows usage={usage} data={data} strategyColors={strategyColors} onTeams={onTeams} />}
                 onSelectCharacter={key => {
                     const [, card, style] = key.split('_').map(Number);

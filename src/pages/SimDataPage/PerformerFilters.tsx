@@ -70,9 +70,9 @@ function CompactFilterRow({ label, context, tone, values, options, cards, emptyT
                     {values.slice(0, 2).map((value, index) => {
                         const option = byKey.get(matcherKey(value) ?? '') ?? legacyFilterOption(value, cards);
                         const color = colors[value.style ?? 0] ?? '#718096';
-                        return <span className="sim-filter-summary-token" key={`${matcherKey(value) ?? 'custom'}-${index}`} title={option ? `${option.name} · ${option.detail}` : 'Custom filter'}>
+                        return <span className="sim-filter-summary-token" key={`${matcherKey(value) ?? 'custom'}-${index}`} title={option ? `${option.name} - ${option.detail}` : 'Custom filter'}>
                             <OptionPortrait option={option} color={color} compact />
-                            <span>{option ? `${option.name} · ${option.detail}` : 'Custom filter'}</span>
+                            <span>{option ? `${option.name} - ${option.detail}` : 'Custom filter'}</span>
                         </span>;
                     })}
                     {values.length > 2 && <span className="sim-filter-more-count">+{values.length - 2}</span>}

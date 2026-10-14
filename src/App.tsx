@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from "./auth/AuthContext";
 import PageMeta from "./components/PageMeta";
 import { formatNoteDate, sortNotesNewestFirst } from "./notesManifest";
 import type { NoteEntry } from "./notesManifest";
+import { newestCmBadgeLabel } from './pages/SimDataPage/snapshotOrder';
 
 // Wraps lazy() to auto-reload once on chunk load failure (stale deploy hash mismatch).
 function lazyWithReload<T extends React.ComponentType<any>>(
@@ -182,8 +183,8 @@ function AppShell() {
                 return response.json() as Promise<{ schemaVersion: number; snapshots?: { cmId: string }[] }>;
             })
             .then(manifest => {
-                if (manifest.schemaVersion === 1 && manifest.snapshots?.some(snapshot => snapshot.cmId.toLowerCase() === 'cm20')) {
-                    setUmaLogsBadgeLabel('CM20 updated!');
+                if (manifest.schemaVersion === 1 && Array.isArray(manifest.snapshots)) {
+                    setUmaLogsBadgeLabel(newestCmBadgeLabel(manifest.snapshots));
                 }
             })
             .catch((error: Error) => {

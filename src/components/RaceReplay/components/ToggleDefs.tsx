@@ -161,6 +161,7 @@ export const toggleDefs: ToggleDef[] = [
                     overlay={
                         <Tooltip id="position-keep-info-tooltip">
                             Displays position keep zones for each style: when you're ahead of the displayed area you are hit with Pace Down, if you're behind it you roll Wit checks for Pace Up.
+                            {' '}Lines connected to umas capable of entering front runner Speed Up mode show the range used for its entry condition.
                         </Tooltip>
                     }
                 >

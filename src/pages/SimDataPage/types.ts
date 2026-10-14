@@ -54,6 +54,7 @@ export type Summary = {
     storage?: { performerIndex: string; teamShards: boolean };
 };
 export type Runner = {
+    fanCount?: number; singleModeWinCount?: number;
     id: string; card: number; chara: number; style: Style; racingStyle: number; score: number;
     stats?: [number, number, number, number, number]; skills?: [number, number][];
     aptitudes?: [string, string, string];
@@ -67,7 +68,7 @@ export type Build = Runner & {
 export type Performer = {
     id: string; owner: { id: string; names: string[] }; members: Runner[];
     wins: number; n: number; ci: Interval; memberWins: number[]; archiveIndex?: number;
-    benched?: boolean; benchReason?: string; evaluatedSnapshotId?: string; newToday?: boolean; historical?: boolean;
+    benched?: boolean; benchReason?: string; benchDate?: string; evaluatedSnapshotId?: string; newToday?: boolean; historical?: boolean;
 };
 export type PerformerIndex = { snapshotId: string; teams: Performer[] };
 export type TeamSearchResponse = {

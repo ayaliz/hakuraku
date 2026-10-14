@@ -274,7 +274,7 @@ function SourceSection({ source }: { source: SourceSummary }) {
                     <div>
                         <h2 className="srp-turn-title">{source.label}</h2>
                         <div className="srp-section-subtitle">
-                            {source.samples} inheritance events from {source.contributors} contributors · resolving stories: {resolvingStoryText}
+                            {source.samples} inheritance events from {source.contributors} contributors - resolving stories: {resolvingStoryText}
                         </div>
                     </div>
                     <div className="srp-section-meta" title={`Trigger source stories: ${sourceStoryText}`}>{source.averages.blueThreeStars.toFixed(2)} expected blue 3-stars</div>

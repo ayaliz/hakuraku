@@ -5,6 +5,15 @@ function cmNumber(snapshot: Snapshot): number {
     return match ? Number(match[1]) : Number.NEGATIVE_INFINITY;
 }
 
+/** Match the dataset selector's newest-competition ordering, not manifest order. */
+export function newestCmBadgeLabel(snapshots: { cmId: string }[]): string {
+    const numbers = snapshots.flatMap(snapshot => {
+        const match = snapshot.cmId?.trim().match(/^cm(\d+)(?:$|[-_.])/i);
+        return match ? [Number(match[1])] : [];
+    });
+    return numbers.length ? `CM${Math.max(...numbers)} updated!` : 'Check this out!';
+}
+
 function snapshotDate(snapshot: Snapshot): string {
     const capturedThrough = snapshot.meta.capturedThrough?.trim();
     if (capturedThrough) return capturedThrough;

@@ -37,7 +37,7 @@ export default function SkillDecisionPilot() {
 
     return <section className="sim-skill-decision-pilot">
         <div className="sim-skill-decision-heading">
-            <div><span>Balanced v2 pilot · Front Runner only</span><h2>Equal-budget drafting value</h2></div>
+            <div><span>Balanced v2 pilot - Front Runner only</span><h2>Equal-budget drafting value</h2></div>
             <span className="sim-skill-decision-status">Sampling checks passed</span>
         </div>
         <p className="sim-skill-decision-question">For the same runner shell and skill-point budget, did the best searched package containing this skill beat the best equally searched package excluding it?</p>
@@ -60,7 +60,7 @@ export default function SkillDecisionPilot() {
             const icon = skillIcon(skill.skillId);
             return <tr key={skill.skillId} className={open ? "sim-selected-row" : ""}>
                 <td><button type="button" className="sim-skill-row-button" onClick={() => setExpanded((value) => value === skill.skillId ? null : skill.skillId)} aria-expanded={open}>
-                    {icon && <img src={icon} alt="" loading="lazy" />}<span><strong>{skill.name}</strong><small>{skill.skillId} · {skill.cost} SP</small></span><i aria-hidden="true">{open ? "▾" : "▸"}</i>
+                    {icon && <img src={icon} alt="" loading="lazy" />}<span><strong>{skill.name}</strong><small>{skill.skillId} - {skill.cost} SP</small></span><i aria-hidden="true">{open ? "▾" : "▸"}</i>
                 </button>{open && <div className="sim-skill-row-detail">
                     <span><strong>Individual-win interval:</strong> {skill.draftingValue.individualWinDelta.ci95.map((item) => signed(item * 100, 2)).join(" to ")} pp across {skill.shells} owner shells.</span>
                     <span><strong>Mechanics:</strong> full spurt {percent(skill.mechanics.without.fullSpurtRate)} without → {percent(skill.mechanics.with.fullSpurtRate)} with; HP deficit {percent(skill.mechanics.without.hpDeficitRate)} → {percent(skill.mechanics.with.hpDeficitRate)}.</span>

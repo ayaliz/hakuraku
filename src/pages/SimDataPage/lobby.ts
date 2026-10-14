@@ -7,6 +7,8 @@ export type LobbyMood = 'random' | 'random-no-awful' | 'preserve' | '1' | '2' | 
 export type LobbyAptitude = 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
 export type LobbyRunningStyle = 1 | 2 | 3 | 4;
 export type LobbyRunnerEdit = {
+    fanCount?: number;
+    singleModeWinCount?: number;
     cardId: number;
     stats: [number, number, number, number, number];
     aptitudes: [LobbyAptitude, LobbyAptitude, LobbyAptitude];
@@ -23,6 +25,8 @@ export type LobbyDraft = {
     gates: Record<string, number | null>;
     runnerEdits: Record<string, LobbyRunnerEdit>;
     customRunners: Record<string, LobbyRunnerEdit>;
+    customRunnerOrigins?: Record<string, Runner>;
+    customRunnerSourceKinds?: Record<string, 'file' | 'archetype'>;
     customRunnerSourceIds: Record<string, string>;
     customRunnerStyles: Record<string, Style>;
     customRunnerScores: Record<string, number>;
@@ -110,6 +114,8 @@ export function createLobbyRunnerEdit(runner: Runner): LobbyRunnerEdit | null {
     }).filter(([skillId], index, all) => all.findIndex(([candidate]) => candidate === skillId) === index);
     return {
         cardId: runner.card,
+        ...(runner.fanCount === undefined ? {} : { fanCount: runner.fanCount }),
+        ...(runner.singleModeWinCount === undefined ? {} : { singleModeWinCount: runner.singleModeWinCount }),
         stats: [...runner.stats],
         aptitudes: runner.aptitudes.map(normalizedAptitude) as LobbyRunnerEdit['aptitudes'],
         runningStyle: normalizedRunningStyle(runner.racingStyle),
@@ -150,7 +156,7 @@ export function rearrangeLobbyRunners(
     from: LobbyRunnerPosition,
     to: LobbyRunnerPosition | null,
 ): { teams: (Performer | null)[]; draft: LobbyDraft } | null {
-    type Item = { edit: LobbyRunnerEdit; sourceId?: string; style?: Style; score?: number; gate?: number | null };
+    type Item = { edit: LobbyRunnerEdit; origin?: Runner; sourceKind?: 'file' | 'archetype'; sourceId?: string; style?: Style; score?: number; gate?: number | null };
     const affected = new Set([from.teamIndex, ...(to ? [to.teamIndex] : [])]);
     const grid: (Item | null)[][] = teams.map((team, teamIndex) => [0, 1, 2].map(memberIndex => {
         if (team) {
@@ -158,11 +164,11 @@ export function rearrangeLobbyRunners(
             const originalKey = `${team.id}:${memberIndex}`;
             const edit = draft.runnerEdits[originalKey] ?? createLobbyRunnerEdit(runner);
             if (!edit) return null;
-            return { edit, sourceId: runner.id, style: runner.style, score: runner.score, gate: draft.gates[originalKey] };
+            return { edit, origin: runner, sourceKind: 'archetype', sourceId: runner.id, style: runner.style, score: runner.score, gate: draft.gates[originalKey] };
         }
         const key = customLobbyRunnerKey(teamIndex, memberIndex);
         const edit = draft.customRunners[key];
-        return edit ? { edit, sourceId: draft.customRunnerSourceIds[key], style: draft.customRunnerStyles[key], score: draft.customRunnerScores?.[key], gate: draft.gates[key] } : null;
+        return edit ? { edit, origin: draft.customRunnerOrigins?.[key], sourceKind: draft.customRunnerSourceKinds?.[key], sourceId: draft.customRunnerSourceIds[key], style: draft.customRunnerStyles[key], score: draft.customRunnerScores?.[key], gate: draft.gates[key] } : null;
     }));
     if (!grid[from.teamIndex]?.[from.memberIndex]) return null;
     for (const teamIndex of affected) {
@@ -176,6 +182,8 @@ export function rearrangeLobbyRunners(
         gates: { ...draft.gates },
         runnerEdits: { ...draft.runnerEdits },
         customRunners: { ...draft.customRunners },
+        customRunnerOrigins: { ...draft.customRunnerOrigins },
+        customRunnerSourceKinds: { ...draft.customRunnerSourceKinds },
         customRunnerSourceIds: { ...draft.customRunnerSourceIds },
         customRunnerStyles: { ...draft.customRunnerStyles },
         customRunnerScores: { ...(draft.customRunnerScores ?? {}) },
@@ -187,6 +195,8 @@ export function rearrangeLobbyRunners(
         for (let memberIndex = 0; memberIndex < 3; memberIndex++) {
             const customKey = customLobbyRunnerKey(teamIndex, memberIndex);
             delete nextDraft.customRunners[customKey];
+            delete nextDraft.customRunnerOrigins![customKey];
+            delete nextDraft.customRunnerSourceKinds![customKey];
             delete nextDraft.customRunnerSourceIds[customKey];
             delete nextDraft.customRunnerStyles[customKey];
             delete nextDraft.customRunnerScores[customKey];
@@ -199,6 +209,8 @@ export function rearrangeLobbyRunners(
             const item = grid[teamIndex][memberIndex];
             if (!item) continue;
             nextDraft.customRunners[customKey] = item.edit;
+            if (item.origin) nextDraft.customRunnerOrigins![customKey] = item.origin;
+            if (item.sourceKind) nextDraft.customRunnerSourceKinds![customKey] = item.sourceKind;
             if (item.sourceId) nextDraft.customRunnerSourceIds[customKey] = item.sourceId;
             if (item.style) nextDraft.customRunnerStyles[customKey] = item.style;
             if (item.score !== undefined) nextDraft.customRunnerScores[customKey] = item.score;
@@ -215,6 +227,8 @@ export function rearrangeLobbyRunners(
             const originalKey = `${origin.id}:${memberIndex}`;
             const item = grid[teamIndex][memberIndex]!;
             delete nextDraft.customRunners[customKey];
+            delete nextDraft.customRunnerOrigins![customKey];
+            delete nextDraft.customRunnerSourceKinds![customKey];
             delete nextDraft.customRunnerSourceIds[customKey];
             delete nextDraft.customRunnerStyles[customKey];
             delete nextDraft.customRunnerScores[customKey];
@@ -236,8 +250,30 @@ export function isLobbyRunnerEditChanged(runner: Runner, edit: LobbyRunnerEdit):
     return original === null || JSON.stringify(original) !== JSON.stringify(edit);
 }
 
+/** Keep training metadata only while the simulated build matches its source. */
+export function lobbyRunnerSourceMetadata(draft: LobbyDraft, key: string, runner?: Runner): Pick<Build, 'deck' | 'parents'> & { modifiedInLobby?: boolean } {
+    const source = runner ?? draft.customRunnerOrigins?.[key];
+    const edit = runner ? draft.runnerEdits[key] : draft.customRunners[key];
+    const modified = !source || Boolean(edit && isLobbyRunnerEditChanged(source, edit));
+    return {
+        deck: modified ? [] : source.deck ?? [],
+        parents: modified ? [] : source.parents ?? [],
+        ...(modified ? { modifiedInLobby: true } : {}),
+    };
+}
+
+export function lobbyCustomRunnerBadge(draft: LobbyDraft, key: string): 'Imported' | 'Custom' | null {
+    const kind = draft.customRunnerSourceKinds?.[key];
+    // Older in-memory drafts used upload-prefixed IDs for file imports.
+    const sourceId = draft.customRunnerSourceIds[key];
+    if (kind === 'file' || !kind && /^(upload:|race:\d+:upload:)/.test(sourceId ?? '')) return 'Imported';
+    return sourceId ? null : 'Custom';
+}
+
 export function toLobbyRunnerOverride(edit: LobbyRunnerEdit) {
     return {
+        ...(edit.fanCount === undefined ? {} : { fanCount: edit.fanCount }),
+        ...(edit.singleModeWinCount === undefined ? {} : { singleModeWinCount: edit.singleModeWinCount }),
         identity: { cardId: edit.cardId, charaId: Math.floor(edit.cardId / 100) },
         rawStats: {
             speed: edit.stats[0], stamina: edit.stats[1], power: edit.stats[2],

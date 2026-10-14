@@ -1,10 +1,11 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import "./RaceDataPage.css";
 import { Alert, Button, ButtonGroup, Dropdown, OverlayTrigger, ProgressBar, Tooltip } from "react-bootstrap";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import RaceDataPresenter from "../components/RaceDataPresenter";
 import { RaceSimulateData } from "../data/race_data_pb";
 import { deserializeFromBase64 } from "../data/RaceDataParser";
+import { hasGlobalRaceReplay } from "../data/DetailedRaceEligibility";
 import { fromRaceHorseData, hydrateCompactRaceHorseData } from "../data/TrainedCharaData";
 import { computeSkillPoints } from "../data/skillPoints";
 import ShareLinkBox from "../components/ShareLinkBox";
@@ -38,6 +39,7 @@ import {
     buildDetailedRaceCaptureFromSharedData,
     getDetailedRaceCaptureRaceInstanceId,
     getDetailedRaceCaptureStartTimeType,
+    getDetailedRaceCaptureMetadata,
     getDetailedRaceCaptureRaceType,
     resolveDetailedRaceInstanceId,
     anonymizeSharedRaceHorse,
@@ -1078,7 +1080,7 @@ export default function RaceDataPage() {
     };
 
     const runWinRateEstimate = async () => {
-        if (!rawRaceCapture || !detailedSimulationEligible || winRateSubmitting
+        if (!rawRaceCapture || !detailedSimulationEligible || parsedHorseInfo?.length !== 9 || winRateSubmitting
             || isActiveRaceWinRateBatch(winRateBatch)) return;
         const seedStart = createAlternateSeed(randomSeed, winRateBatch?.seedStart);
         setWinRateSubmitting(true);
@@ -1091,8 +1093,7 @@ export default function RaceDataPage() {
             const body = {
                 capture: normalizeDetailedRaceCaptureForSimulation(rawRaceCapture),
                 courseId: detectedCourseId,
-                grade: 100,
-                time: 2,
+                ...getDetailedRaceCaptureMetadata(rawRaceCapture),
                 isCareer: false,
                 raceCount: 100,
                 seed: seedStart,
@@ -1156,7 +1157,9 @@ export default function RaceDataPage() {
         weather: trackDetails?.weather,
         ground_condition: trackDetails?.condition,
     };
+    const globalReplayEligible = useMemo(() => hasGlobalRaceReplay(rawRaceCapture), [rawRaceCapture]);
     const detailedSimulationEligible = Boolean(rawRaceCapture)
+        && globalReplayEligible
         && isDetailedRaceEligible(
             detectedCourseId,
             parsedHorseInfo,
@@ -1246,8 +1249,7 @@ export default function RaceDataPage() {
                                 server-accurate simulator to provide more exact values for metrics like downhill mode
                                 duration, pace up duration and more. <strong>Legacy</strong> estimates those values
                                 using heuristics. Detailed mode is only made available after our simulator recreates
-                                the exact race; otherwise Legacy remains in use. Detailed mode is currently only
-                                available for matches using the CM19 or CM20 specifications.
+                                the exact race; otherwise Legacy remains in use.
                             </Tooltip>
                         )}
                     >
@@ -1300,10 +1302,12 @@ export default function RaceDataPage() {
                         <Dropdown.Menu>
                             <Dropdown.Item
                                 onClick={() => void runWinRateEstimate()}
-                                disabled={winRateSubmitting || winRateBatchActive}
+                                disabled={winRateSubmitting || winRateBatchActive || parsedHorseInfo?.length !== 9}
                             >
                                 <span>Estimate win rate</span>
-                                <small>Run 100 fresh seeds and get win rates.</small>
+                                <small>{parsedHorseInfo?.length === 9
+                                    ? "Run 100 fresh seeds and get win rates."
+                                    : "Win-rate batches currently require nine runners."}</small>
                             </Dropdown.Item>
                             <Dropdown.Item
                                 onClick={runAlternateSeedSimulation}

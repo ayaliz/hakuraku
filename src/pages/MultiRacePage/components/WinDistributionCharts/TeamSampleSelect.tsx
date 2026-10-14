@@ -89,7 +89,7 @@ const TeamSampleSelect: React.FC<TeamSampleSelectProps> = ({ value, options, onC
                             type="button"
                             className={`team-sample-select-option${opt.value === selected?.value ? " is-selected" : ""}`}
                             onClick={() => { onChange(opt.value); setOpen(false); }}
-                            title={opt.members.map(m => `${STRATEGY_NAMES[m.strategy] ?? `Style ${m.strategy}`} ${Math.round(m.winRatePct)}%`).join(" · ")}
+                            title={opt.members.map(m => `${STRATEGY_NAMES[m.strategy] ?? `Style ${m.strategy}`} ${Math.round(m.winRatePct)}%`).join(" - ")}
                         >
                             {renderMembers(opt.members)}
                             <span className="team-sample-select-samples">({opt.samples})</span>

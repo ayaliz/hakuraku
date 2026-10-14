@@ -103,7 +103,7 @@ const Histogram: React.FC<HistogramProps> = ({
             <div className="histogram-header">
                 <span className="histogram-title">{title}</span>
                 <span className="histogram-subtitle">
-                    mean {formatX(mean)} · median {formatX(median)}
+                    mean {formatX(mean)} - median {formatX(median)}
                 </span>
                 {headerRight && (
                     <span className="histogram-header-right">{headerRight}</span>

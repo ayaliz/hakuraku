@@ -62,7 +62,7 @@ function ActivationHeatmap({ estimate }: { estimate: SkillEffectEstimate }) {
                     if (outcomeWin !== null) detail.push(`descriptive win change ${signed(outcomeWin * 100, 2)} pp`);
                 }
                 return <span key={index} className={phaseStarts.has(index) ? 'sim-skill-activation-phase' : undefined}
-                    style={{ backgroundColor: `rgba(157, 140, 255, ${count ? 0.18 + 0.82 * Math.sqrt(count / maximum) : 0.06})` }} title={detail.join(' · ')} />;
+                    style={{ backgroundColor: `rgba(157, 140, 255, ${count ? 0.18 + 0.82 * Math.sqrt(count / maximum) : 0.06})` }} title={detail.join(' - ')} />;
             })}
         </div>
         <div className="sim-skill-activation-axis" style={{ gridTemplateColumns: `repeat(${timing.eventCounts.length}, minmax(3px, 1fr))` }}>
@@ -153,7 +153,7 @@ export default function SkillPerformance({ snapshot }: { snapshot: Snapshot }) {
                     </button>{expanded === key && <div className="sim-skill-row-detail">
                         <span><strong>95% intervals:</strong> individual {range('individualWinDelta', current.metrics.individualWinDelta)}; team {range('teamWinDelta', current.metrics.teamWinDelta)}; time {range('finishTimeGainSeconds', current.metrics.finishTimeGainSeconds)}.</span>
                         <span>{cell.condition || 'No extra activation condition recorded.'}</span>
-                        <span>{number(current.owners)} owners · {number(current.builds)} builds · {current.support.characters} Umas · styles {current.support.styles.join(', ')} · {percent(current.unchangedRaceRate)} identical race outcomes</span>
+                        <span>{number(current.owners)} owners - {number(current.builds)} builds - {current.support.characters} Umas - styles {current.support.styles.join(', ')} - {percent(current.unchangedRaceRate)} identical race outcomes</span>
                         {cell.dependencyRestricted && <span>Removal-only because this skill depends on activation-count or another skill.</span>}
                         <ActivationHeatmap estimate={estimate(cell, style, null, characterMode) ?? current} />
                         {character !== null && <small>Activation timing is aggregated for the selected running style across all Umas; Uma filters apply to the outcome estimates above.</small>}

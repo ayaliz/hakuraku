@@ -11,7 +11,9 @@ import PerformanceDistribution from './PerformanceDistribution';
 import PerformerFilters from './PerformerFilters';
 import { ParentGroups, SupportDeck } from '../../components/BuildTrainingDetails';
 import PaginationControls from '../../components/PaginationControls';
+import RunnerCardContent from './RunnerCardContent';
 import { teamShareUrl } from './teamLinks';
+import { teamBenchMessage, teamEvaluationLabel } from './teamEvaluationLabel';
 import type { Build, Card, LobbyEditorCatalog, OtherTeamsResponse, Performer, PerformerIndex, Requirement, Runner, Summary, TeamDetail, TeamDistributionResponse, TeamSearchResponse, TeamShard } from './types';
 
 type Props = {
@@ -68,7 +70,7 @@ function BuildDetails({ data, teamId, archiveIndex, inLobby, lobbyFull, onToggle
     return <Modal show onHide={close} size="xl" centered className="sim-team-modal" aria-labelledby="sim-team-title">
         <Modal.Header closeButton closeVariant="white"><Modal.Title id="sim-team-title">Team details</Modal.Title><div className="sim-team-modal-actions">{team && <button type="button" className={`sim-lobby-add${inLobby ? ' is-added' : ''}`} disabled={!inLobby && lobbyFull} onClick={() => onToggleLobby(team)}>{inLobby ? 'Remove from lobby' : lobbyFull ? 'Lobby full' : 'Add to lobby'}</button>}<button type="button" className="sim-copy-team-link" aria-live="polite" onClick={copyLink}>{copyState === 'copied' ? 'Link copied' : copyState === 'failed' ? 'Copy failed' : 'Copy link'}</button></div></Modal.Header>
         <Modal.Body>{team && result.data ? <>
-            <div className="sim-team-summary"><strong>{percent(team.wins / team.n)} team win rate</strong><span>{interval(team.ci)} · 95% interval</span><span>{number(team.n)} races</span></div>
+            <div className="sim-team-summary"><strong>{percent(team.wins / team.n)} team win rate</strong><span>{interval(team.ci)} - 95% interval</span><span>{number(team.n)} races</span></div>
             <div className="sim-build-grid">{team.members.map((runner, i) => {
                 const card = data.cards[runner.card];
                 const rank = getRankIcon(runner.score);
@@ -85,7 +87,7 @@ function BuildDetails({ data, teamId, archiveIndex, inLobby, lobbyFull, onToggle
                         return <div key={label}><dt>{label}</dt><dd>{icon ? <img src={icon} alt={grade} /> : grade}</dd></div>;
                     })}</dl>
                     <dl className="sim-build-facts"><div><dt>Individual win rate</dt><dd>{percent(team.memberWins[i] / team.n)}</dd></div>
-                        <div><dt>Share of team wins</dt><dd>{team.wins ? percent(team.memberWins[i] / team.wins) : '—'} · {number(team.memberWins[i])} wins</dd></div>
+                        <div><dt>Share of team wins</dt><dd>{team.wins ? percent(team.memberWins[i] / team.wins) : '—'} - {number(team.memberWins[i])} wins</dd></div>
                         <div><dt>Rank score</dt><dd className="sim-build-rank"><img src={rank.icon} alt={rank.name} />{number(runner.score)}</dd></div>
                         <div><dt>Skill points</dt><dd className="sim-build-skill-points"><img src={AssetLoader.getStatIcon('hint')} alt="" />{number(computeSkillPoints(new Set(runner.skills.map(([id]) => id))))} <span>({number(runner.skills.length)} skills)</span></dd></div>
                     </dl>
@@ -104,11 +106,6 @@ function BuildDetails({ data, teamId, archiveIndex, inLobby, lobbyFull, onToggle
     </Modal>;
 }
 
-const statIcons = [
-    ['speed', 'Speed'], ['stamina', 'Stamina'], ['wit', 'Wit'],
-    ['power', 'Power'], ['guts', 'Guts'], ['hint', 'Skill Points'],
-] as const;
-
 function hasBuildData(runner: Runner): runner is Build {
     return Array.isArray(runner.stats) && runner.stats.length === 5 && Array.isArray(runner.skills);
 }
@@ -117,23 +114,13 @@ function PerformerMember({ runner, card, memberWins, teamWins, inBuilder, builde
     runner: Runner; card: Card; memberWins: number; teamWins: number; inBuilder: boolean; builderFull: boolean;
     onOpen: () => void; onAddToBuilder: () => void;
 }) {
-    const rank = getRankIcon(runner.score);
     const winShare = teamWins > 0 ? percent(memberWins / teamWins) : '—';
-    const values = hasBuildData(runner)
-        ? [runner.stats[0], runner.stats[1], runner.stats[4], runner.stats[2], runner.stats[3], computeSkillPoints(new Set(runner.skills.map(([id]) => id)))]
-        : null;
     return <div className="sim-performer-member">
-        <button type="button" className="sim-performer-member-details" title={`View team details · ${card.name} · ${styleName(runner.style, true, runner.racingStyle)}`} aria-label={`View team details for ${card.name}'s team`} onClick={onOpen}>
-        <div className="sim-performer-member-head">
-            <Portrait card={runner.card} name={card.name} />
-            <span className="sim-performer-rank" title={`${number(runner.score)} rank score`}><img src={rank.icon} alt={rank.name} /><span>{number(runner.score)}</span></span>
-            <span className="sim-performer-member-identity"><strong>{card.name}</strong><StyleLabel style={runner.style} racingStyle={runner.racingStyle} short /></span>
+        <button type="button" className="sim-performer-member-details" title={`View team details - ${card.name} - ${styleName(runner.style, true, runner.racingStyle)}`} aria-label={`View team details for ${card.name}'s team`} onClick={onOpen}>
+        <RunnerCardContent runner={runner} card={card}>
             <span className="sim-performer-win-share" title={`${number(memberWins)} of ${number(teamWins)} team wins`}><strong>{winShare}</strong><small>of team wins</small></span>
             <span className="sim-performer-open-cue" aria-hidden="true">›</span>
-        </div>
-        {values ? <div className="sim-performer-stats">{statIcons.map(([icon, label], index) => <span key={icon} title={label}>
-            <img src={AssetLoader.getStatIcon(icon)} alt={label} />{number(values[index])}
-        </span>)}</div> : <span className="sim-performer-stats-loading">Build details unavailable</span>}
+        </RunnerCardContent>
         </button>
         <button type="button" className={`sim-performer-add-builder${inBuilder ? ' is-added' : ''}`} disabled={inBuilder || builderFull || !hasBuildData(runner)} onClick={onAddToBuilder}>{inBuilder ? 'Added to builder' : builderFull ? 'Builder full' : hasBuildData(runner) ? '+ Add to builder' : 'Loading build…'}</button>
     </div>;
@@ -175,10 +162,6 @@ function OtherTeamsModal({ data, sourceTeam, close, onOpenTeam, lobbyRunnerIds, 
         data.snapshotId,
     );
     const otherTeams = result.data?.teams.filter(team => team.id !== sourceTeam.id) ?? [];
-    const benchMessage = (team: Performer) => {
-        const date = team.evaluatedSnapshotId?.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? team.evaluatedSnapshotId;
-        return `Removed from future simulations after ${date} due to performance gap to player's best team`;
-    };
     const historicalMessage = (team: Performer) => {
         const date = team.evaluatedSnapshotId?.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? team.evaluatedSnapshotId;
         return `Not selected for this snapshot's full simulation; showing the last evaluated result${date ? ` from ${date}` : ''}`;
@@ -186,14 +169,14 @@ function OtherTeamsModal({ data, sourceTeam, close, onOpenTeam, lobbyRunnerIds, 
     return <Modal show onHide={close} size="xl" centered className="sim-team-modal sim-other-teams-modal" aria-label="Other teams">
         <Modal.Header closeButton closeVariant="white" />
         <Modal.Body>
-            <p className="sim-other-teams-note">Active teams split this player's daily simulation budget. Earlier evaluated variants and benched teams remain listed with their latest results.</p>
+            <p className="sim-other-teams-note">Active teams split this player's daily simulation budget. Cap-paused teams can return through prescreening review; performance-gap benches remain excluded. Historical teams keep their latest results.</p>
             {!result.data ? <Loading error={result.error} retry={result.retry} /> : otherTeams.length ? <div className="sim-other-teams-list">{otherTeams.map(team =>
                 <article className={`sim-other-team${team.benched ? ' is-benched' : team.historical ? ' is-historical' : ''}`} key={team.id}>
                     {team.newToday && <div className="sim-new-team-message">Team newly added today</div>}
-                    {team.benched && <div className="sim-benched-team-message">{benchMessage(team)}</div>}
+                    {team.benched && <div className="sim-benched-team-message">{teamBenchMessage(team)}</div>}
                     {team.historical && !team.benched && <div className="sim-historical-team-message">{historicalMessage(team)}</div>}
                     <PerformerTeam team={team} data={data} lobbyRunnerIds={lobbyRunnerIds} lobbyRunnerFull={lobbyRunnerFull} onAddLobbyRunner={onAddLobbyRunner} onOpen={() => onOpenTeam(team.id)} />
-                    <div className="sim-other-team-metrics"><span><strong>{percent(team.wins / team.n)}</strong> {team.benched || team.historical ? 'last win rate' : 'win rate'}</span><span>{interval(team.ci)} · 95% interval</span><span>{number(team.n)} races{(team.benched || team.historical) && team.evaluatedSnapshotId ? ` · ${team.evaluatedSnapshotId}` : ''}</span><button type="button" className="sim-other-team-details" onClick={() => onOpenTeam(team.id)}>View details</button></div>
+                    <div className="sim-other-team-metrics"><span><strong>{percent(team.wins / team.n)}</strong> {team.benched || team.historical ? 'last win rate' : 'win rate'}</span><span>{interval(team.ci)} - 95% interval</span><span>{number(team.n)} races{(team.benched || team.historical) && team.evaluatedSnapshotId ? ` - ${team.evaluatedSnapshotId}` : ''}</span><button type="button" className="sim-other-team-details" onClick={() => onOpenTeam(team.id)}>View details</button></div>
                 </article>
             )}</div> : <p className="sim-empty">This player has no other teams in the current snapshot.</p>}
         </Modal.Body>
@@ -231,12 +214,6 @@ export default function Performers({ data, query, distinct, sort, teamId, lobbyT
         ? rankTeams(index.data.teams, parsed.slots, distinct, sort, data.playerUsage?.schemaVersion === 1) : []), [server.data, index.data, parsed.slots, distinct, sort, data.playerUsage]);
     const visibleRows = server.data ? rows : rows.slice((page - 1) * teamsPerPage, page * teamsPerPage);
     const totalRows = server.data ? (distinct ? server.data.totalOwners : server.data.totalTeams) : rows.length;
-    const population = useMemo(() => {
-        const included = parsed.slots?.filter(slot => !slot.exclude);
-        if (!included || parsed.slots?.some(slot => slot.exclude) || included.length !== 3 || !included.every(slot => slot.style !== undefined && !slot.anyOf)) return undefined;
-        const key = included.map(slot => slot.style!).sort((a, b) => a - b).join('-');
-        return data.archetypes.find(row => row.key === key);
-    }, [parsed.slots, data.archetypes]);
     const search = (q: string) => {
         setSelectedTeamId(null);
         onChange({ q: q || null, ...(teamId ? { team: null, member: null } : {}) });
@@ -255,19 +232,18 @@ export default function Performers({ data, query, distinct, sort, teamId, lobbyT
         </Panel>
         {!parsed.error && <PerformanceDistribution
             distribution={distribution.data}
-            population={population}
             distinct={distinct}
             sort={sort}
             loading={!distribution.data && !distribution.error}
             error={distribution.error}
             retry={distribution.retry}
         />}
-        <Panel title="Archetype Analysis" controls={<div className="sim-performer-controls">{lobbyTeamIds.size > 0 && <button type="button" className="sim-lobby-shortcut" onClick={onOpenLobby}>Lobby <strong>{lobbyTeamIds.size}/3</strong></button>}<div className="sim-performer-mode-control"><span>Show</span><div className="sim-segmented" role="group" aria-label="How matching teams are represented"><button type="button" title="Show every matching evaluated team" className={!distinct ? 'is-active' : ''} aria-pressed={!distinct} onClick={() => onChange({ players: 'all' })}>All teams</button><button type="button" title={data.playerUsage ? "Select each player’s best active team by win rate, then apply the filters" : "Keep each player’s highest-ranked matching team"} className={distinct ? 'is-active' : ''} aria-pressed={distinct} onClick={() => onChange({ players: 'unique' })}>Best per player</button></div></div></div>}>
+        <Panel title="Archetype Analysis" controls={<div className="sim-performer-controls">{lobbyTeamIds.size > 0 && <button type="button" className="sim-lobby-shortcut" onClick={onOpenLobby}>Lobby <strong>{lobbyTeamIds.size}/3</strong></button>}<div className="sim-performer-mode-control"><span>Show</span><div className="sim-segmented" role="group" aria-label="How matching teams are represented"><button type="button" title="Show every previously evaluated matching team, including benched teams and historical results" className={!distinct ? 'is-active' : ''} aria-pressed={!distinct} onClick={() => onChange({ players: 'all' })}>All teams</button><button type="button" title={data.playerUsage ? "Select each player’s best active team by win rate, then apply the filters" : "Keep each player’s highest-ranked matching team"} className={distinct ? 'is-active' : ''} aria-pressed={distinct} onClick={() => onChange({ players: 'unique' })}>Best per player</button></div></div></div>}>
             {loading ? <Loading error={loadError} retry={() => { server.retry(); index.retry(); }} /> : parsed.error ? <p className="sim-empty">The selected team filters could not be read.</p> : visibleRows.length ? <>
-                <div className="sim-table-scroll"><table className="sim-table sim-performer-table"><thead><tr><th>#</th><th>Team · select an Uma for details</th><th>Team win%</th><th className={sort === 'lower' ? 'sim-sorted-column' : undefined} title={sort === 'lower' ? 'Sorted by the lower bound of the 95% interval, descending' : undefined}>95% interval{sort === 'lower' && <span className="sim-sort-arrow" aria-label="sorted descending">↓</span>}</th><th>Races</th><th>Player</th><th>Lobby</th></tr></thead><tbody>{visibleRows.map((team, i) => {
+                <div className="sim-table-scroll"><table className="sim-table sim-performer-table"><thead><tr><th>#</th><th>Team - select an Uma for details</th><th>Team win%</th><th className={sort === 'lower' ? 'sim-sorted-column' : undefined} title={sort === 'lower' ? 'Sorted by the lower bound of the 95% interval, descending' : undefined}>95% interval{sort === 'lower' && <span className="sim-sort-arrow" aria-label="sorted descending">↓</span>}</th><th>Races</th><th>Player</th><th>Lobby</th></tr></thead><tbody>{visibleRows.map((team, i) => {
                     const inLobby = lobbyTeamIds.has(team.id);
-                    return <tr key={team.id} className={team.id === selectedTeamId ? 'sim-selected-row' : undefined}>
-                    <td>{(page - 1) * teamsPerPage + i + 1}</td><td><PerformerTeam team={team} data={data} lobbyRunnerIds={lobbyRunnerIds} lobbyRunnerFull={lobbyRunnerFull} onAddLobbyRunner={onAddLobbyRunner} onOpen={() => setSelectedTeamId(team.id)} /></td><td><RateValue value={team.wins / team.n} ci={team.ci} wins={team.wins} n={team.n} /></td><td>{interval(team.ci)}</td><td>{number(team.n)}</td><td><button type="button" className="sim-other-teams-button" aria-label={`Show other teams by ${team.owner.names[0] ?? 'this player'}`} onClick={() => setOtherTeamsFor(team)}>Other teams</button></td><td><button type="button" className={`sim-lobby-add${inLobby ? ' is-added' : ''}`} disabled={!inLobby && lobbyFull} onClick={() => onToggleLobby(team)}>{inLobby ? 'Added' : lobbyFull ? 'Full' : '+ Add'}</button></td>
+                    return <tr key={team.id} className={[team.id === selectedTeamId ? 'sim-selected-row' : '', team.benched ? 'sim-benched-search-row' : ''].filter(Boolean).join(' ') || undefined}>
+                    <td>{(page - 1) * teamsPerPage + i + 1}</td><td><div className={`sim-team-evaluation-label${team.benched ? ' is-benched' : ''}`}>{teamEvaluationLabel(team, data.snapshotId)}</div><PerformerTeam team={team} data={data} lobbyRunnerIds={lobbyRunnerIds} lobbyRunnerFull={lobbyRunnerFull} onAddLobbyRunner={onAddLobbyRunner} onOpen={() => setSelectedTeamId(team.id)} /></td><td><RateValue value={team.wins / team.n} ci={team.ci} wins={team.wins} n={team.n} /></td><td>{interval(team.ci)}</td><td>{number(team.n)}</td><td><button type="button" className="sim-other-teams-button" aria-label={`Show other teams by ${team.owner.names[0] ?? 'this player'}`} onClick={() => setOtherTeamsFor(team)}>Other teams</button></td><td><button type="button" className={`sim-lobby-add${inLobby ? ' is-added' : ''}`} disabled={!inLobby && lobbyFull} onClick={() => onToggleLobby(team)}>{inLobby ? 'Added' : lobbyFull ? 'Full' : '+ Add'}</button></td>
                 </tr>;
                 })}</tbody></table></div><PaginationControls currentPage={page} totalItems={totalRows} pageSize={teamsPerPage} allowPageJump className="pagination-controls--compact sim-performer-pagination" onPageChange={setPage} />
             </> : <p className="sim-empty">No captured teams match these requirements.</p>}

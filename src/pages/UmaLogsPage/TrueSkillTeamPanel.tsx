@@ -134,7 +134,7 @@ const TrueSkillTeamPanel: React.FC<TrueSkillTeamPanelProps> = ({ variant = "true
                                     ))}
                                 </div>
                                 <div className="ts-entry-names">
-                                    {entry.members.map((member) => member.charaName).join(" · ")}
+                                    {entry.members.map((member) => member.charaName).join(" - ")}
                                 </div>
                                 <div className="ts-entry-stats">
                                     {renderStats(entry, variant)}

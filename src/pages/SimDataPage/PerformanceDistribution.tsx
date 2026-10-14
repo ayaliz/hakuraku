@@ -13,7 +13,7 @@ import * as echarts from 'echarts/core';
 import type { ComposeOption } from 'echarts/core';
 import { SVGRenderer } from 'echarts/renderers';
 import { Loading, number, Panel, percent } from './components';
-import type { TeamDistributionResponse, TeamRate } from './types';
+import type { TeamDistributionResponse } from './types';
 
 echarts.use([BarChart, GridComponent, MarkLineComponent, TooltipComponent, SVGRenderer]);
 
@@ -23,7 +23,6 @@ type ChartOption = ComposeOption<
 
 type Props = {
     distribution?: TeamDistributionResponse;
-    population?: TeamRate;
     distinct: boolean;
     sort: 'rate' | 'lower';
     loading: boolean;
@@ -38,17 +37,17 @@ type Bin = { min: number; max: number; count: number; observedMin: number; obser
 const BIN_COUNT = 33;
 const BIN_WIDTH = 100 / BIN_COUNT;
 
-export default function PerformanceDistribution({ distribution, population, distinct, sort, loading, error, retry }: Props) {
+export default function PerformanceDistribution({ distribution, distinct, sort, loading, error, retry }: Props) {
     const rankingLabel = sort === 'lower' ? '95% interval lower bound' : 'observed win rate';
     const stats = useMemo(() => {
         if (!distribution?.totalTeams || distribution.median === null || distribution.topDecile === null) return null;
-        const benchmark = Math.max(population?.team ?? 1 / 3, 1 / 3);
+        const benchmark = Math.max(distribution.averageWinRate ?? 1 / 3, 1 / 3);
         return {
             median: distribution.median,
             topDecile: distribution.topDecile,
             benchmark,
         };
-    }, [distribution, population]);
+    }, [distribution]);
 
     const bins = useMemo(() => {
         if (!stats) return [];
@@ -71,16 +70,16 @@ export default function PerformanceDistribution({ distribution, population, dist
 
     const option = useMemo<ChartOption>(() => {
         if (!stats) return {};
-        const populationPercent = population ? population.team * 100 : null;
+        const averagePercent = distribution?.averageWinRate == null ? null : distribution.averageWinRate * 100;
         const neutralPercent = 100 / 3;
         const lines: { name: string; xAxis: number; lineStyle: object; label: object }[] = [];
-        if (populationPercent !== null) lines.push({
-            name: 'Owner-latest average',
-            xAxis: populationPercent,
+        if (averagePercent !== null) lines.push({
+            name: 'Filtered team average',
+            xAxis: averagePercent,
             lineStyle: { color: '#f2bf66', width: 2 },
             label: { show: false },
         });
-        if (populationPercent === null || Math.abs(populationPercent - neutralPercent) >= 1) lines.push({
+        if (averagePercent === null || Math.abs(averagePercent - neutralPercent) >= 1) lines.push({
             name: 'Neutral team share',
             xAxis: neutralPercent,
             lineStyle: { color: '#9aa8ba', type: 'dashed', width: 1.5 },
@@ -104,7 +103,7 @@ export default function PerformanceDistribution({ distribution, population, dist
                     const observed = bin.observedMin === bin.observedMax
                         ? `${bin.observedMin.toFixed(1)}%`
                         : `${bin.observedMin.toFixed(1)}–${bin.observedMax.toFixed(1)}%`;
-                    return `<strong>${bin.min.toFixed(1)}–${bin.max.toFixed(1)}% lower bound</strong><br/>${number(bin.count)} teams · ${percent(share)}<br/>Observed win rate: ${observed}`;
+                    return `<strong>${bin.min.toFixed(1)}–${bin.max.toFixed(1)}% lower bound</strong><br/>${number(bin.count)} teams - ${percent(share)}<br/>Observed win rate: ${observed}`;
                 },
             },
             xAxis: {
@@ -128,7 +127,7 @@ export default function PerformanceDistribution({ distribution, population, dist
                     value: [(bin.min + bin.max) / 2, bin.count],
                     itemStyle: {
                         color: (bin.min + bin.max) / 200 >= stats.benchmark ? '#65c18c'
-                            : population && (bin.min + bin.max) / 200 >= population.team ? '#668fbd'
+                            : distribution?.averageWinRate != null && (bin.min + bin.max) / 200 >= distribution.averageWinRate ? '#668fbd'
                                 : '#4d6685',
                         borderRadius: [2, 2, 0, 0],
                     },
@@ -136,7 +135,7 @@ export default function PerformanceDistribution({ distribution, population, dist
                 markLine: { symbol: 'none', silent: true, z: 10, data: lines },
             }],
         };
-    }, [bins, distribution?.totalTeams, population, stats]);
+    }, [bins, distribution?.totalTeams, distribution?.averageWinRate, stats]);
 
     return <Panel title="Team performance distribution" className="sim-performance-panel" controls={
         <span className="sim-performance-count">{distribution ? `${number(distribution.totalTeams)} matching teams` : loading ? 'Loading teams…' : 'Team count unavailable'}</span>
@@ -147,13 +146,13 @@ export default function PerformanceDistribution({ distribution, population, dist
                     <strong>{distinct ? 'Best-per-player showcase' : 'All matching teams'}</strong>
                     {distinct
                         ? <>Each player contributes one team: their highest-ranked matching team by {rankingLabel}.</>
-                        : <>Every evaluated matching team contributes once, so players with several teams may appear several times.</>}
+                        : <>Every evaluated matching team contributes once, including benched teams and earlier results. Historical teams use their last evaluation, which may have different opponents. Players with several teams may appear several times.</>}
                 </p>
-                {population ? <p className="sim-performance-insight"><strong>{population.name}</strong> averages <strong>{percent(population.team)}</strong> in the owner-latest population.</p> : null}
+                {distribution?.averageWinRate != null && <p className="sim-performance-insight">Matching teams average <strong>{percent(distribution.averageWinRate)}</strong> win rate with the current filters.</p>}
                 <figure className="sim-performance-figure">
                     <div className="sim-performance-legend" aria-label="Chart reference lines">
-                        {population && <span><i className="sim-performance-line sim-performance-line-population" aria-hidden="true" />Owner-latest average {percent(population.team)}</span>}
-                        {(!population || Math.abs(population.team - 1 / 3) >= .01) && <span><i className="sim-performance-line sim-performance-line-neutral" aria-hidden="true" />Neutral team share 33.3%</span>}
+                        {distribution?.averageWinRate != null && <span><i className="sim-performance-line sim-performance-line-population" aria-hidden="true" />Filtered team average {percent(distribution.averageWinRate)}</span>}
+                        {(distribution?.averageWinRate == null || Math.abs(distribution.averageWinRate - 1 / 3) >= .01) && <span><i className="sim-performance-line sim-performance-line-neutral" aria-hidden="true" />Neutral team share 33.3%</span>}
                         <span><i className="sim-performance-swatch" aria-hidden="true" />Lower bound above {percent(stats.benchmark)} benchmark</span>
                     </div>
                     <div className="sim-performance-chart" role="img" aria-label={`Histogram of ${number(distribution?.totalTeams ?? 0)} matching evaluated teams across 33 equal 95% interval lower-bound bins. Median lower bound ${percent(stats.median)}; top ten percent begin at ${percent(stats.topDecile)}.`}>
@@ -162,7 +161,7 @@ export default function PerformanceDistribution({ distribution, population, dist
                 </figure>
                 <dl className="sim-performance-summary" aria-label="Filtered team performance summary">
                     <div>
-                        <dt>Average win rate</dt>
+                        <dt title="Arithmetic mean of the matching teams’ observed win rates. Each selected team has equal weight.">Average win rate</dt>
                         <dd>{distribution?.averageWinRate == null ? 'Unavailable' : percent(distribution.averageWinRate)}</dd>
                     </div>
                     <div>

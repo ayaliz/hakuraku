@@ -31,22 +31,24 @@ export function normalizeRaceConditionMetadata<T>(value: T): T {
     const isCm19 = cmId.toLowerCase() === 'cm19' || /^cm19(?:$|[-_.])/i.test(snapshotId);
     const isCm17 = cmId.toLowerCase() === 'cm17' || /^cm17(?:$|[-_.])/i.test(snapshotId);
     const isCm = /^cm\d+/i.test(cmId) || /^cm\d+/i.test(snapshotId);
-    const conditions = isCm19 && typeof metadata.conditions === 'string'
-        ? formatInternalGroundConditionSummary(metadata.conditions)
+    const conditions = typeof metadata.conditions === 'string'
+        ? (isCm19 ? formatInternalGroundConditionSummary(metadata.conditions) : metadata.conditions).replace(/\u00b7/g, '-')
         : metadata.conditions;
     const sourceCourse = metadata.course;
     let course = sourceCourse;
     if (typeof sourceCourse === 'string' && isCm) {
         let normalizedCourse = sourceCourse;
         if (isCm17) normalizedCourse = normalizedCourse.replace(/\bTeio Sho\b/g, 'Ooi');
-        course = normalizedCourse.replace(/\s*·\s*G1\s*$/i, '');
+        course = normalizedCourse.replace(/\s*[\u00b7-]\s*G1\s*$/i, '').replace(/\u00b7/g, '-');
     }
-    if (conditions === metadata.conditions && course === metadata.course) return value;
+    const label = typeof record.label === 'string' ? record.label.replace(/\u00b7/g, '-') : record.label;
+    if (conditions === metadata.conditions && course === metadata.course && label === record.label) return value;
     const updates: Record<string, unknown> = {};
     if (conditions !== metadata.conditions) updates.conditions = conditions;
     if (course !== metadata.course) updates.course = course;
     return {
         ...record,
+        ...(label !== record.label ? { label } : {}),
         meta: { ...metadata, ...updates },
     } as T;
 }

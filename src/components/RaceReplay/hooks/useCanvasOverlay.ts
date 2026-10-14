@@ -1,6 +1,7 @@
 import { useRef, useCallback, useEffect, type MutableRefObject, type RefObject } from "react";
 import { bisectFrameIndex, clamp01, lerp, getCharaIcon, formatSigned, mixWithWhite } from "../RaceReplay.utils";
 import { buildPositionKeepSeries, teamColorFor } from "../utils/chartBuilders";
+import { getSpeedUpCheckRanges } from '../utils/positionKeepUtils';
 import { getSkillDurationSecs, getActiveSpeedDebuff, getRushedDebuffDurationSecs, hasTargetDebuffEffect, getActiveSpeedModifier, countGreenSkills, isAutomaticPassiveSkill } from "../utils/SkillDataUtils";
 import { calculateSectionBaseSpeedWitRoll, calculateTargetSpeed, getDistanceCategory, computeGroundPowerBonus } from "../utils/speedCalculations";
 import GameDataLoader from "../../../data/GameDataLoader";
@@ -196,6 +197,7 @@ export type HorseHoverEntry = {
     blockedByName?: string;
     positionKeepReferenceName?: string;
     positionKeepDecision?: string;
+    speedUpCheckRange?: number;
 };
 
 export function useCanvasOverlay(
@@ -322,6 +324,17 @@ export function useCanvasOverlay(
         type CharEntry = { idx: number; name: string; vis: 0 | 1 | 2; cx: number; cy: number; hf: any; teamColor: string; iconUrl: string };
         const charDataList: CharEntry[] = [];
         const hoverEntries: HorseHoverEntry[] = [];
+        const speedUpRanges = p.toggles.positionKeep && time > 0
+            ? getSpeedUpCheckRanges(horseFrame.map((horse, index) => {
+                const spans = p.authoritativeHorseMetrics?.[index]?.temptationSpans;
+                const runningStyle = Number(p.horseInfoByIdx[index]?.running_style ?? p.trainedCharaByIdx[index]?.rawData?.param?.runningStyle ?? 1);
+                return {
+                    index, distance: horse.distance, runningStyle,
+                    isRunaway: p.oonigeByIdx[index] === true || runningStyle === 5,
+                    temptationMode: spans !== undefined ? activeSpan(spans, time)?.mode ?? 0 : horse.temptationMode ?? 0,
+                };
+            }), p.goalInX)
+            : new Map<number, number>();
 
         Object.entries(p.displayNames).forEach(([iStr, name]) => {
             const vis = (p.characterVisibility?.[name] ?? 0) as 0 | 1 | 2;
@@ -509,9 +522,43 @@ export function useCanvasOverlay(
                 positionKeepDecision: recentDecision
                     ? `${decisionMode}: ${recentDecision.outcome}${decisionRoll}`
                     : undefined,
+                speedUpCheckRange: speedUpRanges.get(idx),
             });
         });
         horseHoverDataRef.current = hoverEntries;
+
+        // Draw rear check boundaries below portraits, including recorded clips.
+        // Convert meter endpoints through the camera's axes.
+        if (speedUpRanges.size) {
+            const left = dataToPixel(instance, xMin, 0)?.[0];
+            const right = dataToPixel(instance, xMax, 0)?.[0];
+            const top = dataToPixel(instance, xMin, p.yMaxWithHeadroom)?.[1];
+            const bottom = dataToPixel(instance, xMin, 0)?.[1];
+            if (left !== undefined && right !== undefined && top !== undefined && bottom !== undefined) {
+                ctx.save();
+                ctx.beginPath(); ctx.rect(left, 0, right - left, h); ctx.clip();
+                for (const { idx, vis, cx, cy, hf, teamColor } of charDataList) {
+                    const range = speedUpRanges.get(idx);
+                    if (range === undefined) continue;
+                    const rear = dataToPixel(instance, hf.distance - range, hf.lanePosition);
+                    if (!rear) continue;
+                    const opacity = vis === 1 ? 0.3 : 1;
+                    ctx.globalAlpha = opacity * 0.95;
+                    ctx.setLineDash([1, 7]); ctx.lineCap = 'round';
+                    ctx.beginPath(); ctx.moveTo(rear[0], top); ctx.lineTo(rear[0], bottom);
+                    ctx.strokeStyle = '#07101b'; ctx.lineWidth = 5; ctx.stroke();
+                    ctx.strokeStyle = mixWithWhite(teamColor, 0.45); ctx.lineWidth = 2.5; ctx.stroke();
+                    ctx.setLineDash([]); ctx.lineCap = 'butt';
+                    ctx.globalAlpha = opacity;
+                    ctx.beginPath();
+                    ctx.moveTo(rear[0], cy); ctx.lineTo(cx, cy);
+                    ctx.moveTo(cx, cy - 6); ctx.lineTo(cx, cy + 6);
+                    ctx.strokeStyle = '#0b111b'; ctx.lineWidth = 5; ctx.stroke();
+                    ctx.strokeStyle = teamColor; ctx.lineWidth = 2; ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
 
         // Two-pass draw: dim characters (vis=1) rendered first (below), then visible (vis=0)
         for (const targetVis of [1, 0] as const) {

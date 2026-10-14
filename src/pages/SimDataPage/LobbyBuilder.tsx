@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type Dispatch, type DragEvent, type SetStateAction } from 'react';
 import { Spinner } from 'react-bootstrap';
 import RaceWinRateResults from '../../components/RaceWinRateResults';
+import { calculateRankScore } from '../../data/TrainedCharaData';
 import { computeSkillPoints } from '../../data/skillPoints';
 import {
     isActiveRaceWinRateBatch,
@@ -12,6 +13,8 @@ import {
 import { simDataApiUrl, useSimData } from './data';
 import { number, Panel, percent, Portrait, StyleLabel } from './components';
 import LobbyRunnerEditor from './LobbyRunnerEditor';
+import LobbyImportDialog from './LobbyImportDialog';
+import { insertLobbyImport } from './lobbyImport';
 import {
     createBlankLobbyRunnerEdit,
     createLobbyRunnerEdit,
@@ -21,6 +24,8 @@ import {
     LOBBY_SEED_MAX,
     LOBBY_SEED_MIN,
     lobbySimulationTeamIds,
+    lobbyRunnerSourceMetadata,
+    lobbyCustomRunnerBadge,
     stageLobbyRace,
     toLobbyRunnerOverride,
     type LobbyDraft,
@@ -71,7 +76,7 @@ type BatchReplayContext = {
 };
 
 export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemoveRunner, onMoveRunner, onClear, draft, onDraftChange }: Props) {
-    const { mood, seed, gates, runnerEdits, customRunners, customRunnerSourceIds, customRunnerStyles, customRunnerScores = {} } = draft;
+    const { mood, seed, gates, runnerEdits, customRunners, customRunnerStyles } = draft;
     const [status, setStatus] = useState<'idle' | 'running'>('idle');
     const [error, setError] = useState('');
     const [batch, setBatch] = useState<RaceWinRateBatch | undefined>(undefined);
@@ -87,6 +92,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
     const batchPollControllerRef = useRef<AbortController | null>(null);
     const batchReplayContextRef = useRef<BatchReplayContext | null>(null);
     const [editingKey, setEditingKey] = useState<string | null>(null);
+    const [importing, setImporting] = useState(false);
     const [dragging, setDragging] = useState<LobbyRunnerPosition | null>(null);
     const [dragTarget, setDragTarget] = useState<LobbyRunnerPosition | null>(null);
     const editorCatalog = useSimData<LobbyEditorCatalog>(
@@ -119,7 +125,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
         && [0, 1, 2].some(memberIndex => customRunners[customLobbyRunnerKey(teamIndex, memberIndex)])).length;
     const assignedCount = runners.filter(({ key }) => gates[key] !== undefined && gates[key] !== null).length;
     const capturedEditCount = runners.filter(({ key, runner }) => runner && runnerEdits[key] && isLobbyRunnerEditChanged(runner, runnerEdits[key])).length;
-    const modifiedCount = capturedEditCount + Object.keys(customRunners).length;
+    const modifiedCount = runners.filter(({ key, runner }) => lobbyRunnerSourceMetadata(draft, key, runner).modifiedInLobby).length;
     const editingRunner = editingKey ? runnerSlots.find(runner => runner.key === editingKey) : undefined;
     const displayedBatch = batch ? {
         ...batch,
@@ -192,11 +198,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
         };
     };
 
-    const sourceRunnerMetadata = (): NonNullable<SimDataLobbyRace['sourceRunnerMetadata']> => runnerSlots.map(({ key, runner, custom }) => ({
-        deck: runner?.deck ?? [],
-        parents: runner?.parents ?? [],
-        ...((runnerEdits[key] || custom && !customRunnerSourceIds[key]) ? { modifiedInLobby: true } : {}),
-    }));
+    const sourceRunnerMetadata = (): NonNullable<SimDataLobbyRace['sourceRunnerMetadata']> => runnerSlots.map(({ key, runner }) => lobbyRunnerSourceMetadata(draft, key, runner));
 
     const readBatchResponse = async (response: Response): Promise<RaceWinRateBatch> => {
         const payload = await response.json().catch(() => ({})) as Partial<RaceWinRateBatch> & { error?: string };
@@ -431,7 +433,13 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
     };
 
     return <div className="sim-sections sim-lobby">
-        <Panel title={`Lobby · ${filledCount}/9 Umas`} controls={
+        {importing && <LobbyImportDialog data={data} availableSlots={9 - filledCount}
+            hasEmptyTeam={teams.some((team, teamIndex) => !team && [0, 1, 2].every(memberIndex => !customRunners[customLobbyRunnerKey(teamIndex, memberIndex)]))}
+            onClose={() => setImporting(false)} onAdd={(runners, wholeTeam) => {
+            const next = insertLobbyImport(teams, draft, runners, wholeTeam);
+            onDraftChange(next);
+        }} />}
+        <Panel title={`Lobby - ${filledCount}/9 Umas`} controls={
             <div className="sim-lobby-panel-actions">
                 <label>Mood
                     <select value={mood} onChange={event => onDraftChange(previous => ({ ...previous, mood: event.target.value as LobbyMood }))}>{moodOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
@@ -448,6 +456,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
                     </div>
                 </div>
                 <button type="button" className="sim-button" onClick={onBrowse}>Browse teams</button>
+                <button type="button" className="sim-button" onClick={() => setImporting(true)}>Import uma from file</button>
                 {capturedEditCount > 0 && <button type="button" className="sim-link" onClick={() => onDraftChange(previous => ({ ...previous, runnerEdits: {} }))}>Reset edits</button>}
                 {filledCount > 0 && <button type="button" className="sim-link" onClick={onClear}>Clear</button>}
             </div>
@@ -494,7 +503,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
                             const card = data.cards[edit.cardId];
                             return <li key={key} className={`sim-lobby-runner-slot sim-lobby-custom-runner${samePosition(dragging, position) ? ' is-dragging' : ''}${dropClass}`} {...dragHandlers(position, true)} {...dropHandlers(position)}><button type="button" className="sim-lobby-runner-edit" onClick={() => setEditingKey(key)}>
                                 <span className="sim-lobby-drag-handle" aria-hidden="true">⋮⋮</span><Portrait card={edit.cardId} name={card?.name ?? 'Custom Uma'} /><span className="sim-lobby-runner-identity"><strong>{card?.name ?? `Uma ${edit.cardId}`}</strong><StyleLabel style={customRunnerStyles[key] ?? edit.runningStyle} racingStyle={edit.runningStyle} short /></span>
-                                <span className="sim-lobby-modified">{customRunnerSourceIds[key] ? 'Imported' : 'Custom'}</span><span className="sim-lobby-edit-cue">Edit</span>
+                                {lobbyCustomRunnerBadge(draft, key) && <span className="sim-lobby-modified">{lobbyCustomRunnerBadge(draft, key)}</span>}<span className="sim-lobby-edit-cue">Edit</span>
                             </button><button type="button" className="sim-link sim-lobby-remove-uma" onClick={() => onRemoveRunner(position)} aria-label={`Remove custom Uma ${memberIndex + 1}`}>Remove</button></li>;
                         })}</ul>
                     </article>;
@@ -504,7 +513,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
             {editorCatalog.error && <p className="sim-query-error" role="alert">Build editing is unavailable: {editorCatalog.error} <button type="button" className="sim-link" onClick={editorCatalog.retry}>Retry</button></p>}
         </Panel>
 
-        <Panel title={`Gate assignments · ${assignedCount}/9 fixed`}>
+        <Panel title={`Gate assignments - ${assignedCount}/9 fixed`}>
             {runners.length ? <div className="sim-lobby-gates">{[0, 1, 2].map(teamIndex => (
                 <div className="sim-lobby-gate-team" key={teamIndex}>
                     {runners.filter(runner => runner.teamIndex === teamIndex).map(({ key, runner, custom }) => {
@@ -516,7 +525,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
                         const analyticalStyle = runner?.style ?? customRunnerStyles[key];
                         const displayStyle = analyticalStyle === 6 ? 6 : runningStyle;
                         return <label key={key}>
-                            <span className="sim-lobby-gate-runner"><span className="sim-lobby-team-number">{teamIndex + 1}</span><Portrait card={cardId} name={card.name} /><span><strong>{card.name}</strong><StyleLabel style={displayStyle} racingStyle={runningStyle} short />{edit && <small>Modified build</small>}</span></span>
+                            <span className="sim-lobby-gate-runner"><span className="sim-lobby-team-number">{teamIndex + 1}</span><Portrait card={cardId} name={card.name} /><span><strong>{card.name}</strong><StyleLabel style={displayStyle} racingStyle={runningStyle} short />{lobbyRunnerSourceMetadata(draft, key, runner).modifiedInLobby && <small>Modified build</small>}</span></span>
                             <select value={selected ?? ''} onChange={event => chooseGate(key, event.target.value)} aria-label={`${card.name} gate`}>
                                 <option value="">Random Gate</option>
                                 {Array.from({ length: 9 }, (_, index) => index + 1).map(gate => <option key={gate} value={gate} disabled={gate !== selected && assignedGates.has(gate)}>Gate {gate}</option>)}
@@ -558,14 +567,21 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
                 const source = runners.find(candidate => candidate.teamIndex === runner.teamIndex
                     && candidate.memberIndex === runner.memberIndex);
                 if (!source) return undefined;
-                const edit = source.custom ?? runnerEdits[source.key];
+                const edit = source.custom ?? runnerEdits[source.key]
+                    ?? (!(Number(source.runner?.score) > 0) && source.runner ? createLobbyRunnerEdit(source.runner) : null);
                 if (!edit && (!source.runner?.stats || !source.runner.skills)) return undefined;
                 const stats = edit?.stats ?? source.runner!.stats!;
                 const skillIds = edit
                     ? [...edit.skills.map(([skillId]) => skillId), edit.uniqueSkillId]
                     : source.runner!.skills!.map(([skillId]) => skillId);
                 return {
-                    rankScore: source.runner?.score ?? customRunnerScores[source.key] ?? 0,
+                    rankScore: edit ? calculateRankScore(
+                        stats,
+                        [...edit.skills.map(([skillId, level]) => ({ skillId, level })),
+                            { skillId: edit.uniqueSkillId, level: edit.uniqueSkillLevel }],
+                        Object.fromEntries([1, 2, 3, 4].map(id => [id, 8 - 'SABCDEFG'.indexOf(edit.aptitudes[0])])),
+                        Object.fromEntries([1, 2, 3, 4].map(id => [id, 8 - 'SABCDEFG'.indexOf(edit.aptitudes[2])])),
+                    ) : source.runner!.score,
                     stats,
                     skillPoints: computeSkillPoints(new Set(skillIds)),
                     skillIds,

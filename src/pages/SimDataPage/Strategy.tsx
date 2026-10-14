@@ -30,15 +30,18 @@ export default function Strategy({ data, onTeams }: { data: Summary; onTeams: Fi
     const styleReps = useMemo(() => {
         const grouped: Record<number, StyleRepEntry[]> = {};
         for (const style of STRATEGY_DISPLAY_ORDER) grouped[style] = [];
+        const stylePlayers: Record<number, number> = {};
+        for (const pair of data.pairs) stylePlayers[pair.style] = (stylePlayers[pair.style] ?? 0) + pair.evaluatedOwners;
         for (const pair of data.pairs) {
+            if (pair.evaluatedOwners <= 0) continue;
             grouped[pair.style].push({
                 cardId: pair.card,
                 charaId: pair.chara,
                 charaName: pair.name,
                 wins: pair.individualWins,
                 appearances: pair.runnerExposures,
-                players: pair.owners,
-                popPct: pair.stylePop * 100,
+                players: pair.evaluatedOwners,
+                popPct: stylePlayers[pair.style] > 0 ? pair.evaluatedOwners / stylePlayers[pair.style] * 100 : 0,
                 winRate: pair.individual,
                 bayesianWinRate: pair.individualAdjusted,
                 expectedWinRate: 1 / 9,
@@ -92,7 +95,8 @@ export default function Strategy({ data, onTeams }: { data: Summary; onTeams: Fi
                 onSelectRepresentative={(entry, style) => onTeams([{ card: entry.cardId, chara: entry.charaId, style }, {}, {}])}
                 useAdjustedRates={false}
                 showPlayers
-                playerCountDescription={data.playerUsage ? "Players whose best active team contains this Uma in this style." : undefined}
+                playerCountLabel="Evaluated players"
+                playerCountDescription="Distinct players with a team evaluated in this snapshot containing this Uma in this style, including benched teams. Each player counts once; one player may have several matching teams."
             />
         </div>
         <StyleTeamCompositionPanel

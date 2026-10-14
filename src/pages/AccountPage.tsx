@@ -973,7 +973,7 @@ export default function AccountPage() {
                                             <div className="account-dataset-title">{dataset.datasetLabel}</div>
                                             <div className="account-dataset-meta">
                                                 {dataset.raceCount.toLocaleString()} race(s)
-                                                {dataset.latestRaceAt ? ` · Updated ${new Date(dataset.latestRaceAt).toLocaleString()}` : ""}
+                                                {dataset.latestRaceAt ? ` - Updated ${new Date(dataset.latestRaceAt).toLocaleString()}` : ""}
                                             </div>
                                         </div>
                                         <div className="account-dataset-actions">

@@ -125,16 +125,17 @@ export function compositionQuery(key: string, pair?: { card: number; chara: numb
 }
 
 export function rankTeams(teams: Performer[], slots: Requirement[], distinct: boolean, sort: 'rate' | 'lower', bestBeforeFilter = false): Performer[] {
+    const evaluated = teams.filter(team => !distinct || (!team.historical && !team.benched));
     if (!bestBeforeFilter) {
         const seen = new Set<string>();
-        return teams.filter(team => matchesTeam(team.members, slots)).sort((a, b) =>
+        return evaluated.filter(team => matchesTeam(team.members, slots)).sort((a, b) =>
             (sort === 'lower' ? b.ci[0] - a.ci[0] : b.wins / b.n - a.wins / a.n) || b.wins / b.n - a.wins / a.n || b.n - a.n || a.id.localeCompare(b.id))
             .filter(team => { if (!distinct) return true; if (seen.has(team.owner.id)) return false; seen.add(team.owner.id); return true; });
     }
-    const active = teams.filter(team => !team.benched && !team.historical);
+    const active = evaluated.filter(team => !team.benched);
     const seen = new Set<string>();
     const cohort = distinct ? [...active].sort((a, b) => b.wins / b.n - a.wins / a.n || b.n - a.n || a.id.localeCompare(b.id))
-        .filter(team => { if (seen.has(team.owner.id)) return false; seen.add(team.owner.id); return true; }) : active;
+        .filter(team => { if (seen.has(team.owner.id)) return false; seen.add(team.owner.id); return true; }) : evaluated;
     return cohort.filter(team => matchesTeam(team.members, slots)).sort((a, b) =>
         (sort === 'lower' ? b.ci[0] - a.ci[0] : b.wins / b.n - a.wins / a.n) || b.wins / b.n - a.wins / a.n || b.n - a.n || a.id.localeCompare(b.id));
 }

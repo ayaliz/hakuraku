@@ -336,7 +336,7 @@ const MultiRacePage: React.FC = () => {
                     groupKey,
                     courseId: groupData.courseId,
                     trackLabel: getTrackLabel(groupData.courseId),
-                    conditionLabel: `${getSeasonLabel(groupData.season)} \u00b7 ${getWeatherLabel(groupData.weather)} \u00b7 ${getGroundConditionLabel(groupData.groundCondition)}`,
+                    conditionLabel: `${getSeasonLabel(groupData.season)} - ${getWeatherLabel(groupData.weather)} - ${getGroundConditionLabel(groupData.groundCondition)}`,
                     races: groupData.races,
                     stats,
                     hpSpurtStats,
@@ -456,7 +456,7 @@ const MultiRacePage: React.FC = () => {
                                     {filteredTrackGroups.map((group) => (
                                         <Nav.Item key={group.groupKey}>
                                             <Nav.Link eventKey={`track-${group.groupKey}`}>
-                                                {group.trackLabel} {" \u00b7 "} {group.conditionLabel} ({group.races.length})
+                                                {group.trackLabel} {" - "} {group.conditionLabel} ({group.races.length})
                                             </Nav.Link>
                                         </Nav.Item>
                                     ))}

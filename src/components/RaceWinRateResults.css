@@ -89,12 +89,14 @@
 
 .race-win-rate-teams {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
     gap: 10px;
     margin-top: 12px;
 }
 
 .race-win-rate-team {
+    container-type: inline-size;
+    container-name: win-rate-team;
     min-width: 0;
     padding: 12px;
     border: 1px solid rgba(75, 85, 99, 0.38);
@@ -142,20 +144,6 @@
     font-size: 0.84rem;
 }
 
-.race-win-rate-runner > *:not(.race-win-rate-runner-fill) {
-    position: relative;
-    z-index: 1;
-}
-
-.race-win-rate-runner-fill {
-    position: absolute;
-    z-index: 0;
-    bottom: 0;
-    left: 0;
-    height: 3px;
-    background: linear-gradient(90deg, rgba(66, 185, 131, 0.48), rgba(115, 217, 170, 0.82));
-}
-
 .race-win-rate-portrait {
     position: relative;
     display: grid;
@@ -165,7 +153,7 @@
     overflow: hidden;
     border-radius: 5px;
     color: rgba(255, 255, 255, 0.52);
-    background: rgba(255, 255, 255, 0.08);
+    background: transparent;
     font-size: 0.8rem;
     font-weight: 700;
 }
@@ -196,6 +184,8 @@
 }
 
 .race-win-rate-runner-info {
+    container-type: inline-size;
+    container-name: win-rate-info;
     display: grid;
     min-width: 0;
     gap: 5px;
@@ -209,18 +199,36 @@
 }
 
 .race-win-rate-runner-stats {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     min-width: 0;
     align-items: center;
-    gap: 8px;
+    gap: 4px 8px;
     color: rgba(255, 255, 255, 0.68);
     font-size: 0.68rem;
     font-variant-numeric: tabular-nums;
 }
 
+/* Keep all six stats in complete rows, based on the actual info-column width. */
+@container win-rate-info (min-width: 160px) {
+    .race-win-rate-runner-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@container win-rate-info (min-width: 328px) {
+    .race-win-rate-runner-stats { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+
+/* Give the stats enough room for two columns on the narrowest cards. */
+@container win-rate-team (max-width: 280px) {
+    .race-win-rate-runner { grid-template-columns: 38px minmax(0, 1fr) 42px; }
+    .race-win-rate-runner-details { grid-column: 2; grid-row: 2; justify-self: start; }
+    .race-win-rate-runner > strong { grid-column: 3; grid-row: 1; }
+}
+
 .race-win-rate-runner-stats > span {
     display: inline-flex;
-    min-width: 0;
+    flex: 0 0 auto;
+    white-space: nowrap;
     align-items: center;
     gap: 2px;
 }
@@ -691,12 +699,9 @@
     }
     .race-win-rate-runner-details { min-height: 34px; padding: 5px 6px; }
     .race-win-rate-runner-stats {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 3px 6px;
         font-size: 0.64rem;
     }
-    .race-win-rate-runner-stats > span { overflow: hidden; }
     .race-win-rate-runner-stats img { width: 13px; height: 13px; }
     .race-win-rate-modal-stats { grid-template-columns: repeat(3, max-content); overflow: visible; }
 }

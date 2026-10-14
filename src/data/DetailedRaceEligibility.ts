@@ -1,3 +1,5 @@
+import { deserializeGlobalFromBase64 } from "./RaceDataParser";
+
 export const CURRENT_CM_DETAILED_RACE_COURSE_ID = 10808;
 export const NEXT_CM_DETAILED_RACE_COURSE_ID = 10506;
 
@@ -16,14 +18,33 @@ export const DETAILED_RACE_CONFIGURATIONS: readonly DetailedRaceConfiguration[] 
 ];
 
 export const DETAILED_RACE_INELIGIBLE_MESSAGE =
-    "Detailed simulation is only available for 3v3v3 races matching the current or next Champions Meeting configuration.";
+    "Detailed simulation requires a room match, Champions Meeting, or practice race with its course, original seed, conditions, and runner data.";
+
+export const GLOBAL_RACE_REPLAY_REQUIRED_MESSAGE =
+    "Resimulation is only supported for replays that can be parsed in the Global format.";
+
+export function hasGlobalRaceReplay(capture: unknown): boolean {
+    const record = asRecord(capture);
+    if (!record) return false;
+    const scenario = firstValue(record, ["race_scenario", "raceScenario", "simDataBase64", "<SimDataBase64>k__BackingField"]);
+    if (typeof scenario !== "string" || !scenario) return false;
+    try {
+        deserializeGlobalFromBase64(scenario);
+        return true;
+    } catch {
+        return false;
+    }
+}
 
 type UnknownRecord = Record<string, unknown>;
 
 function asRecord(value: unknown): UnknownRecord | null {
-    return value !== null && typeof value === "object" && !Array.isArray(value)
-        ? value as UnknownRecord
-        : null;
+    if (value === null || typeof value !== "object" || Array.isArray(value)) return null;
+    const record = value as UnknownRecord;
+    if (record.schema === "room_match_race_raw/v1" && record.race && typeof record.race === "object") {
+        return { ...record.race as UnknownRecord, room_info: record.room_info, race_type: 8 };
+    }
+    return record;
 }
 
 function firstValue(record: UnknownRecord, keys: string[]): unknown {
@@ -183,6 +204,38 @@ export function getDetailedRaceCaptureRaceType(capture: unknown): number | null 
     return value !== null && value >= 0 && value <= 0xff ? value : null;
 }
 
+/** Older raw captures omit the mode; retain compatibility without treating career exports as PvP. */
+function hasSupportedRaceMode(capture: unknown): boolean {
+    const record = asRecord(capture);
+    if (!record || record.isCareer === true || record.schema === "uma-career-race-capture/v1"
+        || Array.isArray(record.race_start_params_array)) return false;
+    const label = firstValue(record, ["race_type", "raceTypeCode", "raceType", "RaceType", "<RaceType>k__BackingField"]);
+    if (typeof label === "string" && !Number.isInteger(Number(label))) {
+        return ["roommatch", "champions", "championsmeeting", "practice"]
+            .includes(label.replace(/[^a-z]/gi, "").toLowerCase());
+    }
+    // Type 8 is RoomMatch and 9 is Practice. Historical raw CM packets often
+    // have no mode code; their original race-instance metadata is forwarded.
+    if (readInteger(label) === 6) return false; // Career (Single).
+    return label === undefined || readInteger(label) === 8 || readInteger(label) === 9
+        || hasThreeTeamsOfThree(getDetailedRaceCaptureHorses(record) ?? []);
+}
+
+function hasValidRunnerField(horses: readonly unknown[]): boolean {
+    return horses.length >= 1 && horses.length <= 18 && horses.every(value => unwrapHorse(value) !== null);
+}
+
+export function getDetailedRaceCaptureMetadata(capture: unknown): { grade: number; time: number; isDirtGrade?: number } {
+    const record = asRecord(capture) ?? {};
+    const master = asRecord(firstValue(record, ["race_master", "raceMaster", "RaceMaster", "<RaceMaster>k__BackingField"])) ?? {};
+    const instance = asRecord(firstValue(record, ["race_instance_master", "raceInstanceMaster", "RaceInstanceMaster", "<RaceInstanceMaster>k__BackingField"])) ?? {};
+    const grade = readInteger(firstValue(master, ["grade", "Grade"]) ?? record.grade);
+    const time = readEnumInteger(firstValue(instance, ["time", "Time"]) ?? record.time, { morning: 1, daytime: 2, day: 2, evening: 3, night: 4 });
+    const isDirtGrade = readInteger(firstValue(master, ["is_dirtgrade", "isDirtgrade", "isDirtGrade"]) ?? record.is_dirtgrade ?? record.isDirtGrade);
+    return { grade: grade !== null && grade > 0 ? grade : 100, time: time !== null && time > 0 ? time : 2,
+        ...(isDirtGrade === 0 || isDirtGrade === 1 ? { isDirtGrade } : {}) };
+}
+
 /** Retain simulator-relevant presence without exposing an anonymous runner's identity. */
 export function anonymizeSharedRaceHorse(horse: UnknownRecord): UnknownRecord {
     return { ...horse,
@@ -254,6 +307,7 @@ export function getDetailedRaceCaptureConfiguration(capture: unknown): Omit<Deta
         groundCondition += 1;
     }
     return season === null || weather === null || groundCondition === null
+        || season < 1 || season > 4 || weather < 1 || weather > 4 || groundCondition < 1 || groundCondition > 4
         ? null
         : { season, weather, groundCondition };
 }
@@ -284,13 +338,22 @@ export function normalizeDetailedRaceCaptureForSimulation(capture: unknown): unk
     if (!configuration) return capture;
 
     const normalized: UnknownRecord = { ...record };
+    if (record.schema === "uma-race-capture/v1" && getDetailedRaceCaptureRaceType(record) === null) {
+        normalized.race_type = 9;
+    }
     const seed = getDetailedRaceCaptureSeed(record);
     if (seed !== null) normalized.random_seed = seed;
     if (Array.isArray(record.horses) && record.schemaVersion !== undefined) {
         const aptitude = (value: unknown) => typeof value === "number"
             ? 8 - value : "GFEDCBAS".indexOf(String(value).toUpperCase()) + 1;
         const courseId = getDetailedRaceCaptureCourseId(record);
-        const distanceIndex = courseId === NEXT_CM_DETAILED_RACE_COURSE_ID ? 3 : 2;
+        const course = asRecord(firstValue(record, ["race_course_set", "raceCourseSet"])) ?? {};
+        const distanceType = readInteger(course.distance_type ?? course.distanceType ?? record.distanceType);
+        const surface = readInteger(course.surface ?? record.surface);
+        const distanceIndex = distanceType !== null && distanceType >= 1 && distanceType <= 4 ? distanceType - 1
+            : courseId === NEXT_CM_DETAILED_RACE_COURSE_ID ? 3
+                : courseId === CURRENT_CM_DETAILED_RACE_COURSE_ID ? 2 : null;
+        if (distanceIndex === null) throw new Error("Normalized simulator inputs require their course's distance type.");
         normalized.course_id = courseId;
         normalized.ground_condition = configuration.groundCondition;
         normalized.race_horse_data_array = record.horses.map(value => {
@@ -317,7 +380,8 @@ export function normalizeDetailedRaceCaptureForSimulation(capture: unknown): unk
                 guts: stats.guts, wiz: stats.wisdom, motivation: horse.motivation,
                 proper_distance_short: distance[0], proper_distance_mile: distance[1],
                 proper_distance_middle: distance[2], proper_distance_long: distance[3],
-                proper_ground_turf: aptitude(horse.surfaceAptitude), proper_ground_dirt: 1,
+                proper_ground_turf: surface === 2 ? 1 : aptitude(horse.surfaceAptitude),
+                proper_ground_dirt: surface === 2 ? aptitude(horse.surfaceAptitude) : 1,
                 proper_running_style_nige: styles[0], proper_running_style_senko: styles[1],
                 proper_running_style_sashi: styles[2], proper_running_style_oikomi: styles[3],
                 item_id_array: horse.itemIds,
@@ -387,7 +451,7 @@ export function normalizeDetailedRacePayloadForSimulation(payload: unknown): unk
     const request = asRecord(payload);
     if (!request || request.capture === undefined) return payload;
     const capture = normalizeDetailedRaceCaptureForSimulation(request.capture);
-    return capture === request.capture ? payload : { ...request, capture };
+    return { ...getDetailedRaceCaptureMetadata(capture), ...request, capture };
 }
 
 /** Keeps the recorded capture seed intact so the Worker can identify what-if requests. */
@@ -402,8 +466,7 @@ export function buildDetailedRaceSimulationRequest(
     return {
         capture: normalizeDetailedRaceCaptureForSimulation(capture),
         courseId,
-        grade: 100,
-        time: 2,
+        ...getDetailedRaceCaptureMetadata(capture),
         isCareer,
         recordedSeed: getDetailedRaceCaptureSeed(capture),
         ...(raceInstanceId === null ? {} : { raceInstanceId }),
@@ -413,19 +476,13 @@ export function buildDetailedRaceSimulationRequest(
 
 export function isDetailedRaceCourseSupported(courseId: unknown): boolean {
     const parsedCourseId = readInteger(courseId);
-    return parsedCourseId !== null
-        && DETAILED_RACE_CONFIGURATIONS.some(configuration => configuration.courseId === parsedCourseId);
+    return parsedCourseId !== null && parsedCourseId > 0 && parsedCourseId <= 0xffffffff;
 }
 
 export function isDetailedRaceConfigurationEligible(courseId: unknown, capture: unknown): boolean {
     const parsedCourseId = readInteger(courseId);
     const conditions = getDetailedRaceCaptureConfiguration(capture);
-    if (parsedCourseId === null || !conditions) return false;
-    return DETAILED_RACE_CONFIGURATIONS.some(configuration =>
-        configuration.courseId === parsedCourseId
-        && configuration.season === conditions.season
-        && configuration.weather === conditions.weather
-        && configuration.groundCondition === conditions.groundCondition);
+    return isDetailedRaceCourseSupported(parsedCourseId) && conditions !== null;
 }
 
 export function buildDetailedRaceCaptureFromSharedData(data: {
@@ -497,7 +554,8 @@ export function isDetailedRaceEligible(
 ): boolean {
     return isDetailedRaceConfigurationEligible(courseId, capture)
         && Array.isArray(horses)
-        && hasThreeTeamsOfThree(horses);
+        && hasValidRunnerField(horses)
+        && hasSupportedRaceMode(capture);
 }
 
 export function isDetailedRacePayloadEligible(payload: unknown): boolean {
@@ -512,5 +570,6 @@ export function isDetailedRacePayloadEligible(payload: unknown): boolean {
     if (getDetailedRaceCaptureSeed(request.capture) === null) return false;
     if (!isDetailedRaceConfigurationEligible(request.courseId, request.capture)) return false;
     const horses = getDetailedRaceCaptureHorses(request.capture);
-    return horses !== null && hasThreeTeamsOfThree(horses);
+    return horses !== null && hasValidRunnerField(horses) && hasSupportedRaceMode(request.capture)
+        && request.isCareer !== true;
 }

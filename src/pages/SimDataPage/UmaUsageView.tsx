@@ -19,15 +19,15 @@ function segmentTextColor(color: string): string {
     return luminance > .179 ? '#111827' : '#fff';
 }
 
-export function UmaUsageRows({ usage, data, strategyColors, onTeams }: {
-    usage: UmaUsage; data: Pick<Summary, 'cards'>; strategyColors: Record<number, string>; onTeams: FindTeams;
+export function UmaUsageRows({ usage, data, strategyColors, onTeams, limit }: {
+    usage: UmaUsage; data: Pick<Summary, 'cards'>; strategyColors: Record<number, string>; onTeams: FindTeams; limit?: number;
 }) {
     const rows = useMemo(() => groupUmaUsage(usage), [usage]);
     const maxUsagePct = Math.max(...rows.map(row => row.usagePct), 1);
     return <div className="ca-uma-usage">
         <div className="ca-usage-legend">{STRATEGY_DISPLAY_ORDER.filter(style => usage.pairs.some(pair => pair.style === style)).map(style =>
             <span key={style}><i style={{ background: strategyColors[style] }} />{STRATEGY_NAMES[style]}</span>)}</div>
-        {rows.length === 0 ? <span className="sa-no-data">No usage data</span> : rows.map(row => {
+        {rows.length === 0 ? <span className="sa-no-data">No usage data</span> : rows.slice(0, limit).map(row => {
             const card = data.cards[row.card];
             const name = card ? `${card.name} (${card.outfit})` : `Uma ${row.card}`;
             const icon = getCharaIcon(`${row.chara}_${row.card}`);

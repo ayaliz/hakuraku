@@ -44,7 +44,7 @@ test('grouped variants separate activated, learned-inactive and unlearned runner
         123: { rows: [[123, 'Nige', 0, 50, 20, 30, 10, 5, 2, 10, 5]], styles: { Nige: [[20, 30, 20, 5, 10]] } },
     } };
     const result = adaptDetail(groupedDetail, grouped, 123, id => id === 122 ? 'White' : 'Gold');
-    assert.deepEqual(result.winBreakdown?.map(r => r.label), ['White · activated', 'Gold · activated', 'Either activated (learned)', 'Learned, not activated', 'Not learned (neither variant)']);
+    assert.deepEqual(result.winBreakdown?.map(r => r.label), ['White - activated', 'Gold - activated', 'Either activated (learned)', 'Learned, not activated', 'Not learned (neither variant)']);
     assert.deepEqual(result.winBreakdown?.[2].total, { apps: 40, wins: 10 }); // Not 30 + 20.
     assert.deepEqual(result.winBreakdown?.[3].total, { apps: 60, wins: 5 });
     assert.deepEqual(result.winBreakdown?.[4].total, { apps: 150, wins: 14 });

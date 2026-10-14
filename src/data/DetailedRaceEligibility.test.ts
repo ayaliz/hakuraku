@@ -1,6 +1,58 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { anonymizeSharedRaceHorse, getDetailedRaceCaptureRaceType, buildDetailedRaceCaptureFromSharedData, getDetailedRaceCaptureRaceInstanceId, getDetailedRaceCaptureStartTimeType, buildDetailedRaceSimulationRequest, normalizeDetailedRaceCaptureForSimulation, resolveDetailedRaceInstanceId, withDetailedRaceCaptureSeed } from "./DetailedRaceEligibility";
+import { isDetailedRaceEligible, isDetailedRacePayloadEligible, getDetailedRaceCaptureMetadata } from "./DetailedRaceEligibility";
+import { hasGlobalRaceReplay } from "./DetailedRaceEligibility";
+import { globalReplayTestFixture } from "./globalReplayTestFixture";
+
+test("requires successful Global replay decoding, including legacy and envelope captures", () => {
+    const replay = globalReplayTestFixture();
+    assert.equal(hasGlobalRaceReplay({ race_scenario: replay }), true);
+    assert.equal(hasGlobalRaceReplay({ simDataBase64: replay }), true);
+    assert.equal(hasGlobalRaceReplay({ schema: "room_match_race_raw/v1", race: { race_scenario: replay } }), true);
+    for (const capture of [{}, { race_scenario: "invalid" }, { race_scenario: "" }]) {
+        assert.equal(hasGlobalRaceReplay(capture), false);
+    }
+});
+
+test("allows room, Champions Meeting, and practice races on any course and conditions without team quotas", () => {
+    for (const raceType of ["RoomMatch", "Champions", "Practice", 8, 9]) {
+        for (const count of [1, 2, 8, 12, 18]) {
+            const horses = Array.from({length: count}, (_, i) => ({frame_order:i+1,team_id:0}));
+            const capture = {course_id:10903, raceType, random_seed:-42,season:1,weather:4,ground_condition:4,race_horse_data_array:horses};
+            assert.equal(isDetailedRaceEligible(10903,horses,capture),true);
+            assert.equal(isDetailedRacePayloadEligible({capture,courseId:10903}),true);
+        }
+    }
+});
+
+test("keeps malformed conditions, unsupported modes, and excessive runner counts ineligible", () => {
+    const capture = {course_id:10903,raceType:"Practice",random_seed:42,season:1,weather:4,ground_condition:4,
+        race_horse_data_array:[{frame_order:1,team_id:0}]};
+    for(const patch of [{season:0},{weather:5},{ground_condition:0},{raceType:"Career"},{raceType:"TeamStadium"},
+        {race_horse_data_array:[]},{race_horse_data_array:Array.from({length:19},()=>({}))}]) {
+        assert.equal(isDetailedRacePayloadEligible({capture:{...capture,...patch},courseId:10903}),false);
+    }
+    assert.equal(isDetailedRacePayloadEligible({capture,courseId:10903,isCareer:true}),false);
+});
+
+test("preserves captured grade, time, and dirt metadata rather than using CM defaults", () => {
+    const capture = {random_seed:42,season:1,weather:4,ground_condition:4,
+        raceMaster:{grade:300,isDirtgrade:1},raceInstanceMaster:{id:509201,time:3}};
+    assert.deepEqual(getDetailedRaceCaptureMetadata(capture),{grade:300,time:3,isDirtGrade:1});
+    const request=buildDetailedRaceSimulationRequest(capture,10101);
+    assert.equal(request.grade,300);assert.equal(request.time,3);assert.equal(request.isDirtGrade,1);
+});
+
+test("understands raw room envelopes and practice schemas without inventing conditions", () => {
+    const race={course_id:10903,random_seed:42,season:2,weather:3,ground_condition:4,
+        race_horse_data_array:[{frame_order:1,team_id:0}]};
+    const room={schema:"room_match_race_raw/v1",room_info:{race_instance_id:800017},race};
+    assert.equal(isDetailedRacePayloadEligible({capture:room,courseId:10903}),true);
+    assert.equal(getDetailedRaceCaptureRaceInstanceId(room),800017);
+    const practice=normalizeDetailedRaceCaptureForSimulation({...race,schema:"uma-race-capture/v1"}) as any;
+    assert.equal(practice.race_type,9);
+});
 
 test("associates missing race metadata with a known G1 instance for the detected course", () => {
     const known = {

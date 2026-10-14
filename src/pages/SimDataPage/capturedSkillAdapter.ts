@@ -108,7 +108,7 @@ export function adaptDetail(detail: Detail, overview: Overview, skillId: number,
             buckets.byVariant[id] = adapted.buckets;
             first.byVariant[id] = adapted.rangeBuckets!;
             const row = adapted.winBreakdown![0];
-            variantRows.push({ ...row, label: `${name(Number(id))}${Number(id) >= 900000 && Number(id) < 1000000 ? ' (Inherit)' : ''} · activated`, variantId: Number(id), isTotal: false, cohort: 'variant' });
+            variantRows.push({ ...row, label: `${name(Number(id))}${Number(id) >= 900000 && Number(id) < 1000000 ? ' (Inherit)' : ''} - activated`, variantId: Number(id), isTotal: false, cohort: 'variant' });
         }
     }
     // Repeated events are not distinct-runner outcome denominators.

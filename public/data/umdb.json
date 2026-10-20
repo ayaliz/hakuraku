@@ -5180,6 +5180,13 @@
       "courseSetId": 10808
     },
     {
+      "id": 600036,
+      "name": "Sagittarius Cup",
+      "distance": 2500,
+      "groundType": "TURF",
+      "courseSetId": 10506
+    },
+    {
       "id": 600041,
       "name": "Taurus Cup Finals",
       "distance": 2400,
@@ -5227,6 +5234,13 @@
       "distance": 2200,
       "groundType": "TURF",
       "courseSetId": 10808
+    },
+    {
+      "id": 600048,
+      "name": "Sagittarius Cup Finals",
+      "distance": 2500,
+      "groundType": "TURF",
+      "courseSetId": 10506
     },
     {
       "id": 610000,
@@ -12663,6 +12677,20 @@
       "courseSetId": 10807
     },
     {
+      "id": 1200401,
+      "name": "Arima Kinen (Hard)",
+      "distance": 2500,
+      "groundType": "TURF",
+      "courseSetId": 10506
+    },
+    {
+      "id": 1200402,
+      "name": "Arima Kinen (Hard)",
+      "distance": 2500,
+      "groundType": "TURF",
+      "courseSetId": 10506
+    },
+    {
       "id": 650001,
       "name": "Scout Race: Sprint",
       "distance": 1200,
@@ -14841,6 +14869,39 @@
       "activateLot": 0
     },
     {
+      "id": 100471,
+      "name": "Raise My Soul's Blade!",
+      "gradeValue": 340,
+      "tagId": [
+        "401"
+      ],
+      "rarity": 5,
+      "conditionGroups": [
+        {
+          "condition": "phase>=2&remain_distance<=401&remain_distance>=399&order_rate<=40&grade==100&popularity<=3",
+          "baseTime": 50000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 4500
+            }
+          ]
+        },
+        {
+          "condition": "phase>=2&remain_distance<=401&remain_distance>=399&order_rate<=40",
+          "baseTime": 50000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 3500
+            }
+          ]
+        }
+      ],
+      "iconId": 20013,
+      "activateLot": 0
+    },
+    {
       "id": 100481,
       "name": "Pop & Polish",
       "gradeValue": 340,
@@ -15869,6 +15930,39 @@
       "activateLot": 0
     },
     {
+      "id": 110161,
+      "name": "Free from the Ashes",
+      "gradeValue": 340,
+      "tagId": [
+        "401"
+      ],
+      "rarity": 5,
+      "conditionGroups": [
+        {
+          "condition": "distance_type==4&phase>=2&is_finalcorner_laterhalf==1&order_rate<=40",
+          "baseTime": 50000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 5500
+            }
+          ]
+        },
+        {
+          "condition": "phase>=2&is_finalcorner_laterhalf==1&order_rate<=40",
+          "baseTime": 50000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 3500
+            }
+          ]
+        }
+      ],
+      "iconId": 20013,
+      "activateLot": 0
+    },
+    {
       "id": 110171,
       "name": "Arrows Whistle, Shadows Disperse",
       "gradeValue": 340,
@@ -16531,6 +16625,61 @@
         }
       ],
       "iconId": 20043,
+      "activateLot": 0
+    },
+    {
+      "id": 110671,
+      "name": "Rain Cloud Bolt",
+      "gradeValue": 340,
+      "tagId": [
+        "401",
+        "402"
+      ],
+      "rarity": 5,
+      "conditionGroups": [
+        {
+          "condition": "distance_rate>=40&distance_rate<=50&order_rate>=40&order_rate<=80",
+          "baseTime": 50000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 3500
+            },
+            {
+              "type": 9,
+              "value": 350
+            }
+          ]
+        }
+      ],
+      "iconId": 20013,
+      "activateLot": 0
+    },
+    {
+      "id": 110681,
+      "name": "Bring on the Banquet!",
+      "gradeValue": 340,
+      "tagId": [
+        "403"
+      ],
+      "rarity": 5,
+      "conditionGroups": [
+        {
+          "condition": "phase>=2&corner!=0&remain_distance>=600&order<=3",
+          "baseTime": 40000,
+          "effects": [
+            {
+              "type": 22,
+              "value": 3500
+            },
+            {
+              "type": 31,
+              "value": 1000
+            }
+          ]
+        }
+      ],
+      "iconId": 20013,
       "activateLot": 0
     },
     {
@@ -27984,6 +28133,56 @@
       "activateLot": 1
     },
     {
+      "id": 202491,
+      "name": "Razor-Sharp Steps",
+      "gradeValue": 508,
+      "tagId": [
+        "104",
+        "303",
+        "403"
+      ],
+      "rarity": 2,
+      "conditionGroups": [
+        {
+          "condition": "running_style==4&phase_firsthalf_random==2",
+          "baseTime": 12000,
+          "effects": [
+            {
+              "type": 31,
+              "value": 4000
+            }
+          ]
+        }
+      ],
+      "iconId": 20042,
+      "activateLot": 1
+    },
+    {
+      "id": 202492,
+      "name": "Sharp Steps",
+      "gradeValue": 217,
+      "tagId": [
+        "104",
+        "303",
+        "403"
+      ],
+      "rarity": 1,
+      "conditionGroups": [
+        {
+          "condition": "running_style==4&phase_firsthalf_random==2",
+          "baseTime": 12000,
+          "effects": [
+            {
+              "type": 31,
+              "value": 2000
+            }
+          ]
+        }
+      ],
+      "iconId": 20041,
+      "activateLot": 1
+    },
+    {
       "id": 202501,
       "name": "Reckless Charge",
       "gradeValue": 508,
@@ -30139,6 +30338,39 @@
       "activateLot": 1
     },
     {
+      "id": 900471,
+      "name": "Raise My Soul's Blade!",
+      "gradeValue": 180,
+      "tagId": [
+        "401"
+      ],
+      "rarity": 1,
+      "conditionGroups": [
+        {
+          "condition": "phase>=2&remain_distance<=401&remain_distance>=399&order_rate<=40&grade==100&popularity<=3",
+          "baseTime": 30000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 2500
+            }
+          ]
+        },
+        {
+          "condition": "phase>=2&remain_distance<=401&remain_distance>=399&order_rate<=40",
+          "baseTime": 30000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 1500
+            }
+          ]
+        }
+      ],
+      "iconId": 20011,
+      "activateLot": 1
+    },
+    {
       "id": 900481,
       "name": "Pop & Polish",
       "gradeValue": 180,
@@ -30723,6 +30955,30 @@
       "activateLot": 1
     },
     {
+      "id": 900991,
+      "name": "Shine On, Tomakomai! ☆",
+      "gradeValue": 180,
+      "tagId": [
+        "403",
+        "502"
+      ],
+      "rarity": 1,
+      "conditionGroups": [
+        {
+          "condition": "is_lastspurt==1&order_rate<=40&order_rate>=30&ground_type==2",
+          "baseTime": 24000,
+          "effects": [
+            {
+              "type": 31,
+              "value": 700
+            }
+          ]
+        }
+      ],
+      "iconId": 20041,
+      "activateLot": 1
+    },
+    {
       "id": 901001,
       "name": "Never Say Never",
       "gradeValue": 180,
@@ -31111,6 +31367,29 @@
         },
         {
           "condition": "remain_distance<=401&remain_distance>=399&order_rate<=40&activate_count_all<=6",
+          "baseTime": 30000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 1500
+            }
+          ]
+        }
+      ],
+      "iconId": 20011,
+      "activateLot": 1
+    },
+    {
+      "id": 910161,
+      "name": "Free from the Ashes",
+      "gradeValue": 180,
+      "tagId": [
+        "401"
+      ],
+      "rarity": 1,
+      "conditionGroups": [
+        {
+          "condition": "phase>=2&is_finalcorner_laterhalf==1&order_rate<=40",
           "baseTime": 30000,
           "effects": [
             {
@@ -31786,6 +32065,61 @@
         }
       ],
       "iconId": 20041,
+      "activateLot": 1
+    },
+    {
+      "id": 910671,
+      "name": "Rain Cloud Bolt",
+      "gradeValue": 180,
+      "tagId": [
+        "401",
+        "402"
+      ],
+      "rarity": 1,
+      "conditionGroups": [
+        {
+          "condition": "distance_rate>=40&distance_rate<=50&order_rate>=40&order_rate<=80",
+          "baseTime": 30000,
+          "effects": [
+            {
+              "type": 27,
+              "value": 1500
+            },
+            {
+              "type": 9,
+              "value": 50
+            }
+          ]
+        }
+      ],
+      "iconId": 20011,
+      "activateLot": 1
+    },
+    {
+      "id": 910681,
+      "name": "Bring on the Banquet!",
+      "gradeValue": 180,
+      "tagId": [
+        "403"
+      ],
+      "rarity": 1,
+      "conditionGroups": [
+        {
+          "condition": "phase>=2&corner!=0&remain_distance>=600&order<=3",
+          "baseTime": 24000,
+          "effects": [
+            {
+              "type": 22,
+              "value": 1500
+            },
+            {
+              "type": 31,
+              "value": 500
+            }
+          ]
+        }
+      ],
+      "iconId": 20011,
       "activateLot": 1
     },
     {
@@ -33714,6 +34048,19 @@
       ]
     },
     {
+      "id": 10086,
+      "name": "[Tracen Academy] Yamanin Zephyr",
+      "charaId": 1078,
+      "raceBonus": 5,
+      "raceBonusByLimitBreak": [
+        1,
+        1,
+        1,
+        5,
+        5
+      ]
+    },
+    {
       "id": 20001,
       "name": "[Well, Look Who's Home] Fuji Kiseki",
       "charaId": 1005,
@@ -34385,6 +34732,19 @@
         5,
         5,
         5,
+        5,
+        5
+      ]
+    },
+    {
+      "id": 20054,
+      "name": "[Mighty Fotografia] T.M. Opera O",
+      "charaId": 1015,
+      "raceBonus": 5,
+      "raceBonusByLimitBreak": [
+        0,
+        1,
+        1,
         5,
         5
       ]
@@ -35945,6 +36305,58 @@
         1,
         1,
         1,
+        5,
+        5
+      ]
+    },
+    {
+      "id": 30126,
+      "name": "[To Winds Untraveled] Yamanin Zephyr",
+      "charaId": 1078,
+      "raceBonus": 5,
+      "raceBonusByLimitBreak": [
+        1,
+        1,
+        1,
+        5,
+        5
+      ]
+    },
+    {
+      "id": 30127,
+      "name": "[Outrunning Misfortune] Special Week",
+      "charaId": 1001,
+      "raceBonus": 5,
+      "raceBonusByLimitBreak": [
+        1,
+        1,
+        1,
+        5,
+        5
+      ]
+    },
+    {
+      "id": 30128,
+      "name": "[Capricious Excellence] Sweep Tosho",
+      "charaId": 1044,
+      "raceBonus": 5,
+      "raceBonusByLimitBreak": [
+        1,
+        1,
+        1,
+        5,
+        5
+      ]
+    },
+    {
+      "id": 30129,
+      "name": "[From Icy Blues to Verdant Hues] Grass Wonder",
+      "charaId": 1011,
+      "raceBonus": 5,
+      "raceBonusByLimitBreak": [
+        5,
+        5,
+        5,
         5,
         5
       ]
@@ -54102,6 +54514,20 @@
       "solvableType": 0
     },
     {
+      "id": 202491,
+      "needSkillPoint": 180,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
+      "id": 202492,
+      "needSkillPoint": 180,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
       "id": 202501,
       "needSkillPoint": 180,
       "statusType": 0,
@@ -54585,6 +55011,13 @@
       "solvableType": 0
     },
     {
+      "id": 900471,
+      "needSkillPoint": 200,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
       "id": 900481,
       "needSkillPoint": 200,
       "statusType": 0,
@@ -54739,6 +55172,13 @@
       "solvableType": 0
     },
     {
+      "id": 900991,
+      "needSkillPoint": 200,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
       "id": 901001,
       "needSkillPoint": 200,
       "statusType": 0,
@@ -54831,6 +55271,13 @@
     },
     {
       "id": 910151,
+      "needSkillPoint": 200,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
+      "id": 910161,
       "needSkillPoint": 200,
       "statusType": 0,
       "statusValue": 0,
@@ -54999,6 +55446,20 @@
     },
     {
       "id": 910611,
+      "needSkillPoint": 200,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
+      "id": 910671,
+      "needSkillPoint": 200,
+      "statusType": 0,
+      "statusValue": 0,
+      "solvableType": 0
+    },
+    {
+      "id": 910681,
       "needSkillPoint": 200,
       "statusType": 0,
       "statusValue": 0,
@@ -61999,6 +62460,11 @@
       "charaId": 1029
     },
     {
+      "id": 6,
+      "relationType": 102,
+      "charaId": 1047
+    },
+    {
       "id": 7,
       "relationType": 102,
       "charaId": 1003
@@ -62322,6 +62788,11 @@
       "id": 74,
       "relationType": 201,
       "charaId": 1041
+    },
+    {
+      "id": 76,
+      "relationType": 201,
+      "charaId": 1047
     },
     {
       "id": 77,
@@ -62662,6 +63133,11 @@
       "id": 147,
       "relationType": 313,
       "charaId": 1030
+    },
+    {
+      "id": 148,
+      "relationType": 313,
+      "charaId": 1047
     },
     {
       "id": 149,
@@ -63287,6 +63763,11 @@
       "id": 276,
       "relationType": 2601,
       "charaId": 1046
+    },
+    {
+      "id": 277,
+      "relationType": 2601,
+      "charaId": 1047
     },
     {
       "id": 278,
@@ -64074,6 +64555,11 @@
       "charaId": 1045
     },
     {
+      "id": 443,
+      "relationType": 2902,
+      "charaId": 1047
+    },
+    {
       "id": 444,
       "relationType": 2902,
       "charaId": 1048
@@ -64569,6 +65055,11 @@
       "charaId": 1046
     },
     {
+      "id": 547,
+      "relationType": 3003,
+      "charaId": 1047
+    },
+    {
       "id": 548,
       "relationType": 3003,
       "charaId": 1048
@@ -64909,6 +65400,11 @@
       "charaId": 1044
     },
     {
+      "id": 617,
+      "relationType": 3101,
+      "charaId": 1047
+    },
+    {
       "id": 618,
       "relationType": 3101,
       "charaId": 1048
@@ -65017,6 +65513,11 @@
       "id": 642,
       "relationType": 2523,
       "charaId": 1034
+    },
+    {
+      "id": 643,
+      "relationType": 2523,
+      "charaId": 1047
     },
     {
       "id": 644,
@@ -65262,6 +65763,11 @@
       "id": 693,
       "relationType": 2516,
       "charaId": 1045
+    },
+    {
+      "id": 694,
+      "relationType": 2516,
+      "charaId": 1047
     },
     {
       "id": 695,
@@ -65597,6 +66103,11 @@
       "id": 762,
       "relationType": 2519,
       "charaId": 1015
+    },
+    {
+      "id": 763,
+      "relationType": 2519,
+      "charaId": 1047
     },
     {
       "id": 764,
@@ -69044,9 +69555,19 @@
       "charaId": 1048
     },
     {
+      "id": 1501,
+      "relationType": 8334,
+      "charaId": 1047
+    },
+    {
       "id": 1502,
       "relationType": 8334,
       "charaId": 1003
+    },
+    {
+      "id": 1503,
+      "relationType": 8335,
+      "charaId": 1047
     },
     {
       "id": 1504,
@@ -69054,9 +69575,19 @@
       "charaId": 1004
     },
     {
+      "id": 1505,
+      "relationType": 8336,
+      "charaId": 1047
+    },
+    {
       "id": 1506,
       "relationType": 8336,
       "charaId": 1013
+    },
+    {
+      "id": 1507,
+      "relationType": 8337,
+      "charaId": 1047
     },
     {
       "id": 1508,
@@ -69064,9 +69595,19 @@
       "charaId": 1015
     },
     {
+      "id": 1509,
+      "relationType": 8338,
+      "charaId": 1047
+    },
+    {
       "id": 1510,
       "relationType": 8338,
       "charaId": 1017
+    },
+    {
+      "id": 1511,
+      "relationType": 8339,
+      "charaId": 1047
     },
     {
       "id": 1512,
@@ -69074,9 +69615,19 @@
       "charaId": 1022
     },
     {
+      "id": 1513,
+      "relationType": 8340,
+      "charaId": 1047
+    },
+    {
       "id": 1514,
       "relationType": 8340,
       "charaId": 1027
+    },
+    {
+      "id": 1515,
+      "relationType": 8341,
+      "charaId": 1047
     },
     {
       "id": 1516,
@@ -69084,9 +69635,24 @@
       "charaId": 1038
     },
     {
+      "id": 1517,
+      "relationType": 8342,
+      "charaId": 1047
+    },
+    {
       "id": 1518,
       "relationType": 8342,
       "charaId": 1040
+    },
+    {
+      "id": 1519,
+      "relationType": 8343,
+      "charaId": 1047
+    },
+    {
+      "id": 1521,
+      "relationType": 8344,
+      "charaId": 1047
     },
     {
       "id": 1522,
@@ -69094,9 +69660,24 @@
       "charaId": 1045
     },
     {
+      "id": 1523,
+      "relationType": 8345,
+      "charaId": 1047
+    },
+    {
+      "id": 1525,
+      "relationType": 8346,
+      "charaId": 1047
+    },
+    {
       "id": 1526,
       "relationType": 8346,
       "charaId": 1056
+    },
+    {
+      "id": 1527,
+      "relationType": 8347,
+      "charaId": 1047
     },
     {
       "id": 1528,
@@ -69104,9 +69685,19 @@
       "charaId": 1058
     },
     {
+      "id": 1529,
+      "relationType": 8348,
+      "charaId": 1047
+    },
+    {
       "id": 1530,
       "relationType": 8348,
       "charaId": 1059
+    },
+    {
+      "id": 1531,
+      "relationType": 8349,
+      "charaId": 1047
     },
     {
       "id": 1532,
@@ -70449,6 +71040,11 @@
       "charaId": 1069
     },
     {
+      "id": 1822,
+      "relationType": 8453,
+      "charaId": 1047
+    },
+    {
       "id": 1823,
       "relationType": 8454,
       "charaId": 1069
@@ -70752,6 +71348,11 @@
       "id": 1895,
       "relationType": 8489,
       "charaId": 1071
+    },
+    {
+      "id": 1896,
+      "relationType": 8489,
+      "charaId": 1047
     },
     {
       "id": 1897,
@@ -71064,6 +71665,11 @@
       "charaId": 1072
     },
     {
+      "id": 1960,
+      "relationType": 8521,
+      "charaId": 1047
+    },
+    {
       "id": 1961,
       "relationType": 8522,
       "charaId": 1072
@@ -71302,6 +71908,11 @@
       "id": 2009,
       "relationType": 8546,
       "charaId": 1062
+    },
+    {
+      "id": 2010,
+      "relationType": 8546,
+      "charaId": 1047
     },
     {
       "id": 2011,
@@ -72189,6 +72800,11 @@
       "charaId": 1074
     },
     {
+      "id": 2218,
+      "relationType": 8650,
+      "charaId": 1047
+    },
+    {
       "id": 2219,
       "relationType": 8651,
       "charaId": 1074
@@ -72489,6 +73105,11 @@
       "charaId": 1062
     },
     {
+      "id": 2357,
+      "relationType": 3205,
+      "charaId": 1099
+    },
+    {
       "id": 2359,
       "relationType": 3205,
       "charaId": 1078
@@ -72584,6 +73205,11 @@
       "charaId": 1100
     },
     {
+      "id": 2382,
+      "relationType": 2603,
+      "charaId": 1047
+    },
+    {
       "id": 2384,
       "relationType": 2604,
       "charaId": 1072
@@ -72642,6 +73268,11 @@
       "id": 2410,
       "relationType": 103,
       "charaId": 1098
+    },
+    {
+      "id": 2411,
+      "relationType": 103,
+      "charaId": 1099
     },
     {
       "id": 2415,
@@ -72989,6 +73620,11 @@
       "charaId": 1098
     },
     {
+      "id": 2538,
+      "relationType": 7031,
+      "charaId": 1099
+    },
+    {
       "id": 2539,
       "relationType": 7032,
       "charaId": 1098
@@ -73124,6 +73760,16 @@
       "charaId": 1098
     },
     {
+      "id": 2593,
+      "relationType": 202,
+      "charaId": 1099
+    },
+    {
+      "id": 2596,
+      "relationType": 2001,
+      "charaId": 1047
+    },
+    {
       "id": 2605,
       "relationType": 2007,
       "charaId": 1003
@@ -73204,6 +73850,11 @@
       "charaId": 1098
     },
     {
+      "id": 2648,
+      "relationType": 2601,
+      "charaId": 1099
+    },
+    {
       "id": 2649,
       "relationType": 2601,
       "charaId": 1100
@@ -73212,6 +73863,11 @@
       "id": 2653,
       "relationType": 2602,
       "charaId": 1087
+    },
+    {
+      "id": 2658,
+      "relationType": 7033,
+      "charaId": 1099
     },
     {
       "id": 2659,
@@ -73244,6 +73900,11 @@
       "charaId": 1098
     },
     {
+      "id": 2681,
+      "relationType": 3002,
+      "charaId": 1099
+    },
+    {
       "id": 2682,
       "relationType": 3002,
       "charaId": 1100
@@ -73252,6 +73913,11 @@
       "id": 2693,
       "relationType": 3003,
       "charaId": 1098
+    },
+    {
+      "id": 2694,
+      "relationType": 3003,
+      "charaId": 1099
     },
     {
       "id": 2695,
@@ -73269,6 +73935,11 @@
       "charaId": 1098
     },
     {
+      "id": 2717,
+      "relationType": 3102,
+      "charaId": 1099
+    },
+    {
       "id": 2718,
       "relationType": 3102,
       "charaId": 1100
@@ -73284,9 +73955,19 @@
       "charaId": 1098
     },
     {
+      "id": 2727,
+      "relationType": 2525,
+      "charaId": 1099
+    },
+    {
       "id": 2728,
       "relationType": 2525,
       "charaId": 1100
+    },
+    {
+      "id": 2729,
+      "relationType": 2531,
+      "charaId": 1099
     },
     {
       "id": 2736,
@@ -73307,6 +73988,11 @@
       "id": 2748,
       "relationType": 2529,
       "charaId": 1098
+    },
+    {
+      "id": 2749,
+      "relationType": 2529,
+      "charaId": 1099
     },
     {
       "id": 2750,
@@ -73444,6 +74130,11 @@
       "charaId": 1036
     },
     {
+      "id": 2829,
+      "relationType": 8685,
+      "charaId": 1047
+    },
+    {
       "id": 2837,
       "relationType": 8689,
       "charaId": 1039
@@ -73532,6 +74223,11 @@
       "id": 2875,
       "relationType": 8708,
       "charaId": 1036
+    },
+    {
+      "id": 2877,
+      "relationType": 8709,
+      "charaId": 1047
     },
     {
       "id": 2885,
@@ -73742,6 +74438,11 @@
       "id": 2969,
       "relationType": 8756,
       "charaId": 1044
+    },
+    {
+      "id": 2973,
+      "relationType": 8758,
+      "charaId": 1099
     },
     {
       "id": 2975,
@@ -74299,6 +75000,11 @@
       "charaId": 1036
     },
     {
+      "id": 3201,
+      "relationType": 8883,
+      "charaId": 1047
+    },
+    {
       "id": 3209,
       "relationType": 8887,
       "charaId": 1051
@@ -74392,6 +75098,11 @@
       "id": 3251,
       "relationType": 8911,
       "charaId": 1044
+    },
+    {
+      "id": 3255,
+      "relationType": 8913,
+      "charaId": 1099
     },
     {
       "id": 3257,
@@ -74504,6 +75215,11 @@
       "charaId": 1044
     },
     {
+      "id": 3311,
+      "relationType": 8945,
+      "charaId": 1099
+    },
+    {
       "id": 3313,
       "relationType": 8946,
       "charaId": 1039
@@ -74612,6 +75328,11 @@
       "id": 3363,
       "relationType": 8975,
       "charaId": 1044
+    },
+    {
+      "id": 3367,
+      "relationType": 8977,
+      "charaId": 1099
     },
     {
       "id": 3369,
@@ -75164,6 +75885,11 @@
       "charaId": 1098
     },
     {
+      "id": 3575,
+      "relationType": 9104,
+      "charaId": 1099
+    },
+    {
       "id": 3576,
       "relationType": 9105,
       "charaId": 1098
@@ -75209,9 +75935,19 @@
       "charaId": 1066
     },
     {
+      "id": 3586,
+      "relationType": 9111,
+      "charaId": 1099
+    },
+    {
       "id": 3587,
       "relationType": 9111,
       "charaId": 1007
+    },
+    {
+      "id": 3588,
+      "relationType": 9112,
+      "charaId": 1099
     },
     {
       "id": 3589,
@@ -75219,9 +75955,19 @@
       "charaId": 1009
     },
     {
+      "id": 3590,
+      "relationType": 9113,
+      "charaId": 1099
+    },
+    {
       "id": 3591,
       "relationType": 9113,
       "charaId": 1046
+    },
+    {
+      "id": 3592,
+      "relationType": 9114,
+      "charaId": 1099
     },
     {
       "id": 3593,
@@ -75229,9 +75975,19 @@
       "charaId": 1049
     },
     {
+      "id": 3594,
+      "relationType": 9115,
+      "charaId": 1099
+    },
+    {
       "id": 3595,
       "relationType": 9115,
       "charaId": 1067
+    },
+    {
+      "id": 3596,
+      "relationType": 9116,
+      "charaId": 1099
     },
     {
       "id": 3597,
@@ -75239,9 +75995,29 @@
       "charaId": 1068
     },
     {
+      "id": 3598,
+      "relationType": 9122,
+      "charaId": 1099
+    },
+    {
+      "id": 3600,
+      "relationType": 9123,
+      "charaId": 1099
+    },
+    {
       "id": 3601,
       "relationType": 9123,
       "charaId": 1022
+    },
+    {
+      "id": 3602,
+      "relationType": 9124,
+      "charaId": 1099
+    },
+    {
+      "id": 3604,
+      "relationType": 9125,
+      "charaId": 1099
     },
     {
       "id": 3605,
@@ -75249,14 +76025,29 @@
       "charaId": 1004
     },
     {
+      "id": 3606,
+      "relationType": 9126,
+      "charaId": 1099
+    },
+    {
       "id": 3607,
       "relationType": 9126,
       "charaId": 1045
     },
     {
+      "id": 3608,
+      "relationType": 9127,
+      "charaId": 1099
+    },
+    {
       "id": 3609,
       "relationType": 9127,
       "charaId": 1069
+    },
+    {
+      "id": 3610,
+      "relationType": 9128,
+      "charaId": 1099
     },
     {
       "id": 3611,
@@ -75372,6 +76163,11 @@
       "id": 3659,
       "relationType": 9160,
       "charaId": 1036
+    },
+    {
+      "id": 3661,
+      "relationType": 9161,
+      "charaId": 1047
     },
     {
       "id": 3665,
@@ -75589,6 +76385,11 @@
       "charaId": 1042
     },
     {
+      "id": 3762,
+      "relationType": 2408,
+      "charaId": 1047
+    },
+    {
       "id": 3765,
       "relationType": 2409,
       "charaId": 1087
@@ -75619,6 +76420,16 @@
       "charaId": 1100
     },
     {
+      "id": 3774,
+      "relationType": 344,
+      "charaId": 1099
+    },
+    {
+      "id": 3779,
+      "relationType": 2411,
+      "charaId": 1099
+    },
+    {
       "id": 3780,
       "relationType": 2405,
       "charaId": 1029
@@ -75639,9 +76450,19 @@
       "charaId": 1098
     },
     {
+      "id": 3784,
+      "relationType": 2533,
+      "charaId": 1099
+    },
+    {
       "id": 3785,
       "relationType": 2533,
       "charaId": 1100
+    },
+    {
+      "id": 3795,
+      "relationType": 2902,
+      "charaId": 1099
     },
     {
       "id": 3797,
@@ -75714,6 +76535,11 @@
       "charaId": 1100
     },
     {
+      "id": 3855,
+      "relationType": 2603,
+      "charaId": 1099
+    },
+    {
       "id": 3857,
       "relationType": 2603,
       "charaId": 1057
@@ -75764,6 +76590,11 @@
       "charaId": 1038
     },
     {
+      "id": 3867,
+      "relationType": 3203,
+      "charaId": 1047
+    },
+    {
       "id": 3868,
       "relationType": 3203,
       "charaId": 1033
@@ -75772,6 +76603,21 @@
       "id": 3869,
       "relationType": 3203,
       "charaId": 1038
+    },
+    {
+      "id": 3870,
+      "relationType": 2701,
+      "charaId": 1047
+    },
+    {
+      "id": 3871,
+      "relationType": 2530,
+      "charaId": 1099
+    },
+    {
+      "id": 3872,
+      "relationType": 2520,
+      "charaId": 1099
     },
     {
       "id": 3874,

@@ -452,6 +452,7 @@ button.sim-composition:hover { color: #93c5fd; }
 .sim-runner-editor-section > header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 11px; }
 .sim-runner-editor-section h3 { margin: 0; color: #e4edf8; font-size: 14px; }
 .sim-runner-editor-field { display: grid; gap: 5px; color: #aebed0; font-size: 11px; }
+.sim-lobby-fan-count { margin-top: 14px; max-width: 190px; }
 .sim-runner-editor :is(input, select) { min-height: 34px; padding: 5px 8px; border: 1px solid #4a5d75; border-radius: 5px; background: #101a28; color: #e5edf7; }
 .sim-lobby-uma-select .dropdown-toggle { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 48px; padding: 4px 10px 4px 6px; border: 1px solid #4a5d75; border-radius: 5px; background: #101a28; color: #e5edf7; text-align: left; }
 .sim-lobby-uma-select .dropdown-toggle:hover, .sim-lobby-uma-select .dropdown-toggle:focus, .sim-lobby-uma-select .dropdown-toggle.show { border-color: #7190b5; background: #1b2a3d; color: #f1f6fc; }

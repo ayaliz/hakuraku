@@ -7,6 +7,7 @@ import {
     hpRateMilestones,
     placementHistogram,
     raceWinRateBatchGates,
+    raceWinRateBatchMotivations,
     raceWinRatePercent,
     rawStaminaNeededForMaxHp,
     survivalHpMargin,
@@ -29,6 +30,12 @@ test("reconstructs batch gate assignments in lobby slot order", () => {
     })) satisfies RaceWinRateRunner[];
 
     assert.deepEqual(raceWinRateBatchGates(runners), [9, 8, 7, 6, 5, 4, 3, 2, 1]);
+    assert.deepEqual(raceWinRateBatchGates(runners, {
+        index: 0, seed: 42, finishOrder: [], gates: [2, 3, 4, 5, 6, 7, 8, 9, 1],
+    }), [1, 9, 8, 7, 6, 5, 4, 3, 2]);
+    assert.equal(raceWinRateBatchGates(runners, {
+        index: 0, seed: 42, finishOrder: [], gates: [1, 1, 3, 4, 5, 6, 7, 8, 9],
+    }), null);
     assert.equal(raceWinRateBatchGates(runners.slice(0, 8)), null);
     assert.equal(raceWinRateBatchGates(runners.map((runner, index) => index === 8
         ? { ...runner, gateNumber: 8 }
@@ -39,6 +46,21 @@ test("omits redundant percentage decimals but preserves meaningful ones", () => 
     assert.equal(raceWinRatePercent(0.37), "37%");
     assert.equal(raceWinRatePercent(0.125), "12.5%");
     assert.equal(raceWinRatePercent(1 / 3), "33.3%");
+});
+
+test("replays recorded moods in lobby slot order, not gate order", () => {
+    const runners = Array.from({ length: 9 }, (_, slot) => ({
+        slot, teamIndex: Math.floor(slot / 3), memberIndex: slot % 3,
+        teamId: `team-${Math.floor(slot / 3)}`, frameOrder: 8 - slot, gateNumber: 9 - slot,
+        cardId: 100000 + slot, charaId: 1000 + slot, wins: 0, winRate: 0, motivation: slot % 5 + 1,
+    })) satisfies RaceWinRateRunner[];
+    const expected = [1, 2, 3, 4, 5, 1, 2, 3, 4];
+    assert.deepEqual(raceWinRateBatchMotivations([...runners].reverse()), expected);
+    assert.equal(raceWinRateBatchMotivations(runners.slice(0, 8)), null);
+    assert.equal(raceWinRateBatchMotivations(runners.map((r, i) => i === 0 ? { ...r, motivation: undefined } : r)), null);
+    assert.equal(raceWinRateBatchMotivations(runners.map((r, i) => i === 0 ? { ...r, motivation: 0 } : r)), null);
+    assert.equal(raceWinRateBatchMotivations(runners.map((r, i) => i === 0 ? { ...r, motivation: 6 } : r)), null);
+    assert.equal(raceWinRateBatchMotivations(runners.map((r, i) => i === 0 ? { ...r, memberIndex: 1 } : r)), null);
 });
 
 test("reports the extra HP needed to cover a target share of races", () => {

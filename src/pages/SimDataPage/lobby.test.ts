@@ -62,6 +62,12 @@ test('resolves course-specific aptitude labels from structured metadata or the c
     assert.deepEqual(courseAptitudeLabels({
         course: 'Custom course', courseSurface: 'Dirt', courseDistance: 'Mile',
     }), { surface: 'Dirt', distance: 'Mile' });
+    assert.deepEqual(courseAptitudeLabels({
+        course: 'CM21 - Chukyo 1,200 m - Turf', courseSurface: 'Turf', courseDistance: 'Short',
+    } as any), { surface: 'Turf', distance: 'Sprint' });
+    assert.deepEqual(courseAptitudeLabels({ course: 'CM21 - Chukyo 1,200 m - Turf' }), {
+        surface: 'Turf', distance: 'Sprint',
+    });
 });
 
 test('creates a protected-unique build edit and serializes it for the simulator', () => {
@@ -143,6 +149,7 @@ test('removing or moving an imported runner materializes affected teams without 
 test('creates a complete default build for a custom lobby Uma', () => {
     assert.deepEqual(createBlankLobbyRunnerEdit(100602), {
         cardId: 100602,
+        fanCount: 200000,
         stats: [1200, 1200, 1200, 1200, 1200],
         aptitudes: ['A', 'A', 'A'],
         runningStyle: 1,
@@ -150,6 +157,13 @@ test('creates a complete default build for a custom lobby Uma', () => {
         uniqueSkillLevel: 6,
         skills: [],
     });
+});
+
+test('custom fan count is sent in simulation overrides and survives identity changes', () => {
+    const edit = { ...createBlankLobbyRunnerEdit(100602), fanCount: 345678 };
+    assert.equal(toLobbyRunnerOverride(createBlankLobbyRunnerEdit(100602)).fanCount, 200000);
+    assert.equal(toLobbyRunnerOverride(changeLobbyRunnerIdentity(edit, 100101)).fanCount, 345678);
+    assert.equal(toLobbyRunnerOverride({ ...edit, fanCount: 0 }).fanCount, 0);
 });
 
 test('edits a derived Runaway as Front Runner so its learned skill remains authoritative', () => {

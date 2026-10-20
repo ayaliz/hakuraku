@@ -1,4 +1,5 @@
 import GameDataLoader from "../../../data/GameDataLoader";
+import { sectionWitSpeedAddend } from './sectionWitSpeed';
 import { RaceSimulateHorseResultData_RunningStyle } from "../../../data/race_data_pb";
 import {
     BASE_SPEED_CONSTANT, BASE_SPEED_COURSE_OFFSET, BASE_SPEED_COURSE_SCALE,
@@ -143,8 +144,6 @@ export function calculateSectionBaseSpeedWitRoll(params: {
     wisdomBonus?: number;
     roll: number;
 }): { speedAddend: number; percentage: number } {
-    const baseSpeed = BASE_SPEED_CONSTANT
-        - (params.courseDistance - BASE_SPEED_COURSE_OFFSET) / BASE_SPEED_COURSE_SCALE;
     const strategyProficiencyModifier = STRATEGY_PROFICIENCY_MODIFIER[params.strategyProficiency ?? 7] ?? 1.0;
     const adjustedWisdom = adjustStat(params.wisdomStat, params.mood) * strategyProficiencyModifier
         + (params.wisdomBonus ?? 0);
@@ -152,7 +151,7 @@ export function calculateSectionBaseSpeedWitRoll(params: {
         * Math.log10(WISDOM_LOG_SCALE * adjustedWisdom);
     const percentage = rangeMax - WISDOM_MIN_PCT_OFFSET + params.roll * WISDOM_MIN_PCT_OFFSET;
     return {
-        speedAddend: baseSpeed * percentage / 100,
+        speedAddend: sectionWitSpeedAddend(params.courseDistance, percentage),
         percentage,
     };
 }

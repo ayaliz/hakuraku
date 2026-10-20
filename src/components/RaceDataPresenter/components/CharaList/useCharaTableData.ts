@@ -28,6 +28,7 @@ const LATE_START_ACCEL_THRESHOLD = 0.0001; // Acceleration (m/s²) below which a
 import { computeHeuristicEvents } from "../../../RaceReplay/utils/computeHeuristicEvents";
 import { calculateRaceDistance } from "../../utils/RacePresenterUtils";
 import { CharaTableData, SkillEventData } from "./types";
+import { isHpApplicationBeforeFinish } from "./hpApplicationTiming";
 import { RaceSimulateFrameData } from "../../../../data/race_data_pb";
 import { computeRaceSkillLottery } from "../../utils/witLottery";
 import {
@@ -866,7 +867,9 @@ export const computeCharaTableData = (
             requiredSpurtHp: detailedLastSpurtDecision?.fullSpurtNeedHp ?? requiredSpurtHp,
             detailedLastSpurtDecision,
             detailedLastSpurtDecisions,
-            detailedHpSkillApplications: detailedMetrics?.hpSkillApplications,
+            detailedHpSkillApplications: detailedMetrics?.hpSkillApplications?.filter(application =>
+                isHpApplicationBeforeFinish(application.time,
+                    raceData.horseResult[application.targetHorseIndex]?.finishTimeRaw)),
             rushedDuration,
             rushedEvents,
             rushedPreventedByRestraint,
@@ -905,6 +908,7 @@ export const computeCharaTableData = (
                 const target = rowByFrameOrder.get(application.targetHorseIndex);
                 const caster = rowByFrameOrder.get(application.casterHorseIndex);
                 if (!target || !caster) return;
+                if (!isHpApplicationBeforeFinish(application.time, target.horseResultData.finishTimeRaw)) return;
 
                 const hpDrain = -application.appliedHpDelta;
                 const startHp = target.hpOutcome?.startHp ?? metrics.maxHp ?? 0;
@@ -951,7 +955,7 @@ export const computeCharaTableData = (
         if (!caster) return;
 
         const selfCost = getSelfHpDrainEstimate(raceData, event, raceHorseInfo);
-        if (selfCost) {
+        if (selfCost && isHpApplicationBeforeFinish(event.frameTime ?? 0, caster.horseResultData.finishTimeRaw)) {
             const selfCostDistance = interpolateDistance(
                 raceData.frame ?? [],
                 casterFrameOrder,
@@ -976,6 +980,7 @@ export const computeCharaTableData = (
 
         tableData.forEach(target => {
             const targetFrameOrder = target.frameOrder - 1;
+            if (!isHpApplicationBeforeFinish(event.frameTime ?? 0, target.horseResultData.finishTimeRaw)) return;
             if (!isSkillEventTargetingFrame(raceData, event, targetFrameOrder, raceHorseInfo)) return;
 
             const maxHp = target.hpOutcome?.startHp

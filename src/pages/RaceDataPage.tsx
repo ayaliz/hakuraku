@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import "./RaceDataPage.css";
-import { Alert, Button, ButtonGroup, Dropdown, OverlayTrigger, ProgressBar, Tooltip } from "react-bootstrap";
+import { Alert, Button, ButtonGroup, Dropdown, Form, OverlayTrigger, ProgressBar, Tooltip } from "react-bootstrap";
+import { horseInfoWithSimulationGates, randomSimulationGates, readRandomGatesPreference, saveRandomGatesPreference, withSimulationGates } from "../data/SimulationGates";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import RaceDataPresenter from "../components/RaceDataPresenter";
 import { RaceSimulateData } from "../data/race_data_pb";
+import { freezeHpAtFinish } from "../data/FinishHp";
 import { deserializeFromBase64 } from "../data/RaceDataParser";
 import { hasGlobalRaceReplay } from "../data/DetailedRaceEligibility";
 import { fromRaceHorseData, hydrateCompactRaceHorseData } from "../data/TrainedCharaData";
@@ -12,6 +14,7 @@ import ShareLinkBox from "../components/ShareLinkBox";
 import RaceWinRateResults from "../components/RaceWinRateResults";
 import type { ShareCreateResponse } from "../auth/authShared";
 import { normalizeSeasonValue } from "../utils/season";
+import { EMPTY_TRAINED_CHARA_DATA_WARNING, hasEmptyTrainedCharaData } from "../data/RaceUploadWarnings";
 import { buildReplayPresenterInput, type ReplayPayloadResponse } from "../features/umalogs/model/replaysShared";
 import UMDatabaseWrapper from "../data/UMDatabaseWrapper";
 import GameDataLoader from "../data/GameDataLoader";
@@ -191,6 +194,8 @@ export default function RaceDataPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [parsedHorseInfo, setParsedHorseInfo] = useState<any[] | undefined>(undefined);
+    const [randomizedGates, setRandomizedGates] = useState(() => readRandomGatesPreference());
+    const [alternateGates, setAlternateGates] = useState<number[] | undefined>();
     const [parsedRaceData, setParsedRaceData] = useState<RaceSimulateData | undefined>(undefined);
     const [error, setError] = useState('');
     const [rawHorseInfo, setRawHorseInfo] = useState<any[] | undefined>(undefined);
@@ -224,6 +229,7 @@ export default function RaceDataPage() {
     const [detailedError, setDetailedError] = useState("");
     const [useDetailedMode, setUseDetailedMode] = useState(false);
     const [rawRaceCapture, setRawRaceCapture] = useState<Record<string, unknown> | undefined>(undefined);
+    const hasEmptyTrainingData = useMemo(() => hasEmptyTrainedCharaData(rawRaceCapture), [rawRaceCapture]);
     const [winRateBatch, setWinRateBatch] = useState<RaceWinRateBatch | undefined>(undefined);
     const [winRateSubmitting, setWinRateSubmitting] = useState(false);
     const [winRateError, setWinRateError] = useState("");
@@ -789,6 +795,8 @@ export default function RaceDataPage() {
             trackDetails,
             detailedSimulation: sharedDetailedSimulation,
         };
+        const sharedHorseInfo = rawHorseInfo && horseInfoWithSimulationGates(rawHorseInfo,
+            useDetailedMode && alternateSeed !== undefined ? alternateGates : undefined);
 
         let content: string;
         if (anonymous) {
@@ -796,7 +804,7 @@ export default function RaceDataPage() {
             try {
                 const nameMap = new Map<string, string>();
                 let anonCounter = 1;
-                const anonHorseInfo = rawHorseInfo.map((horse: any) => {
+                const anonHorseInfo = sharedHorseInfo!.map((horse: any) => {
                     const copy = anonymizeSharedRaceHorse(horse);
                     if (typeof copy.trainer_name === "string" && copy.trainer_name) {
                         if (!nameMap.has(copy.trainer_name)) nameMap.set(copy.trainer_name, `Team ${anonCounter++}`);
@@ -819,7 +827,7 @@ export default function RaceDataPage() {
         } else {
             content = JSON.stringify({
                 ...sharedRaceFields,
-                raceHorseInfo: JSON.stringify(rawHorseInfo),
+                raceHorseInfo: JSON.stringify(sharedHorseInfo),
             });
         }
 
@@ -871,6 +879,8 @@ export default function RaceDataPage() {
     const runDetailedSimulation = async (seedOverride?: number) => {
         const isAlternate = seedOverride !== undefined;
         const requestedSeed = isAlternate ? seedOverride : Number(randomSeed);
+        const requestedGates = isAlternate && randomizedGates
+            ? randomSimulationGates(parsedHorseInfo?.length ?? 0) : undefined;
         if (!rawRaceCapture
             || detailedStatus === "loading"
             || !detailedSimulationEligible
@@ -899,7 +909,7 @@ export default function RaceDataPage() {
                     "Accept": "text/event-stream",
                 },
                 body: JSON.stringify(buildDetailedRaceSimulationRequest(
-                    rawRaceCapture, detectedCourseId, seedOverride, UMDatabaseWrapper.raceInstances,
+                    withSimulationGates(rawRaceCapture, requestedGates), detectedCourseId, seedOverride, UMDatabaseWrapper.raceInstances,
                     false,
                 )),
                 signal: controller.signal,
@@ -919,8 +929,10 @@ export default function RaceDataPage() {
             setDetailedModeEvents(modeEvents);
             setDetailedResponse(completePayload);
             if (isAlternate) {
+                setAlternateGates(requestedGates);
                 setAlternateSeed(completePayload.seed);
             } else {
+                setAlternateGates(undefined);
                 setRecordedDetailedView({ raceData: replay, modeEvents, response: completePayload });
                 setAlternateSeed(undefined);
             }
@@ -976,7 +988,7 @@ export default function RaceDataPage() {
                     'Accept': 'text/event-stream',
                 },
                 body: JSON.stringify(buildDetailedRaceSimulationRequest(
-                    rawRaceCapture, detectedCourseId, race.seed, UMDatabaseWrapper.raceInstances,
+                    withSimulationGates(rawRaceCapture, race.gates), detectedCourseId, race.seed, UMDatabaseWrapper.raceInstances,
                     false,
                 )),
             });
@@ -989,7 +1001,7 @@ export default function RaceDataPage() {
             if (replacementError) throw new Error(replacementError);
             const staged: SharedRaceData = {
                 shareFormatVersion: 2,
-                raceHorseInfo: rawHorseInfo ?? parsedHorseInfo ?? [],
+                raceHorseInfo: horseInfoWithSimulationGates(rawHorseInfo ?? parsedHorseInfo ?? [], race.gates),
                 raceScenario: payload.replay.data,
                 detectedCourseId,
                 laneDistanceMax,
@@ -1061,7 +1073,7 @@ export default function RaceDataPage() {
                 });
                 const batch = await readWinRateBatchResponse(response);
                 consecutiveErrors = 0;
-                setWinRateBatch(batch);
+                setWinRateBatch({ ...batch, accessToken: active.accessToken });
                 if (!isActiveRaceWinRateBatch(batch)) {
                     activeWinRateBatchRef.current = null;
                     winRatePollControllerRef.current = null;
@@ -1096,6 +1108,7 @@ export default function RaceDataPage() {
                 ...getDetailedRaceCaptureMetadata(rawRaceCapture),
                 isCareer: false,
                 raceCount: 100,
+                randomizedGates,
                 seed: seedStart,
                 ...(raceInstanceId === null ? {} : { raceInstanceId }),
             };
@@ -1142,7 +1155,7 @@ export default function RaceDataPage() {
                 body: JSON.stringify({ accessToken: active.accessToken }),
             });
             const batch = await readWinRateBatchResponse(response);
-            setWinRateBatch(batch);
+            setWinRateBatch({ ...batch, accessToken: active.accessToken });
             if (!isActiveRaceWinRateBatch(batch)) activeWinRateBatchRef.current = null;
         } catch (reason) {
             setWinRateError(reason instanceof Error ? reason.message : "Could not cancel the estimate.");
@@ -1192,6 +1205,14 @@ export default function RaceDataPage() {
         const frameOrder = Number(horse?.frame_order ?? horse?.frameOrder);
         return frameOrder === runner.frameOrder + 1 || frameOrder === runner.gateNumber;
     });
+
+    const finishLockedView = useMemo(() => freezeHpAtFinish(
+        useDetailedMode && detailedRaceData ? detailedRaceData : parsedRaceData,
+        useDetailedMode && detailedResponse ? buildDetailedHorseMetrics(detailedResponse) : undefined,
+    ), [useDetailedMode, detailedRaceData, parsedRaceData, detailedResponse]);
+    const displayedHorseInfo = useMemo(() => parsedHorseInfo && horseInfoWithSimulationGates(
+        parsedHorseInfo, useDetailedMode && alternateSeed !== undefined ? alternateGates : undefined,
+    ), [parsedHorseInfo, useDetailedMode, alternateSeed, alternateGates]);
 
     return <div className="rdp-root">
         <input
@@ -1300,6 +1321,20 @@ export default function RaceDataPage() {
                             Simulation features
                         </Dropdown.Toggle>
                         <Dropdown.Menu>
+                            <div className="rdp-simulation-gates px-3 py-2">
+                                <Form.Check
+                                    type="switch"
+                                    id="rdp-randomized-gates"
+                                    label="Randomize gates"
+                                    checked={randomizedGates}
+                                    onChange={event => {
+                                        setRandomizedGates(event.target.checked);
+                                        saveRandomGatesPreference(event.target.checked);
+                                    }}
+                                />
+                                <small>{randomizedGates ? "New gates for each simulated race." : "Keep the original gate assignments."}</small>
+                            </div>
+                            <Dropdown.Divider />
                             <Dropdown.Item
                                 onClick={() => void runWinRateEstimate()}
                                 disabled={winRateSubmitting || winRateBatchActive || parsedHorseInfo?.length !== 9}
@@ -1442,19 +1477,21 @@ export default function RaceDataPage() {
                 {(!isArchiveReplayRoute && !isShared && hasHorseActVersion && isHorseActOutdated(horseActVersion)) && <Alert variant="info">
                     The version of horseACT used to generate this file appears to be outdated. The current release is {CURRENT_HORSEACT_VERSION}, available at <a href={HORSEACT_RELEASE_URL} target="_blank" rel="noreferrer">{HORSEACT_RELEASE_URL}</a>. It's recommended to update by replacing your existing horseACT.dll.
                 </Alert>}
+                {(!isArchiveReplayRoute && !isShared && hasEmptyTrainingData) && <Alert variant="warning">
+                    {EMPTY_TRAINED_CHARA_DATA_WARNING}
+                </Alert>}
                 <PresenterErrorBoundary key={`${useDetailedMode ? `detailed-${alternateSeed ?? detailedResponse?.seed ?? randomSeed}` : "recorded"}-${teamTrialRaces.length > 0 ? `team-trial-boundary-${selectedTeamTrialIndex}` : `race-boundary-${rawScenario.slice(0, 24)}`}`}>
                     <RaceDataPresenterAny
                         key={`${useDetailedMode ? `detailed-${alternateSeed ?? detailedResponse?.seed ?? randomSeed}` : "recorded"}-${teamTrialRaces.length > 0 ? `team-trial-${selectedTeamTrialIndex}` : rawScenario.slice(0, 24)}`}
-                        raceHorseInfo={parsedHorseInfo}
-                        raceData={useDetailedMode && detailedRaceData ? detailedRaceData : parsedRaceData}
+                        raceHorseInfo={displayedHorseInfo}
+                        raceData={finishLockedView.raceData}
                         authoritativeModeEvents={useDetailedMode ? detailedModeEvents : undefined}
-                        authoritativeHorseMetrics={useDetailedMode && detailedResponse
-                            ? buildDetailedHorseMetrics(detailedResponse)
-                            : undefined}
+                        authoritativeHorseMetrics={finishLockedView.metrics}
                         laneDistanceMax={laneDistanceMax}
                         randomSeed={alternateSeed ?? randomSeed}
                         raceType={raceType}
-                        playerFrameOrder={playerFrameOrder}
+                        playerFrameOrder={useDetailedMode && alternateSeed !== undefined && alternateGates && playerFrameOrder !== undefined
+                            ? alternateGates[playerFrameOrder] - 1 : playerFrameOrder}
                         trackDetails={trackDetails}
                         detectedCourseId={detectedCourseId} />
                 </PresenterErrorBoundary>

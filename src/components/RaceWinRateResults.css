@@ -294,6 +294,28 @@
     font-weight: 400;
 }
 
+.race-win-rate-history-wrap {
+    position: relative;
+    min-height: 50px;
+}
+
+.race-win-rate-history > summary {
+    padding-right: 130px;
+    min-height: 32px;
+    display: list-item;
+    align-content: center;
+}
+
+.race-win-rate-export {
+    position: absolute;
+    right: 0;
+    top: 10px;
+    font-size: 0.76rem;
+}
+
+.race-win-rate-export:disabled { opacity: 0.6; cursor: wait; }
+.race-win-rate-export-error { color: #ffaaaa; font-size: 0.8rem; margin: 8px 0; }
+
 .race-win-rate-history-list {
     display: grid;
     max-height: 420px;

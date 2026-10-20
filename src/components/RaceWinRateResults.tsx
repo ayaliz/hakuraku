@@ -31,6 +31,7 @@ type Props = {
     getRunnerLabel?: (runner: RaceWinRateRunner) => string;
     getRunnerBuild?: (runner: RaceWinRateRunner) => RaceWinRateRunnerBuild | undefined;
     onViewRace?: (race: RaceWinRateRace) => void;
+    exportUrl?: string;
 };
 
 export type RaceWinRateRunnerBuild = {
@@ -336,8 +337,37 @@ export default function RaceWinRateResults({
     getRunnerLabel = runner => `Gate ${runner.gateNumber}`,
     getRunnerBuild,
     onViewRace,
+    exportUrl,
 }: Props) {
     const [selectedRunnerSlot, setSelectedRunnerSlot] = useState<number | null>(null);
+    const [exporting, setExporting] = useState(false);
+    const [exportError, setExportError] = useState("");
+    const exportResults = async () => {
+        setExporting(true);
+        setExportError("");
+        try {
+            if (!batch.accessToken) throw new Error("Export access is unavailable. Please run a new simulation.");
+            const response = await fetch(exportUrl ?? `${batch.links.status}?export=1`, {
+                headers: { "x-simulation-batch-token": batch.accessToken },
+            });
+            if (!response.ok) throw new Error(response.status === 404
+                ? "These results have expired. Please run a new simulation to export them."
+                : `Could not export results (HTTP ${response.status}).`);
+            const payload = await response.json();
+            if (payload.format !== "hakuraku-simulation-results/v1")
+                throw new Error("Full export is not available on this server yet.");
+            const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `simulation-results-${batch.seedStart}-${batch.jobId}.json`;
+            link.click();
+            window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch (reason) {
+            setExportError(reason instanceof Error ? reason.message : "Could not export results.");
+        } finally {
+            setExporting(false);
+        }
+    };
     const outcomeIndex = (runner: RaceWinRateRunner) => Number.isInteger(runner.frameOrder)
         ? runner.frameOrder
         : runner.slot;
@@ -414,7 +444,12 @@ export default function RaceWinRateResults({
                     </div>;
                 })}
         </div>}
-        {onViewRace && batch.results.races?.length > 0 && <details className="race-win-rate-history">
+        {batch.results.races?.length > 0 && <div className="race-win-rate-history-wrap">
+        <button type="button" className="race-win-rate-export race-win-rate-runner-details"
+            onClick={() => void exportResults()} disabled={exporting}>
+            {exporting ? "Exporting..." : "Export results"}
+        </button>
+        {onViewRace && <details className="race-win-rate-history">
             <summary>Race history <span>{batch.results.races.length} races</span></summary>
             <div className="race-win-rate-history-list">
                 {batch.results.races.map((race, position) => {
@@ -467,6 +502,8 @@ export default function RaceWinRateResults({
                 })}
             </div>
         </details>}
+        {exportError && <p className="race-win-rate-export-error" role="alert">{exportError}</p>}
+        </div>}
         {SHOW_RUNNER_DETAILS && selectedRunner && <RunnerDetailsModal
             runner={selectedRunner}
             label={getRunnerLabel(selectedRunner)}

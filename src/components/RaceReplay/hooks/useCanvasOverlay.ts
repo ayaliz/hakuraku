@@ -4,6 +4,7 @@ import { buildPositionKeepSeries, teamColorFor } from "../utils/chartBuilders";
 import { getSpeedUpCheckRanges } from '../utils/positionKeepUtils';
 import { getSkillDurationSecs, getActiveSpeedDebuff, getRushedDebuffDurationSecs, hasTargetDebuffEffect, getActiveSpeedModifier, countGreenSkills, isAutomaticPassiveSkill } from "../utils/SkillDataUtils";
 import { calculateSectionBaseSpeedWitRoll, calculateTargetSpeed, getDistanceCategory, computeGroundPowerBonus } from "../utils/speedCalculations";
+import { sectionWitSpeedAddend } from '../utils/sectionWitSpeed';
 import GameDataLoader from "../../../data/GameDataLoader";
 import { InterpolatedFrame } from "../RaceReplay.types";
 import { TrainedCharaData } from "../../../data/TrainedCharaData";
@@ -370,7 +371,9 @@ export function useCanvasOverlay(
                 const exactSection = detailedMetrics?.baseTargetSpeedSections?.[sectionIndex];
                 if (exactSection) {
                     sectionNumber = sectionIndex + 1;
-                    sectionBaseSpeedAddend = exactSection.random;
+                    // Some upstream versions duplicate the percentage into `random`.
+                    // Derive m/s from the explicit percentage for consistent units.
+                    sectionBaseSpeedAddend = sectionWitSpeedAddend(p.goalInX, exactSection.randomPercentage);
                     sectionBaseSpeedPercentage = exactSection.randomPercentage;
                 }
             }

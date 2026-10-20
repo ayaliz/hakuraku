@@ -33,7 +33,8 @@ export function courseAptitudeLabels(meta: Pick<SnapshotMeta, 'course' | 'course
     const meters = Number(meta.course.match(/([\d,]+)\s*m\b/i)?.[1].replaceAll(',', ''));
     const distance = meta.courseDistance ?? (!Number.isFinite(meters) ? 'Distance'
         : meters <= 1400 ? 'Sprint' : meters <= 1800 ? 'Mile' : meters <= 2400 ? 'Medium' : 'Long');
-    return { surface, distance };
+    // Older published snapshots use the internal category name "Short".
+    return { surface, distance: String(distance) === 'Short' ? 'Sprint' : distance };
 }
 
 export function Loading({ error, retry }: { error?: string; retry: () => void }) {

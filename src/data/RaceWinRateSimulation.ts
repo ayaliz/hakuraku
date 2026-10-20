@@ -38,6 +38,8 @@ export type RaceWinRateRace = {
     index: number;
     seed: number;
     finishOrder: number[];
+    /** One-based actual gate by the batch's original outcome index. */
+    gates?: number[];
     lastSpurtDecisions?: number[];
     finalHp?: number[];
     hpDeficit?: number[];
@@ -86,9 +88,9 @@ export function isActiveRaceWinRateBatch(batch: RaceWinRateBatch | undefined): b
     return batch?.status === "queued" || batch?.status === "running" || batch?.status === "cancel_requested";
 }
 
-/** Reconstruct the fixed lobby gate assignments used for every race in a batch. */
-export function raceWinRateBatchGates(runners: RaceWinRateRunner[]): number[] | null {
-    if (runners.length !== 9) return null;
+/** Map a race's source-indexed gates (or legacy fixed gates) back to lobby slots. */
+export function raceWinRateBatchGates(runners: RaceWinRateRunner[], race?: RaceWinRateRace): number[] | null {
+    if (runners.length !== 9 || (race?.gates && race.gates.length !== 9)) return null;
     const gates = Array<number | undefined>(9);
     for (const runner of runners) {
         const slot = runner.teamIndex * 3 + runner.memberIndex;
@@ -97,10 +99,25 @@ export function raceWinRateBatchGates(runners: RaceWinRateRunner[]): number[] | 
             || !Number.isInteger(runner.gateNumber) || runner.gateNumber < 1 || runner.gateNumber > 9) {
             return null;
         }
-        gates[slot] = runner.gateNumber;
+        const gate = race?.gates ? race.gates[runner.frameOrder] : runner.gateNumber;
+        if (!Number.isInteger(gate) || gate < 1 || gate > 9) return null;
+        gates[slot] = gate;
     }
     if (new Set(gates).size !== 9 || gates.some(gate => gate === undefined)) return null;
     return gates as number[];
+}
+
+/** Recorded batch moods in team/member order, independent of gates and replay seed. */
+export function raceWinRateBatchMotivations(runners: RaceWinRateRunner[]): number[] | null {
+    if (runners.length !== 9) return null;
+    const motivations = Array<number | undefined>(9);
+    for (const runner of runners) {
+        const slot = runner.teamIndex * 3 + runner.memberIndex;
+        if (!Number.isInteger(slot) || slot < 0 || slot >= 9 || motivations[slot] !== undefined
+            || !Number.isInteger(runner.motivation) || Number(runner.motivation) < 1 || Number(runner.motivation) > 5) return null;
+        motivations[slot] = runner.motivation;
+    }
+    return motivations.every(value => value !== undefined) ? motivations as number[] : null;
 }
 
 export function raceWinRatePercent(value: number): string {

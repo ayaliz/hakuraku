@@ -3,6 +3,7 @@ import test from "node:test";
 import {
     getDetailedRaceReplacementError,
     getDetailedRaceWhatIfError,
+    getUpstreamReplayValidationError,
     readDetailedRaceSimulationResponse,
     type DetailedRaceSimulationProgress,
     type DetailedRaceSimulationResponse,
@@ -17,6 +18,19 @@ function result(): DetailedRaceSimulationResponse {
         annotations: { schemaVersion: 1, flags: {}, horses: [] },
     };
 }
+
+test('unified validation distinguishes mismatch, unsupported and deliberate what-if runs', () => {
+    const response = detailedResponse();
+    assert.equal(getDetailedRaceReplacementError(replay(), replay(), { ...response, validation: { status: 'matched' } }, 42), null);
+    for (const status of ['mismatch', 'unsupported', 'input_conflict', 'not_checked']) {
+        const changed = { ...response, validation: { status, reasons: [{ code: 'test', message: 'Specific reason.' }] } };
+        assert.match(getDetailedRaceReplacementError(replay(), replay(), changed, 42) ?? '', /Specific reason/);
+    }
+    assert.equal(getDetailedRaceWhatIfError(replay(), replay(), {
+        ...response, validation: { status: 'not_checked', reasons: [{ code: 'settings_override', message: 'Changed seed.' }] },
+    }, 42), null);
+    assert.equal(getUpstreamReplayValidationError(response), null);
+});
 
 test("reads incremental detailed-simulation status and result events", async () => {
     const encoder = new TextEncoder();

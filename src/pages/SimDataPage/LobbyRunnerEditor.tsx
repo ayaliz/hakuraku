@@ -12,6 +12,7 @@ import {
     isBaseUniqueSkillId,
     lobbySkillFamilyId,
     LOBBY_APTITUDES,
+    LOBBY_DEFAULT_FAN_COUNT,
     LOBBY_MAX_EDITABLE_SKILLS,
     LOBBY_RUNNING_STYLES,
     LOBBY_STAT_MAX,
@@ -65,7 +66,8 @@ function SkillIcon({ skillId }: { skillId: number }) {
 }
 
 export default function LobbyRunnerEditor({ data, initial, catalog, createMode = false, onSave, onClose }: Props) {
-    const [edit, setEdit] = useState<LobbyRunnerEdit>(() => structuredClone(initial));
+    const initialEdit = () => ({ ...structuredClone(initial), fanCount: initial.fanCount ?? LOBBY_DEFAULT_FAN_COUNT });
+    const [edit, setEdit] = useState<LobbyRunnerEdit>(initialEdit);
     const [umaOpen, setUmaOpen] = useState(false);
     const [umaSearch, setUmaSearch] = useState('');
     const [skillSearch, setSkillSearch] = useState('');
@@ -99,6 +101,7 @@ export default function LobbyRunnerEditor({ data, initial, catalog, createMode =
     const uniqueId = edit.uniqueSkillId;
     const selectedCard = data.cards[edit.cardId];
     const validStats = edit.stats.every(value => Number.isInteger(value) && value >= LOBBY_STAT_MIN && value <= LOBBY_STAT_MAX);
+    const validFans = Number.isInteger(edit.fanCount) && edit.fanCount! >= 0 && edit.fanCount! <= 2147483647;
     const [exportError, setExportError] = useState('');
     const exportUma = () => {
         try {
@@ -242,6 +245,12 @@ export default function LobbyRunnerEditor({ data, initial, catalog, createMode =
                         <input type="number" min={LOBBY_STAT_MIN} max={LOBBY_STAT_MAX} step={1} value={Number.isNaN(edit.stats[index]) ? '' : edit.stats[index]} onChange={event => setStat(index, event.target.value)} />
                     </label>)}</div>
                     {!validStats && <p className="sim-query-error" role="alert">Every stat must be a whole number from {LOBBY_STAT_MIN} to {LOBBY_STAT_MAX}.</p>}
+                    <label className="sim-runner-editor-field sim-lobby-fan-count">Fan count
+                        <input type="number" min={0} max={2147483647} step={1}
+                            value={Number.isNaN(edit.fanCount) ? '' : edit.fanCount}
+                            onChange={event => setEdit(previous => ({ ...previous, fanCount: event.target.value === '' ? NaN : Number(event.target.value) }))} />
+                    </label>
+                    {!validFans && <p className="sim-query-error" role="alert">Fan count must be a whole number from 0 to 2147483647.</p>}
                     <div className="sim-lobby-race-settings">
                         <div className="sim-lobby-aptitude-editor">{aptitudeFields.map(([label, aptitudeIndex]) => {
                             const currentRank = edit.aptitudes[aptitudeIndex];
@@ -293,8 +302,8 @@ export default function LobbyRunnerEditor({ data, initial, catalog, createMode =
         </Modal.Body>
         <Modal.Footer>
             {exportError && <p className="sim-query-error" role="alert">{exportError}</p>}
-            <button type="button" className="sim-link" onClick={() => setEdit(structuredClone(initial))}>Reset this editor</button>
-            <div><button type="button" className="sim-button sim-button-secondary" disabled={!validStats} onClick={exportUma}>Export Uma</button><button type="button" className="sim-button sim-button-secondary" onClick={onClose}>Cancel</button><button type="button" className="sim-button" disabled={!validStats} onClick={() => onSave(edit)}>{createMode ? 'Add Uma' : 'Save changes'}</button></div>
+            <button type="button" className="sim-link" onClick={() => setEdit(initialEdit())}>Reset this editor</button>
+            <div><button type="button" className="sim-button sim-button-secondary" disabled={!validStats || !validFans} onClick={exportUma}>Export Uma</button><button type="button" className="sim-button sim-button-secondary" onClick={onClose}>Cancel</button><button type="button" className="sim-button" disabled={!validStats || !validFans} onClick={() => onSave(edit)}>{createMode ? 'Add Uma' : 'Save changes'}</button></div>
         </Modal.Footer>
     </Modal>;
 }

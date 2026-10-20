@@ -6,6 +6,7 @@ import { computeSkillPoints } from '../../data/skillPoints';
 import {
     isActiveRaceWinRateBatch,
     raceWinRateBatchGates,
+    raceWinRateBatchMotivations,
     type RaceWinRateBatch,
     type RaceWinRateRace,
     type RaceWinRateRunner,
@@ -66,6 +67,7 @@ type LobbySimulationRequest = {
     mood: LobbyMood;
     isCareer: boolean;
     gates: (number | null)[];
+    motivations?: number[];
     runnerOverrides?: (ReturnType<typeof toLobbyRunnerOverride> | null)[];
     seed?: number;
 };
@@ -227,7 +229,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
                 });
                 const next = await readBatchResponse(response);
                 consecutiveErrors = 0;
-                setBatch(next);
+                setBatch({ ...next, accessToken: active.accessToken });
                 if (!isActiveRaceWinRateBatch(next)) {
                     activeBatchRef.current = null;
                     batchPollControllerRef.current = null;
@@ -357,13 +359,18 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
             setError('The lobby configuration for this batch is no longer available.');
             return;
         }
-        const resolvedGates = raceWinRateBatchGates(batch?.results.runners ?? []);
+        const resolvedGates = raceWinRateBatchGates(batch?.results.runners ?? [], race);
         if (!resolvedGates) {
             setError('The simulator did not return the gate assignments needed to reproduce this race.');
             return;
         }
+        const motivations = raceWinRateBatchMotivations(batch?.results.runners ?? []);
+        if (!motivations) {
+            setError('The simulator did not return the moods needed to reproduce this race.');
+            return;
+        }
         void openSimulatedRace(
-            { ...context.request, seed: race.seed, gates: resolvedGates },
+            { ...context.request, seed: race.seed, gates: resolvedGates, motivations },
             context.sourceRunnerMetadata,
         );
     };
@@ -423,7 +430,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
                 body: JSON.stringify({ accessToken: active.accessToken }),
             });
             const next = await readBatchResponse(response);
-            setBatch(next);
+            setBatch({ ...next, accessToken: active.accessToken });
             if (!isActiveRaceWinRateBatch(next)) activeBatchRef.current = null;
         } catch (reason) {
             setBatchError(reason instanceof Error ? reason.message : 'Could not cancel the batch.');
@@ -555,6 +562,7 @@ export default function LobbyBuilder({ data, teams, onBrowse, onRemove, onRemove
         {batchError && <p className="sim-query-error" role="alert">Win-rate estimate failed: {batchError}</p>}
         {displayedBatch && displayedBatch.status !== 'failed' && <RaceWinRateResults
             batch={displayedBatch}
+            exportUrl={`${simDataApiUrl(displayedBatch.links.status)}?export=1`}
             active={batchActive}
             onClose={dismissBatchResults}
             onViewRace={viewBatchRace}

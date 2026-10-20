@@ -34,6 +34,7 @@ export type LobbyDraft = {
 };
 
 export const LOBBY_STAT_MIN = 1;
+export const LOBBY_DEFAULT_FAN_COUNT = 200_000;
 export const LOBBY_STAT_MAX = 2000;
 export const LOBBY_MAX_EDITABLE_SKILLS = 100;
 export const LOBBY_SEED_MIN = 1;
@@ -128,6 +129,7 @@ export function createLobbyRunnerEdit(runner: Runner): LobbyRunnerEdit | null {
 export function createBlankLobbyRunnerEdit(cardId: number): LobbyRunnerEdit {
     return {
         cardId,
+        fanCount: LOBBY_DEFAULT_FAN_COUNT,
         stats: [1200, 1200, 1200, 1200, 1200],
         aptitudes: ['A', 'A', 'A'],
         runningStyle: 1,
@@ -330,6 +332,7 @@ export type SimDataLobbyRace = {
     } & Record<string, unknown>;
     replay: DetailedRaceSimulationResponse['replay'];
     annotations: DetailedRaceSimulationResponse['annotations'];
+    validation?: DetailedRaceSimulationResponse['validation'];
     diagnostics?: DetailedRaceSimulationResponse['diagnostics'];
 };
 
@@ -430,6 +433,7 @@ export function buildLobbyRaceView(
             seed: payload.seed,
             replay: payload.replay,
             annotations: payload.annotations,
+            ...(payload.validation ? { validation: payload.validation } : {}),
             diagnostics: payload.diagnostics,
         },
     };

@@ -162,7 +162,22 @@ export type DetailedRaceSimulationResponse = {
         horses: (DetailedHorseMetrics & { spans: RaceModeSpan[] })[];
     };
     diagnostics?: { simulationMilliseconds?: number };
+    validation?: { status: string; reasons?: { code: string; message: string }[] };
 };
+
+/** Original-seed comparison status must not be confused with successful execution. */
+export function getUpstreamReplayValidationError(response: DetailedRaceSimulationResponse): string | null {
+    const validation = response.validation;
+    if (!validation || validation.status === 'matched') return null; // Legacy API has no validation field.
+    const message = ({ mismatch: 'Replay does not match this simulation.',
+        input_conflict: 'Replay input contains conflicting values.',
+        unsupported: 'Original replay could not be checked.',
+        not_checked: 'Original replay was not compared with this simulation.' } as Record<string, string>)[validation.status]
+        ?? 'The simulator returned an unknown replay validation status.';
+    const reasons = Array.isArray(validation.reasons)
+        ? validation.reasons.map(reason => reason?.message).filter(message => typeof message === 'string').join(' ') : '';
+    return reasons ? `${message} ${reasons}` : message;
+}
 
 const CURRENT_REPLAY_VERSION = 100000002;
 const DETAILED_ANNOTATION_SCHEMA_VERSION = 7;
@@ -489,6 +504,8 @@ export function getDetailedRaceReplacementError(
     expectedSeed: number,
 ): string | null {
     if (!recorded) return "The recorded replay is unavailable for comparison.";
+    const validationError = getUpstreamReplayValidationError(response);
+    if (validationError) return validationError;
     if (!Number.isInteger(expectedSeed) || expectedSeed < -2147483648 || expectedSeed > 2147483647) {
         return "The recorded race has an invalid random seed.";
     }
@@ -733,6 +750,7 @@ export type SharedDetailedRaceSimulation = {
     seed: number;
     annotations: DetailedRaceSimulationResponse['annotations'];
     diagnostics?: DetailedRaceSimulationResponse['diagnostics'];
+    validation?: DetailedRaceSimulationResponse['validation'];
 };
 
 export function buildSharedDetailedRaceSimulation(
@@ -744,6 +762,7 @@ export function buildSharedDetailedRaceSimulation(
         seed: response.seed,
         annotations: response.annotations,
         diagnostics: response.diagnostics,
+        ...(response.validation ? { validation: response.validation } : {}),
     };
 }
 
@@ -775,6 +794,7 @@ export function restoreSharedDetailedRaceSimulation(
         replay: { data: replayData },
         annotations: annotations as DetailedRaceSimulationResponse['annotations'],
         diagnostics: shared.diagnostics as DetailedRaceSimulationResponse['diagnostics'],
+        ...(shared.validation ? { validation: shared.validation as DetailedRaceSimulationResponse['validation'] } : {}),
     };
 }
 

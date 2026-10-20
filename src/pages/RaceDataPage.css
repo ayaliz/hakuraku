@@ -145,6 +145,37 @@
     border-color: rgba(255, 255, 255, 0.12);
 }
 
+.rdp-simulation-gates {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.rdp-simulation-gates .form-switch .form-check-input {
+    background-color: #596575;
+    border-color: #9aafc4;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+    cursor: pointer;
+}
+
+.rdp-simulation-gates .form-switch .form-check-input:checked {
+    background-color: #198754;
+    border-color: #73d9aa;
+}
+
+.rdp-simulation-gates .form-switch .form-check-input:focus-visible {
+    outline: 2px solid #b8e8d2;
+    outline-offset: 3px;
+}
+
+.rdp-simulation-gates .form-check-label {
+    cursor: pointer;
+}
+
+.rdp-simulation-gates small {
+    display: block;
+    color: rgba(255, 255, 255, 0.56);
+    font-size: 0.76rem;
+}
+
 .rdp-what-if-status {
     display: flex;
     align-items: center;
